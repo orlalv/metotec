@@ -180,7 +180,8 @@ tr.oculta{display:none}
 .bk table.tt th{color:#5d6b7e;font-size:12px;text-transform:uppercase}
 @media (max-width:860px){.bk .bkg,.bk .pru,.bk .res{grid-template-columns:1fr}}
 #intro:has(.bk){display:block;text-align:left;padding:0;margin:0;max-width:none;border:0;background:none;box-shadow:none;line-height:1.45}
-</style></head>
+</style><link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+</head>
 <body>
 <div class="win">
   <div class="titlebar">Ingreso Tiempo Real - Observación Regular</div>
@@ -2524,7 +2525,7 @@ function resumen(){
 /* ---------- vistas ---------- */
 function render(){
   const tabs = [["libre", "Práctica libre"], ["c360", "Práctica fotos 360"], ["sim", "Simuladores"], ["prueba", "Modo prueba"]];
-  let h = `<div class="bk"><div class="bkh"><div class="bkk">MRO II · Estudio libre</div><h1>Banco de casos SACLIM</h1>
+  let h = `<div class="bk"><div class="bkh"><a href="index.html" style="display:inline-block;margin-bottom:10px"><img src="img/logo_blanco.svg" alt="METOTEC" style="height:34px;display:block"></a><div class="bkk">MRO II · Estudio libre</div><h1>Banco de casos SACLIM</h1>
     <p>${Object.values(BANCO).reduce((a, L) => a + L.length, 0)} casos para practicar en la máscara de SACLIM, con corrección casilla por casilla.</p>
     <div class="bktabs">${tabs.map(([k, t]) => `<a data-tab="${k}" class="${VISTA.tab === k || (VISTA.tab === "res" && k === "libre") ? "on" : ""}">${t}</a>`).join("")}</div></div><div class="bkm">`;
   if (VISTA.tab === "libre") h += vLibre();
