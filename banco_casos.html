@@ -144,7 +144,7 @@ tr.oculta{display:none}
 </style>
 <style>
 .bk{font:15px/1.45 system-ui,"Segoe UI",Roboto,Arial,sans-serif;color:#1b2533;background:#eef2f5;min-height:100vh}
-.bk .bkh{background:#121b2b;color:#fff;padding:18px 20px 0}.bk .bkk{color:#e07b39;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
+.bk .bkh{background:radial-gradient(1100px 380px at 85% 0%,#163a73 0%,#0A1F44 62%);color:#fff;padding:18px 20px 0;border-bottom:3px solid #C9A54C}.bk .bkk{color:#C9A54C;font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
 .bk h1{margin:4px 0;font-size:25px;color:#fff}.bk .bkh p{margin:0 0 12px;color:#c9d3e0;font-size:14px}
 .bk .bktabs{display:flex;gap:4px;flex-wrap:wrap}.bk .bktabs a{padding:9px 16px;border-radius:10px 10px 0 0;color:#c9d3e0;font-weight:700;font-size:14px;cursor:pointer}.bk .bktabs a.on{background:#eef2f5;color:#1b2533}
 .bk .bkm{max-width:1200px;margin:0 auto;padding:16px}
@@ -155,7 +155,7 @@ tr.oculta{display:none}
 .bk .fil{display:flex;gap:10px;flex-wrap:wrap}.bk .fil label{display:flex;flex-direction:column;font-size:11.5px;font-weight:700;color:#5d6b7e;text-transform:uppercase;gap:4px}
 .bk select,.bk input{font:14px system-ui;padding:6px 8px;border:1px solid #d5dde7;border-radius:7px;background:#fff}
 .bk .azar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px dashed #d5dde7}.bk .azar b{font-size:13px;color:#5d6b7e}
-.bk .btn{font:700 13.5px system-ui;padding:8px 14px;border-radius:8px;border:0;color:#fff;background:#1f4f93;cursor:pointer;display:inline-block}
+.bk .btn{font:700 13.5px system-ui;padding:8px 14px;border-radius:8px;border:0;color:#fff;background:#082B5C;cursor:pointer;display:inline-block}
 .bk .btn.o{background:#fff;color:#1f4f93;border:1px solid #1f4f93}
 .bk .cnt{margin:10px 2px 8px;color:#5d6b7e;font-size:13px}
 .bk .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
@@ -2653,8 +2653,8 @@ function finTest(){
 document.title = "Banco de casos";
 document.head.insertAdjacentHTML("beforeend", "<style>body.portal .titlebar,body.portal #hdr{display:none!important}</style>");
 $("#fhCell").lastElementChild.textContent = "Estudio libre";
-{ const hs = location.hash.slice(1); if (SECC.some(x => x[0] === hs)){ VISTA.sec = hs; TEMA = hs; } }
-pantalla("libre");
+{ const hs = location.hash.slice(1); if (SECC.some(x => x[0] === hs)){ VISTA.sec = hs; TEMA = hs; } else if (["c360", "sim", "prueba"].includes(hs)) VISTA.tab = hs; }
+pantalla(VISTA.tab);
 
 </script>
 </body>

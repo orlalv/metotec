@@ -6,76 +6,75 @@
 <title>METOTEC · Curso de observación MRO II</title>
 <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
 <style>
-:root{--nav:#0d1a2e;--fondo:#eef2f5;--tx:#1b2533;--mu:#5d6b7e;--ac:#e07b39;--bd:#d5dde7;--link:#1f4f93;
-  --viento:#2f6db5;--vis:#7a5bb5;--tiempo:#c2572b;--nubes:#2b8a8a;--obs:#0d1a2e}
+:root{--noche:#0A1F44;--marino:#082B5C;--azul:#1688D4;--oro:#C9A54C;--fondo:#F5F6F8;--tx:#16202E;--mu:#6B7686;--bd:#E3E7EC}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--fondo);color:var(--tx);font:16px/1.5 system-ui,"Segoe UI",Roboto,Arial,sans-serif}
-.w{max-width:1320px;margin:0 auto;padding:0 clamp(14px,3vw,40px)}
-header{background:linear-gradient(135deg,#0d1a2e 0%,#12305a 100%);color:#fff;padding:22px 0 26px}
-header .top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
-header .logo img{display:block;height:42px;width:auto}
-header .k{color:var(--ac);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
-header h1{margin:22px 0 6px;font-size:clamp(24px,3.2vw,36px);line-height:1.15}
-header p{margin:0;color:#c9d3e0;max-width:760px}
-nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
-nav a{color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:7px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.07)}
-nav a:hover{background:rgba(255,255,255,.18)}
-nav i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
-main{padding:8px 0 30px}
-h2.sec{margin:28px 0 4px;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);scroll-margin-top:12px}
-.intro{margin:0 0 14px;color:var(--mu);font-size:14.5px}
-.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-.grid.dos{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
-a.card{display:flex;flex-direction:column;background:#fff;border:1px solid var(--bd);border-radius:14px;padding:20px;color:inherit;text-decoration:none;
-  box-shadow:0 2px 6px rgba(0,0,0,.05);transition:transform .12s,box-shadow .12s;border-top:5px solid var(--c);scroll-margin-top:12px}
-a.card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.1)}
-.tag{font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:6px}
-a.card h3{margin:0 0 8px;font-size:19px;line-height:1.25}
-a.card p{margin:0;color:var(--mu);font-size:14.5px;flex:1}
-a.card ul{margin:10px 0 0;padding-left:18px;color:var(--mu);font-size:14px}
-a.card span{margin-top:14px;font-weight:700;color:var(--link);font-size:14.5px}
-.nuevo{display:inline-block;background:var(--ac);color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.08em;padding:1px 7px;border-radius:999px;margin-left:6px;vertical-align:3px}
-a.card.dest{background:linear-gradient(180deg,#fff 0%,#f4f7fb 100%)}
-footer{color:var(--mu);font-size:13px;padding:18px 0 24px}
-footer .w{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
-footer a{color:var(--mu)}
+body{margin:0;background:var(--fondo);color:var(--tx);font:16px/1.5 Inter,system-ui,"Segoe UI",Roboto,Arial,sans-serif}
+.w{max-width:1280px;margin:0 auto;padding:0 clamp(16px,4vw,56px)}
+header{background:radial-gradient(1100px 380px at 85% 0%,#163a73 0%,var(--noche) 62%);color:#fff;padding:22px 0}
+header .w{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+header .logo img{display:block;height:40px;width:auto}
+header nav{display:flex;gap:26px;font-size:14.5px;font-weight:500}
+header nav a{color:#c8d2e2;text-decoration:none;padding-bottom:4px;border-bottom:2px solid transparent}
+header nav a:hover{color:#fff;border-bottom-color:var(--oro)}
+.rule{height:3px;background:linear-gradient(90deg,var(--oro),rgba(201,165,76,0) 70%)}
+main.w{padding-top:36px;padding-bottom:10px}
+.st{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:0 0 16px;scroll-margin-top:16px}
+.st h2{margin:0;font-size:20px;font-weight:700}.st span{color:var(--mu);font-size:14px}
+.g4{display:grid;gap:18px;grid-template-columns:repeat(4,1fr)}
+a.c{display:flex;flex-direction:column;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:22px;color:inherit;text-decoration:none;transition:border-color .15s,box-shadow .15s,transform .15s}
+a.c:hover{border-color:#c9d2dd;box-shadow:0 10px 24px rgba(10,31,68,.08);transform:translateY(-2px)}
+.ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14.5px;margin-bottom:16px;flex:none}
+a.c h3{margin:0 0 6px;font-size:17px}
+a.c p{margin:0;color:var(--mu);font-size:13.8px;line-height:1.5;flex:1}
+.ft{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--bd);font-size:13.5px}
+.ft b{color:var(--marino)}.ft i{font-style:normal;color:var(--mu)}
+.g2{display:grid;gap:18px;grid-template-columns:1.4fr 1fr}
+a.big{display:block;background:linear-gradient(135deg,var(--noche),var(--marino));color:#fff;border-radius:14px;padding:30px;text-decoration:none;transition:box-shadow .15s,transform .15s}
+a.big:hover{box-shadow:0 12px 28px rgba(10,31,68,.25);transform:translateY(-2px)}
+a.big .k{color:var(--oro);font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase}
+a.big h3{margin:8px 0 8px;font-size:23px}
+a.big p{margin:0 0 6px;color:#b9c5d8;font-size:14.5px}
+a.big ul{margin:10px 0 18px;padding-left:18px;color:#d5deeb;font-size:14px}
+.btn{display:inline-block;background:var(--oro);color:var(--noche);font-weight:700;font-size:14px;padding:9px 16px;border-radius:8px}
+a.c.sim{padding:26px}
+footer{margin-top:44px;background:var(--noche);color:#9fb0c8;font-size:13px;padding:22px 0}
+footer .w{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer .l{display:flex;align-items:center;gap:14px}
+footer img{height:26px;width:auto;filter:brightness(0) invert(1);opacity:.8}
+footer a{color:#9fb0c8}
+@media (max-width:1000px){.g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
 @media (max-width:600px){
-  header{padding:16px 0 20px}header .logo img{height:34px}header h1{margin-top:16px}
-  nav{flex-wrap:nowrap;overflow-x:auto;margin-right:-14px;padding-bottom:4px;scrollbar-width:none}nav a{white-space:nowrap}
-  .grid,.grid.dos{grid-template-columns:1fr;gap:12px}a.card{padding:16px}a.card h3{font-size:18px}
+  header{padding:16px 0}header .logo img{height:30px}
+  header nav{width:100%;gap:18px;overflow-x:auto;scrollbar-width:none;font-size:14px}header nav a{white-space:nowrap}
+  main.w{padding-top:24px}.g4{grid-template-columns:1fr;gap:12px}
+  a.c{display:grid;grid-template-columns:38px 1fr;column-gap:14px;padding:16px}a.c .ic{margin:0;grid-row:span 2}a.c .ft{grid-column:1 / 3;margin-top:12px;padding-top:10px}
+  a.c.sim{display:flex;padding:18px}a.big{padding:22px}a.big h3{font-size:20px}
 }
 </style>
 </head>
 <body>
 <header><div class="w">
  <a href="/" class="logo"><img src="img/logo_blanco.svg" alt="METOTEC"></a>
- <nav>
-  <a href="#viento"><i style="background:#6fa3e6"></i>Viento</a>
-  <a href="#visibilidad"><i style="background:#b39be0"></i>Visibilidad</a>
-  <a href="#tiempo"><i style="background:#f0a07a"></i>Tiempo presente</a>
-  <a href="#nubes"><i style="background:#7fd0cf"></i>Nubes</a>
-  <a href="#completa">Observación completa</a>
- </nav>
+ <nav><a href="#temas">Practicar por tema</a><a href="banco_casos.html">Banco de casos</a><a href="banco_casos.html#c360">Fotos 360</a><a href="simulador.html">Simulador</a></nav>
 </div></header>
+<div class="rule"></div>
 <main class="w">
- <h2 class="sec">1 · Practicar por tema</h2>
- <p class="intro">Los mismos tipos de ejercicio de la prueba, en niveles fácil, medio y difícil. Cada caso se corrige con la explicación de cada respuesta.</p>
- <div class="grid">
-  <a id="viento" class="card" style="--c:var(--viento)" href="banco_casos.html#viento"><div class="tag">Viento · 50 casos</div><h3>Viento</h3><p>Dirección, rapidez, variable, variación y racha de los últimos 10 minutos, desde casos simples hasta los límites de 60°, 180°, 3 kt y 10 kt.</p><span>Practicar →</span></a>
-  <a id="visibilidad" class="card" style="--c:var(--vis)" href="banco_casos.html#vis"><div class="tag">Visibilidad · 50 casos</div><h3>Visibilidad <i class="nuevo">NUEVO</i></h3><p>Visibilidad sinóptica, reinante, mínima y su dirección a partir de la visibilidad por sector: neblina, niebla, calima, humo y precipitación.</p><span>Practicar →</span></a>
-  <a id="tiempo" class="card" style="--c:var(--tiempo)" href="banco_casos.html#tiempo"><div class="tag">Tiempo presente · 50 casos</div><h3>Tiempo presente y pasado</h3><p>Visibilidad, ww, W1W2, tiempo presente y reciente METAR a partir de la bitácora del turno.</p><span>Practicar →</span></a>
-  <a id="nubes" class="card" style="--c:var(--nubes)" href="banco_casos.html#nubes"><div class="tag">Nubes · 50 casos</div><h3>Nubes</h3><p>N, Nh, CL, CM y CH según el orden del Atlas, capas y dirección de las nubes.</p><span>Practicar →</span></a>
+ <div class="st" id="temas"><h2>Practicar por tema</h2><span>Los mismos ejercicios de la prueba · fácil, medio y difícil</span></div>
+ <div class="g4">
+  <a class="c" href="banco_casos.html#viento"><div class="ic" style="background:#1688D4">V</div><h3>Viento</h3><p>Dirección, rapidez, VRB, variación y racha de los últimos 10 minutos, hasta los límites de 60°, 180°, 3 kt y 10 kt.</p><div class="ft"><b>Practicar →</b><i>50 casos</i></div></a>
+  <a class="c" href="banco_casos.html#vis"><div class="ic" style="background:#5B6FB5">Vs</div><h3>Visibilidad</h3><p>Sinóptica, reinante, mínima y su dirección a partir de la visibilidad por sector.</p><div class="ft"><b>Practicar →</b><i>50 casos</i></div></a>
+  <a class="c" href="banco_casos.html#tiempo"><div class="ic" style="background:#082B5C">ww</div><h3>Tiempo presente y pasado</h3><p>ww, W1W2, tiempo presente y reciente METAR a partir de la bitácora del turno.</p><div class="ft"><b>Practicar →</b><i>50 casos</i></div></a>
+  <a class="c" href="banco_casos.html#nubes"><div class="ic" style="background:#2A8FA0">N</div><h3>Nubes</h3><p>N, Nh, CL, CM y CH según el orden del Atlas, capas y dirección de las nubes.</p><div class="ft"><b>Practicar →</b><i>50 casos</i></div></a>
  </div>
 
- <h2 class="sec" id="completa">2 · Observación completa</h2>
- <p class="intro">Para integrar todo en la máscara de ingreso, con sus reglas de control.</p>
- <div class="grid dos">
-  <a class="card dest" style="--c:var(--ac)" href="banco_casos.html"><div class="tag">Banco de casos</div><h3>Banco de casos <i class="nuevo">NUEVO</i></h3><p>215 observaciones completas y 10 revisiones con errores de estaciones de todo Chile, en niveles fácil, medio y difícil.</p>
-   <ul><li>Práctica libre con corrección casilla por casilla</li><li>Práctica con fotos 360 del cielo</li><li>Modo prueba con reloj</li></ul><span>Entrar al banco →</span></a>
-  <a class="card" style="--c:var(--obs)" href="simulador.html"><div class="tag">Práctica libre</div><h3>Simulador por casillas</h3><p>La máscara completa de ingreso. Con «Casillas…» elige qué elementos practicar. Lo que registre queda solo en este computador.</p><span>Abrir el simulador →</span></a>
+ <div class="st" style="margin-top:38px"><h2>Observación completa</h2><span>Todo integrado en la máscara de ingreso, con sus reglas de control</span></div>
+ <div class="g2">
+  <a class="big" href="banco_casos.html"><div class="k">Banco de casos</div><h3>215 observaciones de estaciones de todo Chile</h3><p>Más 10 revisiones con errores, en niveles fácil, medio y difícil.</p>
+   <ul><li>Práctica libre con corrección casilla por casilla</li><li>Práctica con fotos 360 del cielo</li><li>Modo prueba con reloj</li></ul><span class="btn">Entrar al banco</span></a>
+  <a class="c sim" href="simulador.html"><div class="ic" style="background:#41464D">▦</div><h3>Simulador por casillas</h3><p>La máscara completa de ingreso. Con «Casillas…» elige qué elementos practicar. Lo que registre queda solo en este computador.</p><div class="ft"><b>Abrir el simulador →</b><i>Práctica libre</i></div></a>
  </div>
 </main>
-<footer><div class="w"><span>Material del curso · © 2026 O. Álvarez B. · Simulador educativo no oficial: no reemplaza al software oficial.</span><a href="resultados.html">Panel docente</a></div></footer>
+<footer><div class="w"><div class="l"><img src="img/isotipo.svg" alt=""><span>© 2026 O. Álvarez B. · Simulador educativo no oficial: no reemplaza al software oficial.</span></div><a href="resultados.html">Panel docente</a></div></footer>
 </body>
 </html>
