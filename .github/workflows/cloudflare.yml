@@ -1,0 +1,27 @@
+# Publica el sitio en Cloudflare Pages (proyecto "metotec") con cada cambio en main.
+# Requiere 3 secretos del repositorio: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID y CLAVE_DOCENTE.
+name: Publicar en Cloudflare Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Crear el proyecto (solo la primera vez)
+        run: npx -y wrangler@3 pages project create metotec --production-branch=main || true
+      - name: Publicar
+        run: npx -y wrangler@3 pages deploy . --project-name=metotec --branch=main --commit-dirty=true
+      - name: Clave docente
+        if: ${{ env.CLAVE != '' }}
+        env:
+          CLAVE: ${{ secrets.CLAVE_DOCENTE }}
+        run: echo "$CLAVE" | npx -y wrangler@3 pages secret put CLAVE_DOCENTE --project-name=metotec
