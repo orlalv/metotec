@@ -2465,7 +2465,7 @@ function pantalla(v){
 /* ---------- abrir un caso ---------- */
 function abrir(m, i, modo){
   ST = {practica: true, test: modo === "test" ? TEST : null, nom: "Estudio libre", version: "—", items: modo === "test" ? TEST.items : [{mod: m, idx: i}], i: modo === "test" ? TEST.i : 0, res: [], sal: [], t0item: 0, nval: 0};
-  $("#intro").innerHTML = ""; cargar();
+  document.body.classList.remove("portal"); $("#intro").innerHTML = ""; cargar();
   const enTest = !!ST.test;
   $("#btnEntregar").textContent = enTest ? (LIBRE(ST.items[ST.i].mod) ? "Guardar y seguir" : "Entregar así") : (LIBRE(m) ? "Guardar y corregir" : "Ver corrección");
   $("#btnEntregar").onclick = enTest ? () => dialog("Entregar", "<p>Se entrega con lo que tiene ingresado y pasa al siguiente ejercicio.</p>", [["Entregar", () => { closeDlg(); practicaResultado("entregado"); }], ["Seguir", closeDlg]])
@@ -2526,6 +2526,7 @@ function resumen(){
 
 /* ---------- vistas ---------- */
 function render(){
+  document.body.classList.add("portal");
   const tabs = [["libre", "Práctica libre"], ["c360", "Práctica fotos 360"], ["sim", "Simuladores"], ["prueba", "Modo prueba"]];
   let h = `<div class="bk"><div class="bkh"><a href="index.html" style="display:inline-block;margin-bottom:10px"><img src="img/logo_blanco.svg" alt="METOTEC" style="height:34px;display:block"></a>${TEMA ? `<h1>${SECC.find(x => x[0] === TEMA)[1]}</h1><p>${BANCO[TEMA].length} casos en niveles fácil, medio y difícil, con corrección casilla por casilla. <a href="index.html" style="color:#9cc3ff">← Volver al inicio</a></p><div style="height:14px"></div>` : `<h1>Banco de casos</h1>
     <p>${Object.values(BANCO).reduce((a, L) => a + L.length, 0)} casos para practicar en la máscara de ingreso, con corrección casilla por casilla.</p>
@@ -2650,6 +2651,7 @@ function finTest(){
 }
 
 document.title = "Banco de casos";
+document.head.insertAdjacentHTML("beforeend", "<style>body.portal .titlebar,body.portal #hdr{display:none!important}</style>");
 $("#fhCell").lastElementChild.textContent = "Estudio libre";
 { const hs = location.hash.slice(1); if (SECC.some(x => x[0] === hs)){ VISTA.sec = hs; TEMA = hs; } }
 pantalla("libre");
