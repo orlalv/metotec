@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Simulador SACLIM · práctica por casillas</title>
+<title>Simulador de observación · práctica por casillas</title>
 <style>
 :root{
   --title1:#6f9fd8; --title2:#2f64b0; --frame:#8fb3de;
@@ -217,7 +217,7 @@ const T_A = [
  "Estacionaria o subiendo y después bajando; o bajando y después bajando más rápido. La presión es más baja que tres horas antes."
 ].map((d, i) => [String(i), d]);
 // Estado del suelo con nieve o hielo medible (tabla OMM 0975)
-// Estado del mar (clave), según la lista de SACLIM
+// Estado del mar (clave), según la lista del sistema
 const T_MAR = ["Llana","Rizada","Marejadilla","Marejada","Gruesa","Muy gruesa","Arbolada","Arbolada montañosa","Confusa","Huracanada"];
 const T_ES = [
  "Suelo cubierto predominantemente por  hielo.",
@@ -441,7 +441,7 @@ function openForm(){
   const hora = +$("#inHora").value;
   // estación solo sinóptica: únicamente horas sinópticas (00, 03, 06 ... 21 UTC)
   if ((e.tipo || "SA") === "S" && hora % 3 !== 0){
-    dialog("Saclim", `<div style="display:flex;align-items:center;gap:14px;padding:6px 0"><svg width="32" height="32" viewBox="0 0 32 32" style="flex:none"><circle cx="16" cy="16" r="15" fill="#e2552b"/><path d="M11 11l10 10M21 11 11 21" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>No hay elementos para el momento.</span></div>`, [["Aceptar", closeDlg]]);
+    dialog("Observación", `<div style="display:flex;align-items:center;gap:14px;padding:6px 0"><svg width="32" height="32" viewBox="0 0 32 32" style="flex:none"><circle cx="16" cy="16" r="15" fill="#e2552b"/><path d="M11 11l10 10M21 11 11 21" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg><span>No hay elementos para el momento.</span></div>`, [["Aceptar", closeDlg]]);
     return;
   }
   OBS = {est:e, fecha:new Date(Date.UTC(y, m-1, d, hora)), hora, apertura:new Date()};
@@ -657,7 +657,7 @@ function validate(){
 
   // temperatura y humedad
   if (ok("T") && (n("T") < -40 || n("T") > 50)) E("T", "Temperatura fuera de rango.");
-  // ALERTAS: valor posible pero fuera de lo habitual (rangos ilustrativos, no los de SACLIM)
+  // ALERTAS: valor posible pero fuera de lo habitual (rangos ilustrativos, no los del sistema)
   const ANT = !!(OBS.est && OBS.est.ant);
   const AL = (k, a, b, u, nom, lo, hi) => { if (ok(k) && n(k) >= lo && n(k) <= hi && (n(k) < a || n(k) > b)) W(k, `${nom} fuera del rango habitual (${a} a ${b} ${u}). Verifique: si el dato es real, se puede registrar.`); };
   AL("T", ANT ? -30 : -5, ANT ? 12 : 35, "°C", "Temperatura", -40, 50);
@@ -701,7 +701,7 @@ function validate(){
     cnt++; const ns = +val("Ns"+i); maxNs = Math.max(maxNs, ns);
     if (ok("hs"+i)){ if (n("hs"+i) < prevH) E("hs"+i, "Las capas deben ir de menor a mayor altura."); prevH = n("hs"+i); }
   }
-  // SACLIM: se ingresan todas las nubes; la suma de octas de las capas debe ser >= N (reglas 2072-2092)
+  // el sistema: se ingresan todas las nubes; la suma de octas de las capas debe ser >= N (reglas 2072-2092)
   if (has("N") && +val("N") >= 1 && +val("N") <= 8){ let sum = 0; for (let i = 1; i <= 6; i++) if (has("Ns"+i)) sum += +val("Ns"+i); if (sum < +val("N")) N("Ns1", `La suma de las octas de las capas (${sum}) debe ser mayor o igual que N (${val("N")}): falta ingresar alguna nube (regla 2072).`); }
   if (has("N") && val("N") !== "/" && val("N") !== "9"){
     if (+val("N") < maxNs) E("N", "La nubosidad total no puede ser menor que la de una capa.");
@@ -880,14 +880,14 @@ function dataRows(){
   });
   return out;
 }
-function fileBase(){ const d = OBS.fecha; return `Practica_SACLIM_${OBS.est.oaci || OBS.est.nacional}_${fmtD(d)}_${pad(OBS.hora)}UTC_${OBS.alumno.replace(/[^\wÁÉÍÓÚáéíóúÑñ]+/g, "_")}`; }
+function fileBase(){ const d = OBS.fecha; return `Practica_${OBS.est.oaci || OBS.est.nacional}_${fmtD(d)}_${pad(OBS.hora)}UTC_${OBS.alumno.replace(/[^\wÁÉÍÓÚáéíóúÑñ]+/g, "_")}`; }
 function makePDF(){
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({unit:"mm", format:"a4"});
   const W = doc.internal.pageSize.getWidth();
   doc.setFillColor(47, 100, 176); doc.rect(0, 0, W, 16, "F");
   doc.setTextColor(255); doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-  doc.text("Simulador SACLIM – Registro de práctica", 12, 10.5);
+  doc.text("Simulador de observación – Registro de práctica", 12, 10.5);
   doc.setTextColor(20); doc.setFontSize(10);
   const e = OBS.est;
   const info = [
@@ -927,7 +927,7 @@ function makePDF(){
 }
 function mail(){
   const to = $("#alMail").value.trim();
-  const subj = `Práctica SACLIM – ${OBS.alumno} – ${OBS.est.oaci} ${fmtD(OBS.fecha)} ${pad(OBS.hora)} UTC`;
+  const subj = `Práctica de observación – ${OBS.alumno} – ${OBS.est.oaci} ${fmtD(OBS.fecha)} ${pad(OBS.hora)} UTC`;
   const body = `Estimado instructor:\n\nAdjunto el PDF de mi práctica de ingreso de observación.\n\nAlumno: ${OBS.alumno}\nEstación: ${OBS.est.nombre} (${OBS.est.oaci})\nFecha-Hora (UTC): ${fmtD(OBS.fecha)} ${pad(OBS.hora)}:00\n\n${conMetar() ? metar() + "\n\n" : ""}(Recuerde adjuntar el archivo ${fileBase()}.pdf)`;
   location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
 }
@@ -1670,13 +1670,13 @@ $q("#qaPdf").onclick = () => {
 #legalDlg .ft{padding:8px 16px 12px;text-align:right}
 #legalDlg button{font:inherit;min-width:100px;height:26px;border:1px solid #7a9cc8;border-radius:4px;background:linear-gradient(#fbfdff,#d4e4f7);cursor:pointer}
 </style>
-<div id="legalFoot">Simulador educativo no oficial · No reemplaza al software SACLIM ni es manual de consulta · © 2026 O. Álvarez B · Prohibida su comercialización · <a id="legalOpen" role="button" tabindex="0">Acerca de</a></div>
+<div id="legalFoot">Simulador educativo no oficial · No reemplaza al software oficial ni es manual de consulta · © 2026 O. Álvarez B · Prohibida su comercialización · <a id="legalOpen" role="button" tabindex="0">Acerca de</a></div>
 <div id="legalDlg" role="dialog" aria-modal="true" aria-labelledby="legalTit">
   <div class="box">
     <div class="hd" id="legalTit">Acerca de</div>
     <div class="bd">
-      <p><b>Simulador SACLIM · Versión educativa 1.0 (octubre 2026)</b><br>Desarrollado por <b>O. Álvarez B</b>.</p>
-      <p>Herramienta de práctica para el ingreso de observaciones meteorológicas con fines exclusivamente educativos. Es un simulador independiente y no oficial: no es ni reemplaza al software SACLIM original de la Dirección Meteorológica de Chile, y no está afiliado ni avalado por ella.</p>
+      <p><b>Simulador de observación · Versión educativa 1.0 (octubre 2026)</b><br>Desarrollado por <b>O. Álvarez B</b>.</p>
+      <p>Herramienta de práctica para el ingreso de observaciones meteorológicas con fines exclusivamente educativos. Es un simulador independiente y no oficial: no es ni reemplaza al software original de la Dirección Meteorológica de Chile, y no está afiliado ni avalado por ella.</p>
       <p>Este simulador no es un manual de consulta. Siempre priman las normas, reglas de control y validaciones del software original, así como la normativa y los manuales oficiales vigentes.</p>
       <p>© 2026 O. Álvarez B. Todos los derechos reservados. Se permite su uso gratuito con fines educativos. Se prohíbe su cobro, venta o comercialización, así como su modificación o redistribución sin autorización del autor.</p>
       <p style="color:#51637a">Desarrollado con asistencia de inteligencia artificial.</p>
@@ -1768,7 +1768,7 @@ $("#btnCas").onclick = casDlg; $("#btnCas2").onclick = casDlg; casTag();
 <script>
 
 /* ---- listas desplegables propias: con la lista nativa abierta, Ctrl+S/D/E los toma el navegador («Guardar como»).
-        Esta lista deja el foco en la casilla, así los atajos de SACLIM siguen funcionando. ---- */
+        Esta lista deja el foco en la casilla, así los atajos del sistema siguen funcionando. ---- */
 (function(){
   const css = document.createElement("style");
   css.textContent = `#cbx{position:fixed;z-index:7000;background:#fff;border:1px solid #6d86a8;box-shadow:2px 3px 6px rgba(0,0,0,.25);max-height:320px;overflow:auto;font:13px "Segoe UI",Tahoma,Arial,sans-serif;display:none}

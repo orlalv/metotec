@@ -96,7 +96,7 @@ svg text{font-family:var(--f-sans);fill:var(--muted)}
   <div>
     <div class="eyebrow">MRO II · TECMET 2025 · Práctica dirigida</div>
     <h1>Viento y visibilidad: 10 casos difíciles</h1>
-    <p>Lee los datos, completa las casillas SACLIM y el grupo METAR, revisa y estudia la solución con su norma.</p>
+    <p>Lee los datos, completa las casillas y el grupo METAR, revisa y estudia la solución con su norma.</p>
   </div>
   <div class="tabs" role="tablist">
     <button role="tab" id="tab-v" aria-selected="true">Viento</button>
@@ -127,8 +127,8 @@ const WIND=[
  m:[[220,14,18],[240,15,20],[230,13,19],[210,14,22],[250,15,24],[230,14,21],[200,13,19],[240,15,23],[230,14,20],[230,13,18]],
  panel:[['Media 10 min','228° 14 kt'],['Dir. extremas','200° / 250°'],['Máx. 10 min','24 kt']],
  a:{dir:'228',ff:'14',vrb:'No',dn:'',dx:'',g:'',metar:'23014G24KT'},
- p:['Dirección media 228°: en SACLIM se ingresa tal cual, <b>228</b> (solo el METAR la redondea a 230). Rapidez <b>14 kt</b>.','Variación 200°–250° = <b>50°</b>: menos de 60° → <b>no se informa</b>, aunque el panel la muestre.','Racha: 24 − 14 = <b>10 kt</b>. En SACLIM la racha se ingresa solo si supera la media en <b>más</b> de 10 kt → <b>Sin Dato</b>. El METAR sí la informa con 10 kt o más: <b>G24</b>.'],
- y:'Si la ráfaga máxima fuera 25 kt (11 kt sobre la media) → en SACLIM se ingresa la racha <b>25</b>, y el METAR queda <b>23014G25KT</b>.'},
+ p:['Dirección media 228°: en el sistema se ingresa tal cual, <b>228</b> (solo el METAR la redondea a 230). Rapidez <b>14 kt</b>.','Variación 200°–250° = <b>50°</b>: menos de 60° → <b>no se informa</b>, aunque el panel la muestre.','Racha: 24 − 14 = <b>10 kt</b>. En el sistema la racha se ingresa solo si supera la media en <b>más</b> de 10 kt → <b>Sin Dato</b>. El METAR sí la informa con 10 kt o más: <b>G24</b>.'],
+ y:'Si la ráfaga máxima fuera 25 kt (11 kt sobre la media) → en el sistema se ingresa la racha <b>25</b>, y el METAR queda <b>23014G25KT</b>.'},
 {t:'Débil, pero no tanto',ctx:'Estación aeronáutica, 06:00 UTC. Datos del panel, promedio de 10 minutos.',
  m:[[150,3,6],[120,2,5],[170,4,8],[200,3,7],[160,3,12],[140,2,5],[180,4,9],[190,3,7],[150,3,6],[140,3,6]],
  panel:[['Media 10 min','160° 3 kt'],['Dir. extremas','120° / 200°'],['Máx. 10 min','12 kt']],
@@ -139,13 +139,13 @@ const WIND=[
  m:[[80,92,104],[90,95,108],[100,96,110],[120,98,112],[90,94,106],[60,90,101],[80,93,104],[90,95,107],[100,96,109],[70,91,103]],
  panel:[['Media 10 min','088° 94 kt'],['Dir. extremas','060° / 120°'],['Máx. 10 min','112 kt']],
  a:{dir:'88',ff:'94',vrb:'No',dn:'60',dx:'120',g:'112',metar:'09094GP99KT 060V120'},
- p:['Dirección 088°: en SACLIM se ingresa tal cual, <b>088</b> (solo el METAR la redondea a 090).','Variación 060°–120° = 60° justos: el umbral está incluido → se informa <b>060V120</b>.','Racha: 112 − 94 = 18 kt → se informa. Con 100 kt o más, el METAR escribe <b>P99</b>: GP99.','En SACLIM se ingresan los valores reales (94 y 112). La P99 es solo un formato del METAR.'],
+ p:['Dirección 088°: en el sistema se ingresa tal cual, <b>088</b> (solo el METAR la redondea a 090).','Variación 060°–120° = 60° justos: el umbral está incluido → se informa <b>060V120</b>.','Racha: 112 − 94 = 18 kt → se informa. Con 100 kt o más, el METAR escribe <b>P99</b>: GP99.','En el sistema se ingresan los valores reales (94 y 112). La P99 es solo un formato del METAR.'],
  y:'Si las extremas fueran 070°–120° (50°), no se informa la variación: <b>09094GP99KT</b>.'},
 {t:'Casi calma, pero con ráfagas',ctx:'Estación aeronáutica, 03:00 UTC. Datos del panel, promedio de 10 minutos.',
  m:[[100,2,5],[180,3,6],[250,2,4],[320,2,13],[140,3,6],[210,2,5],[300,3,7],[120,2,4],[200,3,6],[260,2,5]],
  panel:[['Media 10 min','205° 2,4 kt'],['Dir. extremas','100° / 320°'],['Máx. 10 min','13 kt']],
  a:{dir:'',ff:'2',vrb:'Sí',dn:'',dx:'',g:'13',metar:'VRB02G13KT'},
- p:['Rapidez media 2,4 kt → en nudos enteros: <b>2</b>.','Menos de 3 kt con dirección variable → <b>VRB02</b>, sin grupo de variación. El criterio de 180° o más es para vientos de 3 kt o más: aquí manda la rapidez.','Racha: 13 − 2 = 11 kt, 10 o más → <b>se informa</b>, aunque el viento sea débil: <b>VRB02G13KT</b>.','En SACLIM: dirección sin dato, VRB = Sí, rapidez 2, racha 13.'],
+ p:['Rapidez media 2,4 kt → en nudos enteros: <b>2</b>.','Menos de 3 kt con dirección variable → <b>VRB02</b>, sin grupo de variación. El criterio de 180° o más es para vientos de 3 kt o más: aquí manda la rapidez.','Racha: 13 − 2 = 11 kt, 10 o más → <b>se informa</b>, aunque el viento sea débil: <b>VRB02G13KT</b>.','En el sistema: dirección sin dato, VRB = Sí, rapidez 2, racha 13.'],
  y:'Si la ráfaga máxima fuera 11 kt (9 kt sobre la media) → <b>VRB02KT</b>.'}
 ];
 const WF=[['dir','Dirección (°)'],['ff','Rapidez (kt)'],['vrb','Variable (VRB)','sel',['','No','Sí']],['g','Racha (kt)'],['dn','dndndn (°)'],['dx','dxdxdx (°)'],['metar','Grupo de viento METAR','wide']];
@@ -229,13 +229,13 @@ function check(e,F,silent){let ok=0;F.forEach(([id,lab])=>{const w=document.getE
  document.getElementById('score').textContent=`${ok} de ${F.length} casillas correctas`;}
 function showSol(e){const s=document.getElementById('sol');s.hidden=false;const F=mode==='v'?WF:VF;
  const rows=F.filter(f=>f[0]!=='metar').map(([id,lab])=>{const v=[].concat(e.a[id])[0];return `<tr><td class="lead">${lab}</td><td class="lead" style="font-family:var(--f-mono);font-weight:600">${v===''?'sin dato':v}</td></tr>`;}).join('');
- s.innerHTML=`<h3>Solución · ${e.t}</h3><div class="scroll"><table class="lm"><tr><th class="lead">Casilla SACLIM</th><th class="lead">Valor</th></tr>${rows}</table></div><div class="metar">METAR: ${e.a.metar}</div><ol>${e.p.map(x=>`<li>${x}</li>`).join('')}</ol><div class="ysi"><b>¿Y si…?</b> ${e.y}</div>`;}
+ s.innerHTML=`<h3>Solución · ${e.t}</h3><div class="scroll"><table class="lm"><tr><th class="lead">Casilla</th><th class="lead">Valor</th></tr>${rows}</table></div><div class="metar">METAR: ${e.a.metar}</div><ol>${e.p.map(x=>`<li>${x}</li>`).join('')}</ol><div class="ysi"><b>¿Y si…?</b> ${e.y}</div>`;}
 
 /* ---------- viento: tabla + gráfico ---------- */
 function windTiles(e){const [d,ff]=e.panel[0][1].split('° ');const [dn,dx]=e.panel[1][1].split(' / ');
  const T=[['Dirección media',d+'°'],['Rapidez media',ff],['Variación de dirección','de '+dn+' a '+dx],['Racha máxima',e.panel[2][1]]];
  return `<div class="tiles">${T.map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>`;}
-function windData(e){return `<h3>Datos del viento · promedio de 10 minutos</h3>${windTiles(e)}<p class="hint">Con estos cuatro datos completa las casillas de viento de SACLIM y el grupo METAR.</p>`;}
+function windData(e){return `<h3>Datos del viento · promedio de 10 minutos</h3>${windTiles(e)}<p class="hint">Con estos cuatro datos completa las casillas de viento y el grupo METAR.</p>`;}
 function windSVG(m){const W=640,x0=52,x1=620,dx=(x1-x0)/9;const X=i=>x0+i*dx;
  const dy0=20,dy1=150,Y=d=>dy0+(1-d/360)*(dy1-dy0);
  const mx=Math.max(...m.map(r=>r[2]));const top=Math.ceil((mx+5)/10)*10;const sy0=180,sy1=300,S=v=>sy1-(v/top)*(sy1-sy0);
@@ -293,7 +293,7 @@ function visData(e){const srt=[...e.v].sort((a,b)=>b-a);
  <label class="toggle"><input type="checkbox" id="hlp" ${help?'checked':''}> Ayuda: dibujar la visibilidad de cada sector en el mapa y ordenarla</label>
  <div id="srt" class="hint" ${help?'':'hidden'}>De mayor a menor: ${srt.map((v,i)=>i===3?`<b>${v}</b>`:v).join(' · ')}. El 4º valor cubre la mitad del horizonte: es la reinante.</div>
  <h3>Pasos para resolver</h3>
- <ol class="steps"><li><b>Visibilidad de cada sector</b> (tabla de arriba).</li><li><b>Reinante:</b> ordena los 8 valores de mayor a menor; el 4º es la reinante (se alcanza en al menos la mitad del horizonte).</li><li><b>Mínima:</b> se informa solo si es menor que 1500 m, o si es menor que la mitad de la reinante <i>y</i> menor que 5000 m. Con su dirección.</li><li><b>Fenómeno:</b> FG (bajo 1000 m), BR (1000 a 5000 m), MI baja, BC en bancos, PR parcial, VC a 8–16 km.</li><li><b>Ingreso en SACLIM:</b> VVs = la menor visibilidad de todos los sectores; VVr = la reinante; VVmin y VVdir solo si la mínima se informa; ww = el número más alto aplicable de la tabla 4677; tiempo presente METAR por partes (intensidad o proximidad, descriptor y fenómeno).</li></ol>`;}
+ <ol class="steps"><li><b>Visibilidad de cada sector</b> (tabla de arriba).</li><li><b>Reinante:</b> ordena los 8 valores de mayor a menor; el 4º es la reinante (se alcanza en al menos la mitad del horizonte).</li><li><b>Mínima:</b> se informa solo si es menor que 1500 m, o si es menor que la mitad de la reinante <i>y</i> menor que 5000 m. Con su dirección.</li><li><b>Fenómeno:</b> FG (bajo 1000 m), BR (1000 a 5000 m), MI baja, BC en bancos, PR parcial, VC a 8–16 km.</li><li><b>Ingreso:</b> VVs = la menor visibilidad de todos los sectores; VVr = la reinante; VVmin y VVdir solo si la mínima se informa; ww = el número más alto aplicable de la tabla 4677; tiempo presente METAR por partes (intensidad o proximidad, descriptor y fenómeno).</li></ol>`;}
 
 render();
 </script>

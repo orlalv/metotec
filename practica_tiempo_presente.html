@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Visibilidad y tiempo presente SYNOP y METAR – Práctica SACLIM</title>
+<title>Visibilidad y tiempo presente SYNOP y METAR – Práctica de observación</title>
 <style>
 :root{
   --title1:#6f9fd8; --title2:#2f64b0; --frame:#8fb3de; --hdr:#e9eef3; --lbl:#f6f7fb; --line:#c9d2de;
@@ -138,7 +138,7 @@ table.t th{white-space:nowrap}
 </head>
 <body>
 <div class="win">
-  <div class="titlebar">Visibilidad, Tiempo Presente y Pasado · SYNOP, METAR y mixto – Práctica SACLIM</div>
+  <div class="titlebar">Visibilidad, Tiempo Presente y Pasado · SYNOP, METAR y mixto – Práctica de observación</div>
   <div class="tabs" role="tablist">
     <button class="tab" role="tab" aria-selected="true" data-p="pGuia">1 · Guía</button>
     <button class="tab" role="tab" aria-selected="false" data-p="pTabla">2 · Tablas ww y W</button>
@@ -148,7 +148,7 @@ table.t th{white-space:nowrap}
   <!-- ===================== GUÍA ===================== -->
   <section class="pane" id="pGuia">
    <div class="doc">
-    <h2>Cómo se ingresan en SACLIM</h2>
+    <h2>Cómo se ingresan</h2>
     <p class="sub">Estaciones sinópticas, aeronáuticas y antárticas. Casillas: Visibilidad Horizontal Sinóptica (VV), Visibilidad METAR, Visibilidad Vertical, Tiempo Presente (ww y METAR), Tiempo Reciente y Tiempo Pasado (W1, W2).</p>
 
     <h3>1 · Visibilidad horizontal sinóptica (VV)</h3>
@@ -166,7 +166,7 @@ table.t th{white-space:nowrap}
     <p class="hint">En el METAR se usa la visibilidad reinante y la mínima aparte. En el SYNOP va una sola: la menor.</p>
 
     <h3>2 · Visibilidad vertical (cielo invisible)</h3>
-    <div class="errb">Solo se ingresa si es <b>menor a 60 m</b>. Va siempre con <b>N = 9</b>, dirección de las nubes <b>Dl, Dm, Dh = 9</b> y <b>todas las casillas de nubes Sin Dato</b>. Si falta algo, SACLIM marca error no bloqueante.</div>
+    <div class="errb">Solo se ingresa si es <b>menor a 60 m</b>. Va siempre con <b>N = 9</b>, dirección de las nubes <b>Dl, Dm, Dh = 9</b> y <b>todas las casillas de nubes Sin Dato</b>. Si falta algo, el sistema marca error no bloqueante.</div>
 
     <h3>3 · Tiempo presente (ww): el árbol de decisión</h3>
     <div class="tree">
@@ -236,7 +236,7 @@ table.t th{white-space:nowrap}
       <tr><td>VCSH (8–16 km)</td><td>ww 15</td></tr>
       <tr><td>Mínima informada</td><td>VV sinóptica = mínima (la menor)</td></tr></table>
     <p class="hint">En la práctica, el modo <b>Mixto</b> revisa estas coherencias como alertas.</p>
-    <div class="warn">Las combinaciones VV ↔ ww siguen la tabla OMM y su tipo de mensaje en este módulo es <b>ilustrativo</b>: la clasificación real la define SACLIM. Recuerde: que SACLIM acepte la observación no significa que esté correcta.</div>
+    <div class="warn">Las combinaciones VV ↔ ww siguen la tabla OMM y su tipo de mensaje en este módulo es <b>ilustrativo</b>: la clasificación real la define el sistema. Recuerde: que el sistema acepte la observación no significa que esté correcta.</div>
    </div>
   </section>
 
@@ -428,14 +428,14 @@ function render(){
     <div class="right">
       <div class="frm"><table>${syn ? filasSyn0 + filasSyn : ""}${met ? filasMet : ""}${syn ? filasSyn2 : ""}${met ? filasMet2 : ""}</table>
       <div class="acts"><button class="btn pri" id="bVal">Validar y comprobar</button><button class="btn" id="bNext">${PR.i === PR.items.length - 1 ? "Ver resultado ▶" : "Siguiente caso ▶"}</button></div></div>
-      <p class="hint">Clic derecho en una casilla: Sin Dato (Ctrl+S), Abrir Dato, Componente(s) Sin Dato(s) (Ctrl+D) y Ver Errores (Ctrl+E). ${met ? "Tiempo presente METAR: cada línea es un grupo (intensidad o proximidad, descriptor y hasta 3 fenómenos). Las casillas que no use van Sin Dato (Ctrl+D deja Sin Dato las vacías de esa línea). " : ""}${syn ? "Con cielo invisible, en SACLIM además van Dl Dm Dh = 9 y las casillas de nubes Sin Dato (no se muestran aquí)." : ""}</p>
+      <p class="hint">Clic derecho en una casilla: Sin Dato (Ctrl+S), Abrir Dato, Componente(s) Sin Dato(s) (Ctrl+D) y Ver Errores (Ctrl+E). ${met ? "Tiempo presente METAR: cada línea es un grupo (intensidad o proximidad, descriptor y hasta 3 fenómenos). Las casillas que no use van Sin Dato (Ctrl+D deja Sin Dato las vacías de esa línea). " : ""}${syn ? "Con cielo invisible, en el sistema además van Dl Dm Dh = 9 y las casillas de nubes Sin Dato (no se muestran aquí)." : ""}</p>
       <div id="out"></div>
     </div></div>`;
   document.querySelectorAll("#pbody input, #pbody select").forEach(x => x.addEventListener("input", marks));
   $("#bVal").onclick = check;
   $("#bNext").onclick = () => { if (PR.res[PR.i] === undefined) PR.res[PR.i] = false; PR.i++; render(); };
 }
-/* clic derecho: Sin Dato / Abrir casilla (como en SACLIM) */
+/* clic derecho: Sin Dato / Abrir casilla (como en el sistema) */
 function setSD(el, on){
   const foco = on && document.activeElement === el;
   el.dataset.sd = on ? "1" : "";
@@ -611,7 +611,7 @@ function check(){
   const v = read(), M = rules(v); LASTM = M; const syn = PR.modo !== "m", met = PR.modo !== "s";
   M.forEach(m => { const w = document.querySelector(`.w[data-k="${m.k}"]`) || document.querySelector(".w"); w.classList.add(m.l === "a" ? "haswarn" : "haserr"); w.title = (w.title ? w.title + "\n" : "") + m.m; });
   const list = M.length ? `<ul class="msgs">${M.map(m => `<li>${m.l === "a" ? WRN.replace('class="ic wa"', 'class="ic"') : ERR.replace('class="ic er"', 'class="ic"')}<span>${m.m} <span class="lv ${m.l}">${LVN[m.l]}</span></span></li>`).join("")}</ul>` : "";
-  if (M.some(m => m.l === "b")){ $("#out").innerHTML = list + `<p class="hint">Con errores bloqueantes SACLIM no deja registrar. Corrija y vuelva a validar, o pase al siguiente caso (cuenta como incorrecto).</p>`; return; }
+  if (M.some(m => m.l === "b")){ $("#out").innerHTML = list + `<p class="hint">Con errores bloqueantes el sistema no deja registrar. Corrija y vuelva a validar, o pase al siguiente caso (cuenta como incorrecto).</p>`; return; }
   const c = PR.items[PR.i], R = [];
   const add = (lab, mine, ok, right) => R.push({lab, mine: mine === "SD" ? "Sin Dato" : mine, ok, right});
   const rng = r => r[1] >= 99999 ? `${r[0]} o más` : `${r[0]} a ${r[1]}`;
@@ -652,7 +652,7 @@ function renderEnd(){
   $("#pbody").innerHTML = `<div class="end"><h3 style="color:#1f4f93;margin:0 0 8px">Resultado (${modoN}): ${tot} / ${S.length}</h3>
     ${PR.modo === "s" ? `<table><tr><th>Grupo</th><th>Correctos</th></tr><tr><td>Estaciones sinópticas</td><td>${by("S")}</td></tr><tr><td>Estaciones antárticas</td><td>${by("A")}</td></tr></table>` : ""}
     ${malos.length ? `<p><b>Repasar:</b> ${malos.join("; ")}.</p>` : `<p><b>¡Muy bien!</b></p>`}
-    <p class="hint">Que SACLIM acepte la observación no significa que esté correcta.</p>
+    <p class="hint">Que el sistema acepte la observación no significa que esté correcta.</p>
     <button class="btn pri" id="bAgain">Repetir práctica</button></div>`;
   $("#bAgain").onclick = start;
 }
@@ -673,13 +673,13 @@ renderCodes();
 #legalDlg .ft{padding:8px 16px 12px;text-align:right}
 #legalDlg button{font:inherit;min-width:100px;height:26px;border:1px solid #7a9cc8;border-radius:4px;background:linear-gradient(#fbfdff,#d4e4f7);cursor:pointer}
 </style>
-<div id="legalFoot">Simulador educativo no oficial · No reemplaza al software SACLIM ni es manual de consulta · © 2026 O. Álvarez B · Prohibida su comercialización · <a id="legalOpen" role="button" tabindex="0">Acerca de</a></div>
+<div id="legalFoot">Simulador educativo no oficial · No reemplaza al software oficial ni es manual de consulta · © 2026 O. Álvarez B · Prohibida su comercialización · <a id="legalOpen" role="button" tabindex="0">Acerca de</a></div>
 <div id="legalDlg" role="dialog" aria-modal="true" aria-labelledby="legalTit">
   <div class="box">
     <div class="hd" id="legalTit">Acerca de</div>
     <div class="bd">
-      <p><b>Simulador SACLIM · Versión educativa 1.0 (octubre 2026)</b><br>Desarrollado por <b>O. Álvarez B</b>.</p>
-      <p>Herramienta de práctica para el ingreso de observaciones meteorológicas con fines exclusivamente educativos. Es un simulador independiente y no oficial: no es ni reemplaza al software SACLIM original de la Dirección Meteorológica de Chile, y no está afiliado ni avalado por ella.</p>
+      <p><b>Simulador de observación · Versión educativa 1.0 (octubre 2026)</b><br>Desarrollado por <b>O. Álvarez B</b>.</p>
+      <p>Herramienta de práctica para el ingreso de observaciones meteorológicas con fines exclusivamente educativos. Es un simulador independiente y no oficial: no es ni reemplaza al software original de la Dirección Meteorológica de Chile, y no está afiliado ni avalado por ella.</p>
       <p>Este simulador no es un manual de consulta. Siempre priman las normas, reglas de control y validaciones del software original, así como la normativa y los manuales oficiales vigentes.</p>
       <p>© 2026 O. Álvarez B. Todos los derechos reservados. Se permite su uso gratuito con fines educativos. Se prohíbe su cobro, venta o comercialización, así como su modificación o redistribución sin autorización del autor.</p>
       <p style="color:#51637a">Desarrollado con asistencia de inteligencia artificial.</p>

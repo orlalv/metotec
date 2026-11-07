@@ -7,10 +7,10 @@
 | `index.html` | Portada del curso, ordenada por tema (diagnóstico, viento, visibilidad, tiempo presente, nubes, observación completa, observación diaria) |
 | `practica_viento_visibilidad.html` | Práctica de viento y visibilidad con casos al límite y vista desde arriba |
 | `visor_nubes_360.html` | Visor de cielos 360° para practicar nubes |
-| `banco_casos.html` | Banco de 46 casos de la prueba final en la máscara SACLIM, con corrección casilla por casilla |
+| `banco_casos.html` | Banco de 46 casos de la prueba final en la máscara de ingreso, con corrección casilla por casilla |
 | `diagnostico.html` | Test diagnóstico de 18 preguntas: nota, nivel, tiempo y explicación de cada respuesta |
 | `practica_tiempo_presente.html` | Práctica de visibilidad, ww, W1W2 y tiempo presente/reciente METAR (SYNOP, METAR o mixto) |
-| `simulador.html` | Simulador SACLIM de práctica con selector de casillas; lo registrado queda solo en el computador del alumno |
+| `simulador.html` | Simulador de observación de práctica con selector de casillas; lo registrado queda solo en el computador del alumno |
 | `observacion_diaria.html` | Observación diaria de Quinta Normal: cada registro va a la planilla común de Control de Calidad y al panel docente |
 | `prueba_12utc_santo_domingo.html` | Prueba de observación completa con imagen 360; el resultado se envía solo al registrar |
 | `resultados.html` | Panel docente con clave: tabla, filtros, promedio, aprobados, tiempo, lo que más cuesta y CSV |

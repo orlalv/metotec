@@ -3,132 +3,81 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Curso SACLIM · MRO II</title>
+<title>METOTEC · Curso de observación MRO II</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
 <style>
-:root{--nav:#121b2b;--fondo:#eef2f5;--tx:#1b2533;--mu:#5d6b7e;--ac:#e07b39;--bd:#d5dde7;--link:#1f4f93;
-  --viento:#2f6db5;--vis:#7a5bb5;--tiempo:#c2572b;--nubes:#2b8a8a;--obs:#121b2b}
+:root{--nav:#0d1a2e;--fondo:#eef2f5;--tx:#1b2533;--mu:#5d6b7e;--ac:#e07b39;--bd:#d5dde7;--link:#1f4f93;
+  --viento:#2f6db5;--vis:#7a5bb5;--tiempo:#c2572b;--nubes:#2b8a8a;--obs:#0d1a2e}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-html,body{margin:0;background:var(--fondo);color:var(--tx);font:16px/1.5 system-ui,"Segoe UI",Roboto,Arial,sans-serif}
-header{background:var(--nav);color:#fff;padding:28px 16px 22px}
-header .in{max-width:1040px;margin:0 auto}
-header .logo{display:inline-block;margin-bottom:14px}header .logo img{display:block;height:44px;width:auto}
-header .k{color:var(--ac);font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase}
-header h1{margin:6px 0 6px;font-size:30px;line-height:1.15}
-header p{margin:0;color:#c9d3e0;max-width:680px}
-nav.temas{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-nav.temas a{color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.06)}
-nav.temas a:hover{background:rgba(255,255,255,.16)}
-nav.temas i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
-main{max-width:1040px;margin:0 auto;padding:4px 16px 30px}
-section{scroll-margin-top:12px}
-h3{margin:26px 0 4px;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
-.intro{margin:0 0 12px;color:var(--mu);font-size:14px}
-.grid{display:grid;gap:14px}.g1{grid-template-columns:1fr}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}
-a.card{display:flex;flex-direction:column;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:18px;color:inherit;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.05);transition:transform .12s,box-shadow .12s;border-top:4px solid var(--c,var(--nav))}
-a.card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.09)}
-.tag{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--c,var(--mu));margin-bottom:6px}
-a.card h2{margin:0 0 6px;font-size:18px;line-height:1.25}
-a.card p{margin:0;color:var(--mu);font-size:14px;flex:1}
-a.card span{margin-top:12px;font-weight:700;color:var(--link);font-size:14px}
+body{margin:0;background:var(--fondo);color:var(--tx);font:16px/1.5 system-ui,"Segoe UI",Roboto,Arial,sans-serif}
+.w{max-width:1320px;margin:0 auto;padding:0 clamp(14px,3vw,40px)}
+header{background:linear-gradient(135deg,#0d1a2e 0%,#12305a 100%);color:#fff;padding:22px 0 26px}
+header .top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+header .logo img{display:block;height:42px;width:auto}
+header .k{color:var(--ac);font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+header h1{margin:22px 0 6px;font-size:clamp(24px,3.2vw,36px);line-height:1.15}
+header p{margin:0;color:#c9d3e0;max-width:760px}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+nav a{color:#fff;text-decoration:none;font-size:14px;font-weight:600;padding:7px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.07)}
+nav a:hover{background:rgba(255,255,255,.18)}
+nav i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
+main{padding:8px 0 30px}
+h2.sec{margin:28px 0 4px;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);scroll-margin-top:12px}
+.intro{margin:0 0 14px;color:var(--mu);font-size:14.5px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.grid.dos{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+a.card{display:flex;flex-direction:column;background:#fff;border:1px solid var(--bd);border-radius:14px;padding:20px;color:inherit;text-decoration:none;
+  box-shadow:0 2px 6px rgba(0,0,0,.05);transition:transform .12s,box-shadow .12s;border-top:5px solid var(--c);scroll-margin-top:12px}
+a.card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.1)}
+.tag{font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--c);margin-bottom:6px}
+a.card h3{margin:0 0 8px;font-size:19px;line-height:1.25}
+a.card p{margin:0;color:var(--mu);font-size:14.5px;flex:1}
+a.card ul{margin:10px 0 0;padding-left:18px;color:var(--mu);font-size:14px}
+a.card span{margin-top:14px;font-weight:700;color:var(--link);font-size:14.5px}
 .nuevo{display:inline-block;background:var(--ac);color:#fff;font-size:10.5px;font-weight:800;letter-spacing:.08em;padding:1px 7px;border-radius:999px;margin-left:6px;vertical-align:3px}
-.tema{background:#fff;border:1px solid var(--bd);border-radius:14px;padding:18px;border-left:6px solid var(--c)}
-.tema h4{margin:0 0 4px;font-size:19px;color:var(--c)}
-.tema .desc{margin:0 0 12px;color:var(--mu);font-size:14px}
-.tema .cols{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start}
-.tema a.card{box-shadow:none;border-top-width:1px;background:#f8fafc}
-.mat{display:flex;flex-direction:column;gap:8px}
-.mat .t{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
-.mat a{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--bd);border-radius:10px;padding:9px 12px;color:var(--tx);text-decoration:none;font-weight:600;font-size:14px}
-.mat a:hover{border-color:var(--c)}
-.mat a b{font-size:10.5px;color:#fff;background:#8a96a6;border-radius:4px;padding:1px 5px;letter-spacing:.05em}
-.temas-grid{display:grid;gap:14px}
-footer{max-width:1040px;margin:0 auto;padding:0 16px 24px;color:var(--mu);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+a.card.dest{background:linear-gradient(180deg,#fff 0%,#f4f7fb 100%)}
+footer{color:var(--mu);font-size:13px;padding:18px 0 24px}
+footer .w{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
 footer a{color:var(--mu)}
-@media (max-width:820px){.g2,.g3,.tema .cols{grid-template-columns:1fr}header h1{font-size:24px}}
+@media (max-width:600px){
+  header{padding:16px 0 20px}header .logo img{height:34px}header h1{margin-top:16px}
+  nav{flex-wrap:nowrap;overflow-x:auto;margin-right:-14px;padding-bottom:4px;scrollbar-width:none}nav a{white-space:nowrap}
+  .grid,.grid.dos{grid-template-columns:1fr;gap:12px}a.card{padding:16px}a.card h3{font-size:18px}
+}
 </style>
-<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
 </head>
 <body>
-<header><div class="in">
- <a href="/" class="logo"><img src="img/logo_blanco.svg" alt="METOTEC" height="44"></a>
- <div class="k">MRO II · Métodos de Reportes y Observaciones</div>
- <h1>Curso de observación e ingreso en SACLIM</h1>
- <p>Material, prácticas y casos del curso, ordenados por tema. Estudie y practique cada elemento y termine integrando todo en la observación completa.</p>
- <nav class="temas">
+<header><div class="w">
+ <div class="top"><a href="/" class="logo"><img src="img/logo_blanco.svg" alt="METOTEC"></a><div class="k">MRO II · Métodos de Reportes y Observaciones</div></div>
+ <h1>Curso de observación meteorológica</h1>
+ <p>Prácticas y casos del curso, ordenados por tema. Practique cada elemento y termine integrando todo en la observación completa.</p>
+ <nav>
   <a href="#viento"><i style="background:#6fa3e6"></i>Viento</a>
-  <a href="#visibilidad"><i style="background:#b39be0"></i>Visibilidad y oscurecimiento</a>
+  <a href="#visibilidad"><i style="background:#b39be0"></i>Visibilidad</a>
   <a href="#tiempo"><i style="background:#f0a07a"></i>Tiempo presente</a>
   <a href="#nubes"><i style="background:#7fd0cf"></i>Nubes</a>
   <a href="#completa">Observación completa</a>
  </nav>
 </div></header>
-<main>
-
- <h3>1 · Estudiar y practicar por tema</h3>
- <p class="intro">Cada tema tiene su práctica y su material. Haga la práctica después de leer el material.</p>
- <div class="temas-grid">
-
-  <section id="viento" class="tema" style="--c:var(--viento)">
-   <h4>Viento</h4>
-   <p class="desc">Viento medio de 10 minutos, variación, VRB, calma y racha, tal como se ingresan en SACLIM.</p>
-   <div class="cols">
-    <a class="card" style="--c:var(--viento)" href="practica_viento_visibilidad.html"><div class="tag">Práctica</div><h2>Viento y visibilidad: ejercicios difíciles <i class="nuevo">NUEVO</i></h2><p>Casos al límite de cada umbral: variación de 60° o de 180°, VRB con menos de 3 kt, rachas de 10 kt justos y vista desde arriba para la visibilidad. Cada ejercicio se corrige con su explicación.</p><span>Practicar →</span></a>
-    <div class="mat"><div class="t">Material</div>
-     <a href="material/Clase1_Viento_SACLIM.pdf"><b>PDF</b>Clase de viento</a>
-     <a href="material/Tips_ingreso_SACLIM_viento.pdf"><b>PDF</b>Tips de ingreso: viento</a>
-    </div>
-   </div>
-  </section>
-
-  <section id="visibilidad" class="tema" style="--c:var(--vis)">
-   <h4>Visibilidad y fenómenos de oscurecimiento</h4>
-   <p class="desc">Visibilidad sinóptica, reinante y mínima; neblina, niebla, calima, humo y sus variantes.</p>
-   <div class="cols">
-    <a class="card" style="--c:var(--vis)" href="practica_viento_visibilidad.html"><div class="tag">Práctica</div><h2>Viento y visibilidad: ejercicios difíciles <i class="nuevo">NUEVO</i></h2><p>La segunda parte de la práctica es de visibilidad: bancos de niebla, niebla en la vecindad, niebla baja y mínimas que casi entran, vistos desde arriba.</p><span>Practicar →</span></a>
-    <div class="mat"><div class="t">Material</div>
-     <a href="material/Clase_Visibilidad_y_oscurecimiento.pdf"><b>PDF</b>Clase de visibilidad y oscurecimiento</a>
-     <a href="material/Guia_resumen_visibilidad_oscurecimiento.pdf"><b>PDF</b>Guía resumen</a>
-     <a href="material/Tips_ingreso_SACLIM_visibilidad.pdf"><b>PDF</b>Tips de ingreso: visibilidad</a>
-    </div>
-   </div>
-  </section>
-
-  <section id="tiempo" class="tema" style="--c:var(--tiempo)">
-   <h4>Tiempo presente y pasado · METAR y SYNOP</h4>
-   <p class="desc">ww, W1W2, tiempo presente y reciente METAR, con sus prioridades y períodos.</p>
-   <div class="cols">
-    <a class="card" style="--c:var(--tiempo)" href="practica_tiempo_presente.html"><div class="tag">Práctica</div><h2>Visibilidad, tiempo presente y pasado</h2><p>Casos para ingresar visibilidad, ww, W1W2, tiempo presente y reciente METAR, en modo SYNOP, METAR o mixto. Cada caso se corrige con su explicación.</p><span>Practicar casos →</span></a>
-    <div class="mat"><div class="t">Material</div>
-     <a href="material/Guia_tiempo_presente_METAR_SYNOP.pdf"><b>PDF</b>Guía de tiempo presente</a>
-     <a href="material/Llaveros_tiempo_presente.pdf"><b>PDF</b>Tarjetas llavero</a>
-    </div>
-   </div>
-  </section>
-
-  <section id="nubes" class="tema" style="--c:var(--nubes)">
-   <h4>Nubes</h4>
-   <p class="desc">Cantidad, Nh, CL, CM y CH según el orden de prioridad del Atlas, capas y dirección de las nubes.</p>
-   <div class="cols">
-    <a class="card" style="--c:var(--nubes)" href="visor_nubes_360.html"><div class="tag">Práctica</div><h2>Visor de nubes 360° <i class="nuevo">NUEVO</i></h2><p>Cielos reales en 360°: mire en todas las direcciones, identifique las nubes y practique su ingreso en SACLIM.</p><span>Abrir el visor →</span></a>
-    <div class="mat"><div class="t">Material</div>
-     <a href="material/Clase_6_Nubosidad.pdf"><b>PDF</b>Clase de nubosidad</a>
-     <a href="material/Cartilla_observacion_nubes_360.pdf"><b>PDF</b>Cartilla de observación de nubes</a>
-    </div>
-   </div>
-  </section>
+<main class="w">
+ <h2 class="sec">1 · Practicar por tema</h2>
+ <p class="intro">Los mismos tipos de ejercicio de la prueba, en niveles fácil, medio y difícil. Cada caso se corrige con la explicación de cada respuesta.</p>
+ <div class="grid">
+  <a id="viento" class="card" style="--c:var(--viento)" href="banco_casos.html#viento"><div class="tag">Viento · 50 casos</div><h3>Viento</h3><p>Dirección, rapidez, variable, variación y racha de los últimos 10 minutos, desde casos simples hasta los límites de 60°, 180°, 3 kt y 10 kt.</p><span>Practicar →</span></a>
+  <a id="visibilidad" class="card" style="--c:var(--vis)" href="banco_casos.html#vis"><div class="tag">Visibilidad · 50 casos</div><h3>Visibilidad <i class="nuevo">NUEVO</i></h3><p>Visibilidad sinóptica, reinante, mínima y su dirección a partir de la visibilidad por sector: neblina, niebla, calima, humo y precipitación.</p><span>Practicar →</span></a>
+  <a id="tiempo" class="card" style="--c:var(--tiempo)" href="banco_casos.html#tiempo"><div class="tag">Tiempo presente · 50 casos</div><h3>Tiempo presente y pasado</h3><p>Visibilidad, ww, W1W2, tiempo presente y reciente METAR a partir de la bitácora del turno.</p><span>Practicar →</span></a>
+  <a id="nubes" class="card" style="--c:var(--nubes)" href="banco_casos.html#nubes"><div class="tag">Nubes · 50 casos</div><h3>Nubes</h3><p>N, Nh, CL, CM y CH según el orden del Atlas, capas y dirección de las nubes.</p><span>Practicar →</span></a>
  </div>
 
- <section id="completa">
-  <h3>2 · Observación completa</h3>
-  <p class="intro">Para integrar todo en la máscara de SACLIM, con sus reglas de control.</p>
-  <div class="grid g2">
-   <a class="card" style="--c:var(--obs)" href="banco_casos.html"><div class="tag">Banco de casos</div><h2>Banco de casos SACLIM <i class="nuevo">NUEVO</i></h2><p>Observaciones completas de estaciones de todo Chile, revisiones con errores y casos de viento, tiempo presente y nubes, en niveles fácil, medio y difícil. Práctica libre con corrección, modo prueba con reloj, cámara 360 y simuladores.</p><span>Entrar al banco →</span></a>
-   <a class="card" style="--c:var(--obs)" href="simulador.html"><div class="tag">Práctica libre</div><h2>Simulador por casillas</h2><p>La máscara completa de ingreso de SACLIM. Con «Casillas…» elige qué elementos practicar. Lo que registre queda solo en este computador (planilla de Control de Calidad local).</p><span>Abrir el simulador →</span></a>
-  </div>
- </section>
-
+ <h2 class="sec" id="completa">2 · Observación completa</h2>
+ <p class="intro">Para integrar todo en la máscara de ingreso, con sus reglas de control.</p>
+ <div class="grid dos">
+  <a class="card dest" style="--c:var(--ac)" href="banco_casos.html"><div class="tag">Banco de casos</div><h3>Banco de casos <i class="nuevo">NUEVO</i></h3><p>215 observaciones completas y 10 revisiones con errores de estaciones de todo Chile, en niveles fácil, medio y difícil.</p>
+   <ul><li>Práctica libre con corrección casilla por casilla</li><li>Práctica con fotos 360 del cielo</li><li>Modo prueba con reloj</li></ul><span>Entrar al banco →</span></a>
+  <a class="card" style="--c:var(--obs)" href="simulador.html"><div class="tag">Práctica libre</div><h3>Simulador por casillas</h3><p>La máscara completa de ingreso. Con «Casillas…» elige qué elementos practicar. Lo que registre queda solo en este computador.</p><span>Abrir el simulador →</span></a>
+ </div>
 </main>
-<footer><span>Material del curso · © 2026 O. Álvarez B. · Simulador educativo no oficial: no reemplaza a SACLIM.</span><a href="resultados.html">Panel docente</a></footer>
+<footer><div class="w"><span>Material del curso · © 2026 O. Álvarez B. · Simulador educativo no oficial: no reemplaza al software oficial.</span><a href="resultados.html">Panel docente</a></div></footer>
 </body>
 </html>
