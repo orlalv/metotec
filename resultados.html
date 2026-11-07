@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Panel docente · Resultados</title>
+<style>
+:root{--nav:#121b2b;--fondo:#eef2f5;--tx:#1b2533;--mu:#5d6b7e;--ac:#e07b39;--ok:#1e6b43;--okb:#ddf1e5;--bad:#a93226;--badb:#f8dedb;--bd:#d5dde7}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--fondo);color:var(--tx);font:15px/1.45 system-ui,"Segoe UI",Roboto,Arial,sans-serif}
+.top{background:var(--nav);color:#fff;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{margin:0;font-size:19px}.top .k{color:var(--ac);font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}
+main{max-width:1200px;margin:0 auto;padding:14px 16px}
+.card{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:14px 16px;margin:0 0 14px}
+.btn{font:inherit;font-weight:600;border:1px solid #9fb0c3;border-radius:7px;background:#fff;color:var(--tx);padding:7px 13px;cursor:pointer}
+.btn.pri{background:var(--nav);color:#fff;border-color:var(--nav)}
+input,select{font:inherit;padding:7px 10px;border:1px solid #9fb0c3;border-radius:7px}
+.fila{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.kpis div{background:#f5f7fa;border-radius:8px;padding:10px 12px}.kpis b{display:block;font-size:24px}
+.mu{color:var(--mu);font-size:13px}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{background:var(--nav);color:#fff;text-align:left;padding:7px 8px;white-space:nowrap;position:sticky;top:0;cursor:pointer}
+td{border-bottom:1px solid #e3e8ee;padding:6px 8px;vertical-align:top}
+tr:hover td{background:#f8fafc}
+.ap{color:var(--ok);font-weight:700}.re{color:var(--bad);font-weight:700}
+.bar{height:8px;background:#e3e8ee;border-radius:4px;overflow:hidden;min-width:80px}.bar i{display:block;height:100%}
+#det{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto;z-index:10}
+#det .card{max-width:860px;width:100%}
+code{background:#e7edf4;border-radius:4px;padding:0 4px;font-family:ui-monospace,Consolas,monospace}
+@media (max-width:760px){.kpis{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="top"><div><div class="k">Panel docente</div><h1>Resultados del curso</h1></div><span style="flex:1"></span><a href="index.html" style="color:#c9d3e0">Volver al inicio</a></div>
+<main>
+ <div class="card" id="login"><div class="fila"><label for="clave"><b>Clave docente</b></label><input type="password" id="clave" autocomplete="current-password"><button class="btn pri" id="entrar">Entrar</button><span class="mu" id="lmsg"></span></div>
+  <p class="mu" style="margin:8px 0 0">La clave se define en Netlify, en la variable de entorno CLAVE_DOCENTE.</p></div>
+ <div id="panel" hidden>
+  <div class="card fila"><label for="fp">Prueba</label><select id="fp"><option value="">Todas</option><option value="diagnostico">Diagnóstico</option><option value="obs12_sd">Observación 12 UTC · Santo Domingo</option><option value="obs_diaria">Observación diaria · Quinta Normal</option><option value="simulador">Simulador (práctica)</option></select>
+   <label for="fq">Buscar</label><input id="fq" placeholder="nombre o curso">
+   <label for="fd">Desde</label><input type="date" id="fd">
+   <span style="flex:1"></span><button class="btn" id="recargar">Actualizar</button><button class="btn" id="csv">Descargar CSV</button></div>
+  <div class="card"><div class="kpis" id="kpis"></div></div>
+  <div class="card" id="items" hidden></div>
+  <div class="card tw"><table><thead><tr><th data-c="recibido">Fecha</th><th data-c="prueba">Prueba</th><th data-c="nombre">Nombre</th><th data-c="curso">Curso</th><th data-c="puntaje">Puntaje</th><th data-c="nota">Nota</th><th data-c="nivel">Nivel</th><th data-c="duracion_s">Tiempo</th><th>Extra</th><th></th></tr></thead><tbody id="tb"></tbody></table>
+   <p class="mu" id="vacio" hidden>No hay resultados con estos filtros.</p></div>
+ </div>
+ <div id="det"><div class="card" id="detc"></div></div>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const NOM = {diagnostico: "Diagnóstico", obs12_sd: "Obs. 12 UTC SD", obs_diaria: "Obs. diaria QN", simulador: "Simulador"};
+const f1 = x => x == null || x === "" ? "—" : (Math.round(x * 10) / 10).toFixed(1).replace(".", ",");
+const mmss = s => s == null ? "—" : `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+const fecha = iso => iso ? new Date(iso).toLocaleString("es-CL", {dateStyle: "short", timeStyle: "short"}) : "—";
+let CLAVE = "", DATA = [], ORD = ["recibido", -1];
+try { CLAVE = sessionStorage.getItem("clave_docente") || ""; } catch (e) {}
+
+async function cargar(){
+  const r = await fetch("/api/resultados", {headers: {"x-clave": CLAVE}});
+  if (r.status === 401) throw new Error("Clave incorrecta");
+  if (!r.ok) throw new Error(await r.text() || ("Error " + r.status));
+  DATA = await r.json();
+}
+async function entrar(){
+  $("#lmsg").textContent = "Cargando…";
+  try { await cargar(); try { sessionStorage.setItem("clave_docente", CLAVE); } catch (e) {}
+    $("#login").hidden = true; $("#panel").hidden = false; pintar(); }
+  catch (e){ $("#lmsg").textContent = e.message; }
+}
+$("#entrar").onclick = () => { CLAVE = $("#clave").value; entrar(); };
+$("#clave").onkeydown = e => { if (e.key === "Enter") $("#entrar").click(); };
+if (CLAVE) entrar();
+
+function filtrados(){
+  const p = $("#fp").value, q = $("#fq").value.trim().toLowerCase(), d = $("#fd").value;
+  return DATA.filter(x => (!p || x.prueba === p) && (!q || `${x.nombre} ${x.curso || ""}`.toLowerCase().includes(q)) && (!d || (x.recibido || "") >= d))
+    .sort((a, b) => { const [c, s] = ORD, va = a[c] ?? "", vb = b[c] ?? ""; return (va > vb ? 1 : va < vb ? -1 : 0) * s; });
+}
+function extra(x){
+  const e = [];
+  if (x.atraso_s != null) e.push(x.atraso_s > 0 ? `atraso ${mmss(x.atraso_s)}` : "a tiempo");
+  if (x.validaciones != null) e.push(`${x.validaciones} validaciones`);
+  if (x.metar) e.push(`<code>${esc(x.metar)}</code>`);
+  if (x.estacion) e.push(esc(x.estacion));
+  return e.join(" · ");
+}
+function pintar(){
+  const L = filtrados(), conNota = L.filter(x => typeof x.nota === "number");
+  const prom = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : null;
+  const aprob = conNota.filter(x => x.nota >= 4).length;
+  $("#kpis").innerHTML = `<div><span class="mu">Resultados</span><b>${L.length}</b></div><div><span class="mu">Personas</span><b>${new Set(L.map(x => x.nombre.toLowerCase())).size}</b></div>
+   <div><span class="mu">Nota promedio</span><b>${f1(prom(conNota.map(x => x.nota)))}</b></div><div><span class="mu">Aprobados (≥ 4,0)</span><b>${conNota.length ? Math.round(100 * aprob / conNota.length) + " %" : "—"}</b></div>
+   <div><span class="mu">Tiempo promedio</span><b>${mmss(prom(L.filter(x => x.duracion_s != null).map(x => x.duracion_s)))}</b></div>`;
+  $("#tb").innerHTML = L.map((x, i) => `<tr><td>${fecha(x.recibido)}</td><td>${esc(NOM[x.prueba] || x.prueba)}</td><td><b>${esc(x.nombre)}</b></td><td>${esc(x.curso || "")}</td>
+    <td>${x.puntaje != null ? `${f1(x.puntaje)} / ${x.max ?? "—"}` : "—"}</td><td class="${typeof x.nota === "number" ? (x.nota >= 4 ? "ap" : "re") : ""}">${typeof x.nota === "number" ? f1(x.nota) : "—"}</td>
+    <td>${esc(x.nivel || "")}</td><td>${mmss(x.duracion_s)}</td><td class="mu">${extra(x)}</td><td><button class="btn" data-i="${i}">Ver</button></td></tr>`).join("");
+  $("#vacio").hidden = L.length > 0;
+  $("#tb").querySelectorAll("[data-i]").forEach(b => b.onclick = () => detalle(L[+b.dataset.i]));
+  // dificultad por pregunta o por grupo
+  const conDet = L.filter(x => Array.isArray(x.detalle) && x.detalle.length && x.detalle[0].ok !== undefined);
+  if (!$("#fp").value && conDet.length){ $("#items").hidden = false; $("#items").innerHTML = '<p class="mu" style="margin:0">Elija una prueba arriba para ver qué preguntas o casillas les cuestan más.</p>'; }
+  else if (conDet.length){
+    const agg = {};
+    conDet.forEach(x => x.detalle.forEach(d => { const k = d.pregunta || d.casilla || d.grupo; agg[k] = agg[k] || {n: 0, ok: 0, tema: d.tema || d.grupo || ""}; agg[k].n++; if (d.ok) agg[k].ok++; }));
+    const filas = Object.entries(agg).sort((a, b) => a[1].ok / a[1].n - b[1].ok / b[1].n);
+    const todas = window.__todas, vis = todas ? filas : filas.slice(0, 12);
+    $("#items").hidden = false;
+    $("#items").innerHTML = `<h3 style="margin-top:0">Qué les cuesta más (${conDet.length} resultados)</h3><div class="tw"><table><thead><tr><th>Pregunta o casilla</th><th>Tema</th><th>Correctas</th><th style="width:30%"></th></tr></thead><tbody>
+      ${vis.map(([k, v]) => { const p = Math.round(100 * v.ok / v.n), col = p < 40 ? "#a93226" : p < 70 ? "#e07b39" : "#1e6b43";
+        return `<tr><td>${esc(k)}</td><td class="mu">${esc(v.tema)}</td><td>${p} % (${v.ok}/${v.n})</td><td><div class="bar"><i style="width:${p}%;background:${col}"></i></div></td></tr>`; }).join("")}</tbody></table></div>${filas.length > 12 ? `<button class="btn" id="vtodas" style="margin-top:8px">${todas ? "Ver solo las 12 más difíciles" : `Ver todas (${filas.length})`}</button>` : ""}`;
+    const vt = $("#vtodas"); if (vt) vt.onclick = () => { window.__todas = !window.__todas; pintar(); };
+  } else $("#items").hidden = true;
+}
+function detalle(x){
+  const det = Array.isArray(x.detalle) ? x.detalle : [];
+  $("#detc").innerHTML = `<div class="fila"><h2 style="margin:0">${esc(x.nombre)}</h2><span class="mu">${esc(NOM[x.prueba] || x.prueba)} · ${fecha(x.recibido)}</span><span style="flex:1"></span>
+    <button class="btn" id="borrar" style="color:#a93226">Borrar</button><button class="btn pri" id="cerrar">Cerrar</button></div>
+   <p>Puntaje <b>${x.puntaje != null ? f1(x.puntaje) + " / " + (x.max ?? "—") : "—"}</b> · Nota <b>${typeof x.nota === "number" ? f1(x.nota) : "—"}</b> · ${esc(x.nivel || "")} · Tiempo <b>${mmss(x.duracion_s)}</b> ${extra(x) ? "· " + extra(x) : ""}</p>
+   ${det.length ? `<div class="tw"><table><thead><tr>${Object.keys(det[0]).map(k => `<th>${esc(k)}</th>`).join("")}</tr></thead><tbody>${det.map(d => `<tr>${Object.keys(det[0]).map(k => {
+      const v = d[k]; return `<td class="${k === "ok" ? (v ? "ap" : "re") : ""}">${k === "ok" ? (v ? "✔" : "✖") : esc(typeof v === "object" ? JSON.stringify(v) : v)}</td>`; }).join("")}</tr>`).join("")}</tbody></table></div>` : ""}
+   ${x.mensajes && x.mensajes.length ? `<h3>Mensajes de validación</h3><ul>${x.mensajes.map(m => `<li>${esc(m)}</li>`).join("")}</ul>` : ""}`;
+  $("#det").style.display = "flex";
+  $("#cerrar").onclick = () => $("#det").style.display = "none";
+  $("#borrar").onclick = async () => { if (!confirm(`¿Borrar el resultado de ${x.nombre}? No se puede deshacer.`)) return;
+    const r = await fetch("/api/resultados?key=" + encodeURIComponent(x.key), {method: "DELETE", headers: {"x-clave": CLAVE}});
+    if (r.ok){ DATA = DATA.filter(y => y.key !== x.key); $("#det").style.display = "none"; pintar(); } else alert("No se pudo borrar."); };
+}
+$("#det").onclick = e => { if (e.target.id === "det") $("#det").style.display = "none"; };
+["#fp", "#fq", "#fd"].forEach(s => $(s).oninput = pintar);
+document.querySelectorAll("th[data-c]").forEach(th => th.onclick = () => { const c = th.dataset.c; ORD = [c, ORD[0] === c ? -ORD[1] : 1]; pintar(); });
+$("#recargar").onclick = async () => { try { await cargar(); pintar(); } catch (e){ alert(e.message); } };
+$("#csv").onclick = () => {
+  const L = filtrados(), cols = ["recibido", "prueba", "nombre", "curso", "puntaje", "max", "nota", "nivel", "duracion_s", "atraso_s", "validaciones", "estacion", "metar"];
+  const q = v => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
+  const txt = "﻿" + [cols.join(";"), ...L.map(x => cols.map(c => q(typeof x[c] === "number" ? String(x[c]).replace(".", ",") : x[c])).join(";"))].join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], {type: "text/csv"})); a.download = "resultados_curso.csv"; a.click();
+};
+</script>
+</body>
+</html>

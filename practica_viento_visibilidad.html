@@ -1,0 +1,299 @@
+<title>Práctica de viento y visibilidad</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: cabecera de instrumento + pestañas; cada ejercicio en dos columnas (datos | respuesta), que se apilan en teléfono */
+:root{
+  --bg:#EEF2F6; --surface:#FFFFFF; --ink:#13233A; --muted:#566377; --line:#D3DBE5;
+  --accent:#9A6508; --accent-soft:#F6E7C8; --navy:#13233A; --navy-ink:#F5F3EE;
+  --ok:#2F7D4F; --ok-soft:#DCEFE3; --bad:#A8481E; --bad-soft:#F6E0D6;
+  --map-bg:#F7F9FB; --ring:#B9C6D4; --vc:#E4ECF4; --fog:#C9D2DC; --fog-edge:#8D9AA8; --rain:#3E7CB1; --rwy:#2C3B50; --seen:#9A6508; --hidden:#8D9AA8; --help:#3E7CB1;
+  --f-sans:'IBM Plex Sans', 'Segoe UI', Arial, sans-serif; --f-mono:'JetBrains Mono', 'Courier New', monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1A2B; --surface:#16273D; --ink:#E7ECF2; --muted:#9BA9BB; --line:#2A3F5B;
+  --accent:#E0A43A; --accent-soft:#3A3122; --navy:#0A1422; --navy-ink:#F5F3EE;
+  --ok:#6CC08E; --ok-soft:#1E3A2B; --bad:#E58A62; --bad-soft:#3E2419;
+  --map-bg:#12233A; --ring:#34506F; --vc:#1A3150; --fog:#5D6B7C; --fog-edge:#8E9CAD; --rain:#6FA8DA; --rwy:#C9D3DE; --seen:#E0A43A; --hidden:#7D8B9C; --help:#6FA8DA; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1A2B; --surface:#16273D; --ink:#E7ECF2; --muted:#9BA9BB; --line:#2A3F5B;
+  --accent:#E0A43A; --accent-soft:#3A3122; --navy:#0A1422; --navy-ink:#F5F3EE;
+  --ok:#6CC08E; --ok-soft:#1E3A2B; --bad:#E58A62; --bad-soft:#3E2419;
+  --map-bg:#12233A; --ring:#34506F; --vc:#1A3150; --fog:#5D6B7C; --fog-edge:#8E9CAD; --rain:#6FA8DA; --rwy:#C9D3DE; --seen:#E0A43A; --hidden:#7D8B9C; --help:#6FA8DA; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:16px;line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:18px}
+header.top{background:var(--navy);color:var(--navy-ink);border-radius:14px;padding:20px 24px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+header.top h1{margin:0;font-size:28px;line-height:1.15;text-wrap:balance}
+header.top p{margin:4px 0 0;color:#C9D6E3;font-size:15px}
+.eyebrow{font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:#E0A43A;font-weight:600}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{font:600 15px var(--f-sans);border:1px solid #3A5272;background:transparent;color:var(--navy-ink);padding:9px 16px;border-radius:999px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:#E0A43A;color:#13233A;border-color:#E0A43A}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chips .lbl{font-size:13px;color:var(--muted);margin-right:4px}
+.chips button{font:600 15px var(--f-sans);min-width:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.chips button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.chips button small{display:block;font-weight:400;font-size:11px;color:var(--muted)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.card h2{margin:0;font-size:22px;line-height:1.2;text-wrap:balance}
+.card h3{margin:0;font-size:13px;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);font-weight:600}
+.ctx{margin:0;color:var(--ink)}
+.panel{background:var(--navy);color:var(--navy-ink);border-radius:12px;padding:14px 16px;font-family:var(--f-mono);font-size:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px 18px}
+.panel span{color:#9FB2C8}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:center}
+th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:1px}
+td.lead,th.lead{text-align:left}
+svg{display:block;width:100%;height:auto;max-width:100%}
+svg text{font-family:var(--f-sans);fill:var(--muted)}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.form .wide{grid-column:1/-1}
+.f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.f label{font-size:13px;font-weight:600;color:var(--muted)}
+.f input,.f select{font:15px var(--f-mono);padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);width:100%}
+.f.ok input,.f.ok select{border-color:var(--ok);background:var(--ok-soft)}
+.f.bad input,.f.bad select{border-color:var(--bad);background:var(--bad-soft)}
+.f .exp{font-size:12.5px;color:var(--bad);font-family:var(--f-mono)}
+.f.ok .exp{color:var(--ok)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{font:600 15px var(--f-sans);padding:10px 16px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#13233A;cursor:pointer}
+:root:not([data-theme="dark"]) .btn{color:#FFFFFF}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#13233A}}
+:root .btn.sec,:root:not([data-theme="dark"]) .btn.sec{background:transparent;color:var(--accent)}
+.score{font-weight:600;font-size:15px}
+.sol{border-top:1px dashed var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px}
+.sol ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.metar{font-family:var(--f-mono);font-size:18px;font-weight:600;background:var(--accent-soft);color:var(--ink);padding:10px 14px;border-radius:10px;overflow-x:auto;white-space:nowrap}
+.ysi{background:var(--navy);color:var(--navy-ink);border-radius:10px;padding:12px 14px;font-size:15px}
+.ysi b{color:#E0A43A}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+.lm{font-size:13.5px}
+.lm td{text-align:left}
+.lm .n{font-family:var(--f-mono);font-weight:600;width:28px;text-align:center}
+.yes{color:var(--seen);font-weight:600}.no{color:var(--hidden)}
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.rules div{background:var(--bg);border-radius:10px;padding:12px 14px;font-size:14px}
+.rules b{display:block;margin-bottom:4px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tiles div{background:var(--navy);color:var(--navy-ink);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.tiles span{font-size:13px;letter-spacing:1.5px;text-transform:uppercase;color:#9FB2C8}
+.tiles b{font-family:var(--f-mono);font-size:28px}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px}
+.toggle{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted)}
+@media (prefers-reduced-motion: no-preference){.sol{animation:fade .25s ease}@keyframes fade{from{opacity:.4}to{opacity:1}}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div>
+    <div class="eyebrow">MRO II · TECMET 2025 · Práctica dirigida</div>
+    <h1>Viento y visibilidad: 10 casos difíciles</h1>
+    <p>Lee los datos, completa las casillas SACLIM y el grupo METAR, revisa y estudia la solución con su norma.</p>
+  </div>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-v" aria-selected="true">Viento</button>
+    <button role="tab" id="tab-s" aria-selected="false">Visibilidad</button>
+  </div>
+</header>
+
+<div class="chips" id="chips"></div>
+<div id="view"></div>
+<p class="hint">Normas: DAP 03 07 (Apéndice 4), OACI Anexo 3 y OMM-306 (FM 12, tabla 4677). Docentes: Alex Meneses / Orlando Álvarez.</p>
+</div>
+
+<script>
+const NUM=/^-?\d+$/;
+function norm(v){v=String(v??'').trim().toUpperCase().replace(/\s+/g,' ');if(v===''||v==='-'||v==='/'||v==='SIN DATO'||v==='SD')return '';if(NUM.test(v))return String(parseInt(v,10));return v;}
+function same(a,b){return norm(a)===norm(b);}
+const DIRS=['N','NE','E','SE','S','SW','W','NW'];
+
+/* ---------- VIENTO ---------- */
+const WIND=[
+{t:'Gira por el norte y no se decide',ctx:'Estación aeronáutica, 15:00 UTC. Datos del panel, promedio de 10 minutos.',
+ m:[[300,14,20],[330,15,22],[10,13,19],[50,16,26],[90,15,24],[110,14,21],[60,15,23],[350,16,27],[280,14,20],[320,15,22]],
+ panel:[['Media 10 min','010° 14,7 kt'],['Dir. extremas','280° / 110°'],['Máx. 10 min','27 kt']],
+ a:{dir:'',ff:'15',vrb:'Sí',dn:'',dx:'',g:'27',metar:'VRB15G27KT'},
+ p:['Rapidez media: 14,7 kt → se informa en nudos enteros: <b>15</b>.','Variación: de 280° a 110° <b>en sentido horario</b> cruza el norte: (360 − 280) + 110 = <b>190°</b>. Restar 280 − 110 = 170° es el error típico.','Con variación de 180° o más no hay dirección media representativa → <b>VRB</b>, sin grupo de variación (DAP 03 07, Ap. 4).','Racha: 27 − 15 = 12 kt, 10 o más → <b>G27</b>.'],
+ y:'Si las extremas fueran 290° y 100° (170°) → hay dirección media: <b>01015G27KT 290V100</b>.'},
+{t:'Justo en los umbrales',ctx:'Estación aeronáutica, 18:00 UTC. Datos del panel, promedio de 10 minutos.',
+ m:[[220,14,18],[240,15,20],[230,13,19],[210,14,22],[250,15,24],[230,14,21],[200,13,19],[240,15,23],[230,14,20],[230,13,18]],
+ panel:[['Media 10 min','228° 14 kt'],['Dir. extremas','200° / 250°'],['Máx. 10 min','24 kt']],
+ a:{dir:'228',ff:'14',vrb:'No',dn:'',dx:'',g:'',metar:'23014G24KT'},
+ p:['Dirección media 228°: en SACLIM se ingresa tal cual, <b>228</b> (solo el METAR la redondea a 230). Rapidez <b>14 kt</b>.','Variación 200°–250° = <b>50°</b>: menos de 60° → <b>no se informa</b>, aunque el panel la muestre.','Racha: 24 − 14 = <b>10 kt</b>. En SACLIM la racha se ingresa solo si supera la media en <b>más</b> de 10 kt → <b>Sin Dato</b>. El METAR sí la informa con 10 kt o más: <b>G24</b>.'],
+ y:'Si la ráfaga máxima fuera 25 kt (11 kt sobre la media) → en SACLIM se ingresa la racha <b>25</b>, y el METAR queda <b>23014G25KT</b>.'},
+{t:'Débil, pero no tanto',ctx:'Estación aeronáutica, 06:00 UTC. Datos del panel, promedio de 10 minutos.',
+ m:[[150,3,6],[120,2,5],[170,4,8],[200,3,7],[160,3,12],[140,2,5],[180,4,9],[190,3,7],[150,3,6],[140,3,6]],
+ panel:[['Media 10 min','160° 3 kt'],['Dir. extremas','120° / 200°'],['Máx. 10 min','12 kt']],
+ a:{dir:'160',ff:'3',vrb:'No',dn:'120',dx:'200',g:'',metar:'16003KT 120V200'},
+ p:['La media es 3 kt: ya no es «menos de 3 kt», así que no corresponde VRB por viento débil.','Variación 120°–200° = 80°: está entre 60° y menos de 180°, y el viento es de 3 kt o más → se informa <b>120V200</b>.','Racha: 12 − 3 = 9 kt, menos de 10 → no se informa, aunque 12 kt sea cuatro veces la media.'],
+ y:'Si la media fuera 2 kt → <b>VRB02KT</b>, sin grupo de variación, aunque varíe 80°.'},
+{t:'Temporal antártico',ctx:'Estación antártica, 12:00 UTC. Datos del panel, promedio de 10 minutos.',
+ m:[[80,92,104],[90,95,108],[100,96,110],[120,98,112],[90,94,106],[60,90,101],[80,93,104],[90,95,107],[100,96,109],[70,91,103]],
+ panel:[['Media 10 min','088° 94 kt'],['Dir. extremas','060° / 120°'],['Máx. 10 min','112 kt']],
+ a:{dir:'88',ff:'94',vrb:'No',dn:'60',dx:'120',g:'112',metar:'09094GP99KT 060V120'},
+ p:['Dirección 088°: en SACLIM se ingresa tal cual, <b>088</b> (solo el METAR la redondea a 090).','Variación 060°–120° = 60° justos: el umbral está incluido → se informa <b>060V120</b>.','Racha: 112 − 94 = 18 kt → se informa. Con 100 kt o más, el METAR escribe <b>P99</b>: GP99.','En SACLIM se ingresan los valores reales (94 y 112). La P99 es solo un formato del METAR.'],
+ y:'Si las extremas fueran 070°–120° (50°), no se informa la variación: <b>09094GP99KT</b>.'},
+{t:'Casi calma, pero con ráfagas',ctx:'Estación aeronáutica, 03:00 UTC. Datos del panel, promedio de 10 minutos.',
+ m:[[100,2,5],[180,3,6],[250,2,4],[320,2,13],[140,3,6],[210,2,5],[300,3,7],[120,2,4],[200,3,6],[260,2,5]],
+ panel:[['Media 10 min','205° 2,4 kt'],['Dir. extremas','100° / 320°'],['Máx. 10 min','13 kt']],
+ a:{dir:'',ff:'2',vrb:'Sí',dn:'',dx:'',g:'13',metar:'VRB02G13KT'},
+ p:['Rapidez media 2,4 kt → en nudos enteros: <b>2</b>.','Menos de 3 kt con dirección variable → <b>VRB02</b>, sin grupo de variación. El criterio de 180° o más es para vientos de 3 kt o más: aquí manda la rapidez.','Racha: 13 − 2 = 11 kt, 10 o más → <b>se informa</b>, aunque el viento sea débil: <b>VRB02G13KT</b>.','En SACLIM: dirección sin dato, VRB = Sí, rapidez 2, racha 13.'],
+ y:'Si la ráfaga máxima fuera 11 kt (9 kt sobre la media) → <b>VRB02KT</b>.'}
+];
+const WF=[['dir','Dirección (°)'],['ff','Rapidez (kt)'],['vrb','Variable (VRB)','sel',['','No','Sí']],['g','Racha (kt)'],['dn','dndndn (°)'],['dx','dxdxdx (°)'],['metar','Grupo de viento METAR','wide']];
+
+/* ---------- VISIBILIDAD ---------- */
+const VIS=[
+{t:'Bancos de niebla sobre la pista',ctx:'Aeródromo, 10:00 UTC. Bancos de niebla dispersos sobre el aeródromo; entre ellos se ve lejos. Pista en uso 23 (aproximación desde el NE).',
+ rwy:50,v:[8000,400,400,8000,500,8000,9000,8000],
+ feat:[{k:'fog',dir:45,d:.55,rx:30,ry:18,rot:20},{k:'fog',dir:95,d:.5,rx:26,ry:16,rot:-10},{k:'fog',dir:180,d:.65,rx:28,ry:16,rot:0}],
+ panel:[['Ts / Td','8,2 / 7,6'],['HR','96 %'],['Viento','VRB02KT'],['Observador','bancos de 100 a 300 m de ancho']],
+ a:{vvs:'400',vvr:'8000',vvm:'400',vvd:'NE',ww:'41',wi1:'',wd1:'BC',wa1:'FG',wi2:'',wd2:'',wa2:'',metar:'8000 0400NE BCFG'},
+ p:['<b>Reinante.</b> Ordenar los 8 sectores de mayor a menor: 9000, 8000, 8000, <b>8000</b>, 8000, 500, 400, 400. La reinante es el mayor valor alcanzado o superado en al menos la mitad del horizonte (4 sectores) → <b>8000</b>.','<b>Mínima.</b> Mínima 400 m: menor que 1500 → se informa siempre.','<b>Dirección de la mínima.</b> Está en NE y en E: se informa la dirección más importante para la operación. La aproximación a la 23 viene del NE → <b>NE</b>.','<b>Fenómeno (METAR).</b> Bancos de niebla que cubren el aeródromo al azar, con reinante de 1000 m o más → <b>BCFG</b>. No es FG.','<b>SYNOP.</b> VV = la menor visibilidad, <b>400 m</b>; ww <b>41</b> (niebla en bancos).'],
+ y:'Si los bancos se unieran y cubrieran toda la mitad E del aeródromo, con el resto despejado → <b>PRFG</b>.'},
+{t:'Medio aeródromo en la niebla',ctx:'Aeródromo, 11:00 UTC. Un banco compacto cubre la mitad W del aeródromo; su borde está a 150 m de la estación, que sigue fuera. Pista en uso 09 (aproximación desde el W).',
+ rwy:90,v:[6000,6000,7000,6000,5000,200,200,200],
+ feat:[{k:'fogw'}],
+ panel:[['Ts / Td','6,4 / 6,0'],['HR','97 %'],['Viento','00000KT'],['Observador','la niebla no ha cubierto la estación']],
+ a:{vvs:'200',vvr:'6000',vvm:'200',vvd:'W',ww:['41','40'],wi1:'',wd1:'PR',wa1:'FG',wi2:'',wd2:'',wa2:'',metar:'6000 0200W PRFG'},
+ p:['<b>Reinante.</b> Ordenar: 7000, 6000, 6000, <b>6000</b>, 5000, 200, 200, 200 → el 4º valor es <b>6000</b>.','<b>Mínima y dirección.</b> Mínima 200 m (menor que 1500) → se informa. Está en SW, W y NW: se elige la más importante para la operación, la aproximación a la 09 → <b>W</b>.','<b>Fenómeno (METAR).</b> Niebla que cubre una parte importante del aeródromo, con el resto despejado → <b>PRFG</b>.','<b>¿Hay BR?.</b> ¿BR? No: con reinante de 6000 m no corresponde (BR es para 1000 a 5000 m).','<b>SYNOP.</b> VV <b>200 m</b>; ww <b>41</b> (la estación no está dentro de la niebla). Se acepta 40 si se considera niebla a distancia.'],
+ y:'Si la niebla llegara a la estación y la reinante bajara a 800 m → <b>0800 0200W FG</b> y ww 42 a 47 según su evolución.'},
+{t:'Niebla en el valle',ctx:'Aeródromo, 12:00 UTC. Mañana despejada. Hacia el S y el SW, una capa de niebla rellena el valle a 9–12 km. Pista 18/36.',
+ rwy:0,v:[20000,20000,15000,12000,9000,9000,20000,20000],
+ feat:[{k:'fog',dir:190,d:10.5,rx:70,ry:26,rot:80},{k:'fog',dir:222,d:10,rx:50,ry:22,rot:40}],
+ panel:[['Ts / Td','9,8 / 6,1'],['HR','78 %'],['Viento','02004KT'],['Observador','la niebla no ha llegado al aeródromo']],
+ a:{vvs:'9000',vvr:['20000','9999'],vvm:'',vvd:'',ww:'40',wi1:'VC',wd1:'',wa1:'FG',wi2:'',wd2:'',wa2:'',metar:'9999 VCFG'},
+ p:['<b>Reinante.</b> Hay 4 sectores con 20 km o más → reinante <b>20 km</b>; en el METAR, <b>9999</b>.','<b>Mínima.</b> Mínima 9000 m: no es menor que 5000 → <b>no se informa</b>.','<b>Fenómeno (METAR).</b> Niebla entre 8 y 16 km, fuera del aeródromo → vecindad: <b>VCFG</b> (DAP 03 07).','<b>SYNOP.</b> VV = la menor, <b>9000 m</b>; ww <b>40</b> (niebla a distancia).'],
+ y:'Si la niebla estuviera a 20 km, queda fuera de la vecindad: el METAR sería solo <b>9999</b>, y la sinóptica seguiría con ww 40.'},
+{t:'Niebla a los tobillos y un chubasco lejano',ctx:'Aeródromo, 09:00 UTC. Una capa de niebla de unos 1 m de espesor cubre todo el aeródromo; a la altura de los ojos se ve lejos. Al NE, un chubasco a 12 km. Pista 14/32.',
+ rwy:140,v:[20000,12000,20000,20000,20000,18000,20000,20000],
+ feat:[{k:'mifg',km:1.6},{k:'rain',dir:45,d:12.5}],
+ panel:[['Ts / Td','4,1 / 3,6'],['HR','97 %'],['Viento','00000KT'],['Observador','la niebla no supera las rodillas']],
+ a:{vvs:'12000',vvr:['20000','9999'],vvm:'',vvd:'',ww:'15',wi1:'',wd1:'MI',wa1:'FG',wi2:'VC',wd2:'SH',wa2:'',metar:'9999 MIFG VCSH'},
+ p:['<b>Reinante y mínima.</b> La visibilidad se observa a la altura de los ojos, por encima de la niebla baja: 12 km o más en todo el horizonte → <b>9999</b>; la mínima no se informa.','<b>Niebla baja.</b> Niebla de menos de 2 m que no reduce la visibilidad a la altura de los ojos → <b>MIFG</b>. No es FG.','<b>Chubasco lejano.</b> Chubasco a 12 km, dentro de 8–16 km → <b>VCSH</b>.','<b>SYNOP: ww.</b> el ww es el número más alto aplicable. 12 (niebla baja continua) o 15 (precipitación que alcanza el suelo a más de 5 km) → <b>15</b>.','<b>SYNOP.</b> VV sinóptica = la menor: <b>12 000 m</b>.'],
+ y:'Si el chubasco estuviera a 3 km, la sinóptica pasaría a ww <b>16</b> (precipitación a menos de 5 km, no en la estación).'},
+{t:'La mínima que casi entra',ctx:'Aeródromo, 13:00 UTC. Neblina húmeda, más densa hacia el E por un humedal. No hay precipitación. Pista 01/19.',
+ rwy:10,v:[5000,4000,2100,3000,4000,5000,6000,4000],
+ feat:[{k:'fog',dir:90,d:2.4,rx:44,ry:30,rot:0,soft:1}],
+ panel:[['Ts / Td','11,0 / 10,6'],['HR','97 %'],['Viento','09003KT'],['Observador','sin precipitación']],
+ a:{vvs:'2100',vvr:'4000',vvm:'',vvd:'',ww:'10',wi1:'',wd1:'',wa1:'BR',wi2:'',wd2:'',wa2:'',metar:'4000 BR'},
+ p:['<b>Reinante.</b> Ordenar: 6000, 5000, 5000, <b>4000</b>, 4000, 4000, 3000, 2100 → reinante <b>4000</b>.','<b>Mínima.</b> Mínima 2100 m (E): es menor que 5000, pero <b>no</b> es menor que el 50 % de la reinante (2000). Deben cumplirse las dos condiciones → <b>no se informa</b>.','<b>Fenómeno (METAR).</b> Visibilidad de 1000 a 5000 m con HR alta y sin precipitación → <b>BR</b>.','<b>SYNOP.</b> VV = la menor, <b>2100 m</b>; ww <b>10</b> (neblina).'],
+ y:'Si la mínima fuera 1900 m, ya es menor que el 50 % → <b>4000 1900E BR</b>.'}
+];
+const VF=[['vvs','VVs · visibilidad sinóptica (m)'],['vvr','VVr · visibilidad reinante (m)'],['vvm','VVmin · visibilidad mínima (m)'],['vvd','VVdir · dirección de la mínima','sel',['','N','NE','E','SE','S','SW','W','NW']],['ww','ww · tiempo presente sinóptico'],
+ ['wi1','METAR grupo 1 · intensidad o proximidad','sel',['','-','+','VC']],['wd1','METAR grupo 1 · descriptor','sel',['','MI','BC','PR','DR','BL','SH','TS','FZ']],['wa1','METAR grupo 1 · fenómeno','sel',['','FG','BR','HZ','FU','DU','SA','DZ','RA','SN','PL','GR','GS','SQ','FC','PO','SS','DS']],
+ ['wi2','METAR grupo 2 · intensidad o proximidad','sel',['','-','+','VC']],['wd2','METAR grupo 2 · descriptor','sel',['','MI','BC','PR','DR','BL','SH','TS','FZ']],['wa2','METAR grupo 2 · fenómeno','sel',['','FG','BR','HZ','FU','DU','SA','DZ','RA','SN','PL','GR','GS','SQ','FC','PO','SS','DS']]];
+
+/* ---------- estado ---------- */
+let mode='v',idx=0,help=false;
+const view=document.getElementById('view'),chips=document.getElementById('chips');
+function setMode(m){mode=m;idx=0;help=false;document.getElementById('tab-v').setAttribute('aria-selected',m==='v');document.getElementById('tab-s').setAttribute('aria-selected',m==='s');render();}
+document.getElementById('tab-v').onclick=()=>setMode('v');
+document.getElementById('tab-s').onclick=()=>setMode('s');
+
+function renderChips(){const L=mode==='v'?WIND:VIS;chips.innerHTML='<span class="lbl">Ejercicio</span>'+L.map((e,i)=>`<button aria-pressed="${i===idx}" data-i="${i}">${i+1}<small>${mode==='v'?'Viento':'Visib.'}</small></button>`).join('');
+ chips.querySelectorAll('button').forEach(b=>b.onclick=()=>{idx=+b.dataset.i;help=false;render();});}
+
+function field(f){const [id,lab,kind,opts]=f;const wide=kind==='wide'?' wide':'';
+ const ctl=kind==='sel'?`<select id="f-${mode}-${id}">${opts.map(o=>`<option value="${o}">${o||'Sin dato'}</option>`).join('')}</select>`:`<input id="f-${mode}-${id}" autocomplete="off" spellcheck="false" placeholder="${id==='metar'?(mode==='v'?'ej. 22009KT 190V250':'ej. 9999 VCSH'):'vacío = sin dato'}">`;
+ return `<div class="f${wide}" id="w-${id}"><label for="f-${mode}-${id}">${lab}</label>${ctl}<span class="exp"></span></div>`;}
+
+function render(){renderChips();const e=(mode==='v'?WIND:VIS)[idx];const F=mode==='v'?WF:VF;
+ const data=mode==='v'?windData(e):visData(e);
+ view.innerHTML=`<div class="grid">
+ <section class="card"><h3>${mode==='v'?'Práctica de viento':'Práctica de visibilidad'}</h3><h2>Ejercicio ${idx+1}</h2><p class="ctx">${e.ctx}</p>${data}</section>
+ <section class="card"><h3>Tu observación</h3>
+  <p class="hint">${mode==='v'?'Usa siempre la <b>media de 10 minutos</b>. ':''}Deja en blanco lo que no corresponde informar (sin dato). ${mode==='v'?'Direcciones en grados, sin el símbolo.':'Visibilidades en metros. El tiempo presente METAR se ingresa por partes; usa el grupo 2 solo si hay un segundo fenómeno.'}</p>
+  <form class="form" id="frm">${F.map(field).join('')}</form>
+  <div class="actions"><button class="btn" id="chk" type="button">Revisar</button><button class="btn sec" id="see" type="button">Ver solución</button><button class="btn sec" id="clr" type="button">Limpiar</button></div>
+  <div class="score" id="score" aria-live="polite"></div>
+  <div class="sol" id="sol" hidden></div>
+ </section></div>`;
+ document.getElementById('frm').addEventListener('submit',ev=>ev.preventDefault());
+ document.getElementById('chk').onclick=()=>check(e,F);
+ document.getElementById('see').onclick=()=>{check(e,F,true);showSol(e);};
+ document.getElementById('clr').onclick=()=>render();
+ if(mode==='s'){const t=document.getElementById('hlp');if(t)t.onchange=()=>{help=t.checked;document.getElementById('map').innerHTML=mapSVG(e);document.getElementById('srt').hidden=!help;};}
+}
+function check(e,F,silent){let ok=0;F.forEach(([id,lab])=>{const w=document.getElementById('w-'+id),el=document.getElementById(`f-${mode}-${id}`);const ans=[].concat(e.a[id]);
+ const good=ans.some(a=>same(el.value,a));ok+=good;w.className='f'+(id==='metar'?' wide':'')+(good?' ok':' bad');
+ w.querySelector('.exp').textContent=good?'Correcto':'Correcto: '+(ans[0]===''?'sin dato':ans.join(' o '));});
+ document.getElementById('score').textContent=`${ok} de ${F.length} casillas correctas`;}
+function showSol(e){const s=document.getElementById('sol');s.hidden=false;const F=mode==='v'?WF:VF;
+ const rows=F.filter(f=>f[0]!=='metar').map(([id,lab])=>{const v=[].concat(e.a[id])[0];return `<tr><td class="lead">${lab}</td><td class="lead" style="font-family:var(--f-mono);font-weight:600">${v===''?'sin dato':v}</td></tr>`;}).join('');
+ s.innerHTML=`<h3>Solución · ${e.t}</h3><div class="scroll"><table class="lm"><tr><th class="lead">Casilla SACLIM</th><th class="lead">Valor</th></tr>${rows}</table></div><div class="metar">METAR: ${e.a.metar}</div><ol>${e.p.map(x=>`<li>${x}</li>`).join('')}</ol><div class="ysi"><b>¿Y si…?</b> ${e.y}</div>`;}
+
+/* ---------- viento: tabla + gráfico ---------- */
+function windTiles(e){const [d,ff]=e.panel[0][1].split('° ');const [dn,dx]=e.panel[1][1].split(' / ');
+ const T=[['Dirección media',d+'°'],['Rapidez media',ff],['Variación de dirección','de '+dn+' a '+dx],['Racha máxima',e.panel[2][1]]];
+ return `<div class="tiles">${T.map(([k,v])=>`<div><span>${k}</span><b>${v}</b></div>`).join('')}</div>`;}
+function windData(e){return `<h3>Datos del viento · promedio de 10 minutos</h3>${windTiles(e)}<p class="hint">Con estos cuatro datos completa las casillas de viento de SACLIM y el grupo METAR.</p>`;}
+function windSVG(m){const W=640,x0=52,x1=620,dx=(x1-x0)/9;const X=i=>x0+i*dx;
+ const dy0=20,dy1=150,Y=d=>dy0+(1-d/360)*(dy1-dy0);
+ const mx=Math.max(...m.map(r=>r[2]));const top=Math.ceil((mx+5)/10)*10;const sy0=180,sy1=300,S=v=>sy1-(v/top)*(sy1-sy0);
+ let g=`<svg viewBox="0 0 ${W} 330" role="img" aria-label="Dirección y rapidez por minuto">`;
+ [0,90,180,270,360].forEach(d=>{g+=`<line x1="${x0}" x2="${x1}" y1="${Y(d)}" y2="${Y(d)}" stroke="var(--line)" stroke-width="1"/><text x="${x0-8}" y="${Y(d)+4}" font-size="11" text-anchor="end">${['N 0','E 90','S 180','W 270','N 360'][d/90]}</text>`;});
+ for(let v=0;v<=top;v+=top/4){g+=`<line x1="${x0}" x2="${x1}" y1="${S(v)}" y2="${S(v)}" stroke="var(--line)" stroke-width="1"/><text x="${x0-8}" y="${S(v)+4}" font-size="11" text-anchor="end">${v}</text>`;}
+ g+=`<text x="${x0}" y="12" font-size="11">Dirección (°)</text><text x="${x0}" y="${sy0-8}" font-size="11">Rapidez (kt)</text>`;
+ m.forEach((r,i)=>{g+=`<circle cx="${X(i)}" cy="${Y(r[0])}" r="5" fill="var(--accent)"/><text x="${X(i)}" y="318" font-size="11" text-anchor="middle">${i+1}</text>`;
+  g+=`<path d="M${X(i)-5} ${S(r[2])+4} L${X(i)+5} ${S(r[2])+4} L${X(i)} ${S(r[2])-5}Z" fill="var(--bad)"/>`;});
+ g+=`<polyline points="${m.map((r,i)=>X(i)+','+S(r[1])).join(' ')}" fill="none" stroke="var(--help)" stroke-width="2.5"/>`;
+ m.forEach((r,i)=>{g+=`<circle cx="${X(i)}" cy="${S(r[1])}" r="3.5" fill="var(--help)"/>`;});
+ return g+'</svg>';}
+
+/* ---------- visibilidad: vista en planta ---------- */
+const C=300,R=262;const rad=km=>R*Math.log(1+Math.min(km,20)/0.3)/Math.log(1+20/0.3);
+function P(dir,km){const a=dir*Math.PI/180,r=rad(km);return [C+r*Math.sin(a),C-r*Math.cos(a)];}
+const NAMES=[['Antena de radio','Cerro Alto'],['Baliza de aproximación','Silo'],['Hangar','Puente'],['Torre de agua','Iglesia'],['Galpón','Cerro Negro'],['Faro de pista','Bodega'],['Molino','Cordón W'],['Estanque','Torre de alta tensión']];
+const STEPS=[.2,.4,.5,1,2,2.5,3,4,5,6,7,8,9,10,12,15,18,20];
+function landmarks(v){const L=[];v.forEach((m,i)=>{const km=m/1000;L.push({n:NAMES[i][0],dir:i*45-9,km,seen:1,s:i});const nx=STEPS.find(s=>s>km+1e-6);if(nx&&km<20)L.push({n:NAMES[i][1],dir:i*45+9,km:nx,seen:0,s:i});});return L.map((l,j)=>({...l,id:j+1}));}
+function fmtKm(km){return km<1?Math.round(km*1000)+' m':(String(km).replace('.',','))+' km';}
+function mapSVG(e){let g=`<svg viewBox="0 0 600 600" role="img" aria-label="Vista en planta del aeródromo con sectores y puntos de referencia">
+ <defs><pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(60)"><line x1="0" y1="0" x2="0" y2="8" stroke="var(--rain)" stroke-width="3"/></pattern></defs>
+ <rect x="0" y="0" width="600" height="600" fill="var(--map-bg)"/>
+ <path d="M${C-rad(16)} ${C}a${rad(16)} ${rad(16)} 0 1 0 ${2*rad(16)} 0a${rad(16)} ${rad(16)} 0 1 0 ${-2*rad(16)} 0ZM${C-rad(8)} ${C}a${rad(8)} ${rad(8)} 0 1 1 ${2*rad(8)} 0a${rad(8)} ${rad(8)} 0 1 1 ${-2*rad(8)} 0Z" fill="var(--vc)" fill-rule="evenodd"/>`;
+ [1,5,8,10,16,20].forEach(k=>{g+=`<circle cx="${C}" cy="${C}" r="${rad(k)}" fill="none" stroke="var(--ring)" stroke-width="1" ${k===10||k===20?'stroke-dasharray="3 4"':''}/><text x="${C+4}" y="${C-rad(k)+13}" font-size="11">${k} km</text>`;});
+ for(let i=0;i<8;i++){const [x,y]=P(22.5+45*i,20);g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="var(--ring)" stroke-width="1"/>`;const [lx,ly]=P(45*i,21.6);g+=`<text x="${lx}" y="${ly+5}" font-size="15" font-weight="700" text-anchor="middle" style="fill:var(--ink)">${DIRS[i]}</text>`;}
+ const [vx,vy]=P(315,12);g+=`<text x="${vx}" y="${vy}" font-size="11" text-anchor="middle">vecindad 8–16 km</text>`;
+ (e.feat||[]).forEach(f=>{
+  if(f.k==='fog'){const [x,y]=P(f.dir,f.d);g+=`<ellipse cx="${x}" cy="${y}" rx="${f.rx}" ry="${f.ry}" transform="rotate(${f.rot} ${x} ${y})" fill="var(--fog)" fill-opacity="${f.soft?.45:.85}" stroke="var(--fog-edge)" stroke-dasharray="4 3"/>`;}
+  if(f.k==='fogw'){g+=`<path d="M${C-12} ${C-120} C ${C-30} ${C-60}, ${C-6} ${C+40}, ${C-14} ${C+120} L ${C-150} ${C+110} C ${C-180} ${C+20}, ${C-170} ${C-90}, ${C-120} ${C-125} Z" fill="var(--fog)" fill-opacity=".85" stroke="var(--fog-edge)" stroke-dasharray="4 3"/>`;}
+  if(f.k==='mifg'){g+=`<circle cx="${C}" cy="${C}" r="${rad(f.km)}" fill="var(--fog)" fill-opacity=".35" stroke="var(--fog-edge)" stroke-dasharray="2 4"/><text x="${C}" y="${C+rad(f.km)+14}" font-size="11" text-anchor="middle">niebla baja &lt; 2 m</text>`;}
+  if(f.k==='rain'){const [x,y]=P(f.dir,f.d);g+=`<ellipse cx="${x}" cy="${y}" rx="26" ry="16" fill="url(#hatch)" stroke="var(--rain)"/><text x="${x}" y="${y-22}" font-size="11" text-anchor="middle" style="fill:var(--rain)">chubasco</text>`;}
+ });
+ const h=e.rwy,[ax,ay]=P(h,.7),[bx,by]=P(h+180,.7);
+ g+=`<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="var(--rwy)" stroke-width="7" stroke-linecap="butt"/>`;
+ const t1=String(Math.round(h/10)%36||36).padStart(2,'0'),t2=String(Math.round((h+180)/10)%36||36).padStart(2,'0');
+ const [l1x,l1y]=P(h+180,1.15),[l2x,l2y]=P(h,1.15);
+ g+=`<text x="${l1x}" y="${l1y+4}" font-size="12" font-weight="700" text-anchor="middle" style="fill:var(--ink)">${t1}</text><text x="${l2x}" y="${l2y+4}" font-size="12" font-weight="700" text-anchor="middle" style="fill:var(--ink)">${t2}</text>`;
+ g+=`<circle cx="${C}" cy="${C}" r="6" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>`;
+ if(help){const pts=e.v.map((m,i)=>P(i*45,m/1000).join(',')).join(' ');g+=`<polygon points="${pts}" fill="var(--help)" fill-opacity=".14" stroke="var(--help)" stroke-width="2"/>`;
+  e.v.forEach((m,i)=>{const [x,y]=P(i*45+(i%2?0:0),m/1000);g+=`<rect x="${x-26}" y="${y-11}" width="52" height="20" rx="5" fill="var(--help)"/><text x="${x}" y="${y+4}" font-size="12" font-weight="700" text-anchor="middle" style="fill:#FFFFFF">${m>=10000?Math.round(m/1000)+' km':m}</text>`;});}
+ landmarks(e.v).forEach(l=>{const [x,y]=P(l.dir,l.km);
+  g+=l.seen?`<path d="M${x} ${y-9} L${x+8} ${y+6} L${x-8} ${y+6}Z" fill="var(--seen)"/>`:`<path d="M${x} ${y-9} L${x+8} ${y+6} L${x-8} ${y+6}Z" fill="var(--map-bg)" stroke="var(--hidden)" stroke-width="1.5"/>`;
+  g+=`<text x="${x+10}" y="${y-4}" font-size="11" font-weight="700" style="fill:var(--ink)">${l.id}</text>`;});
+ return g+'</svg>';}
+function sectorRows(e){const L=landmarks(e.v);return DIRS.map((d,i)=>{const seen=L.find(l=>l.s===i&&l.seen),no=L.find(l=>l.s===i&&!l.seen);const v=e.v[i];
+ return `<tr><td><b>${d}</b></td><td class="lead"><span class="yes">▲ ${seen.id}</span> ${seen.n} · ${fmtKm(seen.km)}</td><td class="lead">${no?`<span class="no">△ ${no.id}</span> ${no.n} · ${fmtKm(no.km)}`:'—'}</td><td style="white-space:nowrap"><b>${v>=10000?Math.round(v/1000)+' km':v+' m'}</b></td></tr>`;}).join('');}
+function visData(e){const srt=[...e.v].sort((a,b)=>b-a);
+ return `<div class="panel">${e.panel.map(([k,v])=>`<div><span>${k}</span><br>${v}</div>`).join('')}</div>
+ <div class="rules"><div><b>Cómo leer el mapa</b>Estás en el punto naranjo, al centro. Las líneas dividen el horizonte en 8 sectores (N, NE, E…). Los anillos marcan la distancia y la franja celeste es la vecindad (8 a 16 km).</div><div><b>Qué significan los triángulos</b>▲ lleno: referencia que se ve. △ vacío: referencia que no se ve. La visibilidad del sector llega hasta el ▲ más lejano.</div></div>
+ <h3>Vista desde arriba</h3><div id="map">${mapSVG(e)}</div>
+ <div class="legend"><span><i style="background:var(--accent);border-radius:50%"></i>estación</span><span><i style="background:var(--seen)"></i>se ve</span><span><i style="background:var(--map-bg);border:1.5px solid var(--hidden)"></i>no se ve</span><span><i style="background:var(--fog)"></i>niebla</span><span><i style="background:var(--vc)"></i>vecindad</span><span><i style="background:var(--rwy)"></i>pista</span></div>
+ <h3>Lo que ve el observador en cada sector</h3>
+ <div class="scroll"><table class="lm"><tr><th>Sector</th><th class="lead">Se ve (más lejana)</th><th class="lead">No se ve</th><th>Visibilidad</th></tr>${sectorRows(e)}</table></div>
+ <label class="toggle"><input type="checkbox" id="hlp" ${help?'checked':''}> Ayuda: dibujar la visibilidad de cada sector en el mapa y ordenarla</label>
+ <div id="srt" class="hint" ${help?'':'hidden'}>De mayor a menor: ${srt.map((v,i)=>i===3?`<b>${v}</b>`:v).join(' · ')}. El 4º valor cubre la mitad del horizonte: es la reinante.</div>
+ <h3>Pasos para resolver</h3>
+ <ol class="steps"><li><b>Visibilidad de cada sector</b> (tabla de arriba).</li><li><b>Reinante:</b> ordena los 8 valores de mayor a menor; el 4º es la reinante (se alcanza en al menos la mitad del horizonte).</li><li><b>Mínima:</b> se informa solo si es menor que 1500 m, o si es menor que la mitad de la reinante <i>y</i> menor que 5000 m. Con su dirección.</li><li><b>Fenómeno:</b> FG (bajo 1000 m), BR (1000 a 5000 m), MI baja, BC en bancos, PR parcial, VC a 8–16 km.</li><li><b>Ingreso en SACLIM:</b> VVs = la menor visibilidad de todos los sectores; VVr = la reinante; VVmin y VVdir solo si la mínima se informa; ww = el número más alto aplicable de la tabla 4677; tiempo presente METAR por partes (intensidad o proximidad, descriptor y fenómeno).</li></ol>`;}
+
+render();
+</script>

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visibilidad y tiempo presente SYNOP y METAR – Práctica SACLIM</title>
+<style>
+:root{
+  --title1:#6f9fd8; --title2:#2f64b0; --frame:#8fb3de; --hdr:#e9eef3; --lbl:#f6f7fb; --line:#c9d2de;
+  --open:#fff2a8; --openb:#e2cf72; --sd:#e3e3e3; --sdb:#bdbdbd; --err:#d9261c;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font:12.5px "Segoe UI",Tahoma,Arial,sans-serif;color:#1b1b1b;background:#dfe7f1}
+.win{display:flex;flex-direction:column;min-height:100vh;border:1px solid #4e7fc1}
+.titlebar{background:linear-gradient(#8db6e6,var(--title1) 45%,var(--title2));color:#fff;font-size:14px;padding:4px 8px;border-bottom:1px solid #2b5a9e;text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.tabs{display:flex;gap:2px;padding:6px 6px 0;background:var(--hdr);border-bottom:1px solid var(--frame);flex-wrap:wrap}
+.tab{font:inherit;padding:5px 18px;border:1px solid var(--frame);border-bottom:0;background:#dfe8f3;cursor:pointer;border-radius:4px 4px 0 0;color:#233}
+.tab[aria-selected="true"]{background:#fff;font-weight:600;position:relative;top:1px}
+.pane{flex:1;background:#fff;overflow:auto}
+.pane[hidden]{display:none}
+.btn{font:inherit;min-width:110px;height:26px;padding:0 14px;border:1px solid #7a9cc8;border-radius:4px;background:linear-gradient(#fbfdff,#e4eefa 50%,#d4e4f7);color:#1b1b1b;cursor:pointer}
+.btn:hover:not(:disabled){background:linear-gradient(#fff,#d9ebfd 50%,#bcd8f6);border-color:#3c7fd0}
+.btn:disabled{color:#999;border-color:#b9c3cf;background:#eef1f4;cursor:default}
+.btn.pri{font-weight:600}
+.btn:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #1d6fd1;outline-offset:1px}
+.ic{display:inline-block;vertical-align:middle;flex:none}
+
+/* guía */
+.doc{max-width:960px;margin:0 auto;padding:18px 20px 34px;line-height:1.55;font-size:13px}
+.doc h2{font-size:17px;margin:0 0 4px;color:#1f4f93}
+.doc h3{font-size:14px;margin:22px 0 8px;color:#1f4f93;border-bottom:1px solid #dbe3ee;padding-bottom:3px}
+.doc .sub{color:#51637a;margin:0 0 12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:760px){.grid2,.tree{grid-template-columns:1fr!important}}
+.box{border:1px solid var(--line);border-radius:5px;padding:10px 14px;background:#f8fafd}
+.box h4{margin:0 0 4px;font-size:13.5px}
+.box ul{margin:4px 0;padding-left:18px}
+.warn{border:1px solid #e3c25a;background:#fff6d6;border-radius:5px;padding:8px 12px;margin:10px 0}
+.errb{border:1px solid #ef9e98;background:#fde3e1;border-radius:5px;padding:8px 12px;margin:10px 0}
+.tree{display:grid;grid-template-columns:1fr auto 120px;gap:6px 10px;align-items:center;margin:6px 0}
+.tree .q{background:#eef3f8;border-radius:5px;padding:7px 10px}
+.tree .a{color:#7f95aa;font-weight:600}
+.tree .r{border-radius:5px;padding:6px;text-align:center;color:#fff;font-weight:700;font-size:15px}
+table.t{border-collapse:collapse;width:100%;margin:6px 0}
+table.t th,table.t td{border:1px solid #d3dbe6;padding:4px 8px;text-align:left;vertical-align:top}
+table.t th{background:#1c2b3b;color:#fff;font-weight:600}
+table.t td.c{text-align:center;font-weight:700;width:96px}
+table.t th{white-space:nowrap}
+.ok{color:#2f8a1f;font-weight:700}.no{color:#c62820;font-weight:700}
+.mat{border-collapse:collapse;margin:6px 0}
+.mat td,.mat th{border:1px solid #d3dbe6;padding:6px 14px;text-align:center}
+.mat th{background:#1c2b3b;color:#fff}
+.mat td{font-size:17px;font-weight:700;background:#eef3f8}
+
+/* tabla de claves */
+.tbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line);background:#f8fafd;position:sticky;top:0}
+.tbar input{font:inherit;height:26px;border:1px solid #8aa4c4;padding:0 8px;width:240px}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{font:inherit;font-size:11.5px;padding:3px 9px;border:1px solid #9fb6d4;background:#fff;border-radius:12px;cursor:pointer}
+.chip[aria-pressed="true"]{background:#2f64b0;color:#fff;border-color:#2f64b0}
+.codes{padding:10px 14px 30px;max-width:980px}
+.codes h4{margin:14px 0 4px;color:#1f4f93}
+.codes .row{display:grid;grid-template-columns:48px 1fr;border-bottom:1px solid #edf0f4;padding:4px 0}
+.codes .row b{color:#1f4f93}
+
+/* práctica */
+.bar{display:flex;align-items:center;gap:10px 16px;padding:7px 10px;background:var(--hdr);border-bottom:1px solid var(--frame);flex-wrap:wrap}
+.bar label{display:flex;gap:6px;align-items:center;font-weight:600;color:#33475f}
+.bar select{font:inherit;height:24px;border:1px solid #8aa4c4;background:#fff}
+.prog{display:flex;gap:3px;flex-wrap:wrap}
+.prog span{min-width:22px;height:20px;border:1px solid #9fb3cc;background:#fff;font-size:11px;line-height:18px;text-align:center;border-radius:3px}
+.prog span.cur{background:#ffe680;border-color:#c7a92e;font-weight:700}
+.prog span.okk{background:#8fd27a;border-color:#5aa545}
+.prog span.bad{background:#f19191;border-color:#c33}
+.bar .sc{margin-left:auto;font-weight:600;color:#1f4f93}
+.work{display:grid;grid-template-columns:minmax(300px,420px) 1fr;min-height:0}
+@media (max-width:900px){.work{grid-template-columns:1fr}}
+.sit{background:#1b222b;color:#dbe6f0;padding:14px 16px;line-height:1.55}
+.sit h4{margin:0 0 4px;color:#7fd3ff;font-weight:600}
+.sit .st{color:#93a6ba;font-size:12px;margin-bottom:10px}
+.sit p{margin:0 0 10px;font-size:13.5px}
+.sit .per{border-top:1px solid #33404f;padding-top:8px;color:#c9d6e2}
+.sit .per b{color:#ffd166}
+.right{padding:12px 14px 24px}
+.frm{border:1px solid var(--frame);border-radius:3px;overflow:hidden}
+.frm table{border-collapse:collapse;width:100%}
+.frm td{border-bottom:1px solid var(--line);padding:6px 10px;vertical-align:top}
+.frm tr:last-child td{border-bottom:0}
+.frm td.lb{background:var(--lbl);font-weight:600;width:34%}
+.frm td.lb small{display:block;font-weight:400;color:#2f7fd0}
+.fl{display:inline-flex;flex-direction:column;gap:2px;margin-right:14px;vertical-align:top}
+.fl > span{color:#33475f;font-size:12px}
+.w{display:inline-flex;align-items:center;gap:3px}
+.w input[type=text]{width:78px;height:22px;border:1px solid var(--openb);background:var(--open);padding:0 5px;font:inherit}
+.w select{height:22px;border:1px solid var(--openb);background:var(--open);font:inherit;max-width:310px}
+.w input.sd,.w select.sd{background:var(--sd);border-color:var(--sdb);color:#777}
+.sdb{font-size:10.5px;height:20px;padding:0 5px;border:1px solid #b5c2d2;background:#f4f6f9;border-radius:3px;cursor:pointer;color:#51637a}
+.sdb[aria-pressed="true"]{background:#d6d6d6;border-color:#9a9a9a;color:#333;font-weight:600}
+.w .ic{display:none;cursor:help}
+.w.haserr .ic.er,.w.haswarn .ic.wa{display:inline-block}
+.acts{display:flex;gap:8px;justify-content:flex-end;padding:8px 10px;background:var(--hdr);border-top:1px solid var(--frame)}
+.hint{color:#51637a;font-size:12px;margin:8px 0;line-height:1.45}
+.msgs{list-style:none;margin:10px 0;padding:0;border:1px solid #e0c7c4;background:#fffaf9;border-radius:4px}
+.msgs li{display:flex;gap:7px;padding:6px 9px;border-bottom:1px solid #f0e2e0;align-items:flex-start}
+.msgs li:last-child{border-bottom:0}
+.lv{font-size:10.5px;font-weight:600;padding:0 6px;border-radius:8px;margin-left:4px;white-space:nowrap}
+.lv.b{background:#fde3e1;color:#97170f} .lv.n{background:#fbeceb;color:#a33a32} .lv.a{background:#fff2c2;color:#6b4a00}
+.res{border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-top:10px}
+.res .rh{padding:8px 12px;font-weight:600}
+.res .rh.ok{background:#e3f4dc;color:#2f6b20} .res .rh.bad{background:#fde3e1;color:#97170f}
+.res table{border-collapse:collapse;width:100%}
+.res th,.res td{border-top:1px solid #e3e8ef;padding:5px 9px;text-align:left}
+.res th{background:#f3f6fa;color:#33475f}
+.res td.c{text-align:center;font-weight:700;width:34px}
+.why{padding:8px 12px;border-top:1px solid #e3e8ef;line-height:1.55;background:#fbfcfe}
+.why ul{margin:4px 0;padding-left:18px}
+.end{max-width:720px;margin:0 auto;padding:20px}
+.bar label[hidden]{display:none}
+.wxg{display:grid;grid-template-columns:repeat(5,minmax(64px,auto)) 22px;gap:4px 6px;align-items:center}
+.wxg .wh{font-size:11.5px;color:#33475f}
+.wxg select{height:22px;border:1px solid var(--openb);background:var(--open);font:inherit;max-width:150px}
+.end table{border-collapse:collapse;width:100%}
+.end td,.end th{border:1px solid #d3dbe6;padding:5px 8px;text-align:left}
+.end th{background:#eef2f7}
+#ctxm{position:fixed;z-index:3000;background:#f5f6f7;border:1px solid #979797;box-shadow:2px 3px 5px rgba(0,0,0,.3);padding:2px;min-width:230px;display:none;font-size:13px}
+#ctxm div{display:flex;justify-content:space-between;gap:30px;padding:4px 10px 4px 26px;cursor:default;border:1px solid transparent}
+#ctxm div:hover:not(.dis){background:#dcebfc;border-color:#9ac6f5}
+#ctxm div.dis{color:#9a9a9a;pointer-events:none}
+#ctxm hr{border:0;border-top:1px solid #d7d7d7;margin:2px 2px 2px 24px}
+#errDlg{position:fixed;inset:0;background:rgba(15,42,68,.35);display:none;align-items:center;justify-content:center;z-index:3100;padding:16px}
+#errDlg .ed{background:#fff;border:1px solid #6d8fbf;box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:520px;width:100%}
+#errDlg .et{background:linear-gradient(#dbe7f5,#c4d6ee);padding:6px 10px;font-weight:600;color:#1f3f6b}
+#errDlg #errB{padding:10px 14px;font-size:13.5px}#errDlg .ea{padding:8px 14px;text-align:right;border-top:1px solid #e1e6ee}
+.w select.sd:disabled{opacity:1}
+</style>
+</head>
+<body>
+<div class="win">
+  <div class="titlebar">Visibilidad, Tiempo Presente y Pasado · SYNOP, METAR y mixto – Práctica SACLIM</div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-p="pGuia">1 · Guía</button>
+    <button class="tab" role="tab" aria-selected="false" data-p="pTabla">2 · Tablas ww y W</button>
+    <button class="tab" role="tab" aria-selected="false" data-p="pPrac">3 · Práctica de ingreso</button>
+  </div>
+
+  <!-- ===================== GUÍA ===================== -->
+  <section class="pane" id="pGuia">
+   <div class="doc">
+    <h2>Cómo se ingresan en SACLIM</h2>
+    <p class="sub">Estaciones sinópticas, aeronáuticas y antárticas. Casillas: Visibilidad Horizontal Sinóptica (VV), Visibilidad METAR, Visibilidad Vertical, Tiempo Presente (ww y METAR), Tiempo Reciente y Tiempo Pasado (W1, W2).</p>
+
+    <h3>1 · Visibilidad horizontal sinóptica (VV)</h3>
+    <div class="grid2">
+      <div class="box"><h4>Qué se informa</h4><ul>
+        <li>La distancia a la que se identifican las marcas de visibilidad.</li>
+        <li><b>Si no es igual en todas las direcciones, se informa la menor.</b></li>
+        <li>En metros, número entero.</li></ul></div>
+      <div class="box"><h4>Cómo se estima</h4><ul>
+        <li>Recorra todo el horizonte con el plano de marcas de la estación.</li>
+        <li>En cada dirección, la marca más lejana que todavía se identifica.</li>
+        <li>Si se ve la de 4 km y no la de 6 km, la visibilidad está entre ambas.</li>
+        <li>De noche, luces de intensidad conocida.</li></ul></div>
+    </div>
+    <p class="hint">En el METAR se usa la visibilidad reinante y la mínima aparte. En el SYNOP va una sola: la menor.</p>
+
+    <h3>2 · Visibilidad vertical (cielo invisible)</h3>
+    <div class="errb">Solo se ingresa si es <b>menor a 60 m</b>. Va siempre con <b>N = 9</b>, dirección de las nubes <b>Dl, Dm, Dh = 9</b> y <b>todas las casillas de nubes Sin Dato</b>. Si falta algo, SACLIM marca error no bloqueante.</div>
+
+    <h3>3 · Tiempo presente (ww): el árbol de decisión</h3>
+    <div class="tree">
+      <div class="q">¿Hay precipitación en la estación ahora?</div><div class="a">Sí →</div><div class="r" style="background:#2bb673">50–99</div>
+      <div class="q">¿Hay niebla, ventisca, polvo o arena en la estación?</div><div class="a">Sí →</div><div class="r" style="background:#3aa6d6">30–49</div>
+      <div class="q">¿Hubo precipitación, niebla o tormenta en la última hora (y ya no)?</div><div class="a">Sí →</div><div class="r" style="background:#2f86d6">20–29</div>
+      <div class="q">¿Hay neblina, humo, calima o fenómenos a la vista?</div><div class="a">Sí →</div><div class="r" style="background:#b08a5a">04–19</div>
+      <div class="q">Nada de lo anterior</div><div class="a">→</div><div class="r" style="background:#7f95aa">00–03</div>
+    </div>
+    <p class="hint">Regla general: se informa la clave <b>más alta</b> que corresponda. Por eso el árbol se recorre de arriba hacia abajo.</p>
+    <div class="grid2">
+      <div class="box"><h4>Niebla en la estación (42–47)</h4>
+        <table class="mat"><tr><th></th><th>Cielo visible</th><th>Cielo invisible</th></tr>
+        <tr><th>Menos espesa</th><td>42</td><td>43</td></tr><tr><th>Sin cambio</th><td>44</td><td>45</td></tr><tr><th>Más espesa</th><td>46</td><td>47</td></tr></table>
+        <p class="hint">40 a distancia · 41 en bancos · 48–49 con depósito de cencellada.</p></div>
+      <div class="box"><h4>Llovizna, lluvia y nieve</h4>
+        <table class="mat"><tr><th></th><th>Débil</th><th>Moderada</th><th>Fuerte</th></tr>
+        <tr><th>Llovizna int. / cont.</th><td>50/51</td><td>52/53</td><td>54/55</td></tr>
+        <tr><th>Lluvia int. / cont.</th><td>60/61</td><td>62/63</td><td>64/65</td></tr>
+        <tr><th>Nieve int. / cont.</th><td>70/71</td><td>72/73</td><td>74/75</td></tr></table>
+        <p class="hint">Intermitente: con interrupciones en la última hora. Continua: sin interrupción.</p></div>
+    </div>
+
+    <h3>4 · Tiempo pasado (W1, W2)</h3>
+    <div class="grid2">
+      <div class="box"><h4>Cómo se eligen</h4><ul>
+        <li>Los dos fenómenos de <b>clave más alta</b> del período.</li>
+        <li><b>W1 ≥ W2</b> siempre (al revés, error bloqueante).</li>
+        <li>Si hubo un solo fenómeno, W1 = W2.</li>
+        <li>0, 1 y 2 describen la nubosidad.</li>
+        <li>Período: 6 h en 00, 06, 12 y 18 UTC; 3 h en 03, 09, 15 y 21 UTC.</li></ul></div>
+      <div class="box"><h4>Ojo en la Antártica</h4><ul>
+        <li><b>W = 3 es solo ventisca alta</b> (o tempestad de polvo o arena). La ventisca baja no cuenta.</li>
+        <li>Si nieva y hay ventisca: la nevada manda en ww (70–79) y en W (7 &gt; 3).</li></ul></div>
+    </div>
+
+    <h3>5 · Reglas de control: VV y ww deben contar la misma historia</h3>
+    <table class="t"><tr><th>ww</th><th>VV &lt; 1000 m</th><th>VV ≥ 1000 m</th><th>Por qué</th></tr>
+      <tr><td>00–03 sin fenómenos</td><td class="c no">✖</td><td class="c ok">✔</td><td>Si la visibilidad está reducida, falta la causa en ww</td></tr>
+      <tr><td>10 neblina</td><td class="c no">✖</td><td class="c ok">✔</td><td>Con menos de 1000 m es niebla</td></tr>
+      <tr><td>11–12 niebla baja</td><td class="c no">✖</td><td class="c ok">✔</td><td>No reduce la visibilidad a la altura de los ojos</td></tr>
+      <tr><td>28 niebla en la hora precedente · 40 a distancia</td><td class="c no">✖</td><td class="c ok">✔</td><td>La niebla no está en la estación</td></tr>
+      <tr><td>42–49 niebla</td><td class="c ok">✔</td><td class="c no">✖</td><td>Niebla en la estación = menos de 1000 m</td></tr>
+      <tr><td>30–35 tempestad de polvo o arena</td><td class="c ok">✔</td><td class="c no">✖</td><td>Reduce la visibilidad bajo 1000 m</td></tr></table>
+    <p class="hint">Otras: ww 20–29 debe verse reflejado en W1 o W2. Visibilidad vertical: ver punto 2.</p>
+
+    <h3>6 · METAR: tiempo presente, reciente y coherencia con el SYNOP</h3>
+    <div class="grid2">
+      <div class="box"><h4>Cómo se arma cada grupo</h4><ul>
+        <li>Orden fijo: <b>intensidad o proximidad → descriptor → fenómeno(s)</b>: <b>+SHRA</b>, <b>VCBLSN</b>, <b>-FZDZ</b>.</li>
+        <li>Hasta 3 grupos; un solo descriptor por grupo.</li>
+        <li>Precipitaciones mezcladas en un grupo (<b>-RASN</b>); el oscurecimiento va aparte (<b>-DZ BR</b>).</li>
+        <li><b>El signo es de la precipitación</b>: no existen +FG, -BR, -DRSN ni +TS.</li>
+        <li>VC: entre 8 y 16 km. La precipitación cercana es <b>VCSH</b>.</li></ul></div>
+      <div class="box"><h4>Tiempo reciente (RE) y ww 20–29</h4><ul>
+        <li>RE: lo ocurrido desde el METAR anterior (o en la última hora) que ya terminó.</li>
+        <li>Solo precipitación moderada o fuerte (y la engelante), tormenta, ventisca alta, DS, SS, FC y VA.</li>
+        <li>El SYNOP recuerda todo: lluvia débil que paró → ww 21, pero <b>sin RERA</b>.</li>
+        <li>La niebla no tiene RE: niebla que se levantó → ww 28, sin RE.</li>
+        <li>Trueno ahora sin lluvia: ww <b>17</b>, que le gana a 20–49.</li></ul></div>
+    </div>
+    <table class="t"><tr><th>En el METAR</th><th>En el SYNOP debe verse</th></tr>
+      <tr><td>Precipitación (DZ, RA, SN, SH…)</td><td>ww 50–99</td></tr>
+      <tr><td>TS en la estación</td><td>ww 17 (sin precipitación) o 95–99</td></tr>
+      <tr><td>FG · BR · BCFG · MIFG · VCFG</td><td>ww 42–49 · 10 · 41 · 11–12 · 40</td></tr>
+      <tr><td>RETS con lluvia ahora · RETS sin nada</td><td>ww 91–94 · ww 29</td></tr>
+      <tr><td>VCSH (8–16 km)</td><td>ww 15</td></tr>
+      <tr><td>Mínima informada</td><td>VV sinóptica = mínima (la menor)</td></tr></table>
+    <p class="hint">En la práctica, el modo <b>Mixto</b> revisa estas coherencias como alertas.</p>
+    <div class="warn">Las combinaciones VV ↔ ww siguen la tabla OMM y su tipo de mensaje en este módulo es <b>ilustrativo</b>: la clasificación real la define SACLIM. Recuerde: que SACLIM acepte la observación no significa que esté correcta.</div>
+   </div>
+  </section>
+
+  <!-- ===================== TABLAS ===================== -->
+  <section class="pane" id="pTabla" hidden>
+    <div class="tbar"><input id="q" type="search" placeholder="Buscar: niebla, ventisca, 45, BR…" aria-label="Buscar clave"><div class="chips" id="chips"></div></div>
+    <div class="codes" id="codes"></div>
+  </section>
+
+  <!-- ===================== PRÁCTICA ===================== -->
+  <section class="pane" id="pPrac" hidden>
+    <div class="bar">
+      <label>Tipo <select id="modo"><option value="x">Mixto: SYNOP + METAR (6)</option><option value="m">Solo METAR (6)</option><option value="s">Solo SYNOP (15)</option></select></label>
+      <label id="filL" hidden>Estaciones <select id="fil"><option value="">Todas</option><option value="S">Solo sinópticas</option><option value="A">Solo antárticas</option></select></label>
+      <div class="prog" id="prog"></div>
+      <span class="sc" id="score"></span>
+    </div>
+    <div id="pbody"></div>
+  </section>
+  <span id="foot" hidden></span>
+</div>
+
+<div id="ctxm" role="menu">
+  <div data-a="sd" role="menuitem"><span>Sin Dato</span><span>Ctrl+S</span></div>
+  <div data-a="open" role="menuitem"><span>Abrir Dato</span><span></span></div>
+  <div data-a="comp" role="menuitem"><span>Componente(s) Sin Dato(s)</span><span>Ctrl+D</span></div>
+  <hr>
+  <div data-a="err" role="menuitem"><span>Ver Errores</span><span>Ctrl+E</span></div>
+</div>
+<div id="errDlg" role="dialog" aria-modal="true"><div class="ed"><div class="et" id="errT"></div><div id="errB"></div><div class="ea"><button class="btn" id="errOk">Aceptar</button></div></div></div>
+<script>
+const WW = {"00": "Evolución de las nubes no observada", "01": "Nubes disipándose o haciéndose menos espesas", "02": "Estado del cielo sin cambio", "03": "Nubes formándose o desarrollándose", "04": "Visibilidad reducida por humo", "05": "Calima", "06": "Polvo en suspensión, no levantado por el viento", "07": "Polvo o arena levantados por el viento", "08": "Remolinos de polvo o arena bien desarrollados", "09": "Tempestad de polvo o arena a la vista o en la hora precedente", "10": "Neblina", "11": "Niebla baja en bancos", "12": "Niebla baja más o menos continua", "13": "Relámpagos visibles, sin trueno", "14": "Precipitación a la vista, sin alcanzar el suelo", "15": "Precipitación a la vista, alcanzando el suelo a más de 5 km", "16": "Precipitación a la vista, alcanzando el suelo cerca, no en la estación", "17": "Tormenta sin precipitación en el momento de la observación", "18": "Turbonadas", "19": "Tromba(s) o nube(s) embudo", "20": "Llovizna o cinarra en la hora precedente", "21": "Lluvia en la hora precedente", "22": "Nieve en la hora precedente", "23": "Lluvia y nieve o hielo granulado en la hora precedente", "24": "Llovizna o lluvia engelante en la hora precedente", "25": "Chubascos de lluvia en la hora precedente", "26": "Chubascos de nieve o de lluvia y nieve en la hora precedente", "27": "Chubascos de granizo o de lluvia y granizo en la hora precedente", "28": "Niebla o niebla helada en la hora precedente", "29": "Tormenta en la hora precedente", "30": "Tempestad de polvo/arena débil o moderada, disminuyendo", "31": "Tempestad de polvo/arena débil o moderada, sin cambio", "32": "Tempestad de polvo/arena débil o moderada, aumentando", "33": "Tempestad de polvo/arena fuerte, disminuyendo", "34": "Tempestad de polvo/arena fuerte, sin cambio", "35": "Tempestad de polvo/arena fuerte, aumentando", "36": "Ventisca baja de nieve débil o moderada", "37": "Ventisca baja de nieve fuerte", "38": "Ventisca alta de nieve débil o moderada", "39": "Ventisca alta de nieve fuerte", "40": "Niebla a distancia, por encima del observador", "41": "Niebla en bancos", "42": "Niebla, cielo visible, haciéndose menos espesa", "43": "Niebla, cielo invisible, haciéndose menos espesa", "44": "Niebla, cielo visible, sin cambio", "45": "Niebla, cielo invisible, sin cambio", "46": "Niebla, cielo visible, haciéndose más espesa", "47": "Niebla, cielo invisible, haciéndose más espesa", "48": "Niebla con depósito de cencellada, cielo visible", "49": "Niebla con depósito de cencellada, cielo invisible", "50": "Llovizna intermitente débil", "51": "Llovizna continua débil", "52": "Llovizna intermitente moderada", "53": "Llovizna continua moderada", "54": "Llovizna intermitente fuerte", "55": "Llovizna continua fuerte", "56": "Llovizna engelante débil", "57": "Llovizna engelante moderada o fuerte", "58": "Llovizna y lluvia débil", "59": "Llovizna y lluvia moderada o fuerte", "60": "Lluvia intermitente débil", "61": "Lluvia continua débil", "62": "Lluvia intermitente moderada", "63": "Lluvia continua moderada", "64": "Lluvia intermitente fuerte", "65": "Lluvia continua fuerte", "66": "Lluvia engelante débil", "67": "Lluvia engelante moderada o fuerte", "68": "Lluvia o llovizna y nieve débil", "69": "Lluvia o llovizna y nieve moderada o fuerte", "70": "Nieve intermitente débil", "71": "Nieve continua débil", "72": "Nieve intermitente moderada", "73": "Nieve continua moderada", "74": "Nieve intermitente fuerte", "75": "Nieve continua fuerte", "76": "Polvo de diamante", "77": "Cinarra", "78": "Cristales de nieve aislados en forma de estrella", "79": "Hielo granulado", "80": "Chubascos de lluvia débiles", "81": "Chubascos de lluvia moderados o fuertes", "82": "Chubascos de lluvia violentos", "83": "Chubascos de lluvia y nieve débiles", "84": "Chubascos de lluvia y nieve moderados o fuertes", "85": "Chubascos de nieve débiles", "86": "Chubascos de nieve moderados o fuertes", "87": "Chubascos de nieve granulada o granizo pequeño débiles", "88": "Chubascos de nieve granulada o granizo pequeño moderados o fuertes", "89": "Chubascos de granizo débiles, sin trueno", "90": "Chubascos de granizo moderados o fuertes, sin trueno", "91": "Lluvia débil; tormenta en la hora precedente", "92": "Lluvia moderada o fuerte; tormenta en la hora precedente", "93": "Nieve, lluvia y nieve o granizo débil; tormenta en la hora precedente", "94": "Nieve, lluvia y nieve o granizo moderado o fuerte; tormenta en la hora precedente", "95": "Tormenta débil o moderada con lluvia y/o nieve", "96": "Tormenta débil o moderada con granizo", "97": "Tormenta fuerte con lluvia y/o nieve", "98": "Tormenta con tempestad de polvo o arena", "99": "Tormenta fuerte con granizo"}, WP = ["Nubosidad de 4 octas o menos todo el período", "Nubosidad de más de 4 octas parte del período y 4 o menos el resto", "Nubosidad de más de 4 octas todo el período", "Tempestad de polvo o arena, o ventisca alta", "Niebla, niebla helada o calima espesa", "Llovizna", "Lluvia", "Nieve, o lluvia y nieve", "Chubasco(s)", "Tormenta(s)"];
+const $ = s => document.querySelector(s);
+const pad = (n, w = 2) => String(n).padStart(w, "0");
+const ERR = '<svg class="ic er" width="15" height="15" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7.3" fill="#d9261c" stroke="#a3140c" stroke-width=".7"/><rect x="7" y="3.4" width="2" height="6" rx=".6" fill="#fff"/><rect x="7" y="10.8" width="2" height="2" rx=".6" fill="#fff"/></svg>';
+const WRN = '<svg class="ic wa" width="16" height="15" viewBox="0 0 16 15"><path d="M8 .9 15.3 14.2H.7z" fill="#ffd23a" stroke="#c98a1c" stroke-width=".9" stroke-linejoin="round"/><rect x="7.1" y="4.8" width="1.8" height="5.2" rx=".5" fill="#151a30"/><rect x="7.1" y="11" width="1.8" height="1.8" rx=".5" fill="#151a30"/></svg>';
+
+/* ---------- pestañas ---------- */
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
+  document.querySelectorAll(".pane").forEach(p => p.hidden = p.id !== t.dataset.p);
+  if (t.dataset.p === "pPrac" && !PR.items.length) start();
+});
+
+/* ---------- tablas ---------- */
+const GR = [["00–03", 0, 3, "Evolución del cielo"], ["04–09", 4, 9, "Humo, calima, polvo"], ["10–19", 10, 19, "Neblina, niebla baja, a la vista"], ["20–29", 20, 29, "En la hora precedente"], ["30–39", 30, 39, "Polvo, arena y ventisca"], ["40–49", 40, 49, "Niebla"], ["50–59", 50, 59, "Llovizna"], ["60–69", 60, 69, "Lluvia"], ["70–79", 70, 79, "Nieve y sólidos"], ["80–99", 80, 99, "Chubascos y tormenta"]];
+let GSEL = "";
+$("#chips").innerHTML = `<button class="chip" data-g="" aria-pressed="true">Todas</button>` + GR.map(g => `<button class="chip" data-g="${g[0]}" aria-pressed="false">${g[0]}</button>`).join("") + `<button class="chip" data-g="W" aria-pressed="false">W1 W2</button><button class="chip" data-g="M" aria-pressed="false">METAR w'w' y RE</button>`;
+$("#chips").querySelectorAll(".chip").forEach(c => c.onclick = () => { GSEL = c.dataset.g; $("#chips").querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", x === c)); renderCodes(); });
+$("#q").addEventListener("input", renderCodes);
+function renderCodes(){
+  const q = $("#q").value.trim().toLowerCase(), m = t => !q || t.toLowerCase().includes(q);
+  let h = "";
+  GR.forEach(([k, a, b, t]) => { if (GSEL && GSEL !== k) return;
+    const rows = []; for (let i = a; i <= b; i++){ const c = pad(i); if (m(c + " " + WW[c])) rows.push(`<div class="row"><b>${c}</b><span>${WW[c]}</span></div>`); }
+    if (rows.length) h += `<h4>ww ${k} · ${t}</h4>` + rows.join(""); });
+  if (!GSEL || GSEL === "W"){ const rows = WP.map((t, i) => m(i + " " + t) ? `<div class="row"><b>${i}</b><span>${t}</span></div>` : "").join(""); if (rows) h += `<h4>Tiempo pasado W1, W2</h4>` + rows; }
+  if (!GSEL || GSEL === "M"){ [["Intensidad y proximidad", INT], ["Descriptores", DESC], ["Fenómenos", FEN], ["Tiempo reciente", RES]].forEach(([t, L]) => {
+    const rows = L.map(([c, d]) => m(c + " " + d) ? `<div class="row"><b>${c}</b><span>${d}</span></div>` : "").join(""); if (rows) h += `<h4>METAR · ${t}</h4>` + rows; }); }
+  $("#codes").innerHTML = h || `<p class="hint">Sin resultados.</p>`;
+}
+
+/* ---------- casos de práctica ----------
+   vv: [mín, máx] aceptado · vis: null (Sin Dato) o [mín, máx] · n: N · ww: [aceptados] · w1/w2: [aceptados] */
+const CASOS = [
+  {t:"S", est:"Quinta Normal", h:12, per:6, sit:"Llovió hasta hace 40 minutos; ahora no llueve. Se ve la marca de 8 km, no la de 10 km. Cielo con 7 octas.", pas:"Lluvia de 07:00 a 11:20 UTC. Cubierto (más de 4 octas) todo el período.",
+   vv:[8000, 9999], vis:null, n:7, ww:["21"], w1:[6], w2:[2], why:["La lluvia terminó hace menos de una hora y ya no llueve: ww 21.", "En el período: lluvia (6) y más de 4 octas todo el período (2): W1 6, W2 2."]},
+  {t:"S", est:"Quinta Normal", h:12, per:6, sit:"Niebla espesa en la estación. Se ve la marca de 200 m, no la de 300 m. No se distingue el cielo; el globo piloto desaparece a unos 40 m. La niebla no cambió en la última hora.", pas:"Niebla todo el período.",
+   vv:[200, 299], vis:[35, 45], n:9, ww:["45"], w1:[4], w2:[4, 2], why:["Niebla en la estación, cielo invisible, sin cambio: ww 45.", "Visibilidad vertical 40 m (menor a 60 m): se ingresa, con N = 9 (y Dl Dm Dh = 9, nubes Sin Dato).", "Solo niebla en el período: W1 = W2 = 4."]},
+  {t:"S", est:"Quinta Normal", h:15, per:3, sit:"Neblina. Se ve la marca de 3 km, no la de 4 km. Cielo con 3 octas; las nubes se están disipando.", pas:"Nubosidad de 4 octas o menos todo el período.",
+   vv:[3000, 3999], vis:null, n:3, ww:["10"], w1:[0], w2:[0], why:["Neblina con VV de 1000 m o más: ww 10. Es más alta que 01 (nubes disipándose), por eso manda.", "Período de 3 h (15 UTC) solo con poca nubosidad: W1 = W2 = 0."]},
+  {t:"S", est:"Quinta Normal", h:18, per:6, sit:"Lluvia moderada continua. Se ve la marca de 6 km, no la de 8 km. Cielo cubierto (8 octas).", pas:"Llovizna de 12:00 a 14:00 UTC; después, lluvia hasta ahora.",
+   vv:[6000, 7999], vis:null, n:8, ww:["63"], w1:[6], w2:[5], why:["Lluvia moderada continua: ww 63.", "En el período: lluvia (6) y llovizna (5): W1 6, W2 5."]},
+  {t:"S", est:"Quinta Normal", h:21, per:3, sit:"Chubascos de lluvia débiles en este momento. Se ve la marca de 20 km. Cielo con 6 octas.", pas:"Hubo tormenta (truenos) de 18:40 a 19:30 UTC; luego chubascos.",
+   vv:[20000, 99999], vis:null, n:6, ww:["80"], w1:[9], w2:[8], why:["La tormenta terminó hace más de una hora, así que no corresponde 91–94: ww 80 (chubascos de lluvia débiles).", "En el período: tormenta (9) y chubascos (8): W1 9, W2 8."]},
+  {t:"S", est:"Quinta Normal", h:9, per:3, sit:"Calima. Se ve la marca de 4 km, no la de 5 km. Cielo con 2 octas.", pas:"Nubosidad de 4 octas o menos todo el período; calima no espesa.",
+   vv:[4000, 4999], vis:null, n:2, ww:["05"], w1:[0], w2:[0], why:["Visibilidad reducida por calima: ww 05.", "La calima no fue espesa, así que no es W 4: W1 = W2 = 0."]},
+  {t:"S", est:"Quinta Normal", h:12, per:6, sit:"Niebla baja en bancos, que no supera la altura de los ojos. Se ve la marca de 10 km. Cielo con 1 octa.", pas:"Niebla en la estación (VV 500 m) de 07:00 a 09:00 UTC; poca nubosidad el resto.",
+   vv:[10000, 19999], vis:null, n:1, ww:["11"], w1:[4], w2:[0], why:["Niebla baja en bancos: ww 11 (no reduce la visibilidad a la altura de los ojos, por eso VV ≥ 1000 m).", "En el período: niebla (4) y nubosidad de 4 octas o menos (0): W1 4, W2 0."]},
+  {t:"S", est:"Quinta Normal", h:3, per:3, sit:"Niebla sobre los cerros, a distancia; en la estación se ve la marca de 7 km, no la de 8 km. Cielo con 1 octa.", pas:"Nubosidad de 4 octas o menos todo el período.",
+   vv:[7000, 7999], vis:null, n:1, ww:["40"], w1:[0], w2:[0], why:["Niebla a distancia, no en la estación: ww 40, con VV ≥ 1000 m.", "W1 = W2 = 0."]},
+  {t:"A", est:"Base O'Higgins", h:12, per:6, sit:"Ventisca alta moderada, sin nieve cayendo. Se ve la marca de 600 m, no la de 800 m. No se ve el cielo; visibilidad vertical de unos 40 m.", pas:"Nevó débil de 08:00 a 09:00 UTC. Ventisca alta todo el período.",
+   vv:[600, 799], vis:[35, 45], n:9, ww:["38"], w1:[7], w2:[3], why:["Ventisca alta débil o moderada: ww 38.", "Cielo invisible: visibilidad vertical 40 m, N = 9 (Dl Dm Dh = 9, nubes Sin Dato).", "En el período: nieve (7) y ventisca alta (3): W1 7, W2 3."]},
+  {t:"A", est:"Base O'Higgins", h:0, per:6, sit:"Nieve continua moderada, con ventisca alta. Se ve la marca de 800 m, no la de 1000 m. Cielo cubierto (8 octas), se distinguen las nubes.", pas:"Ventisca alta desde las 19:00 UTC; nieve desde las 22:00 UTC.",
+   vv:[800, 999], vis:null, n:8, ww:["73"], w1:[7], w2:[3], why:["Hay nieve cayendo: manda la nevada (clave más alta). Nieve continua moderada: ww 73.", "W1 7 (nieve), W2 3 (ventisca alta)."]},
+  {t:"A", est:"Base Arturo Prat", h:18, per:6, sit:"Ventisca baja débil (la nieve no supera la altura de los ojos). Se ve la marca de 10 km. Cielo con 3 octas.", pas:"Nubosidad de 4 octas o menos todo el período; ventisca baja desde las 15:00 UTC.",
+   vv:[10000, 19999], vis:null, n:3, ww:["36"], w1:[0], w2:[0], why:["Ventisca baja débil o moderada: ww 36.", "La ventisca baja no es W 3 (solo la alta). Queda la nubosidad: W1 = W2 = 0."]},
+  {t:"A", est:"Bahía Fildes", h:12, per:6, sit:"Niebla con depósito de cencellada (temperatura −3 °C), cielo visible. Se ve la marca de 400 m, no la de 500 m. Cielo con 6 octas.", pas:"Niebla desde las 08:00 UTC; antes, cubierto (más de 4 octas).",
+   vv:[400, 499], vis:null, n:6, ww:["48"], w1:[4], w2:[2], why:["Niebla que deposita hielo, cielo visible: ww 48.", "En el período: niebla (4) y más de 4 octas (2): W1 4, W2 2."]},
+  {t:"A", est:"Base O'Higgins", h:6, per:6, sit:"Nevó (nieve continua débil) hasta hace 30 minutos; ahora no nieva. Se ve la marca de 5 km, no la de 6 km. Cubierto (8 octas).", pas:"Nieve de 01:00 a 05:30 UTC. Cubierto todo el período.",
+   vv:[5000, 5999], vis:null, n:8, ww:["22"], w1:[7], w2:[2], why:["La nevada terminó hace menos de una hora: ww 22 (nieve en la hora precedente).", "W1 7 (nieve), W2 2 (más de 4 octas todo el período)."]},
+  {t:"A", est:"Base Arturo Prat", h:12, per:6, sit:"Ventisca alta fuerte, sin nieve cayendo. Se ve la marca de 150 m, no la de 200 m. No se ve el cielo; visibilidad vertical de unos 20 m.", pas:"Ventisca alta todo el período.",
+   vv:[150, 199], vis:[15, 25], n:9, ww:["39"], w1:[3], w2:[3], why:["Ventisca alta fuerte: ww 39.", "Cielo invisible: visibilidad vertical 20 m, N = 9.", "Solo ventisca alta en el período: W1 = W2 = 3."]},
+  {t:"A", est:"Bahía Fildes", h:18, per:6, sit:"Chubascos de nieve moderados en este momento. Se ve la marca de 1500 m, no la de 2000 m. Cielo con 7 octas.", pas:"Chubascos de nieve desde las 15:00 UTC; antes, más de 4 octas.",
+   vv:[1500, 1999], vis:null, n:7, ww:["86"], w1:[8], w2:[2], why:["Chubascos de nieve moderados o fuertes: ww 86 (no 70–79, que no son chubascos).", "En el período: chubascos (8) y más de 4 octas (2): W1 8, W2 2."]},
+];
+
+/* ---------- casos METAR y mixtos (SYNOP + METAR) · Santo Domingo, METAR cada hora ----------
+   vr: reinante [mín, máx] · vmin: null (Sin Dato) o [mín, máx] · vdir · wx: respuestas aceptadas (listas de grupos) · re: ídem */
+const CASOS_M = [
+  {est:"Santo Domingo", h:12, per:6, sit:"Ya no llueve. Gotitas en suspensión, HR 96 %. Se ve la marca de 4 km en todas las direcciones; no la de 5 km. Cielo cubierto (8 octas), se distinguen las nubes.",
+   pas:"Lluvia continua moderada de 07:00 a 11:25 UTC. Cubierto todo el período. El METAR anterior fue a las 11:00.",
+   vv:[4000, 4999], vr:[4000, 4999], vmin:null, vdir:null, vis:null, n:8, ww:["21"], w1:[6], w2:[2], wx:[["BR"]], re:[["RERA"]],
+   why:["Ahora: neblina (BR, ww 10). Pero la lluvia terminó a las 11:25, dentro de la hora: ww 21 es mayor y manda.",
+        "En el METAR la lluvia moderada que terminó después del METAR de las 11:00 va como tiempo reciente: RERA. El tiempo presente es BR.",
+        "W1 6 (lluvia) y W2 2 (más de 4 octas todo el período)."]},
+  {est:"Santo Domingo", h:15, per:3, sit:"Se oye un trueno ahora; en la estación no llueve. Se ve la marca de 15 km en todas las direcciones. Cielo con 6 octas, con un cumulonimbo al E.",
+   pas:"Chubascos de lluvia moderados de 13:30 a 14:40 UTC. Más de 4 octas todo el período. El METAR anterior fue a las 14:00.",
+   vv:[10000, 99999], vr:[10000, 99999], vmin:null, vdir:null, vis:null, n:6, ww:["17"], w1:[9], w2:[8], wx:[["TS"]], re:[["RESHRA"]],
+   why:["Trueno ahora sin precipitación en la estación: ww 17. Tiene prioridad sobre 20–49, aunque 25 (chubascos en la hora precedente) sea mayor.",
+        "METAR: TS sin intensidad, y el chubasco moderado que terminó a las 14:40 va como RESHRA.",
+        "W1 9 (tormenta) y W2 8 (chubascos)."]},
+  {est:"Santo Domingo", h:9, per:3, sit:"Bancos de niebla sobre la pista. Hacia el W, dentro del banco, se ve a 400 m; hacia el N, E y S se ve la marca de 6 km, no la de 8 km. Entre los bancos el aire está despejado. Cielo con 3 octas.",
+   pas:"Desde las 07:00 UTC, bancos de niebla sobre la pista; dentro de ellos se veía a 300–500 m. Antes, 3 octas y sin fenómenos. El METAR anterior fue a las 08:00.",
+   vv:[400, 499], vr:[6000, 7999], vmin:[400, 499], vdir:"W", vis:null, n:3, ww:["41"], w1:[4], w2:[0], wx:[["BCFG"]], re:[[]],
+   why:["SYNOP: va la menor visibilidad, 400 m. ww 41: niebla en bancos.",
+        "METAR: reinante 6000 m (se alcanza en más de la mitad del horizonte) y mínima 400 m al W, porque es menor de 1500 m. BCFG; no va BR porque entre los bancos la visibilidad supera 5000 m.",
+        "W1 4: la tabla de tiempo pasado no distingue bancos. El 4 es «niebla» en general, y los bancos estuvieron en la estación desde las 07:00, con visibilidad bajo 1000 m (400 m al W). W2 0: 4 octas o menos."]},
+  {est:"Santo Domingo", h:18, per:6, sit:"En la estación no llueve. Hacia el E, a unos 12 km, cortinas de lluvia que llegan al suelo bajo nubes de gran desarrollo. Se ve la marca de 20 km en todas las direcciones. Cielo con 5 octas.",
+   pas:"Chubascos de lluvia en la estación de 14:00 a 15:30 UTC. Más de 4 octas todo el período. El METAR anterior fue a las 17:00.",
+   vv:[10000, 99999], vr:[10000, 99999], vmin:null, vdir:null, vis:null, n:5, ww:["15"], w1:[8], w2:[2], wx:[["VCSH"]], re:[[]],
+   why:["Precipitación a la vista que llega al suelo a más de 5 km: ww 15. Los chubascos de la estación terminaron hace más de una hora: no va 25.",
+        "METAR: entre 8 y 16 km es proximidad: VCSH. No va RESHRA: el chubasco terminó antes del METAR anterior.",
+        "W1 8 (chubascos) y W2 2 (más de 4 octas todo el período)."]},
+  {est:"Santo Domingo", h:6, per:6, sit:"Caen gotas muy finas y juntas que se congelan al tocar el suelo y los objetos. Además hay gotitas en suspensión. Temperatura −1 °C. Se ve la marca de 3 km en todas las direcciones; no la de 4 km. Cubierto (8 octas), se distinguen las nubes.",
+   pas:"Llovizna engelante débil continua desde las 02:00 UTC. Antes, cubierto sin fenómenos.",
+   vv:[3000, 3999], vr:[3000, 3999], vmin:null, vdir:null, vis:null, n:8, ww:["56"], w1:[5], w2:[2], wx:[["-FZDZ", "BR"]], re:[[]],
+   why:["Llovizna engelante débil: ww 56 (la precipitación manda sobre la neblina).",
+        "METAR: -FZDZ (FZ va con DZ) y BR en otro grupo, porque la visibilidad está entre 1000 y 5000 m con gotitas en suspensión.",
+        "W1 5 (llovizna) y W2 2 (más de 4 octas todo el período)."]},
+  {est:"Santo Domingo", h:21, per:3, sit:"Lluvia continua moderada, sin truenos. Se ve la marca de 5 km en todas las direcciones; no la de 6 km. Cubierto (8 octas).",
+   pas:"Tormenta de 19:50 a 20:30 UTC, con lluvia desde las 19:40. Cubierto todo el período. El METAR anterior fue a las 20:00.",
+   vv:[5000, 5999], vr:[5000, 5999], vmin:null, vdir:null, vis:null, n:8, ww:["92"], w1:[9], w2:[6], wx:[["RA"]], re:[["RETS"]],
+   why:["La tormenta terminó a las 20:30, dentro de la hora, y sigue la lluvia moderada: ww 92.",
+        "METAR: RA en el tiempo presente y RETS como tiempo reciente (terminó después del METAR de las 20:00). No va RERA: la lluvia sigue.",
+        "W1 9 (tormenta) y W2 6 (lluvia)."]},
+];
+
+/* ---------- códigos METAR ---------- */
+const INT = [["-", "Débil"], ["MOD", "Moderado (sin calificador)"], ["+", "Fuerte"], ["VC", "En las proximidades"]];
+const DESC = [["MI", "Bajo"], ["BC", "Bancos"], ["PR", "Parcial"], ["DR", "Levantado a poca altura"], ["BL", "Levantado (ventisca alta)"], ["SH", "Chubasco"], ["TS", "Tormenta"], ["FZ", "Engelante"]];
+const FEN = [["DZ", "Llovizna"], ["RA", "Lluvia"], ["SN", "Nieve"], ["SG", "Cinarra"], ["IC", "Cristales de hielo"], ["PL", "Hielo granulado"], ["GR", "Granizo"], ["GS", "Granizo pequeño"], ["UP", "Precipitación desconocida"],
+  ["BR", "Neblina"], ["FG", "Niebla"], ["FU", "Humo"], ["VA", "Ceniza volcánica"], ["DU", "Polvo extendido"], ["SA", "Arena"], ["HZ", "Calima"], ["PO", "Remolinos de polvo"], ["SQ", "Turbonada"], ["FC", "Nube embudo"], ["SS", "Tempestad de arena"], ["DS", "Tempestad de polvo"]];
+const RES = [["RERA", "Lluvia"], ["REDZ", "Llovizna"], ["RESN", "Nieve"], ["REFZDZ", "Llovizna engelante"], ["REFZRA", "Lluvia engelante"], ["RESHRA", "Chubascos de lluvia"], ["RESHSN", "Chubascos de nieve"], ["RESHGR", "Chubascos de granizo"],
+  ["REPL", "Hielo granulado"], ["REGR", "Granizo"], ["REGS", "Granizo pequeño"], ["RETS", "Tormenta"], ["RETSRA", "Tormenta con lluvia"], ["REBLSN", "Ventisca alta"], ["REDS", "Tempestad de polvo"], ["RESS", "Tempestad de arena"], ["REFC", "Nube embudo"], ["REVA", "Ceniza volcánica"]];
+const PRECIP = ["DZ", "RA", "SN", "SG", "IC", "PL", "GR", "GS", "UP"], OSC = ["BR", "FG", "FU", "VA", "DU", "SA", "HZ"];
+const DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+
+/* ---------- formulario ---------- */
+const PR = {items:[], i:0, res:[], modo:"x"};
+function start(){
+  PR.modo = $("#modo").value;
+  $("#filL").hidden = PR.modo !== "s";
+  const f = $("#fil").value;
+  PR.items = PR.modo === "s" ? CASOS.filter(c => !f || c.t === f) : CASOS_M.slice();
+  PR.i = 0; PR.res = []; render();
+}
+$("#fil").onchange = start; $("#modo").onchange = start;
+function opts(list, withEmpty = true){ return (withEmpty ? `<option value=""></option>` : "") + list.map(([v, t]) => `<option value="${v}">${v === "MOD" ? t : v + " – " + t}</option>`).join(""); }
+const W = (k, inner) => `<span class="w" data-k="${k}">${inner}${WRN}${ERR}</span>`;
+function render(){
+  renderProg(); LASTM = [];
+  if (PR.i >= PR.items.length) return renderEnd();
+  const c = PR.items[PR.i], syn = PR.modo !== "m", met = PR.modo !== "s";
+  const filasSyn0 = `
+        <tr><td class="lb">Cantidad de Cielo Cubierto<small>[Indique Instrumento]</small></td><td><span class="fl"><span>N (clave)</span>${W("n", `<select id="i_n" aria-label="N">${opts([0,1,2,3,4,5,6,7,8,9].map(v => [v, v === 9 ? "Cielo invisible" : v + " octas"]))}</select>`)}</span></td></tr>
+        <tr><td class="lb">Visibilidad Vertical<small>[Indique Instrumento]</small></td><td><span class="fl"><span>VisVert (m)</span>${W("vis", `<input type="text" id="i_vis" inputmode="numeric" aria-label="Visibilidad vertical">`)}</span></td></tr>`;
+  const filasSyn = `
+        <tr><td class="lb">Visibilidad Horizontal Sinóptica<small>[Indique Instrumento]</small></td><td><span class="fl"><span>VV (m)</span>${W("vv", `<input type="text" id="i_vv" inputmode="numeric" aria-label="VV">`)}</span></td></tr>`;
+  const filasMet = `
+        <tr><td class="lb">Visibilidad METAR<small>[Indique Instrumento]</small></td><td>
+          <span class="fl"><span>Reinante (m)</span>${W("vr", `<input type="text" id="i_vr" inputmode="numeric" aria-label="Reinante">`)}</span>
+          <span class="fl"><span>Mínima (m)</span>${W("vmin", `<input type="text" id="i_vmin" inputmode="numeric" aria-label="Mínima">`)}</span>
+          <span class="fl"><span>Dirección (clave)</span>${W("vdir", `<select id="i_vdir" aria-label="Dirección"><option value=""></option>${DIRS.map(d => `<option>${d}</option>`).join("")}</select>`)}</span></td></tr>`;
+  const filasSyn2 = `
+        <tr><td class="lb">Tiempo Presente Sinóptico<small>[Indique Instrumento]</small></td><td><span class="fl"><span>Tiempo Presente (clave)</span>${W("ww", `<select id="i_ww" aria-label="ww">${opts(Array.from({length: 100}, (_, i) => [pad(i), WW[pad(i)]]))}</select>`)}</span></td></tr>
+        <tr><td class="lb">Tiempo Pasado Sinóptico<small>[Indique Instrumento]</small></td><td>
+          <span class="fl"><span>Tiempo Pasado1 (clave)</span>${W("w1", `<select id="i_w1" aria-label="W1">${opts(WP.map((t, i) => [i, t]))}</select>`)}</span>
+          <span class="fl"><span>Tiempo Pasado2 (clave)</span>${W("w2", `<select id="i_w2" aria-label="W2">${opts(WP.map((t, i) => [i, t]))}</select>`)}</span></td></tr>`;
+  const filasMet2 = `
+        <tr><td class="lb">Tiempo Presente METAR<small>[Indique Instrumento]</small></td><td><div class="wxg">
+          <span class="wh">Intensidad / Proximidad</span><span class="wh">Descriptor</span><span class="wh">Fenómeno 1</span><span class="wh">Fenómeno 2</span><span class="wh">Fenómeno 3</span><span></span>
+          ${[1, 2, 3].map(l => `<select id="i_int${l}" aria-label="Intensidad línea ${l}">${opts(INT)}</select><select id="i_des${l}" aria-label="Descriptor línea ${l}">${opts(DESC)}</select>${[1, 2, 3].map(f => `<select id="i_f${l}${f}" aria-label="Fenómeno ${f} línea ${l}">${opts(FEN)}</select>`).join("")}${W("wx" + l, "")}`).join("")}
+        </div></td></tr>
+        <tr><td class="lb">Tiempo Reciente METAR<small>[Indique Instrumento]</small></td><td>${[1, 2, 3].map(l => `<span class="fl"><span>Tiempo Reciente ${l}</span>${W("re" + l, `<select id="i_re${l}" aria-label="Tiempo reciente ${l}">${opts(RES)}</select>`)}</span>`).join("")}</td></tr>`;
+  $("#pbody").innerHTML = `<div class="work">
+    <div class="sit"><h4>Caso ${PR.i + 1} de ${PR.items.length}</h4><div class="st">${c.est} · ${pad(c.h)}:00 UTC${syn ? ` · período del tiempo pasado: ${c.per} h` : ""}</div>
+      <p>${c.sit}</p><div class="per"><b>${syn ? "En el período" : "Antes"}:</b> ${c.pas}</div></div>
+    <div class="right">
+      <div class="frm"><table>${syn ? filasSyn0 + filasSyn : ""}${met ? filasMet : ""}${syn ? filasSyn2 : ""}${met ? filasMet2 : ""}</table>
+      <div class="acts"><button class="btn pri" id="bVal">Validar y comprobar</button><button class="btn" id="bNext">${PR.i === PR.items.length - 1 ? "Ver resultado ▶" : "Siguiente caso ▶"}</button></div></div>
+      <p class="hint">Clic derecho en una casilla: Sin Dato (Ctrl+S), Abrir Dato, Componente(s) Sin Dato(s) (Ctrl+D) y Ver Errores (Ctrl+E). ${met ? "Tiempo presente METAR: cada línea es un grupo (intensidad o proximidad, descriptor y hasta 3 fenómenos). Las casillas que no use van Sin Dato (Ctrl+D deja Sin Dato las vacías de esa línea). " : ""}${syn ? "Con cielo invisible, en SACLIM además van Dl Dm Dh = 9 y las casillas de nubes Sin Dato (no se muestran aquí)." : ""}</p>
+      <div id="out"></div>
+    </div></div>`;
+  document.querySelectorAll("#pbody input, #pbody select").forEach(x => x.addEventListener("input", marks));
+  $("#bVal").onclick = check;
+  $("#bNext").onclick = () => { if (PR.res[PR.i] === undefined) PR.res[PR.i] = false; PR.i++; render(); };
+}
+/* clic derecho: Sin Dato / Abrir casilla (como en SACLIM) */
+function setSD(el, on){
+  const foco = on && document.activeElement === el;
+  el.dataset.sd = on ? "1" : "";
+  el.classList.toggle("sd", on);
+  if (el.tagName === "SELECT"){
+    let o = el.querySelector('option[value="SD"]');
+    if (on){ if (!o){ o = new Option("Sin Dato", "SD"); el.add(o, 1); } el.value = "SD"; el.disabled = true; }
+    else { if (o) o.remove(); el.value = ""; el.disabled = false; }
+  } else { el.value = ""; el.readOnly = on; el.placeholder = on ? "Sin Dato" : ""; }
+  // una casilla deshabilitada no recibe teclas: el foco pasa a su contenedor para que Ctrl+S/D/E no abran funciones del navegador
+  if (foco && el.disabled){ const w = el.closest(".w, .fl, td"); if (w){ w.tabIndex = -1; w.focus(); w.dataset.foco = el.id; } }
+  marks();
+}
+let ctxEl = null, LASTM = [];
+const FSEL = "#pbody .frm input, #pbody .frm select";
+const keyOf = el => { const w = el.closest(".w"); if (w) return w.dataset.k; const m = el.id.match(/^i_(?:int|des|f)(\d)/); return m ? "wx" + m[1] : ""; };
+const rowOf = el => { const m = el.id.match(/^i_(?:int|des|f)(\d)/); return m ? [...document.querySelectorAll(`[id^="i_int${m[1]}"],[id^="i_des${m[1]}"],[id^="i_f${m[1]}"]`)] : [...el.closest("tr").querySelectorAll("input, select")]; };
+const nombre = el => { const tr = el.closest("tr"); return tr ? tr.querySelector(".lb").firstChild.textContent.trim() : ""; };
+function act(a, el){
+  if (!el) return;
+  if (a === "sd") setSD(el, true);
+  else if (a === "open"){ setSD(el, false); el.focus(); }
+  else if (a === "comp") rowOf(el).forEach(x => { if (x.dataset.sd !== "1" && x.value.trim() === "") setSD(x, true); });
+  else if (a === "err"){
+    const k = keyOf(el), ms = LASTM.filter(m => m.k === k);
+    $("#errT").textContent = "Errores – " + nombre(el);
+    $("#errB").innerHTML = ms.length ? `<ul class="msgs">${ms.map(m => `<li>${m.m} <span class="lv ${m.l}">${LVN[m.l]}</span></li>`).join("")}</ul>` : "<p>Sin errores.</p>";
+    $("#errDlg").style.display = "flex"; $("#errOk").focus();
+  }
+}
+$("#errOk").onclick = () => { $("#errDlg").style.display = "none"; };
+function nextOpen(el){
+  const all = [...document.querySelectorAll(FSEL)], i = all.indexOf(el);
+  const nx = all.slice(i + 1).find(x => x.dataset.sd !== "1" && x.value.trim() === "");
+  if (nx) nx.focus();
+}
+document.addEventListener("contextmenu", ev => {
+  const cm = $("#ctxm"), t = ev.target;
+  let tgt = t.matches && t.matches(FSEL) ? t : null;
+  if (!tgt){ const w = t.closest && t.closest("#pbody .frm .w, #pbody .frm .fl"); if (w) tgt = w.querySelector("input, select"); }
+  if (!tgt){ cm.style.display = "none"; return; }
+  ev.preventDefault(); ctxEl = tgt;
+  const on = tgt.dataset.sd === "1", k = keyOf(tgt);
+  const set = (a, ok) => cm.querySelector(`[data-a="${a}"]`).classList.toggle("dis", !ok);
+  set("sd", !on); set("open", on); set("comp", true); set("err", LASTM.some(m => m.k === k));
+  cm.style.display = "block";
+  cm.style.left = Math.min(ev.clientX, innerWidth - cm.offsetWidth - 4) + "px";
+  cm.style.top = Math.min(ev.clientY, innerHeight - cm.offsetHeight - 4) + "px";
+});
+document.addEventListener("click", ev => {
+  const cm = $("#ctxm"); if (!cm) return;
+  const it = ev.target.closest && ev.target.closest("#ctxm [data-a]");
+  if (it && !it.classList.contains("dis") && ctxEl) act(it.dataset.a, ctxEl);
+  cm.style.display = "none";
+});
+document.addEventListener("keydown", ev => {
+  if (ev.key === "Escape"){ $("#ctxm").style.display = "none"; $("#errDlg").style.display = "none"; return; }
+  if (!ev.ctrlKey) return;
+  const key = ev.key.toLowerCase(); if (!["s", "d", "e"].includes(key)) return;
+  let el = document.activeElement;
+  if (el && el.dataset && el.dataset.foco) el = document.getElementById(el.dataset.foco);
+  if (document.querySelector("#pbody .frm")) ev.preventDefault();   // en la práctica, Ctrl+S/D/E nunca abren funciones del navegador
+  if (!el || !el.matches || !el.matches(FSEL)) return;
+  if (key === "s"){ act("sd", el); nextOpen(el); } else if (key === "d"){ act("comp", el); nextOpen(el); } else act("err", el);
+});
+document.addEventListener("scroll", () => { const cm = $("#ctxm"); if (cm) cm.style.display = "none"; }, true);
+function marks(){ document.querySelectorAll(".w").forEach(w => { w.classList.remove("haserr", "haswarn"); w.title = ""; }); }
+const num = id => { const e = $("#" + id); if (!e) return undefined; if (e.dataset.sd === "1") return "SD"; const s = e.value.trim(); return s === "" ? "" : (/^\d+$/.test(s) ? +s : s); };
+const sdOn = k => { const e = $("#i_" + k); return !!e && e.dataset.sd === "1"; };
+const val = id => { const e = $("#" + id); return e ? e.value : undefined; };
+function read(){
+  const v = {vv: num("i_vv"), vis: sdOn("vis") ? "SD" : num("i_vis"), n: val("i_n"), ww: val("i_ww"), w1: val("i_w1"), w2: val("i_w2"),
+    vr: num("i_vr"), vmin: sdOn("vmin") ? "SD" : num("i_vmin"), vdir: val("i_vdir"), lines: [], re: [], vac: []};
+  if ($("#i_int1")) for (let l = 1; l <= 3; l++){
+    if ([`i_int${l}`, `i_des${l}`, `i_f${l}1`, `i_f${l}2`, `i_f${l}3`].some(id => val(id) === "")) v.vac.push("wx" + l);
+    if (val("i_re" + l) === "") v.vac.push("re" + l);
+    const cl = x => (x === "SD" || x === "MOD") ? "" : x;
+    const L = {l, int: cl(val("i_int" + l)), des: cl(val("i_des" + l)), f: [1, 2, 3].map(f => cl(val(`i_f${l}${f}`))).filter(Boolean)};
+    L.code = L.int + L.des + L.f.join(""); if (L.code) v.lines.push(L);
+    const r = val("i_re" + l); if (r && r !== "SD") v.re.push(r);
+  }
+  return v;
+}
+/* reglas de control: b = bloqueante, n = no bloqueante, a = alerta. Las reglas del METAR siguen la regla 15.8 de FM 15 y las propuestas M/V del laboratorio de reglas; su tipo es ilustrativo. */
+const W_DE_20 = {"20":[5], "21":[6], "22":[7], "23":[7], "24":[5, 6], "25":[8], "26":[8], "27":[8], "28":[4], "29":[9]};
+function rules(v){
+  const M = [], B = (k, m) => M.push({k, l:"b", m}), N = (k, m) => M.push({k, l:"n", m}), A = (k, m) => M.push({k, l:"a", m});
+  const syn = PR.modo !== "m", met = PR.modo !== "s";
+  if (syn){
+    if (v.vv === "") B("vv", "Campo abierto sin valor: ingrese el dato o márquelo Sin Dato (clic derecho)."); else if (v.vv !== "SD" && typeof v.vv !== "number") B("vv", "La visibilidad se ingresa en metros, número entero.");
+    if (v.vis === "") B("vis", "Campo abierto sin valor: ingrese el dato o márquelo Sin Dato (clic derecho)."); else if (v.vis !== "SD" && typeof v.vis !== "number") B("vis", "La visibilidad vertical se ingresa en metros, número entero.");
+    ["n", "ww", "w1", "w2"].forEach(k => { if (v[k] === "") B(k, "Campo abierto sin valor: ingrese el dato o márquelo Sin Dato (clic derecho)."); });
+    if (/^\d$/.test(v.w1) && /^\d$/.test(v.w2) && +v.w1 < +v.w2) B("w1", "W1 debe ser mayor o igual que W2.");
+    if (typeof v.vis === "number"){
+      if (v.vis >= 60) N("vis", "La visibilidad vertical solo se ingresa cuando es menor a 60 m.");
+      if (v.n !== "" && v.n !== "9") N("n", "Con visibilidad vertical (cielo invisible) N debe ser 9.");
+    }
+    if (v.n === "9" && v.vis === "SD") A("vis", "N = 9 (cielo invisible) sin visibilidad vertical: verifique si es menor a 60 m.");
+    if (typeof v.vv === "number" && /^\d\d$/.test(v.ww)){
+      const w = +v.ww;
+      if (v.vv < 1000 && ([0, 1, 2, 3, 10, 11, 12, 28, 40].includes(w))) N("ww", `VV de ${v.vv} m con ww ${v.ww}: con menos de 1000 m el tiempo presente debe explicar la reducción (niebla, polvo, ventisca, precipitación…).`);
+      if (v.vv >= 1000 && ((w >= 42 && w <= 49) || (w >= 30 && w <= 35))) N("ww", `ww ${v.ww} con VV de ${v.vv} m: ese fenómeno en la estación implica visibilidad menor a 1000 m.`);
+      if ((w === 43 || w === 45 || w === 47 || w === 49) && v.n !== "" && v.n !== "9") N("n", `ww ${v.ww} es niebla con cielo invisible: N debe ser 9.`);
+    }
+    if (W_DE_20[v.ww] && v.w1 !== "" && v.w2 !== "" && !W_DE_20[v.ww].some(x => x === +v.w1 || x === +v.w2)) A("w1", `ww ${v.ww} (en la hora precedente) debería verse también en W1 o W2.`);
+  }
+  if (met){
+    if (v.vr === "") B("vr", "Campo abierto sin valor: ingrese el dato o márquelo Sin Dato (clic derecho)."); else if (v.vr !== "SD" && typeof v.vr !== "number") B("vr", "La visibilidad se ingresa en metros, número entero.");
+    if (v.vmin === "") B("vmin", "Campo abierto sin valor: ingrese la mínima o márquela Sin Dato (clic derecho).");
+    if (v.vdir === "") B("vdir", "Campo abierto sin valor: ingrese la dirección o márquela Sin Dato (clic derecho).");
+    if (typeof v.vmin === "number"){
+      if (v.vdir === "SD") B("vdir", "La visibilidad mínima va con su dirección.");
+      if (typeof v.vr === "number" && v.vmin >= v.vr) N("vmin", "La mínima debe ser menor que la reinante.");
+      if (typeof v.vr === "number" && !(v.vmin < 1500 || (v.vmin < 0.5 * v.vr && v.vmin < 5000))) N("vmin", "La mínima solo se informa si es menor de 1500 m, o menor de la mitad de la reinante y menor de 5000 m. (V‑05)");
+    } else if (v.vmin === "SD" && v.vdir && v.vdir !== "SD") N("vdir", "Sin visibilidad mínima, la dirección va Sin Dato.");
+    v.vac.forEach(k => B(k, "Campo abierto sin valor: ingrese el dato o márquelo Sin Dato (clic derecho)."));
+    const vr = typeof v.vr === "number" ? v.vr : null, todos = [];
+    v.lines.forEach(L => {
+      const k = "wx" + L.l, f = L.f, p = f.filter(x => PRECIP.includes(x)), o = f.filter(x => OSC.includes(x)), otros = f.filter(x => !PRECIP.includes(x) && !OSC.includes(x));
+      const sgn = L.int === "-" || L.int === "+", vc = L.int === "VC";
+      f.forEach(x => todos.push([x, L])); if (L.des === "TS") todos.push(["TS", L]);
+      if (!f.length && !(L.des === "TS" && !sgn) && !(L.des === "SH" && vc)) return B(k, `${L.code}: falta el fenómeno.`);
+      if (o.length && (p.length || otros.length || o.length > 1)) B(k, `${L.code}: cada fenómeno distinto va en su propio grupo (precipitación y oscurecimiento separados).`);
+      if (["MI", "BC", "PR"].includes(L.des)){ if (f.join() !== "FG") B(k, `${L.des} solo va con FG. (M‑06)`); if (L.int) B(k, `${L.des}FG no lleva intensidad ni VC. (M‑06)`); }
+      if (["DR", "BL"].includes(L.des)){ if (f.length !== 1 || !["SN", "DU", "SA"].includes(f[0])) B(k, `${L.des} solo va con SN, DU o SA. (M‑01)`); if (sgn) B(k, `${L.des}${f.join("")} no lleva intensidad. (M‑02)`); if (vc && L.des === "DR") B(k, "Con VC solo va BL (VCBLSN), no DR."); }
+      if (L.des === "SH"){ if (f.some(x => !["RA", "SN", "PL", "GR", "GS"].includes(x))) B(k, "SH solo va con RA, SN, PL, GR o GS. (M‑03)"); if (vc && f.length) B(k, "En las proximidades se cifra VCSH, sin fenómeno."); }
+      if (L.des === "TS"){ if (f.some(x => !["RA", "SN", "PL", "GR", "GS"].includes(x))) B(k, "TS solo va sola o con RA, SN, PL, GR o GS."); if (!f.length && sgn) B(k, "TS sin precipitación no lleva intensidad: el signo es de la precipitación. (M‑05)"); if (vc && f.length) B(k, "Con VC se cifra VCTS, sin fenómeno."); }
+      if (L.des === "FZ"){ if (f.some(x => !["FG", "DZ", "RA"].includes(x))) B(k, "FZ solo va con FG, DZ o RA."); if (f.join() === "FG" && L.int) B(k, "FZFG no lleva intensidad. (M‑07)"); }
+      if (!L.des){
+        if (sgn && o.length) B(k, `${L.code}: el oscurecimiento no lleva intensidad.`);
+        if (sgn && otros.some(x => ["PO", "SQ"].includes(x))) B(k, "PO y SQ no llevan intensidad. (M‑08)");
+        if (L.int === "-" && otros.some(x => ["DS", "SS", "FC"].includes(x))) B(k, "DS, SS y FC no llevan «-».");
+        if (vc && !(f.length === 1 && ["FG", "PO", "FC", "DS", "SS", "VA"].includes(f[0]))) B(k, `${L.code} no existe: la precipitación cercana es VCSH; VC va con FG, PO, FC, DS, SS o VA.`);
+      }
+      if (vr !== null && !vc && !L.des){
+        if (f.includes("BR") && (vr < 1000 || vr > 5000)) N(k, `BR va con visibilidad entre 1000 y 5000 m (reinante ${vr} m). (V‑01, V‑02)`);
+        if (f.includes("FG") && vr >= 1000) N(k, `FG va con visibilidad menor de 1000 m; con ${vr} m es BR (salvo MIFG, BCFG, PRFG o VCFG).`);
+        if (f.some(x => ["HZ", "FU", "DU", "SA"].includes(x)) && vr > 5000) N(k, "HZ, FU, DU y SA solo se informan con visibilidad de 5000 m o menos. (V‑01)");
+      }
+    });
+    const pres = todos.map(x => x[0]);
+    const dup = pres.filter((x, i) => pres.indexOf(x) !== i && x !== "TS");
+    if (dup.length) B("wx2", `El mismo fenómeno (${[...new Set(dup)].join(", ")}) no puede ir en dos grupos. (M‑12)`);
+    if (pres.includes("BR") && pres.includes("FG")) B("wx1", "BR y FG no van juntos: se excluyen por visibilidad. (M‑11)");
+    const soloP = v.lines.filter(L => !L.des && !L.int.startsWith("V") && L.f.length && L.f.every(x => PRECIP.includes(x)));
+    if (soloP.length > 1) B("wx" + soloP[1].l, "Las precipitaciones mezcladas van en un solo grupo, la dominante primero (por ejemplo -RASN).");
+    if (new Set(v.re).size < v.re.length) B("re1", "El mismo tiempo reciente aparece dos veces.");
+    const presRE = todos.filter(([x, L]) => !['DR', 'BL'].includes(L.des)).map(x => x[0]);
+    v.re.forEach((r, i) => { const fen = r.slice(2).replace(/^(SH|TS|FZ|BL)/, ""); const tsR = r.startsWith("RETS");
+      if ((fen && presRE.includes(fen) && !tsR) || (tsR && v.lines.some(L => L.des === "TS" && L.int !== "VC"))) B("re" + (i + 1), `${r}: el tiempo reciente es lo que ya terminó; ese fenómeno sigue en el tiempo presente. (M‑13)`); });
+  }
+  if (syn && met && /^\d\d$/.test(v.ww)){
+    const w = +v.ww;
+    if (typeof v.vmin === "number" && typeof v.vv === "number" && v.vv !== v.vmin) A("vv", "La visibilidad sinóptica es la menor: debe ser igual a la mínima del METAR. (V‑07)");
+    if (v.vmin === "SD" && typeof v.vv === "number" && typeof v.vr === "number" && v.vv > v.vr) A("vv", "La visibilidad sinóptica (la menor) no puede ser mayor que la reinante del METAR.");
+    const precAhora = v.lines.some(L => L.int !== "VC" && L.f.some(x => PRECIP.includes(x)));
+    const tsAhora = v.lines.some(L => L.des === "TS" && L.int !== "VC");
+    if (precAhora && w < 50) N("ww", `El METAR informa precipitación ahora, pero ww ${v.ww} es menor de 50.`);
+    if (!precAhora && w >= 50 && v.lines.length >= 0) N("ww", `ww ${v.ww} indica precipitación en la estación, pero el METAR no la informa.`);
+    if (tsAhora && !(w === 17 || w >= 95)) N("ww", `El METAR informa tormenta (TS) ahora: el ww debería ser 17 o 95–99.`);
+    if (!tsAhora && (w === 17 || w >= 95)) N("ww", `ww ${v.ww} indica tormenta ahora, pero el METAR no tiene TS.`);
+    const fgAhora = v.lines.some(L => !L.des && L.int !== "VC" && L.f.includes("FG"));
+    if (fgAhora && w < 42) A("ww", "El METAR informa FG: el ww esperado está entre 42 y 49 (o 50–99 si además hay precipitación).");
+    if (v.re.length && (w < 17 || (w >= 30 && w < 50))) A("ww", "El METAR informa tiempo reciente: el ww debería reflejar lo de la hora precedente (20–29 o 91–94), salvo que haya algo mayor ahora.");
+    if (v.re.includes("RETS") && !(w === 29 || (w >= 91 && w <= 94) || w === 17 || w >= 95)) A("ww", "RETS: la tormenta de la hora precedente debería verse en el ww (29 o 91–94).");
+  }
+  return M;
+}
+const LVN = {b:"Error bloqueante", n:"Error no bloqueante", a:"Alerta"};
+const setEq = (a, b) => a.length === b.length && [...a].sort().join(" ") === [...b].sort().join(" ");
+function check(){
+  marks();
+  const v = read(), M = rules(v); LASTM = M; const syn = PR.modo !== "m", met = PR.modo !== "s";
+  M.forEach(m => { const w = document.querySelector(`.w[data-k="${m.k}"]`) || document.querySelector(".w"); w.classList.add(m.l === "a" ? "haswarn" : "haserr"); w.title = (w.title ? w.title + "\n" : "") + m.m; });
+  const list = M.length ? `<ul class="msgs">${M.map(m => `<li>${m.l === "a" ? WRN.replace('class="ic wa"', 'class="ic"') : ERR.replace('class="ic er"', 'class="ic"')}<span>${m.m} <span class="lv ${m.l}">${LVN[m.l]}</span></span></li>`).join("")}</ul>` : "";
+  if (M.some(m => m.l === "b")){ $("#out").innerHTML = list + `<p class="hint">Con errores bloqueantes SACLIM no deja registrar. Corrija y vuelva a validar, o pase al siguiente caso (cuenta como incorrecto).</p>`; return; }
+  const c = PR.items[PR.i], R = [];
+  const add = (lab, mine, ok, right) => R.push({lab, mine: mine === "SD" ? "Sin Dato" : mine, ok, right});
+  const rng = r => r[1] >= 99999 ? `${r[0]} o más` : `${r[0]} a ${r[1]}`;
+  if (syn) add("VV sinóptica (m)", v.vv, v.vv >= c.vv[0] && v.vv <= c.vv[1], rng(c.vv));
+  if (met){
+    add("Reinante METAR (m)", v.vr, v.vr >= c.vr[0] && v.vr <= c.vr[1], rng(c.vr));
+    add("Mínima y dirección", v.vmin === "SD" ? "Sin Dato" : `${v.vmin} ${v.vdir}`, c.vmin ? (typeof v.vmin === "number" && v.vmin >= c.vmin[0] && v.vmin <= c.vmin[1] && v.vdir === c.vdir) : v.vmin === "SD", c.vmin ? `${rng(c.vmin)} · ${c.vdir}` : "Sin Dato");
+  }
+  if (syn){
+    add("Visibilidad vertical", v.vis === "SD" ? "Sin Dato" : v.vis, c.vis ? (typeof v.vis === "number" && v.vis >= c.vis[0] && v.vis <= c.vis[1]) : v.vis === "SD", c.vis ? `${c.vis[0]} a ${c.vis[1]} m` : "Sin Dato");
+    add("N", v.n, +v.n === c.n, String(c.n));
+    add("ww", v.ww, c.ww.includes(v.ww), c.ww.map(x => x + " – " + WW[x]).join(" / "));
+    add("W1", v.w1, c.w1.includes(+v.w1), c.w1.join(" o "));
+    add("W2", v.w2, c.w2.includes(+v.w2), c.w2.join(" o "));
+  }
+  if (met){
+    const g = v.lines.map(L => L.code);
+    add("Tiempo presente METAR", g.join(" ") || "(ninguno)", c.wx.some(a => setEq(a, g)), c.wx.map(a => a.join(" ") || "(ninguno)").join(" / "));
+    add("Tiempo reciente METAR", v.re.join(" ") || "(ninguno)", c.re.some(a => setEq(a, v.re)), c.re.map(a => a.join(" ") || "(ninguno)").join(" / "));
+  }
+  const ok = R.every(r => r.ok);
+  if (PR.res[PR.i] === undefined) PR.res[PR.i] = ok;
+  $("#out").innerHTML = list + `<div class="res"><div class="rh ${ok ? "ok" : "bad"}">${ok ? "✔ Correcto" : "✖ Revise los componentes marcados"}</div>
+    <table><tr><th>Casilla</th><th>Su ingreso</th><th>Correcto</th><th></th></tr>${R.map(r => `<tr><td>${r.lab}</td><td>${r.mine}</td><td>${r.right}</td><td class="c ${r.ok ? "ok" : "no"}">${r.ok ? "✔" : "✖"}</td></tr>`).join("")}</table>
+    <div class="why"><b>Por qué:</b><ul>${c.why.filter(w => syn || /METAR/.test(w)).map(w => `<li>${w}</li>`).join("")}</ul></div></div>
+    <p class="hint">Puede corregir y volver a comprobar; el puntaje cuenta el primer intento.</p>`;
+  renderProg();
+}
+function renderProg(){
+  $("#prog").innerHTML = PR.items.map((_, j) => `<span class="${PR.res[j] === undefined ? (j === PR.i ? "cur" : "") : (PR.res[j] ? "okk" : "bad")}">${j + 1}</span>`).join("");
+  const d = PR.res.filter(x => x !== undefined).length; $("#score").textContent = `Correctos: ${PR.res.filter(Boolean).length} / ${d}`;
+}
+function renderEnd(){
+  const S = PR.items.map((c, j) => [c, PR.res[j]]), tot = S.filter(x => x[1]).length;
+  const by = t => { const z = S.filter(x => x[0].t === t); return z.length ? `${z.filter(x => x[1]).length} / ${z.length}` : "—"; };
+  const malos = S.filter(x => !x[1]).map(x => `${x[0].est} ${pad(x[0].h)} UTC`);
+  const modoN = {s: "SYNOP", m: "METAR", x: "Mixto SYNOP + METAR"}[PR.modo];
+  $("#pbody").innerHTML = `<div class="end"><h3 style="color:#1f4f93;margin:0 0 8px">Resultado (${modoN}): ${tot} / ${S.length}</h3>
+    ${PR.modo === "s" ? `<table><tr><th>Grupo</th><th>Correctos</th></tr><tr><td>Estaciones sinópticas</td><td>${by("S")}</td></tr><tr><td>Estaciones antárticas</td><td>${by("A")}</td></tr></table>` : ""}
+    ${malos.length ? `<p><b>Repasar:</b> ${malos.join("; ")}.</p>` : `<p><b>¡Muy bien!</b></p>`}
+    <p class="hint">Que SACLIM acepte la observación no significa que esté correcta.</p>
+    <button class="btn pri" id="bAgain">Repetir práctica</button></div>`;
+  $("#bAgain").onclick = start;
+}
+
+renderCodes();
+</script>
+<!-- ===== autoría y aviso legal ===== -->
+<style>
+#legalFoot{font:11px "Segoe UI",Tahoma,Arial,sans-serif;color:#51637a;background:#eef2f7;border-top:1px solid #c9d2de;padding:5px 10px;text-align:center;line-height:1.5}
+#legalFoot a{color:#2f64b0;cursor:pointer;text-decoration:underline}
+.win > #legalFoot{background:linear-gradient(#dbe7f5,#c9daef);border-top:1px solid #8aa9d2;color:#33475f;text-align:left;padding:3px 8px;font-size:11.5px}
+#legalDlg{position:fixed;inset:0;background:rgba(15,42,68,.45);display:none;align-items:center;justify-content:center;z-index:2000;padding:16px}
+#legalDlg.on{display:flex}
+#legalDlg .box{background:#fff;max-width:620px;width:100%;max-height:90vh;overflow:auto;border:1px solid #2f64b0;border-radius:4px;box-shadow:0 8px 30px rgba(0,0,0,.35);font:13px/1.55 "Segoe UI",Tahoma,Arial,sans-serif;color:#1b1b1b}
+#legalDlg .hd{background:linear-gradient(#8db6e6,#6f9fd8 45%,#2f64b0);color:#fff;padding:6px 12px;font-size:14px}
+#legalDlg .bd{padding:12px 16px}
+#legalDlg .bd p{margin:0 0 10px}
+#legalDlg .ft{padding:8px 16px 12px;text-align:right}
+#legalDlg button{font:inherit;min-width:100px;height:26px;border:1px solid #7a9cc8;border-radius:4px;background:linear-gradient(#fbfdff,#d4e4f7);cursor:pointer}
+</style>
+<div id="legalFoot">Simulador educativo no oficial · No reemplaza al software SACLIM ni es manual de consulta · © 2026 O. Álvarez B · Prohibida su comercialización · <a id="legalOpen" role="button" tabindex="0">Acerca de</a></div>
+<div id="legalDlg" role="dialog" aria-modal="true" aria-labelledby="legalTit">
+  <div class="box">
+    <div class="hd" id="legalTit">Acerca de</div>
+    <div class="bd">
+      <p><b>Simulador SACLIM · Versión educativa 1.0 (octubre 2026)</b><br>Desarrollado por <b>O. Álvarez B</b>.</p>
+      <p>Herramienta de práctica para el ingreso de observaciones meteorológicas con fines exclusivamente educativos. Es un simulador independiente y no oficial: no es ni reemplaza al software SACLIM original de la Dirección Meteorológica de Chile, y no está afiliado ni avalado por ella.</p>
+      <p>Este simulador no es un manual de consulta. Siempre priman las normas, reglas de control y validaciones del software original, así como la normativa y los manuales oficiales vigentes.</p>
+      <p>© 2026 O. Álvarez B. Todos los derechos reservados. Se permite su uso gratuito con fines educativos. Se prohíbe su cobro, venta o comercialización, así como su modificación o redistribución sin autorización del autor.</p>
+      <p style="color:#51637a">Desarrollado con asistencia de inteligencia artificial.</p>
+    </div>
+    <div class="ft"><button id="legalClose">Cerrar</button></div>
+  </div>
+</div>
+<script>
+(function(){
+  // en el simulador, la línea de autoría va como barra de estado dentro de la ventana, siempre visible
+  const lf = document.getElementById("legalFoot"), win = document.querySelector(".win");
+  if (win && document.getElementById("foot")) win.appendChild(lf);
+  const d = document.getElementById("legalDlg"), o = document.getElementById("legalOpen");
+  const open = () => { d.classList.add("on"); document.getElementById("legalClose").focus(); }, close = () => d.classList.remove("on");
+  o.onclick = open; o.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } };
+  document.getElementById("legalClose").onclick = close;
+  d.addEventListener("click", e => { if (e.target === d) close(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && d.classList.contains("on")) close(); });
+})();
+</script>
+
+<style>#volver{position:fixed;right:10px;top:4px;z-index:900;background:#fff;border:1px solid #9fb2c9;border-radius:14px;padding:3px 11px;font:12.5px "Segoe UI",Tahoma,Arial,sans-serif;color:#2f64b0;text-decoration:none;box-shadow:0 2px 6px rgba(0,0,0,.12)}#volver:hover{background:#eef4fc}@media print{#volver,#idChip{display:none}}</style><a id="volver" href="index.html">&larr; Volver al curso</a><script>if (location.protocol === "file:") document.getElementById("volver").href = "https://metotec.cl/";</script>
+</body>
+</html>
