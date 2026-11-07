@@ -2585,16 +2585,15 @@ function vPrueba(){
     <button class="btn" style="margin-top:8px" id="tGo">Comenzar test →</button></div></div>`;
 }
 const CASOS360 = [
-  ["prueba_12utc_santo_domingo.html", "Santo Domingo · 12 UTC", "Observación completa con imagen 360 y reloj desde las 11:50.", "OBSERVACIÓN COMPLETA", "#c0392b"],
-  ["prueba_1_nubes_360.html", "Cielo 360° · 1", "Nubes: N, Nh, CL, CM, CH y capas.", "NUBES", "#c98a06"],
-  ["prueba_2_nubes_360.html", "Cielo 360° · 2", "Nubes: N, Nh, CL, CM, CH y capas.", "NUBES", "#c98a06"],
-  ["prueba_3_nubes_360.html", "Cielo 360° · 3", "Nubes: N, Nh, CL, CM, CH y capas.", "NUBES", "#c98a06"],
-  ["prueba_4_nubes_360.html", "Cielo 360° · 4", "Nubes: N, Nh, CL, CM, CH y capas.", "NUBES", "#c98a06"],
-  ["prueba_5_nubes_360.html", "Cielo 360° · 5", "Nubes: N, Nh, CL, CM, CH y capas.", "NUBES", "#c98a06"],
-  ["visor_nubes_360.html", "Visor de nubes 360°", "Cielo para explorar e identificar nubes libremente.", "VISOR", "#2b8a8a"]];
+  ["prueba_12utc_santo_domingo.html", "Santo Domingo · 12 UTC", "Observación completa con imagen 360 y reloj desde las 11:50.", "OBSERVACIÓN COMPLETA", "img/360/12utc_santo_domingo.jpg"],
+  ["prueba_1_nubes_360.html", "Cielo 360° · 1", "Nubes: N, Nh, CL, CM, CH y capas.", "NUBES", "img/360/1_nubes_360.jpg"],
+  ["prueba_2_nubes_360.html", "Cielo 360° · 2", "Nubes: N, Nh, CL, CM, CH y capas.", "NUBES", "img/360/2_nubes_360.jpg"],
+  ["prueba_3_nubes_360.html", "Cielo 360° · 3", "Nubes: N, Nh, CL, CM, CH y capas.", "NUBES", "img/360/3_nubes_360.jpg"],
+  ["prueba_4_nubes_360.html", "Cielo 360° · 4", "Nubes: N, Nh, CL, CM, CH y capas.", "NUBES", "img/360/4_nubes_360.jpg"],
+  ["prueba_5_nubes_360.html", "Cielo 360° · 5", "Nubes: N, Nh, CL, CM, CH y capas.", "NUBES", "img/360/5_nubes_360.jpg"]];
 function v360(){
   return `<p class="note" style="margin:0 0 12px;font-size:14px">Cielos reales en 360°: gire la imagen, observe en todas las direcciones e ingrese en la máscara.</p>
-   <div class="c360">${CASOS360.map(([u, t, d, k, col]) => `<a class="card" href="${u}"><div class="img"></div><div class="t"><span class="niv" style="background:${col}">${k}</span><h3 style="margin-top:6px">${t}</h3><p>${d}</p></div></a>`).join("")}</div>`;
+   <div class="c360">${CASOS360.map(([u, t, d, k, im]) => `<a class="card" href="${u}"><div class="img" style="background:#9fb3c8 url('${im}') center/cover"></div><div class="t"><span class="niv" style="background:#c98a06">${k}</span><h3 style="margin-top:6px">${t}</h3><p>${d}</p></div></a>`).join("")}</div>`;
 }
 function vSim(){
   return `<div class="pru">
