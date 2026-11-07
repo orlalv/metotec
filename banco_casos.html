@@ -2444,6 +2444,7 @@ const LIM_T = {ultra: 15 * 60, rev: 10 * 60, viento: 3 * 60, vis: 3 * 60, tiempo
 const CLAVE_P = "bancoSACLIM_v1";
 let P = (() => { try { return JSON.parse(localStorage.getItem(CLAVE_P)) || null; } catch (e) { return null; } })() || {hechos: {}, sesion: []};
 const guardarP = () => { try { localStorage.setItem(CLAVE_P, JSON.stringify(P)); } catch (e) {} };
+let TEMA = null;
 let VISTA = {tab: "libre", sec: "ultra", f: {nivel: "", est: "", tema: "", hora: "", estado: ""}};
 const idDe = (m, i) => m + "-" + i;
 const caso = (m, i) => BANCO[m][i];
@@ -2526,9 +2527,9 @@ function resumen(){
 /* ---------- vistas ---------- */
 function render(){
   const tabs = [["libre", "Práctica libre"], ["c360", "Práctica fotos 360"], ["sim", "Simuladores"], ["prueba", "Modo prueba"]];
-  let h = `<div class="bk"><div class="bkh"><a href="index.html" style="display:inline-block;margin-bottom:10px"><img src="img/logo_blanco.svg" alt="METOTEC" style="height:34px;display:block"></a><div class="bkk">MRO II · Estudio libre</div><h1>Banco de casos</h1>
+  let h = `<div class="bk"><div class="bkh"><a href="index.html" style="display:inline-block;margin-bottom:10px"><img src="img/logo_blanco.svg" alt="METOTEC" style="height:34px;display:block"></a>${TEMA ? `<h1>${SECC.find(x => x[0] === TEMA)[1]}</h1><p>${BANCO[TEMA].length} casos en niveles fácil, medio y difícil, con corrección casilla por casilla. <a href="index.html" style="color:#9cc3ff">← Volver al inicio</a></p><div style="height:14px"></div>` : `<h1>Banco de casos</h1>
     <p>${Object.values(BANCO).reduce((a, L) => a + L.length, 0)} casos para practicar en la máscara de ingreso, con corrección casilla por casilla.</p>
-    <div class="bktabs">${tabs.map(([k, t]) => `<a data-tab="${k}" class="${VISTA.tab === k || (VISTA.tab === "res" && k === "libre") ? "on" : ""}">${t}</a>`).join("")}</div></div><div class="bkm">`;
+    <div class="bktabs">${tabs.map(([k, t]) => `<a data-tab="${k}" class="${VISTA.tab === k || (VISTA.tab === "res" && k === "libre") ? "on" : ""}">${t}</a>`).join("")}</div>`}</div><div class="bkm">`;
   if (VISTA.tab === "libre") h += vLibre();
   else if (VISTA.tab === "res") h += vRes();
   else if (VISTA.tab === "prueba") h += vPrueba();
@@ -2544,7 +2545,7 @@ function vLibre(){
   const ests = [...new Set(todos.map(c => c.est || "SCSN"))], temas = [...new Set(todos.map(c => c.tema).filter(Boolean))].sort(), horas = [...new Set(todos.map(c => c.hora))].sort((a, b) => a - b);
   const R = resumen(), hechos = todos.filter((c, i) => idDe(m, i) in P.hechos).length;
   return `<div class="bkg"><section>
-   <div class="box"><div class="secs">${SECC.map(([k, t]) => `<span data-sec="${k}" class="${k === m ? "on" : ""}">${t}<b>${BANCO[k].length}</b></span>`).join("")}</div>
+   <div class="box">${TEMA ? "" : `<div class="secs">${SECC.map(([k, t]) => `<span data-sec="${k}" class="${k === m ? "on" : ""}">${t}<b>${BANCO[k].length}</b></span>`).join("")}</div>`}
     <div class="fil">
      <label>Nivel<select data-f="nivel"><option value="">Todos</option>${opts(Object.keys(NIV), f.nivel, v => NIV[v])}</select></label>
      <label>Estación<select data-f="est"><option value="">Todas</option>${opts(ests, f.est, v => (CONFIG.ESTACIONES.find(e => e.oaci === v) || {nombre: v}).nombre)}</select></label>
@@ -2650,7 +2651,7 @@ function finTest(){
 
 document.title = "Banco de casos";
 $("#fhCell").lastElementChild.textContent = "Estudio libre";
-{ const hs = location.hash.slice(1); if (SECC.some(x => x[0] === hs)) VISTA.sec = hs; }
+{ const hs = location.hash.slice(1); if (SECC.some(x => x[0] === hs)){ VISTA.sec = hs; TEMA = hs; } }
 pantalla("libre");
 
 </script>
