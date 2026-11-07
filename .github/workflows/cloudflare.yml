@@ -21,7 +21,6 @@ jobs:
       - name: Publicar
         run: npx -y wrangler@3 pages deploy . --project-name=metotec --branch=main --commit-dirty=true
       - name: Clave docente
-        if: ${{ env.CLAVE != '' }}
         env:
           CLAVE: ${{ secrets.CLAVE_DOCENTE }}
-        run: echo "$CLAVE" | npx -y wrangler@3 pages secret put CLAVE_DOCENTE --project-name=metotec
+        run: if [ -n "$CLAVE" ]; then echo "$CLAVE" | npx -y wrangler@3 pages secret put CLAVE_DOCENTE --project-name=metotec; else echo "Sin CLAVE_DOCENTE"; fi
