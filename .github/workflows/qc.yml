@@ -1,0 +1,47 @@
+# Control de calidad en vivo: cada 30 minutos descarga la red automática de la DMC,
+# guarda los datos minutarios en la rama "datos" y sube las alertas al KV de Cloudflare.
+name: Control de calidad
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: qc
+  cancel-in-progress: false
+jobs:
+  qc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
+      DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      KV_ID: 0d6aa4b37a834b5983ac9c7f638e2dbb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pandas numpy requests
+      - name: Rama de datos
+        run: |
+          URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+          if git ls-remote --exit-code --heads origin datos >/dev/null; then
+            git clone -q --depth 1 --branch datos "$URL" datos
+          else
+            mkdir datos && cd datos && git init -q -b datos && git remote add origin "$URL"
+          fi
+      - name: Control de calidad
+        run: python qc/correr.py --datos datos --salida qc_ultimo.json
+      - name: Guardar datos
+        if: always()
+        run: |
+          cd datos
+          git config user.name "qc-metotec"
+          git config user.email "contacto.metotec@gmail.com"
+          git add -A
+          git commit -q -m "datos $(date -u +%Y-%m-%dT%H:%MZ)" || exit 0
+          git push -q origin datos

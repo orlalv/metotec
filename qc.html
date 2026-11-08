@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>METOTEC · Control de calidad en vivo</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{--noche:#0A1F44;--marino:#082B5C;--oro:#C9A54C;--fondo:#0b1424;--panel:#111d33;--bd:#1f3050;--tx:#e6ecf5;--mu:#93a3bb;
+  --ok:#3fb67a;--sos:#e7b03b;--err:#e5534b;--sin:#6b778a}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--fondo);color:var(--tx);font:15px/1.45 Inter,system-ui,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:column}
+header{background:radial-gradient(900px 300px at 85% 0%,#163a73 0%,var(--noche) 62%);border-bottom:3px solid var(--oro);padding:12px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+header img{height:32px}
+header h1{margin:0;font-size:18px;font-weight:700;letter-spacing:.01em}
+header h1 small{display:block;color:var(--mu);font-weight:500;font-size:12.5px}
+.chips{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.chip{background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:999px;padding:5px 12px;font-weight:700;font-size:14px;cursor:pointer;user-select:none}
+.chip i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}
+.chip.off{opacity:.4}
+main{flex:1;display:grid;grid-template-columns:minmax(320px,1.1fr) minmax(360px,1fr);gap:0;min-height:0}
+#mapa{min-height:420px;background:#0d1a2e}
+aside{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--bd)}
+.tools{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid var(--bd);flex-wrap:wrap;align-items:center}
+.tools button{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 11px;font:600 13px inherit;cursor:pointer}
+.tools button.on{border-color:var(--oro);color:var(--oro)}
+.tools input{flex:1;min-width:140px;background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:7px 10px;font:inherit}
+#lista{overflow:auto;flex:1}
+.it{display:grid;grid-template-columns:12px 1fr auto;gap:10px;padding:10px 14px;border-bottom:1px solid var(--bd);cursor:pointer}
+.it:hover,.it.sel{background:#16264a}
+.it .p{width:12px;height:12px;border-radius:50%;margin-top:5px}
+.it b{font-size:14.5px}.it small{display:block;color:var(--mu);font-size:13px}
+.it .al{font-size:13px;color:#d6dde8;margin-top:3px}
+.it .al span{display:inline-block;background:rgba(255,255,255,.06);border-radius:5px;padding:1px 6px;margin:2px 4px 0 0}
+.it .v{text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--mu)}
+#det{border-top:3px solid var(--oro);background:var(--panel);padding:14px;max-height:46%;overflow:auto;display:none}
+#det h2{margin:0 0 2px;font-size:18px}#det .sub{color:var(--mu);font-size:13px;margin-bottom:10px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--bd)}th{color:var(--mu);font-weight:600}
+.tag{display:inline-block;border-radius:5px;padding:1px 7px;font-size:12px;font-weight:700;color:#0b1424}
+footer{color:var(--mu);font-size:12.5px;padding:6px 20px;border-top:1px solid var(--bd);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+#login{position:fixed;inset:0;background:rgba(5,10,20,.92);display:none;align-items:center;justify-content:center;z-index:2000}
+#login form{background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:26px;width:min(360px,92vw)}
+#login input{width:100%;margin:12px 0;padding:10px;border-radius:8px;border:1px solid var(--bd);background:#0b1424;color:var(--tx);font:inherit}
+#login button{background:var(--oro);color:var(--noche);border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;width:100%}
+#login p{color:var(--mu);font-size:13px;margin:0}
+.leaflet-container{font:inherit}
+.leaflet-popup-content{font-size:13px}
+@media (max-width:900px){main{grid-template-columns:1fr}#mapa{height:55vh}aside{border-left:0}}
+</style>
+</head>
+<body>
+<header>
+ <a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a>
+ <h1>Control de calidad en vivo<small id="hora">—</small></h1>
+ <div class="chips" id="chips"></div>
+</header>
+<main>
+ <div id="mapa"></div>
+ <aside>
+  <div class="tools">
+   <button data-z="todo" class="on">Todo</button><button data-z="norte">Norte</button><button data-z="centro">Centro</button><button data-z="sur">Sur</button><button data-z="austral">Austral</button>
+   <input id="buscar" placeholder="Buscar estación…">
+  </div>
+  <div id="lista"></div>
+  <div id="det"></div>
+ </aside>
+</main>
+<footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · modelo · lluvia · completitud</span></footer>
+<div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
+<script>
+const COL = {0: "var(--ok)", 1: "var(--sos)", 2: "var(--err)", 3: "var(--sin)"};
+const HEX = {0: "#3fb67a", 1: "#e7b03b", 2: "#e5534b", 3: "#6b778a"};
+const NOM = {0: "Bien", 1: "Sospechoso", 2: "Erróneo", 3: "Sin datos"};
+const PR = {rango: "Rango", salto: "Salto", pegado: "Valor pegado", coherencia: "Coherencia", vecinas: "Vecinas", modelo: "Modelo", lluvia: "Lluvia", completitud: "Completitud"};
+const VAR = {T: "T", Td: "Td", HR: "HR", P_est: "QFE", P_mar: "QFF", ff10: "Viento", dd10: "Dir.", rr1m: "Lluvia 1 min", rr3h: "Lluvia 3 h", Rad: "Radiación", registros: "Registros"};
+const ZONAS = {todo: [-90, 0], norte: [-27.5, 0], centro: [-38, -27.5], sur: [-46, -38], austral: [-90, -46]};
+let R = null, zona = "todo", ver = {0: true, 1: true, 2: true, 3: true}, sel = null, marcas = {};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const clave = () => { try { return sessionStorage.getItem("qcClave") || ""; } catch (e) { return window._qc || ""; } };
+
+const mapa = L.map("mapa", {zoomControl: true, preferCanvas: true}).setView([-33.5, -71], 5);
+L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {maxZoom: 12, attribution: "© OpenStreetMap · © CARTO"}).addTo(mapa);
+
+async function cargar(){
+  const r = await fetch("/api/qc", {headers: {"x-clave": clave()}, cache: "no-store"});
+  if (r.status === 401){ $("#login").style.display = "flex"; return; }
+  if (!r.ok){ $("#hora").textContent = "Error " + r.status; return; }
+  const primera = !R; R = await r.json(); $("#login").style.display = "none"; pintar();
+  if (primera){ const V = visibles().filter(e => e.lat != null); if (V.length) mapa.fitBounds(V.map(e => [e.lat, e.lon]), {padding: [20, 20]}); }
+}
+function enZona(e){ const [lo, hi] = ZONAS[zona]; return e.lat != null && e.lat >= lo && e.lat < hi; }
+function visibles(){
+  const q = $("#buscar").value.trim().toLowerCase();
+  return R.estaciones.filter(e => enZona(e) && ver[e.nivel] && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
+}
+function pintar(){
+  const g = R.generado ? new Date(R.generado) : null;
+  $("#hora").textContent = R.datos_hasta ? `Datos hasta ${R.datos_hasta.slice(0, 16)} UTC · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay resultados";
+  const res = R.resumen || {};
+  $("#chips").innerHTML = [[0, "bien"], [1, "sospechoso"], [2, "erróneo"], [3, "sin datos"]].map(([n, k]) =>
+    `<span class="chip ${ver[n] ? "" : "off"}" data-n="${n}"><i style="background:${COL[n]}"></i>${NOM[n]} ${res[k] ?? 0}</span>`).join("");
+  const f = R.fuentes || {};
+  $("#fuentes").textContent = "Fuentes: " + [f.estaciones, f.modelo, f.satelite].filter(Boolean).join(" · ");
+  const V = visibles();
+  Object.values(marcas).forEach(m => m.remove()); marcas = {};
+  V.forEach(e => {
+    const m = L.circleMarker([e.lat, e.lon], {radius: e.nivel === 0 ? 5 : 8, color: e.aislada ? "#ffffff" : HEX[e.nivel], weight: e.aislada ? 2 : 1,
+      fillColor: HEX[e.nivel], fillOpacity: .9}).addTo(mapa);
+    m.bindTooltip(`${esc(e.nombre)} · ${NOM[e.nivel]}`); m.on("click", () => detalle(e.codigo)); marcas[e.codigo] = m;
+  });
+  const L2 = [...V].sort((a, b) => ((b.nivel % 3 ? b.nivel : -1) - (a.nivel % 3 ? a.nivel : -1)) || (b.alertas.length - a.alertas.length) || a.lat - b.lat);
+  $("#lista").innerHTML = L2.map(e => `<div class="it ${sel === e.codigo ? "sel" : ""}" data-c="${e.codigo}"><span class="p" style="background:${COL[e.nivel]}"></span>
+    <div><b>${esc(e.nombre)}</b><small>${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.alt ?? "—"} m${e.aislada ? " · aislada" : ""}</small>
+    ${e.alertas.length ? `<div class="al">${e.alertas.slice(0, 4).map(a => `<span style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba} ${VAR[a.var] || a.var}</span>`).join("")}</div>` : ""}</div>
+    <div class="v">${e.valores.T != null ? e.valores.T + " °C" : ""}<br>${e.valores.P_mar != null ? e.valores.P_mar + " hPa" : ""}</div></div>`).join("") || `<p style="padding:14px;color:var(--mu)">Sin estaciones con ese filtro.</p>`;
+  if (sel) detalle(sel, false);
+}
+function detalle(c, mover = true){
+  const e = R.estaciones.find(x => x.codigo === c); if (!e) return; sel = c;
+  document.querySelectorAll(".it").forEach(x => x.classList.toggle("sel", x.dataset.c === c));
+  if (mover) mapa.setView([e.lat, e.lon], Math.max(mapa.getZoom(), 8));
+  const v = e.valores, m = e.modelo || {};
+  const fila = (n, k, u) => `<tr><td>${n}</td><td>${v[k] ?? "—"}${v[k] != null ? " " + u : ""}</td><td>${m[k] ?? "—"}${m[k] != null ? " " + u : ""}</td></tr>`;
+  const vec = (e.vecinas || []).map(x => (R.estaciones.find(y => y.codigo === x) || {}).nombre || x).join(", ");
+  $("#det").style.display = "block";
+  $("#det").innerHTML = `<h2>${esc(e.nombre)} <span class="tag" style="background:${HEX[e.nivel]}">${NOM[e.nivel]}</span></h2>
+   <div class="sub">${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.alt ?? "—"} m · completitud última hora ${e.completitud ?? "—"} % · ${e.hora ? "hora " + e.hora.slice(11, 16) + " UTC" : ""}</div>
+   <table><tr><th>Variable</th><th>Estación</th><th>Modelo</th></tr>${fila("Temperatura", "T", "°C")}${fila("Punto de rocío", "Td", "°C")}${fila("QFF", "P_mar", "hPa")}
+   <tr><td>Humedad</td><td>${v.HR ?? "—"} %</td><td></td></tr><tr><td>Viento 10 min</td><td>${v.dd10 ?? "—"}° ${v.ff10 ?? "—"} kt</td><td></td></tr><tr><td>Lluvia última hora</td><td>${v.rr1h ?? "—"} mm</td><td></td></tr></table>
+   <h3 style="font-size:14px;margin:14px 0 6px">Alertas</h3>
+   ${e.alertas.length ? `<table><tr><th>Prueba</th><th>Variable</th><th>Valor</th><th>Referencia</th><th>Detalle</th></tr>${e.alertas.map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba}</td><td>${VAR[a.var] || a.var}</td><td>${a.valor ?? "—"}</td><td>${a.ref ?? "—"}</td><td>${esc(a.msg)}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin alertas.</p>`}
+   <p style="color:var(--mu);font-size:12.5px;margin-top:10px">${e.aislada ? "Estación aislada: tiene menos de 3 vecinas comparables; la principal referencia es el modelo." : "Vecinas: " + esc(vec)}</p>`;
+}
+document.addEventListener("click", ev => {
+  const it = ev.target.closest(".it"); if (it) detalle(it.dataset.c);
+  const ch = ev.target.closest(".chip"); if (ch){ const n = +ch.dataset.n; ver[n] = !ver[n]; pintar(); }
+  const b = ev.target.closest(".tools button"); if (b){ zona = b.dataset.z; document.querySelectorAll(".tools button").forEach(x => x.classList.toggle("on", x === b)); pintar();
+    const V = visibles(); if (V.length) mapa.fitBounds(V.map(e => [e.lat, e.lon]), {padding: [20, 20], maxZoom: 8}); }
+});
+$("#buscar").addEventListener("input", () => R && pintar());
+$("#fl").addEventListener("submit", ev => { ev.preventDefault(); const c = $("#clave").value; try { sessionStorage.setItem("qcClave", c); } catch (e) { window._qc = c; } $("#lerr").textContent = ""; cargar(); });
+cargar(); setInterval(cargar, 5 * 60 * 1000);
+</script>
+</body>
+</html>
