@@ -10,6 +10,7 @@ No se guarda ni se muestra el identificador del observador.
 """
 import json, math, re
 from pathlib import Path
+import numpy as np
 import pandas as pd
 
 AQUI = Path(__file__).parent
@@ -203,11 +204,11 @@ def categoria_W(ww):
         return 9
     if 80 <= ww <= 90 or ww in (25, 26, 27):
         return 8
-    if 70 <= ww <= 79 or ww in (22, 23, 24):
+    if 70 <= ww <= 79 or ww in (22, 23):
         return 7
     if 60 <= ww <= 69 or ww == 21:
         return 6
-    if 50 <= ww <= 59 or ww == 20:
+    if 50 <= ww <= 59 or ww in (20, 24):      # 24 engelante: W 5 o 6 (se usa la cota inferior)
         return 5
     if 40 <= ww <= 49 or ww == 28:
         return 4
@@ -230,8 +231,10 @@ def codificacion(o):
     if VV is not None and ww is not None:
         if 42 <= ww <= 49 and VV >= 1000:
             add("C01", 2, f"niebla en la estación (ww {ww}) con visibilidad de {VV} m: la niebla exige menos de 1000 m")
-        if ww == 10 and not (1000 <= VV <= 5000):
-            add("C02", 2, f"neblina (ww 10) con visibilidad de {VV} m: debe estar entre 1000 y 5000 m")
+        if ww == 10 and VV < 1000:
+            add("C02", 2, f"neblina (ww 10) con visibilidad de {VV} m: con menos de 1000 m es niebla")
+        if ww == 10 and VV > 5000:
+            add("C02", 1, f"neblina (ww 10) con visibilidad de {VV} m: la neblina se informa hasta 5000 m")
         if ww in (4, 5) and VV > 5000:
             add("C03", 1, f"humo o calima (ww {ww:02d}) con visibilidad de {VV} m: se informa con 5000 m o menos")
         if ww in (11, 12) and VV < 1000:
@@ -272,12 +275,13 @@ def codificacion(o):
     suma = sum(c[0] for c in capas if c[0] is not None)
     if N is not None and N not in (9,) and capas and N > suma:
         add("C18", 1, f"N {N} mayor que la suma de las capas ({suma} octas): falta una capa o la cantidad de alguna")
-    if any(c[0] == 8 for c in capas[:-1]) and capas[-1][0] != 8 and capas.index(next(c for c in capas if c[0] == 8)) < len(capas) - 1:
+    i8 = next((i for i, c in enumerate(capas) if c[0] == 8), None)
+    if i8 is not None and i8 < len(capas) - 1:
         add("C19", 1, "hay capas por encima de una capa de 8 octas: con 8 octas no se ven las nubes superiores")
     if Nh is not None and N is not None and N != 9 and Nh > N:
         add("C20", 2, f"Nh {Nh} mayor que N {N}")
-    if CL == 9 and not any(c[1] == 9 for c in capas):
-        add("C21", 1, "CL 9 (cumulonimbo) sin una capa de Cb")
+    if CL in (3, 9) and capas and not any(c[1] == 9 for c in capas):
+        add("C21", 1, f"CL {CL} (cumulonimbo) sin una capa de Cb")
     if any(c[1] == 9 for c in capas) and CL not in (3, 9):
         add("C22", 1, f"capa de Cb con CL {CL}: con cumulonimbo CL es 3 o 9")
     # tipo de nube frente al fenómeno (capas: 4 As, 5 Ns, 6 Sc, 7 St, 8 Cu, 9 Cb, 10 TCu)
@@ -324,8 +328,6 @@ def evolucion(t, o, hist):
         if wa is not None and ww is not None:
             if wa in PRECIP and ww < 20 and ww not in (17,):
                 add("E01", 1, f"a la hora anterior había precipitación (ww {wa}) y ahora ww {ww:02d}: si terminó en la última hora corresponde ww 20–27")
-            if 20 <= ww <= 29 and categoria_W(wa) is None and wa < 20:
-                add("E02", 1, f"ww {ww} (fenómeno terminado en la última hora) pero a la hora anterior se informó ww {wa:02d}")
             cla, cl = v(ant, "Nubes", "Cl"), v(o, "Nubes", "Cl")
             if 50 <= wa <= 59 and 80 <= ww <= 90 and cla == cl and cl not in (2, 3, 9):
                 add("E03", 1, f"pasó de llovizna (ww {wa}) a chubasco (ww {ww}) con las mismas nubes bajas (CL {cl}) y sin cúmulos de desarrollo")
@@ -342,9 +344,9 @@ def evolucion(t, o, hist):
                 add("E07", 1, f"ww 01 (las nubes se disuelven) pero N subió de {Na} a {N}")
             if ww == 3 and N < Na:
                 add("E08", 1, f"ww 03 (las nubes se forman) pero N bajó de {Na} a {N}")
-        qa, qn = v(ant, "QFF"), v(o, "QFF")
-        if qa is not None and qn is not None and abs(qn - qa) > 3:
-            add("E09", 1, f"QFF cambió {qn - qa:+.1f} hPa en una hora")
+        qa, qn = v(ant, "QFE"), v(o, "QFE")       # QFE: en estaciones altas el QFF depende de la temperatura
+        if qa is not None and qn is not None and abs(qn - qa) > 2.5:
+            add("E09", 1, f"QFE cambió {qn - qa:+.1f} hPa en una hora")
     # período de tiempo pasado
     per = 6 if t.hour % 6 == 0 else 3
     horas = [hist.get(t - pd.Timedelta(hours=k)) for k in range(1, per)]
@@ -370,8 +372,8 @@ def evolucion(t, o, hist):
     h3 = hist.get(t - pd.Timedelta(hours=3))
     if a is not None and h3 is not None and v(h3, "QFE") is not None and v(o, "QFE") is not None:
         d = round(v(o, "QFE") - v(h3, "QFE"), 1)
-        if ppp is not None and abs(abs(d) - ppp) > 0.3:
-            add("E14", 2, f"ppp {ppp} hPa, pero el QFE cambió {d:+.1f} hPa en 3 horas")
+        if ppp is not None and abs(abs(d) - ppp) > 0.5:
+            add("E14", 2 if abs(abs(d) - ppp) > 1.0 else 1, f"ppp {ppp} hPa, pero el QFE anotado cambió {d:+.1f} hPa en 3 horas")
         if d >= 0.5 and a >= 5:
             add("E15", 2, f"característica a {a} (presión que baja) con QFE que subió {d:+.1f} hPa")
         if d <= -0.5 and a <= 3:
@@ -388,23 +390,51 @@ def evolucion(t, o, hist):
 
 
 # ======================================================================= frente a la estación automática
-def frente_sensor(t, o, A):
+SENSOR = (("Ts", "T", 1.5, 3, "°C"), ("Td", "Td", 2.5, 5, "°C"), ("HR", "HR", 12, 25, "%"), ("QFE", "P_est", 0.8, 2, "hPa"), ("QFF", "P_mar", 1.5, 3, "hPa"))
+
+
+def _auto(t, A):
+    g = A[(A["momento"] <= t) & (A["momento"] > t - pd.Timedelta(minutes=10))].sort_values("momento")
+    return None if g.empty else g.iloc[-1]
+
+
+def sesgos(obs, A):
+    """Diferencia típica observador − automática de cada variable (mediana de las horas disponibles, mínimo 4).
+    Una diferencia constante es de instrumento o de altura del sensor, no un error de la observación."""
+    if A is None or A.empty:
+        return {}
+    dif = {el: [] for el, *_ in SENSOR}
+    for t, o in obs.items():
+        r = _auto(t, A)
+        if r is None:
+            continue
+        for el, col, *_ in SENSOR:
+            x, y = v(o, el), r.get(col)
+            if x is not None and y is not None and pd.notna(y):
+                dif[el].append(x - y)
+    return {el: float(np.median(d)) for el, d in dif.items() if len(d) >= 4}
+
+
+def frente_sensor(t, o, A, sesgo=None):
     """A: DataFrame minutario de la estación automática del mismo código."""
     out = []
+    sesgo = sesgo or {}
     if A is None or A.empty:
         return out
-    g = A[(A["momento"] <= t) & (A["momento"] > t - pd.Timedelta(minutes=10))].sort_values("momento")
-    if g.empty:
+    r = _auto(t, A)
+    if r is None:
         return out
-    r = g.iloc[-1]
     add = lambda cod, niv, msg: out.append(("sensor", cod, niv, msg))
-    for el, col, s1, s2, u in (("Ts", "T", 1.5, 3, "°C"), ("Td", "Td", 2.5, 5, "°C"), ("HR", "HR", 12, 25, "%"), ("QFE", "P_est", 0.8, 2, "hPa"), ("QFF", "P_mar", 1.5, 3, "hPa")):
+    for el, col, s1, s2, u in SENSOR:
         x, y = v(o, el), r.get(col)
         if x is None or y is None or pd.isna(y):
             continue
-        d = abs(x - y)
+        b = sesgo.get(el, 0.0)
+        b = b if abs(b) > s1 / 2 else 0.0                 # solo se descuenta una diferencia constante apreciable
+        d = abs(x - y - b)
         if d > s1:
-            add("S" + el, 2 if d > s2 else 1, f"{el} anotado {x} {u} y la estación automática marca {y:g} {u} (diferencia {d:.1f})")
+            extra = f"; descontada la diferencia habitual de {b:+.1f}" if b else ""
+            add("S" + el, 2 if d > s2 else 1, f"{el} anotado {x} {u} y la estación automática marca {y:g} {u} (diferencia {x - y:+.1f}{extra})")
     ff, ffa = v(o, "VTO", "ff"), r.get("ff10")
     if ff is not None and ffa is not None and pd.notna(ffa) and abs(ff - ffa) > 6:
         add("Sff", 1, f"viento anotado {ff} kt y la estación automática marca {ffa:.0f} kt")
@@ -439,8 +469,13 @@ def revisar(codigo, obs, A=None, horas=None, sat=None):
     sel = ts[-(horas or 1):]
     out = []
     from satelite import sensorial as satelital
+    sg = sesgos(obs, A)
+    for el, col, s1, s2, u in SENSOR:            # diferencia constante con la automática: se informa una vez (última hora)
+        if abs(sg.get(el, 0)) > s1:
+            out.append(dict(codigo=str(codigo), hora=str(ts[-1]), tipo="sensor", regla="SB" + el, nivel=1, revisado="no",
+                            msg=f"{el} del observador difiere en forma constante {sg[el]:+.1f} {u} de la estación automática (revisar calibración o altura del sensor)"))
     for t in sel:
         o = obs[t]
-        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs) + frente_sensor(t, o, A) + satelital(t, o, sat):
+        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs) + frente_sensor(t, o, A, sg) + satelital(t, o, sat):
             out.append(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"))
     return out
