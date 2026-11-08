@@ -232,9 +232,22 @@ def main():
         estado["errores"].append(f"serie: {traceback.format_exc(limit=2)}")
     cerc = {}
     try:   # incendios cerca de las estaciones (producto de METOTEC sobre GOES-19 y FIRMS)
-        cerc = INC.cercania(E, INC.obtener())
+        INC.ultimo = INC.obtener()
+        cerc = INC.cercania(E, INC.ultimo)
         alertas = INC.aplicar(alertas, cerc, H["momento"].max() if len(H) else pd.Timestamp.now(), P.alerta)
         estado["incendios_cerca"] = len(cerc)
+        # público: estaciones a ≤ 30 km de un incendio de las últimas 6 h, con su evolución (para el visor de incendios)
+        c30 = INC.cercania(E, INC.ultimo, horas=6, radio=30)
+        pub = []
+        nom = E.set_index("codigo")
+        for cod, c in c30.items():
+            g = H[H["codigo"] == cod].sort_values("momento").tail(7)
+            fila = lambda x: None if pd.isna(x) else round(float(x), 1)
+            serie = [[str(m)[11:16]] + [fila(r.get(v)) for v in ("T", "HR", "ff10", "dd10")] for m, r in zip(g["momento"], g.to_dict("records"))]
+            pub.append(dict(codigo=cod, nombre=nom.at[cod, "nombre"], lat=float(nom.at[cod, "lat"]), lon=float(nom.at[cod, "lon"]),
+                            alt=None if pd.isna(nom.at[cod, "alt"]) else float(nom.at[cod, "alt"]), **c, serie=serie))
+        estado["kv_incendios"] = subir_kv("pub/incendios_estaciones", json.dumps({"generado": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                                          "campos": ["hora", "T", "HR", "ff10", "dd10"], "estaciones": pub}, ensure_ascii=False))
     except Exception as e:
         estado["errores"].append(f"incendios: {e}")
     try:
