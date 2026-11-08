@@ -1,0 +1,34 @@
+# Una sola vez: revisa qué estaciones publican datos sensoriales. Se lanza al cambiar el script o a mano.
+name: Sondeo de datos sensoriales
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [qc/sondeo_sensoriales.py]
+permissions:
+  contents: write
+concurrency:
+  group: qc
+  cancel-in-progress: false
+jobs:
+  sondeo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
+      DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pandas requests
+      - name: Rama de datos
+        run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - run: python qc/sondeo_sensoriales.py datos
+      - name: Guardar
+        run: |
+          cd datos
+          git config user.name "qc-metotec"; git config user.email "contacto.metotec@gmail.com"
+          git add sensoriales.json && git commit -q -m "sondeo de datos sensoriales" || exit 0
+          for i in 1 2 3; do git pull -q --rebase origin datos && git push -q origin datos && break; sleep 5; done
