@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-08T22:15:26+00:00",
+ "inicio": "2026-11-08T22:45:18+00:00",
  "errores": [],
  "estaciones": 132,
- "con_datos": 122,
- "registros": 4763,
- "desde": "2026-11-08 21:16:00",
- "hasta": "2026-11-08 22:10:00",
+ "con_datos": 119,
+ "registros": 4826,
+ "desde": "2026-11-08 21:46:00",
+ "hasta": "2026-11-08 22:40:00",
  "horas_archivadas": 2,
  "modelo": 6336,
  "wrf": "sin corridas nuevas",
@@ -21,26 +21,19 @@
  ],
  "wrf_ref": 214,
  "satelite": {
-  "imagenes": 12,
-  "ultima": "2026-11-08T22:00Z"
- },
- "sensorial": {
-  "estaciones": 33,
-  "observaciones": 387,
-  "fallas": 0,
-  "hallazgos": 20,
-  "kv": "200"
+  "imagenes": 15,
+  "ultima": "2026-11-08T22:30Z"
  },
  "historial": {
   "2026-11-08": "200"
  },
  "kv": "200",
- "alertas": 40,
+ "alertas": 33,
  "resumen": {
-  "bien": 95,
-  "sospechoso": 24,
+  "bien": 99,
+  "sospechoso": 20,
   "erróneo": 6,
   "sin datos": 7
  },
- "fin": "2026-11-08T22:16:59+00:00"
+ "fin": "2026-11-08T22:45:27+00:00"
 }
