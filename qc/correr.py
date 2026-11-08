@@ -177,7 +177,7 @@ def main():
     mod_ult = {}
     if M is not None and len(H):
         X = H.merge(M, on=["codigo", "momento"], suffixes=("", "_m")).sort_values("momento").groupby("codigo").tail(1).set_index("codigo")
-        mod_ult = {c: {v: (None if pd.isna(X.at[c, v + "_m"]) else round(float(X.at[c, v + "_m"]), 1)) for v in ("T", "Td", "HR", "P_mar")} for c in X.index}
+        mod_ult = {c: {v: (None if pd.isna(X.at[c, v + "_m"]) else round(float(X.at[c, v + "_m"]), 1)) for v in ("T", "Td", "HR", "P_mar", "ff10") if v + "_m" in X} for c in X.index}
     if W is not None and len(W) and len(H):
         Y = H.merge(W, on=["codigo", "momento"]).sort_values("momento").groupby("codigo").tail(1).set_index("codigo")
         for cc in Y.index:
