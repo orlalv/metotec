@@ -34,6 +34,31 @@ def archivar(D, raiz):
     return n
 
 
+def archivar_ob(raiz, H, M, W):
+    """Guarda estación + Open-Meteo + WRF-DMC por hora (ob/AAAA/MM/DD.csv.gz) para calibrar el control O−B
+    (sesgo y dispersión por estación, variable y hora) y verificar qué modelo atina más."""
+    if H is None or not len(H):
+        return 0
+    C = ["T", "Td", "HR", "P_mar", "ff10", "rr1h"]
+    S = H[["codigo", "momento"] + [c for c in C if c in H]].copy()
+    if M is not None and len(M):
+        S = S.merge(M[["codigo", "momento"] + [c for c in C if c in M]].rename(columns=lambda c: c if c in ("codigo", "momento") else c + "_om"),
+                    on=["codigo", "momento"], how="left")
+    if W is not None and len(W):
+        S = S.merge(W[["codigo", "momento"] + [c for c in W.columns if c.endswith("_w")]], on=["codigo", "momento"], how="left")
+    S = S[S["momento"] == S["momento"].dt.floor("h")]
+    n = 0
+    for dia, g in S.groupby(S["momento"].dt.floor("D")):
+        f = Path(raiz) / "ob" / dia.strftime("%Y/%m/%d.csv.gz")
+        f.parent.mkdir(parents=True, exist_ok=True)
+        if f.exists():
+            g = pd.concat([pd.read_csv(f, parse_dates=["momento"], dtype={"codigo": str}), g])
+        g = g.drop_duplicates(["codigo", "momento"], keep="last").sort_values(["momento", "codigo"])
+        g.to_csv(f, index=False, float_format="%.5g", compression={"method": "gzip", "mtime": 0})
+        n += len(g)
+    return n
+
+
 def leer_archivo(raiz, fin, horas=6):
     raiz = Path(raiz) / "ema"
     partes = []
@@ -205,6 +230,10 @@ def main():
                 serie[cod] = [[str(m)[11:16]] + [r1(x) for x in fila] for m, *fila in g[["momento"] + CS].itertuples(index=False)]
     except Exception:
         estado["errores"].append(f"serie: {traceback.format_exc(limit=2)}")
+    try:
+        estado["ob_filas"] = archivar_ob(a.datos, H, M, W)
+    except Exception:
+        estado["errores"].append(f"archivo O−B: {traceback.format_exc(limit=2)}")
     por = {}
     for al in alertas:
         por.setdefault(al["codigo"], []).append(al)
