@@ -205,7 +205,7 @@ def main():
                fuentes={"estaciones": "DMC, red automática", "modelo": " + ".join(x for x in ["WRF-DMC" if W is not None and len(W) else "", "Open-Meteo" if M is not None else ""] if x) or None, "satelite": "GOES-19 (NOAA)" if sat else None},
                resumen={k: sum(1 for e in est if e["estado"] == k) for k in ("bien", "sospechoso", "erróneo", "sin datos")},
                estaciones=est)
-    hacer = a.sensorial == "si" or (a.sensorial == "auto" and datetime.now(timezone.utc).minute >= 30 and not a.json)
+    hacer = a.sensorial == "si" or (a.sensorial == "auto" and 10 <= datetime.now(timezone.utc).minute < 30 and not a.json)
     if hacer:
         try:
             estado["sensorial"] = control_sensorial(E, a.datos, SAT=SAT.series(sat))

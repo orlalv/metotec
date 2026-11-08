@@ -3,7 +3,7 @@
 name: Control de calidad
 on:
   schedule:
-    - cron: "7,37 * * * *"
+    - cron: "15,45 * * * *"
   workflow_dispatch:
 permissions:
   contents: write
@@ -46,7 +46,7 @@ jobs:
           git commit -q -m "datos $(date -u +%Y-%m-%dT%H:%MZ)" || exit 0
           git push -q origin datos
 
-  # Cadena: el cron de GitHub es poco confiable, así que cada ejecución deja lanzada la siguiente (minutos :07 y :37).
+  # Cadena: el cron de GitHub es poco confiable, así que cada ejecución deja lanzada la siguiente (minutos :15 y :45).
   siguiente:
     needs: qc
     if: always()
@@ -60,7 +60,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           ahora=$(date +%s)
-          objetivo=$(( (ahora / 1800 + 1) * 1800 + 420 ))
+          objetivo=$(( (ahora / 1800 + 1) * 1800 + 900 ))
           if [ $(( objetivo - ahora )) -gt 1800 ]; then objetivo=$(( objetivo - 1800 )); fi
           if [ $(( objetivo - ahora )) -lt 120 ]; then objetivo=$(( objetivo + 1800 )); fi
           espera=$(( objetivo - ahora ))
