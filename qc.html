@@ -28,6 +28,7 @@ aside{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(
 .tools{display:flex;gap:6px;padding:10px 14px;border-bottom:1px solid var(--bd);flex-wrap:wrap;align-items:center}
 .tools button{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 11px;font:600 13px inherit;cursor:pointer}
 .tools button.on{border-color:var(--oro);color:var(--oro)}
+.tools select{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 8px;font:600 13px inherit}
 .tools input{flex:1;min-width:140px;background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:7px 10px;font:inherit}
 #lista{overflow:auto;flex:1}
 .it{display:grid;grid-template-columns:12px 1fr auto;gap:10px;padding:10px 14px;border-bottom:1px solid var(--bd);cursor:pointer}
@@ -64,19 +65,23 @@ footer{color:var(--mu);font-size:12.5px;padding:6px 20px;border-top:1px solid va
  <aside>
   <div class="tools">
    <button data-z="todo" class="on">Todo</button><button data-z="norte">Norte</button><button data-z="centro">Centro</button><button data-z="sur">Sur</button><button data-z="austral">Austral</button>
+   <select id="grupo" title="Pruebas"><option value="todas">Todas las pruebas</option><option value="basicas">Solo básicas</option><option value="vecinas">Solo vecinas</option><option value="modelos">Solo modelos</option><option value="lluvia">Solo lluvia</option></select>
    <input id="buscar" placeholder="Buscar estación…">
   </div>
   <div id="lista"></div>
   <div id="det"></div>
  </aside>
 </main>
-<footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · modelo · lluvia · completitud</span></footer>
+<footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
 <script>
 const COL = {0: "var(--ok)", 1: "var(--sos)", 2: "var(--err)", 3: "var(--sin)"};
 const HEX = {0: "#3fb67a", 1: "#e7b03b", 2: "#e5534b", 3: "#6b778a"};
 const NOM = {0: "Bien", 1: "Sospechoso", 2: "Erróneo", 3: "Sin datos"};
-const PR = {rango: "Rango", salto: "Salto", pegado: "Valor pegado", coherencia: "Coherencia", vecinas: "Vecinas", modelo: "Modelo", lluvia: "Lluvia", completitud: "Completitud"};
+const PR = {rango: "Rango", salto: "Salto", pegado: "Valor pegado", coherencia: "Coherencia", vecinas: "Vecinas", modelo: "Open-Meteo", wrf: "WRF-DMC", lluvia: "Lluvia", completitud: "Completitud"};
+const GRUPOS = {todas: null, basicas: ["rango", "salto", "pegado", "coherencia", "completitud"], vecinas: ["vecinas"], modelos: ["modelo", "wrf"], lluvia: ["lluvia"]};
+let grupo = "todas";
+function filtrar(e){ const G = GRUPOS[grupo]; const al = G ? e.alertas.filter(a => G.includes(a.prueba)) : e.alertas; const nivel = e.nivel === 3 ? 3 : Math.max(0, ...al.map(a => a.nivel)); return {...e, alertas: al, nivel}; }
 const VAR = {T: "T", Td: "Td", HR: "HR", P_est: "QFE", P_mar: "QFF", ff10: "Viento", dd10: "Dir.", rr1m: "Lluvia 1 min", rr3h: "Lluvia 3 h", Rad: "Radiación", registros: "Registros"};
 const ZONAS = {todo: [-90, 0], norte: [-27.5, 0], centro: [-38, -27.5], sur: [-46, -38], austral: [-90, -46]};
 let R = null, zona = "todo", ver = {0: true, 1: true, 2: true, 3: true}, sel = null, marcas = {};
@@ -98,12 +103,13 @@ async function cargar(){
 function enZona(e){ const [lo, hi] = ZONAS[zona]; return e.lat != null && e.lat >= lo && e.lat < hi; }
 function visibles(){
   const q = $("#buscar").value.trim().toLowerCase();
-  return R.estaciones.filter(e => enZona(e) && ver[e.nivel] && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
+  return R.estaciones.map(filtrar).filter(e => enZona(e) && ver[e.nivel] && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
 function pintar(){
   const g = R.generado ? new Date(R.generado) : null;
   $("#hora").textContent = R.datos_hasta ? `Datos hasta ${R.datos_hasta.slice(0, 16)} UTC · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay resultados";
-  const res = R.resumen || {};
+  const T = R.estaciones.map(filtrar), res = {bien: 0, sospechoso: 0, "erróneo": 0, "sin datos": 0};
+  T.forEach(e => res[["bien", "sospechoso", "erróneo", "sin datos"][e.nivel]]++);
   $("#chips").innerHTML = [[0, "bien"], [1, "sospechoso"], [2, "erróneo"], [3, "sin datos"]].map(([n, k]) =>
     `<span class="chip ${ver[n] ? "" : "off"}" data-n="${n}"><i style="background:${COL[n]}"></i>${NOM[n]} ${res[k] ?? 0}</span>`).join("");
   const f = R.fuentes || {};
@@ -123,17 +129,18 @@ function pintar(){
   if (sel) detalle(sel, false);
 }
 function detalle(c, mover = true){
-  const e = R.estaciones.find(x => x.codigo === c); if (!e) return; sel = c;
+  const e0 = R.estaciones.find(x => x.codigo === c); if (!e0) return; const e = filtrar(e0); sel = c;
   document.querySelectorAll(".it").forEach(x => x.classList.toggle("sel", x.dataset.c === c));
   if (mover) mapa.setView([e.lat, e.lon], Math.max(mapa.getZoom(), 8));
   const v = e.valores, m = e.modelo || {};
-  const fila = (n, k, u) => `<tr><td>${n}</td><td>${v[k] ?? "—"}${v[k] != null ? " " + u : ""}</td><td>${m[k] ?? "—"}${m[k] != null ? " " + u : ""}</td></tr>`;
+  const c3 = (x, u) => x != null ? x + " " + u : "—";
+  const fila = (n, k, u) => `<tr><td>${n}</td><td>${c3(v[k], u)}</td><td>${c3(m[k + "_wrf"], u)}</td><td>${c3(m[k], u)}</td></tr>`;
   const vec = (e.vecinas || []).map(x => (R.estaciones.find(y => y.codigo === x) || {}).nombre || x).join(", ");
   $("#det").style.display = "block";
   $("#det").innerHTML = `<h2>${esc(e.nombre)} <span class="tag" style="background:${HEX[e.nivel]}">${NOM[e.nivel]}</span></h2>
    <div class="sub">${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.alt ?? "—"} m · completitud última hora ${e.completitud ?? "—"} % · ${e.hora ? "hora " + e.hora.slice(11, 16) + " UTC" : ""}</div>
-   <table><tr><th>Variable</th><th>Estación</th><th>Modelo</th></tr>${fila("Temperatura", "T", "°C")}${fila("Punto de rocío", "Td", "°C")}${fila("QFF", "P_mar", "hPa")}
-   <tr><td>Humedad</td><td>${v.HR ?? "—"} %</td><td></td></tr><tr><td>Viento 10 min</td><td>${v.dd10 ?? "—"}° ${v.ff10 ?? "—"} kt</td><td></td></tr><tr><td>Lluvia última hora</td><td>${v.rr1h ?? "—"} mm</td><td></td></tr></table>
+   <table><tr><th>Variable</th><th>Estación</th><th>WRF-DMC${m.n_wrf ? " (" + m.n_wrf + " corridas)" : ""}</th><th>Open-Meteo</th></tr>${fila("Temperatura", "T", "°C")}${fila("Punto de rocío", "Td", "°C")}${fila("Humedad", "HR", "%")}${fila("QFF", "P_mar", "hPa")}
+   <tr><td>Viento 10 min</td><td>${v.dd10 ?? "—"}° ${v.ff10 ?? "—"} kt</td><td>${c3(m.ff10_wrf, "kt")}</td><td></td></tr><tr><td>Lluvia última hora</td><td>${c3(v.rr1h, "mm")}</td><td></td><td></td></tr></table>
    <h3 style="font-size:14px;margin:14px 0 6px">Alertas</h3>
    ${e.alertas.length ? `<table><tr><th>Prueba</th><th>Variable</th><th>Valor</th><th>Referencia</th><th>Detalle</th></tr>${e.alertas.map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba}</td><td>${VAR[a.var] || a.var}</td><td>${a.valor ?? "—"}</td><td>${a.ref ?? "—"}</td><td>${esc(a.msg)}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin alertas.</p>`}
    <p style="color:var(--mu);font-size:12.5px;margin-top:10px">${e.aislada ? "Estación aislada: tiene menos de 3 vecinas comparables; la principal referencia es el modelo." : "Vecinas: " + esc(vec)}</p>`;
@@ -145,6 +152,7 @@ document.addEventListener("click", ev => {
     const V = visibles(); if (V.length) mapa.fitBounds(V.map(e => [e.lat, e.lon]), {padding: [20, 20], maxZoom: 8}); }
 });
 $("#buscar").addEventListener("input", () => R && pintar());
+$("#grupo").addEventListener("change", ev => { grupo = ev.target.value; R && pintar(); });
 $("#fl").addEventListener("submit", ev => { ev.preventDefault(); const c = $("#clave").value; try { sessionStorage.setItem("qcClave", c); } catch (e) { window._qc = c; } $("#lerr").textContent = ""; cargar(); });
 cargar(); setInterval(cargar, 5 * 60 * 1000);
 </script>

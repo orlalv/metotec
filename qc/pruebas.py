@@ -254,3 +254,25 @@ def completitud(D, E):
         if p < 80:
             out.append(alerta(cod, "completitud", "registros", 1, fin, p, 100, f"llegó el {p:.0f} % de los datos de la última hora"))
     return out, pct
+
+
+# ------------------------------------------------------------------ 6b. modelo WRF-DMC (varias corridas)
+def modelo_dmc(H, W, aisladas=()):
+    """Compara con la mediana de las últimas corridas del WRF-DMC; el umbral crece con la dispersión entre corridas."""
+    out = []
+    if W is None or W.empty or H.empty:
+        return out
+    X = H.merge(W, on=["codigo", "momento"]).sort_values("momento").groupby("codigo").tail(1)
+    for r in X.to_dict("records"):
+        extra = " (estación aislada)" if r["codigo"] in aisladas else ""
+        sd = r.get("T_sd_w") if pd.notna(r.get("T_sd_w")) else 0
+        for v, (b1, b2, k) in {"T": (6, 10, 3), "HR": (35, 55, 0), "ff10": (15, 25, 0)}.items():
+            o, m = r.get(v), r.get(v + "_w")
+            if o is None or m is None or pd.isna(o) or pd.isna(m):
+                continue
+            s1, s2 = (max(b1, k * sd), max(b2, (k + 2) * sd)) if k else (b1, b2)
+            d = abs(o - m)
+            if d > s1:
+                out.append(alerta(r["codigo"], "wrf", v, 2 if d > s2 else 1, r["momento"], o, m,
+                                  f"diferencia con el WRF-DMC de {d:.1f} (mediana de {int(r['n_w'])} corridas){extra}"))
+    return out

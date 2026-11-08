@@ -14,7 +14,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
-import dmc, pruebas as P, modelo as MO
+import dmc, pruebas as P, modelo as MO, wrf as WRF
 
 VERSION = "0.1"
 
@@ -90,6 +90,18 @@ def main():
         except Exception as e:
             estado["errores"].append(f"modelo: {e}")
 
+    W = None
+    if not a.sin_modelo:
+        try:
+            estado.update(WRF.sincronizar(E, a.datos))
+        except Exception as e:
+            estado["errores"].append(f"wrf: {e}")
+        try:
+            W = WRF.referencia(a.datos, fin - pd.Timedelta(hours=6), fin)
+            estado["wrf_ref"] = len(W)
+        except Exception as e:
+            estado["errores"].append(f"wrf_ref: {e}")
+
     clusters = leer_clusters(Path(__file__).parent / "clusters.csv")
     V = P.vecinas_de(E, clusters=clusters)
     aisladas = {c for c, L in V.items() if len(L) < 3}
@@ -97,7 +109,7 @@ def main():
     alertas = []
     for nombre, f in [("rango", lambda: P.rango(A)), ("salto", lambda: P.saltos(A)), ("pegado", lambda: P.pegados(A)),
                       ("coherencia", lambda: P.coherencia(H.groupby("codigo").tail(1), E)), ("vecinas", lambda: P.vecinas(H, E, V)),
-                      ("modelo", lambda: P.modelo(H, M, aisladas)), ("lluvia", lambda: P.lluvia(H, M, V))]:
+                      ("modelo", lambda: P.modelo(H, M, aisladas)), ("wrf", lambda: P.modelo_dmc(H, W, aisladas)), ("lluvia", lambda: P.lluvia(H, M, V))]:
         try:
             alertas += f()
         except Exception:
@@ -110,7 +122,15 @@ def main():
     mod_ult = {}
     if M is not None and len(H):
         X = H.merge(M, on=["codigo", "momento"], suffixes=("", "_m")).sort_values("momento").groupby("codigo").tail(1).set_index("codigo")
-        mod_ult = {c: {v: (None if pd.isna(X.at[c, v + "_m"]) else round(float(X.at[c, v + "_m"]), 1)) for v in ("T", "Td", "P_mar")} for c in X.index}
+        mod_ult = {c: {v: (None if pd.isna(X.at[c, v + "_m"]) else round(float(X.at[c, v + "_m"]), 1)) for v in ("T", "Td", "HR", "P_mar")} for c in X.index}
+    if W is not None and len(W) and len(H):
+        Y = H.merge(W, on=["codigo", "momento"]).sort_values("momento").groupby("codigo").tail(1).set_index("codigo")
+        for cc in Y.index:
+            d = mod_ult.setdefault(cc, {})
+            for v in ("T", "HR", "ff10"):
+                x = Y.at[cc, v + "_w"]
+                d[v + "_wrf"] = None if pd.isna(x) else round(float(x), 1)
+            d["n_wrf"] = int(Y.at[cc, "n_w"])
     por = {}
     for al in alertas:
         por.setdefault(al["codigo"], []).append(al)
@@ -129,7 +149,7 @@ def main():
                         aislada=c in aisladas, vecinas=V.get(c, [])[:6], completitud=comp.get(c), hora=None if u is None else str(u["momento"]),
                         valores=val, modelo=mod_ult.get(c, {}), alertas=al))
     res = dict(generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), datos_hasta=estado["hasta"], version=VERSION,
-               fuentes={"estaciones": "DMC, red automática", "modelo": "Open-Meteo (mejor modelo disponible)" if M is not None else None, "satelite": None},
+               fuentes={"estaciones": "DMC, red automática", "modelo": " + ".join(x for x in ["WRF-DMC" if W is not None and len(W) else "", "Open-Meteo" if M is not None else ""] if x) or None, "satelite": None},
                resumen={k: sum(1 for e in est if e["estado"] == k) for k in ("bien", "sospechoso", "erróneo", "sin datos")},
                estaciones=est)
     txt = json.dumps(res, ensure_ascii=False, default=str)
