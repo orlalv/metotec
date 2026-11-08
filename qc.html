@@ -268,7 +268,9 @@ function campoSerie(e, fila, c){ const i = (R.serie_campos || []).indexOf(c); re
 function refMod(v, ref){ return ref === "w" && !MV[v].w ? "om" : ref; }
 function valMod(e, v, ref, fila){
   const SS = e.serie || []; fila = fila || SS[SS.length - 1];
-  const est = campoSerie(e, fila, v), w = MV[v].w ? campoSerie(e, fila, v + "_w") : null, om = campoSerie(e, fila, v + "_om");
+  let est = campoSerie(e, fila, v), w = MV[v].w ? campoSerie(e, fila, v + "_w") : null, om = campoSerie(e, fila, v + "_om");
+  if (!fila){ const va = e.valores || {}, mo = e.modelo || {};            // sin serie: último valor y modelo del resumen
+    est = va[v] ?? null; w = MV[v].w ? (mo[v + "_wrf"] ?? null) : null; om = mo[v] ?? null; }
   const r = refMod(v, ref), m = r === "w" ? w : r === "om" ? om : ([w, om].filter(x => x != null).length ? [w, om].filter(x => x != null).reduce((a, b) => a + b) / [w, om].filter(x => x != null).length : null);
   return {est, w, om, m, d: est != null && m != null ? Math.round((est - m) * 10) / 10 : null, hora: fila ? fila[0] : null};
 }
