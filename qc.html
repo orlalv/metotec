@@ -60,6 +60,18 @@ footer{color:var(--mu);font-size:12.5px;padding:6px 20px;border-top:1px solid va
 .leaflet-container{font:inherit}
 .leaflet-popup-content{font-size:13px}
 main[hidden]{display:none}
+#prio{flex:1;overflow:auto;padding:14px 20px}#prio[hidden]{display:none}
+#prio .pcols{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:18px;align-items:start}
+#prio .pb{display:inline-block;border-radius:5px;padding:1px 8px;font-weight:800;font-size:12px;color:#0b1424}
+#prio tr.ps{cursor:pointer}#prio tr.ps:hover,#prio tr.ps.on{background:#16264a}
+#prio .lk{background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:2px 8px;font:600 12px inherit;cursor:pointer}
+#prio .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+#prio .htools input,#prio .htools select,#prio .htools button{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font:600 13px inherit}
+#prio .nota{color:var(--mu);font-size:13px;margin:0 0 12px}
+.leyenda{background:rgba(10,20,40,.88);color:var(--tx);padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.3}
+.leyenda .bar{width:180px;height:10px;border-radius:4px;background:linear-gradient(90deg,#3b82f6,#8a94a6,#ef4444);margin:4px 0}
+.leyenda .ex{display:flex;justify-content:space-between}
+#det .exp{color:var(--mu);font-size:13.5px}#det .exp b{color:var(--tx)}
 #hist{flex:1;overflow:auto;padding:14px 20px}#hist[hidden]{display:none}
 #hist .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 #hist .htools input,#hist .htools select,#hist .htools button{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font:600 13px inherit}
@@ -75,7 +87,7 @@ main[hidden]{display:none}
 <header>
  <a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a>
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
- <div class="modos"><button data-m="ema" class="on">Estaciones automáticas</button><button data-m="obs">Observaciones</button><button data-m="hist">Historial</button></div>
+ <div class="modos"><button data-m="ema" class="on">Estaciones automáticas</button><button data-m="obs">Observaciones</button><button data-m="mod">Contraste con modelos</button><button data-m="prio">Prioridades</button><button data-m="hist">Historial</button></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -86,6 +98,8 @@ main[hidden]{display:none}
    <select id="grupo" title="Pruebas"><option value="todas">Todas las pruebas</option><option value="basicas">Solo básicas</option><option value="vecinas">Solo vecinas</option><option value="modelos">Solo modelos</option><option value="lluvia">Solo lluvia</option><option value="satelite">Solo satélite</option></select>
    <details class="vsel" id="vars"><summary id="varsT">Variables: todas ▾</summary><div class="vbox" id="vbox"></div></details>
    <select id="gobs" title="Tipo de revisión" hidden><option value="todas">Todas las revisiones</option><option value="sistema">Reglas del sistema</option><option value="codificacion">Codificación</option><option value="evolucion">Evolución</option><option value="sensor">Frente al sensor</option><option value="satelite">Frente al satélite</option></select>
+   <select id="mvar" title="Variable" hidden><option value="T">Temperatura</option><option value="Td">Punto de rocío</option><option value="HR">Humedad</option><option value="P_mar">QFF</option><option value="ff10">Viento</option></select>
+   <select id="mref" title="Modelo" hidden><option value="w">WRF-DMC</option><option value="om">Open-Meteo</option><option value="prom">Promedio de ambos</option></select>
    <input id="buscar" placeholder="Buscar estación…">
   </div>
   <div id="lista"></div>
@@ -93,8 +107,10 @@ main[hidden]{display:none}
  </aside>
 </main>
 <section id="hist" hidden></section>
+<section id="prio" hidden></section>
 <footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · satélite GOES-19 · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
+<script src="js/prioridad.js"></script>
 <script>
 const COL = {0: "var(--ok)", 1: "var(--sos)", 2: "var(--err)", 3: "var(--sin)"};
 const HEX = {0: "#3fb67a", 1: "#e7b03b", 2: "#e5534b", 3: "#6b778a"};
@@ -165,6 +181,8 @@ function visibles(){
 }
 function pintar(){
   if (modo === "hist") return;
+  if (modo === "prio") return pintarPrio();
+  if (modo === "mod") return pintarMod();
   if (modo === "obs") return pintarObs();
   const g = R.generado ? new Date(R.generado) : null;
   $("#hora").textContent = R.datos_hasta ? `Datos hasta ${R.datos_hasta.slice(0, 16)} UTC · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay resultados";
@@ -206,12 +224,14 @@ function detalle(c, mover = true){
    <p style="color:var(--mu);font-size:12.5px;margin-top:10px">${e.aislada ? "Estación aislada: tiene menos de 3 vecinas comparables; la principal referencia es el modelo." : "Vecinas: " + esc(vec)}</p>`;
 }
 document.addEventListener("click", ev => {
-  const it = ev.target.closest(".it"); if (it) (modo === "obs" ? detalleObs : detalle)(it.dataset.c);
+  const it = ev.target.closest(".it"); if (it) (modo === "obs" ? detalleObs : modo === "mod" ? detalleMod : detalle)(it.dataset.c);
   const mb = ev.target.closest(".modos button"); if (mb){ modo = mb.dataset.m; sel = null; $("#det").style.display = "none";
-    const h = modo === "hist"; document.querySelector("main").hidden = h; $("#hist").hidden = !h; $("#chips").style.visibility = h ? "hidden" : "";
-    if (h){ hInit(); document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb)); if (!HI) hCargar(); return; }
+    const h = modo === "hist" || modo === "prio"; document.querySelector("main").hidden = h; $("#hist").hidden = modo !== "hist"; $("#prio").hidden = modo !== "prio"; $("#chips").style.display = h ? "none" : "";
+    $("#mvar").hidden = $("#mref").hidden = modo !== "mod"; leyenda(modo === "mod");
+    if (h){ document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
+      if (modo === "hist"){ hInit(); if (!HI) hCargar(); } else pintarPrio(); return; }
     setTimeout(() => mapa.invalidateSize(), 50);
-    document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb)); $("#grupo").hidden = modo === "obs"; $("#vars").hidden = modo === "obs"; $("#gobs").hidden = modo !== "obs"; R && pintar(); }
+    document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb)); $("#grupo").hidden = modo !== "ema"; $("#vars").hidden = modo !== "ema"; $("#gobs").hidden = modo !== "obs"; R && pintar(); }
   const ch = ev.target.closest(".chip"); if (ch){ const n = +ch.dataset.n; ver[n] = !ver[n]; pintar(); }
   const b = ev.target.closest(".tools button"); if (b){ zona = b.dataset.z; document.querySelectorAll(".tools button").forEach(x => x.classList.toggle("on", x === b)); pintar();
     const V = visibles(); if (V.length) mapa.fitBounds(V.map(e => [e.lat, e.lon]), {padding: [20, 20], maxZoom: 8}); }
@@ -226,6 +246,131 @@ $("#vbox").addEventListener("change", varsCambio);
 $("#vbox").addEventListener("click", ev => { const q = ev.target.dataset.q; if (q === undefined) return; document.querySelectorAll("#vbox input").forEach(x => x.checked = q === "1"); varsCambio(); });
 document.addEventListener("click", ev => { if (!$("#vars").contains(ev.target)) $("#vars").open = false; });
 $("#gobs").addEventListener("change", ev => { gobs = ev.target.value; R && pintar(); });
+/* ---------- contraste con modelos ---------- */
+const MV = {T: {n: "Temperatura", u: "°C", e: 6, w: 1}, Td: {n: "Punto de rocío", u: "°C", e: 8, w: 0}, HR: {n: "Humedad", u: "%", e: 30, w: 1}, P_mar: {n: "QFF", u: "hPa", e: 5, w: 0}, ff10: {n: "Viento", u: "kt", e: 15, w: 1}};
+const RNOM = {w: "WRF-DMC", om: "Open-Meteo", prom: "promedio WRF-DMC y Open-Meteo"};
+let leyCtl = null;
+function leyenda(on){
+  if (leyCtl){ leyCtl.remove(); leyCtl = null; }
+  if (!on) return;
+  const v = MV[$("#mvar").value];
+  leyCtl = L.control({position: "bottomleft"});
+  leyCtl.onAdd = () => { const d = L.DomUtil.create("div", "leyenda");
+    d.innerHTML = `<b>Estación − modelo · ${v.n}</b><div class="bar"></div><div class="ex"><span>−${v.e} ${v.u}<br>más fría / baja</span><span>0</span><span style="text-align:right">+${v.e} ${v.u}<br>más cálida / alta</span></div>`; return d; };
+  leyCtl.addTo(mapa);
+}
+function colDif(d, e){
+  if (d == null) return "#4b5567";
+  const t = Math.max(-1, Math.min(1, d / e)), a = [138, 148, 166], b = t < 0 ? [59, 130, 246] : [239, 68, 68], k = Math.abs(t);
+  return `rgb(${a.map((x, i) => Math.round(x + (b[i] - x) * k)).join(",")})`;
+}
+function campoSerie(e, fila, c){ const i = (R.serie_campos || []).indexOf(c); return i < 0 || !fila ? null : fila[i]; }
+function refMod(v, ref){ return ref === "w" && !MV[v].w ? "om" : ref; }
+function valMod(e, v, ref, fila){
+  const SS = e.serie || []; fila = fila || SS[SS.length - 1];
+  const est = campoSerie(e, fila, v), w = MV[v].w ? campoSerie(e, fila, v + "_w") : null, om = campoSerie(e, fila, v + "_om");
+  const r = refMod(v, ref), m = r === "w" ? w : r === "om" ? om : ([w, om].filter(x => x != null).length ? [w, om].filter(x => x != null).reduce((a, b) => a + b) / [w, om].filter(x => x != null).length : null);
+  return {est, w, om, m, d: est != null && m != null ? Math.round((est - m) * 10) / 10 : null, hora: fila ? fila[0] : null};
+}
+function nivelMod(e){ return Math.max(0, ...e.alertas.filter(a => a.prueba === "modelo" || a.prueba === "wrf").map(a => a.nivel)); }
+function pintarMod(){
+  const v = $("#mvar").value, ref = $("#mref").value, info = MV[v], r = refMod(v, ref);
+  $("#hora").textContent = R.datos_hasta ? `Contraste con modelos · datos hasta ${R.datos_hasta.slice(0, 16)} UTC` : "Todavía no hay resultados";
+  $("#fuentes").textContent = "Fuentes: estaciones automáticas DMC · modelo WRF-DMC (mediana de las últimas corridas) · Open-Meteo (GFS y otros, a la altura de la estación)";
+  const q = $("#buscar").value.trim().toLowerCase();
+  const T = R.estaciones.filter(e => e.lat != null && enZona(e)).map(e => ({...e, mv: valMod(e, v, r), nm: nivelMod(e)}));
+  const res = [0, 0, 0, 0]; T.forEach(e => res[e.mv.d == null ? 3 : e.nm]++);
+  $("#chips").innerHTML = [0, 1, 2, 3].map(n => `<span class="chip ${ver[n] ? "" : "off"}" data-n="${n}"><i style="background:${COL[n]}"></i>${["Dentro de tolerancia", "Sospechoso", "Erróneo", "Sin modelo"][n]} ${res[n]}</span>`).join("");
+  const V = T.filter(e => ver[e.mv.d == null ? 3 : e.nm] && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q)));
+  Object.values(marcas).forEach(m => m.remove()); marcas = {};
+  V.forEach(e => { const d = e.mv.d, k = d == null ? 0 : Math.min(1, Math.abs(d) / info.e);
+    const m = L.circleMarker([e.lat, e.lon], {radius: 5 + 7 * k, color: e.nm ? HEX[e.nm] : "#0b1424", weight: e.nm ? 2.5 : 1, fillColor: colDif(d, info.e), fillOpacity: .95}).addTo(mapa);
+    m.bindTooltip(`${esc(e.nombre)} · ${d == null ? "sin modelo" : (d > 0 ? "+" : "") + d + " " + info.u}`); m.on("click", () => detalleMod(e.codigo)); marcas[e.codigo] = m; });
+  const fm = x => x == null ? "—" : x;
+  $("#lista").innerHTML = [...V].sort((a, b) => (Math.abs(b.mv.d ?? -1)) - (Math.abs(a.mv.d ?? -1))).map(e => `<div class="it ${sel === e.codigo ? "sel" : ""}" data-c="${e.codigo}"><span class="p" style="background:${colDif(e.mv.d, info.e)}"></span>
+    <div><b>${esc(e.nombre)}</b><small>${e.codigo} · ${e.alt ?? "—"} m${e.aislada ? " · aislada" : ""} · estación ${fm(e.mv.est)} · ${RNOM[r]} ${fm(e.mv.m == null ? null : Math.round(e.mv.m * 10) / 10)} ${info.u}</small>
+    ${e.nm ? `<div class="al"><span style="color:${HEX[e.nm]}">${NOM[e.nm]} frente al modelo</span></div>` : ""}</div>
+    <div class="v" style="font-size:15px;font-weight:700;color:${colDif(e.mv.d, info.e)}">${e.mv.d == null ? "—" : (e.mv.d > 0 ? "+" : "") + e.mv.d}<br><small>${info.u}</small></div></div>`).join("") || `<p style="padding:14px;color:var(--mu)">Sin estaciones con ese filtro.</p>`;
+  if (sel) detalleMod(sel, false); else explicarMod();
+}
+function explicarMod(){
+  $("#det").style.display = "block";
+  $("#det").innerHTML = `<h2 style="font-size:16px">¿Cómo funciona?</h2><div class="exp">
+   <p>Cada 30 minutos se toma el valor de cada estación automática a la hora en punto y se compara con dos modelos en el punto exacto de la estación:</p>
+   <p><b>WRF-DMC</b>: el modelo de la DMC. Se usa la mediana de sus últimas corridas (GFS y ECMWF); si las corridas no coinciden entre sí, la tolerancia se amplía.<br>
+   <b>Open-Meteo</b>: modelos globales (GFS y otros) corregidos a la altura de la estación.</p>
+   <p>El color es la diferencia estación − modelo: <span style="color:#ef4444">rojo</span> la estación está más cálida o más alta, <span style="color:#3b82f6">azul</span> más fría o más baja. El borde marca las estaciones con aviso. Es la referencia principal para las <b>estaciones aisladas</b>, que no tienen vecinas para comparar.</p>
+   <p>Tolerancias: temperatura 6 °C (o 3 veces el desacuerdo entre corridas), humedad 35 %, viento 15 kt, QFF 5 hPa, punto de rocío 9 °C. Haga clic en una estación para ver las últimas 6 horas.</p></div>`;
+}
+function grafico(e, v){
+  const info = MV[v], F = e.serie || [];
+  const S = [["Estación", "#ffffff", "", c => campoSerie(e, c, v)], ...(info.w ? [["WRF-DMC", "#C9A54C", "", c => campoSerie(e, c, v + "_w")]] : []), ["Open-Meteo", "#5ac8fa", "5 4", c => campoSerie(e, c, v + "_om")]];
+  const ys = F.flatMap(c => S.map(s => s[3](c))).filter(x => x != null);
+  if (F.length < 2 || !ys.length) return `<p style="color:var(--mu)">Sin serie suficiente para graficar.</p>`;
+  let lo = Math.min(...ys), hi = Math.max(...ys); if (hi - lo < 1){ lo -= .5; hi += .5; } const pad = (hi - lo) * .12; lo -= pad; hi += pad;
+  const W = 520, H = 190, x0 = 40, y0 = 12, w = W - x0 - 12, h = H - y0 - 28, X = i => x0 + w * i / (F.length - 1), Y = y => y0 + h * (1 - (y - lo) / (hi - lo));
+  const lin = s => { let d = "", up = false; F.forEach((c, i) => { const y = s[3](c); if (y == null){ up = false; return; } d += (up ? "L" : "M") + X(i).toFixed(1) + "," + Y(y).toFixed(1); up = true; }); return d; };
+  const pts = s => F.map((c, i) => s[3](c) == null ? "" : `<circle cx="${X(i).toFixed(1)}" cy="${Y(s[3](c)).toFixed(1)}" r="2.6" fill="${s[1]}"/>`).join("");
+  const ticks = [lo + pad, (lo + hi) / 2, hi - pad].map(t => `<text x="${x0 - 6}" y="${Y(t) + 4}" text-anchor="end" fill="#9fb0c8" font-size="11">${t.toFixed(info.u === "hPa" ? 0 : 1)}</text><line x1="${x0}" x2="${W - 12}" y1="${Y(t)}" y2="${Y(t)}" stroke="#22365e"/>`).join("");
+  const xs = F.map((c, i) => `<text x="${X(i)}" y="${H - 8}" text-anchor="middle" fill="#9fb0c8" font-size="11">${c[0]}</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block">${ticks}${xs}${S.map(s => `<path d="${lin(s)}" fill="none" stroke="${s[1]}" stroke-width="2.2" stroke-dasharray="${s[2]}"/>${pts(s)}`).join("")}</svg>
+   <div style="display:flex;gap:14px;font-size:12.5px;color:var(--mu)">${S.map(s => `<span><i style="display:inline-block;width:14px;height:3px;background:${s[1]};vertical-align:middle;margin-right:5px"></i>${s[0]}</span>`).join("")}<span>${info.n} (${info.u}), horas UTC</span></div>`;
+}
+function detalleMod(c, mover = true){
+  const e = R.estaciones.find(x => x.codigo === c); if (!e) return; sel = c;
+  document.querySelectorAll(".it").forEach(x => x.classList.toggle("sel", x.dataset.c === c));
+  if (mover) mapa.setView([e.lat, e.lon], Math.max(mapa.getZoom(), 7));
+  const v = $("#mvar").value, fm = (x, u) => x == null ? "—" : (Math.round(x * 10) / 10) + " " + u;
+  const filas = Object.entries(MV).map(([k, i]) => { const a = valMod(e, k, "w"), b = valMod(e, k, "om");
+    return `<tr${k === v ? ' style="background:#16264a"' : ""}><td>${i.n}</td><td>${fm(a.est, i.u)}</td><td>${i.w ? fm(a.w, i.u) : "—"}</td><td>${fm(b.om, i.u)}</td><td>${b.d == null ? "—" : (b.d > 0 ? "+" : "") + b.d}</td></tr>`; }).join("");
+  const al = e.alertas.filter(a => a.prueba === "modelo" || a.prueba === "wrf"), nm = nivelMod(e);
+  $("#det").style.display = "block";
+  $("#det").innerHTML = `<h2>${esc(e.nombre)} <span class="tag" style="background:${HEX[nm]}">${nm ? NOM[nm] : "Dentro de tolerancia"}</span></h2>
+   <div class="sub">${e.codigo} · ${e.alt ?? "—"} m${e.aislada ? " · estación aislada: el modelo es su referencia principal" : ""}</div>
+   ${grafico(e, v)}
+   <table style="margin-top:10px"><tr><th>Variable</th><th>Estación</th><th>WRF-DMC</th><th>Open-Meteo</th><th>Est. − Open-Meteo</th></tr>${filas}</table>
+   ${al.length ? `<h3 style="font-size:14px;margin:12px 0 6px">Avisos frente al modelo</h3><table>${al.map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba]}</td><td>${VAR[a.var] || a.var}</td><td>${esc(a.msg)}</td></tr>`).join("")}</table>` : ""}`;
+}
+$("#mvar").addEventListener("change", () => { leyenda(true); R && pintar(); });
+$("#mref").addEventListener("change", () => R && pintar());
+
+/* ---------- prioridades ---------- */
+let pEst = "";
+async function firma(cod){
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(clave() + "|" + cod));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 16);
+}
+function pintarPrio(){
+  if (!R) return;
+  const O = R.observaciones || {}, g = O.generado ? new Date(O.generado) : null;
+  $("#hora").textContent = g ? `Prioridades · observaciones de las últimas 12 horas · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay revisión de observaciones";
+  if (!$("#prio").dataset.ok){
+    $("#prio").dataset.ok = 1;
+    $("#prio").innerHTML = `<div class="htools"><button id="pVolver" style="border-color:var(--oro);color:var(--oro)">← Volver al mapa</button><select id="pNivel"><option value="0">Todas las prioridades</option><option value="3">Solo alta</option><option value="2">Alta y media</option></select><input id="pBuscar" placeholder="Estación…" style="min-width:180px"></div>
+      <p class="nota">Orden: primero los errores de lo que se transmite en SYNOP/METAR (presión, viento, visibilidad, tiempo presente), luego el resto; dentro de cada nivel, lo más reciente. Con <b>Copiar enlace</b> el observador ve solo los pendientes de su estación, en este mismo orden, sin clave.</p>
+      <div class="pcols"><div id="pEst"></div><div id="pTab"></div></div>`;
+    $("#pVolver").addEventListener("click", () => document.querySelector('.modos button[data-m="ema"]').click());
+    $("#pNivel").addEventListener("change", pintarPrio); $("#pBuscar").addEventListener("input", pintarPrio);
+    $("#prio").addEventListener("click", async ev => {
+      const b = ev.target.closest(".lk");
+      if (b){ ev.stopPropagation(); const url = `${location.origin}/pendientes.html?e=${b.dataset.c}&k=${await firma(b.dataset.c)}`;
+        try { await navigator.clipboard.writeText(url); b.textContent = "¡Copiado!"; } catch (e) { prompt("Enlace para el observador:", url); } setTimeout(() => b.textContent = "Copiar enlace", 1800); return; }
+      const t = ev.target.closest("tr.ps"); if (t){ pEst = pEst === t.dataset.c ? "" : t.dataset.c; pintarPrio(); }
+    });
+  }
+  const min = +$("#pNivel").value, q = $("#pBuscar").value.trim().toLowerCase();
+  const E = (O.estaciones || []).filter(e => !q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q));
+  const todos = E.flatMap(e => ordenar(e.hallazgos).map(h => ({...h, nombre: e.nombre}))).filter(h => h.prio >= min);
+  const L2 = todos.sort((a, b) => b.puntos - a.puntos || b.hora.localeCompare(a.hora));
+  const por = E.map(e => { const H = ordenar(e.hallazgos).filter(h => h.prio >= min); return {c: e.codigo, n: e.nombre, t: H.length, a: H.filter(h => h.prio === 3).length}; })
+    .sort((a, b) => b.a - a.a || b.t - a.t);
+  $("#pEst").innerHTML = `<table><tr><th>Estación</th><th>Alta</th><th>Total</th><th></th></tr>${por.map(p => `<tr class="ps ${pEst === p.c ? "on" : ""}" data-c="${p.c}"><td>${esc(p.n)}</td><td style="color:${p.a ? PRIO_COL[3] : "inherit"};font-weight:700">${p.a}</td><td>${p.t}</td><td><button class="lk" data-c="${p.c}">Copiar enlace</button></td></tr>`).join("")}</table>`;
+  const T = L2.filter(h => !pEst || h.codigo === pEst);
+  $("#pTab").innerHTML = T.length ? `<table><tr><th>#</th><th>Prioridad</th><th>Día y hora UTC</th><th>Estación</th><th>Elemento</th><th>Regla</th><th>Detalle</th></tr>${T.map((h, i) => `<tr><td>${i + 1}</td><td><span class="pb" style="background:${PRIO_COL[h.prio]}">${h.prioNom}</span></td>
+    <td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td>${esc(h.nombre)}</td><td>${esc(h.elem)}</td><td>${esc(h.regla)}</td><td>${esc(h.msg)}</td></tr>`).join("")}</table>`
+    : `<p style="color:var(--mu)">Sin pendientes con ese filtro.</p>`;
+}
+
 /* ---------- historial ---------- */
 let HI = null, hEst = "";
 const diaISO = d => d.toISOString().slice(0, 10);

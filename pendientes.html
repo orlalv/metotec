@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Pendientes de la observación</title>
+<link rel="icon" href="img/favicon.svg">
+<style>
+:root{--noche:#0A1F44;--marino:#082B5C;--oro:#C9A54C;--tx:#e8edf5;--mu:#9fb0c8;--bd:#22365e;--panel:#0f1c3a}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 system-ui,"Segoe UI",Roboto,Arial,sans-serif;background:#0b1424;color:var(--tx);min-height:100vh}
+header{background:radial-gradient(900px 300px at 85% 0%,#163a73 0%,var(--noche) 62%);border-bottom:3px solid var(--oro);padding:16px 24px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+header img{height:32px}
+h1{margin:0;font-size:20px}h1 small{display:block;color:var(--mu);font-weight:500;font-size:13px}
+main{max-width:1000px;margin:0 auto;padding:20px 24px}
+.res{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.res div{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px 16px}.res b{display:block;font-size:22px}.res span{color:var(--mu);font-size:12.5px}
+.it{display:grid;grid-template-columns:42px 1fr;gap:14px;background:var(--panel);border:1px solid var(--bd);border-left:5px solid var(--c);border-radius:10px;padding:12px 16px;margin-bottom:10px}
+.it .n{font-size:22px;font-weight:800;color:var(--c);text-align:center}
+.it .t{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--mu)}
+.it .p{color:#0b1424;background:var(--c);border-radius:5px;padding:1px 8px;font-weight:800;font-size:12px}
+.it .m{margin-top:4px;font-size:15.5px}
+.ok{background:var(--panel);border:1px solid #2f6b4a;border-radius:12px;padding:30px;text-align:center;font-size:18px;color:#6fcf97}
+.err{color:#eb5757}
+footer{color:var(--mu);font-size:12.5px;text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<header><img src="img/logo_blanco.svg" alt="METOTEC"><h1 id="tit">Pendientes de la observación<small id="sub">Cargando…</small></h1></header>
+<main id="m"></main>
+<footer>Ordenado por importancia: primero los errores de lo que se transmite (presión, viento, visibilidad, tiempo presente). Se actualiza cada 5 minutos.</footer>
+<script src="js/prioridad.js"></script>
+<script>
+const q = new URLSearchParams(location.search), $ = s => document.querySelector(s);
+const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
+const dh = h => `${h.slice(8, 10)}/${h.slice(5, 7)} ${h.slice(11, 16)} UTC`;
+async function cargar(){
+  const r = await fetch(`/api/pendientes?e=${encodeURIComponent(q.get("e") || "")}&k=${encodeURIComponent(q.get("k") || "")}`, {cache: "no-store"});
+  if (!r.ok){ $("#sub").textContent = ""; $("#m").innerHTML = `<p class="err">Este enlace no es válido. Pida uno nuevo a Control de Calidad.</p>`; return; }
+  const d = await r.json(), L = ordenar(d.hallazgos || []);
+  document.title = "Pendientes · " + (d.nombre || d.codigo);
+  $("#tit").firstChild.textContent = d.nombre || d.codigo;
+  $("#sub").textContent = `${d.codigo} · últimas 12 horas · revisado ${d.generado ? new Date(d.generado).toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"}) : "—"}`;
+  const n = p => L.filter(x => x.prio === p).length;
+  $("#m").innerHTML = L.length ? `<div class="res"><div><b>${L.length}</b><span>pendientes</span></div><div><b style="color:${PRIO_COL[3]}">${n(3)}</b><span>prioridad alta</span></div><div><b style="color:${PRIO_COL[2]}">${n(2)}</b><span>media</span></div><div><b style="color:${PRIO_COL[1]}">${n(1)}</b><span>baja</span></div></div>`
+    + L.map((h, i) => `<div class="it" style="--c:${PRIO_COL[h.prio]}"><div class="n">${i + 1}</div><div><div class="t"><span class="p">${h.prioNom}</span><b style="color:var(--tx)">${dh(h.hora)}</b><span>${esc(h.elem)}</span><span>regla ${esc(h.regla)}</span></div><div class="m">${esc(h.msg)}</div></div></div>`).join("")
+    : `<div class="ok">✓ Sin pendientes en las últimas 12 horas</div>`;
+}
+cargar(); setInterval(cargar, 5 * 60 * 1000);
+</script>
+</body>
+</html>

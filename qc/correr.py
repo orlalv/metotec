@@ -10,6 +10,7 @@ Resultados: qc_ultimo.json; si hay credenciales de Cloudflare se suben al KV (cl
 import argparse, json, os, sys, traceback
 from datetime import datetime, timezone
 from pathlib import Path
+import numpy as np
 import pandas as pd
 import requests
 
@@ -185,6 +186,25 @@ def main():
                 x = Y.at[cc, v + "_w"]
                 d[v + "_wrf"] = None if pd.isna(x) else round(float(x), 1)
             d["n_wrf"] = int(Y.at[cc, "n_w"])
+    # serie de las últimas 6 horas: estación frente a WRF-DMC y Open-Meteo (vista "Contraste con modelos")
+    serie = {}
+    try:
+        if len(H):
+            S = H[H["momento"] > H["momento"].max() - pd.Timedelta(hours=6)][["codigo", "momento", "T", "Td", "HR", "P_mar", "ff10"]]
+            if M is not None and len(M):
+                S = S.merge(M[["codigo", "momento", "T", "Td", "HR", "P_mar", "ff10"]].rename(columns=lambda c: c if c in ("codigo", "momento") else c + "_om"),
+                            on=["codigo", "momento"], how="left")
+            if W is not None and len(W):
+                S = S.merge(W[["codigo", "momento", "T_w", "HR_w", "ff10_w"]], on=["codigo", "momento"], how="left")
+            CS = ["T", "T_w", "T_om", "Td", "Td_om", "HR", "HR_w", "HR_om", "P_mar", "P_mar_om", "ff10", "ff10_w", "ff10_om"]
+            for c in CS:
+                if c not in S:
+                    S[c] = np.nan
+            r1 = lambda x: None if pd.isna(x) else round(float(x), 1)
+            for cod, g in S.sort_values("momento").groupby("codigo"):
+                serie[cod] = [[str(m)[11:16]] + [r1(x) for x in fila] for m, *fila in g[["momento"] + CS].itertuples(index=False)]
+    except Exception:
+        estado["errores"].append(f"serie: {traceback.format_exc(limit=2)}")
     por = {}
     for al in alertas:
         por.setdefault(al["codigo"], []).append(al)
@@ -201,8 +221,8 @@ def main():
             estado_txt = ["bien", "sospechoso", "erróneo"][nivel]
         est.append(dict(codigo=c, nombre=r["nombre"], oaci=r["oaci"], lat=r["lat"], lon=r["lon"], alt=r["alt"], nivel=nivel, estado=estado_txt,
                         aislada=c in aisladas, vecinas=V.get(c, [])[:6], completitud=comp.get(c), hora=None if u is None else str(u["momento"]),
-                        valores=val, modelo=mod_ult.get(c, {}), alertas=al))
-    res = dict(generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), datos_hasta=estado["hasta"], version=VERSION,
+                        valores=val, modelo=mod_ult.get(c, {}), serie=serie.get(c, []), alertas=al))
+    res = dict(serie_campos=["hora", "T", "T_w", "T_om", "Td", "Td_om", "HR", "HR_w", "HR_om", "P_mar", "P_mar_om", "ff10", "ff10_w", "ff10_om"], generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), datos_hasta=estado["hasta"], version=VERSION,
                fuentes={"estaciones": "DMC, red automática", "modelo": " + ".join(x for x in ["WRF-DMC" if W is not None and len(W) else "", "Open-Meteo" if M is not None else ""] if x) or None, "satelite": "GOES-19 (NOAA)" if sat else None},
                resumen={k: sum(1 for e in est if e["estado"] == k) for k in ("bien", "sospechoso", "erróneo", "sin datos")},
                estaciones=est)
