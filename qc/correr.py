@@ -14,7 +14,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
-import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT
+import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS
 
 VERSION = "0.1"
 
@@ -73,7 +73,7 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
     cods = [x["codigo"] for x in json.loads(p.read_text())["estaciones"] if x["horas"] > 0] if p.exists() else ESTACIONES_OBS
     nombres = E.set_index("codigo")[["nombre", "oaci", "lat", "lon"]].to_dict("index")
     resultado, n_obs, fallas = [], 0, 0
-    archivo = {}
+    archivo, revisadas = {}, {}
     for cod in cods:
         try:
             obs = SEN.leer(dmc.descargar(f"getRecientesSaclim/{cod}", timeout=90))
@@ -84,6 +84,7 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
         A = leer_archivo(raiz, pd.Timestamp.utcnow().tz_localize(None), horas=7)
         A = A[A["codigo"] == cod] if len(A) else A
         hall = SEN.revisar(cod, obs, A, horas=12, sat=(SAT or {}).get(cod))
+        revisadas[cod] = [str(t) for t in sorted(obs)[-12:]]
         for t, o in obs.items():
             archivo.setdefault(t.strftime("%Y/%m/%d"), {}).setdefault(cod, {})[t.strftime("%H")] = {k: x for k, x in o.items() if k != "_qa"}
         m = nombres.get(cod, {})
@@ -102,7 +103,7 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
     txt = json.dumps(dict(generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), estaciones=resultado), ensure_ascii=False, default=str)
     Path("qc_sensorial.json").write_text(txt, encoding="utf-8")
     return {"estaciones": len(resultado), "observaciones": n_obs, "fallas": fallas, "hallazgos": sum(len(r["hallazgos"]) for r in resultado),
-            "kv": subir_kv("qc/sensorial", txt)}
+            "kv": subir_kv("qc/sensorial", txt)}, resultado, revisadas
 
 
 def main():
@@ -206,11 +207,18 @@ def main():
                resumen={k: sum(1 for e in est if e["estado"] == k) for k in ("bien", "sospechoso", "erróneo", "sin datos")},
                estaciones=est)
     hacer = a.sensorial == "si" or (a.sensorial == "auto" and 10 <= datetime.now(timezone.utc).minute < 30 and not a.json)
+    sen_res = sen_rev = None
     if hacer:
         try:
-            estado["sensorial"] = control_sensorial(E, a.datos, SAT=SAT.series(sat))
+            estado["sensorial"], sen_res, sen_rev = control_sensorial(E, a.datos, SAT=SAT.series(sat))
         except Exception:
             estado["errores"].append(f"sensorial: {traceback.format_exc(limit=2)}")
+    try:   # historial: nada se borra; lo corregido queda marcado
+        dias = HIS.actualizar(a.datos, datetime.now(timezone.utc), sen_res, sen_rev, [x for x in alertas if x["prueba"] != "completitud"],
+                              E.set_index("codigo")["nombre"].to_dict())
+        estado["historial"] = {d: subir_kv(f"qc/hist/{d}", t) for d, t in dias.items()}
+    except Exception:
+        estado["errores"].append(f"historial: {traceback.format_exc(limit=2)}")
     txt = json.dumps(res, ensure_ascii=False, default=str)
     Path(a.salida).write_text(txt, encoding="utf-8")
     estado["kv"] = subir_kv("qc/ultimo", txt)

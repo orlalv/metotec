@@ -24,3 +24,8 @@ con lo que ve el satélite a 10 y 30 km de cada estación (banda 13, máscara de
 altura de topes ACHA y rayos GLM), últimas 12 h. `qc/satelite.py` lo lee y aplica:
 - automáticas: SAT-RR0 (lluvia satelital y pluviómetro en 0), SAT-RRD (lluvia con cielo despejado), SAT-RAD (radiación baja con cielo despejado);
 - observaciones: SAT1–SAT8 (N, precipitación, tormenta, rayos, cumulonimbo, convección vs CL, niebla).
+
+## Historial (nada se borra)
+`qc/historial.py` guarda cada hallazgo por día UTC en `hallazgos/AAAA/MM/DD.json` (rama datos) y en el KV `qc/hist/AAAA-MM-DD`.
+Observaciones: abierto / corregido (con hora de corrección; se reabre si vuelve a fallar). Automáticas: eventos con nº de pasadas.
+Se consulta en qc.html → Historial (rango de fechas, filtros y CSV) vía `/api/historial?desde=&hasta=`.

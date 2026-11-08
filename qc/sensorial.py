@@ -281,6 +281,19 @@ def codificacion(o):
         add("C21", 1, "CL 9 (cumulonimbo) sin una capa de Cb")
     if any(c[1] == 9 for c in capas) and CL not in (3, 9):
         add("C22", 1, f"capa de Cb con CL {CL}: con cumulonimbo CL es 3 o 9")
+    # tipo de nube frente al fenómeno (capas: 4 As, 5 Ns, 6 Sc, 7 St, 8 Cu, 9 Cb, 10 TCu)
+    tipos = {c[1] for c in capas if c[1] is not None}
+    if ww is not None and tipos:
+        if 80 <= ww <= 90 and not tipos & {8, 9, 10}:
+            add("C28", 1, f"chubasco (ww {ww}) sin capa de Cu, TCu o Cb: los chubascos caen de nubes convectivas")
+        if (ww >= 95 or ww == 17) and 9 not in tipos:
+            add("C29", 1, f"tormenta (ww {ww}) sin capa de Cb")
+        if (60 <= ww <= 69 or 70 <= ww <= 75) and tipos <= {8, 9, 10} and CM in (0, None):
+            add("C30", 1, f"precipitación no chubascosa (ww {ww}) con solo nubes cumuliformes y sin As/Ns: correspondería chubasco (80–86)")
+        if 50 <= ww <= 59 and tipos <= {8, 9, 10}:
+            add("C31", 1, f"llovizna (ww {ww}) con solo nubes cumuliformes en las capas: la llovizna cae de St o Sc")
+    if 10 in tipos and CL not in (2, 3, 9, None):
+        add("C32", 1, f"capa de TCu con CL {CL}: el Cu congestus es CL 2 (o 3/9 si hay Cb)")
     for d, nube, nom in (("Dl", CL, "bajas"), ("Dm", CM, "medias"), ("Dh", CH, "altas")):
         dv = v(o, "DirNubes", d)
         if dv not in (None, 0, 9) and nube == 0:

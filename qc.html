@@ -59,6 +59,15 @@ footer{color:var(--mu);font-size:12.5px;padding:6px 20px;border-top:1px solid va
 #login p{color:var(--mu);font-size:13px;margin:0}
 .leaflet-container{font:inherit}
 .leaflet-popup-content{font-size:13px}
+main[hidden]{display:none}
+#hist{flex:1;overflow:auto;padding:14px 20px}#hist[hidden]{display:none}
+#hist .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+#hist .htools input,#hist .htools select,#hist .htools button{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font:600 13px inherit}
+#hist .htools button{cursor:pointer}#hist .htools label{color:var(--mu);font-size:13px}
+#hist .hres{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}#hist .hres div{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px 14px}
+#hist .hres b{display:block;font-size:20px}#hist .hres span{color:var(--mu);font-size:12.5px}
+#hist .hcols{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:16px;align-items:start}
+#hist .ab{color:#f2c94c;font-weight:700}#hist .co{color:#6fcf97;font-weight:700}#hist tr.hs{cursor:pointer}#hist tr.hs:hover,#hist tr.hs.on{background:#16264a}
 @media (max-width:900px){main{grid-template-columns:1fr}#mapa{height:55vh}aside{border-left:0}}
 </style>
 </head>
@@ -66,7 +75,7 @@ footer{color:var(--mu);font-size:12.5px;padding:6px 20px;border-top:1px solid va
 <header>
  <a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a>
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
- <div class="modos"><button data-m="ema" class="on">Estaciones automáticas</button><button data-m="obs">Observaciones</button></div>
+ <div class="modos"><button data-m="ema" class="on">Estaciones automáticas</button><button data-m="obs">Observaciones</button><button data-m="hist">Historial</button></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -83,6 +92,7 @@ footer{color:var(--mu);font-size:12.5px;padding:6px 20px;border-top:1px solid va
   <div id="det"></div>
  </aside>
 </main>
+<section id="hist" hidden></section>
 <footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · satélite GOES-19 · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
 <script>
@@ -96,7 +106,7 @@ const VAR2G = Object.fromEntries(VARGR.flatMap(([k, , vs]) => vs.map(v => [v, k]
 let VSEL = new Set(VARGR.map(g => g[0]));
 const GRUPOS = {todas: null, basicas: ["rango", "salto", "pegado", "coherencia", "completitud"], vecinas: ["vecinas"], modelos: ["modelo", "wrf"], lluvia: ["lluvia"], satelite: ["satelite"]};
 let grupo = "todas", modo = "ema", gobs = "todas";
-const TIPO = {sistema: "Regla del sistema", codificacion: "Codificación", evolucion: "Evolución", sensor: "Frente al sensor"};
+const TIPO = {sistema: "Regla del sistema", codificacion: "Codificación", evolucion: "Evolución", sensor: "Frente al sensor", satelite: "Frente al satélite"};
 function obsFiltradas(){
   const L = ((R.observaciones || {}).estaciones || []).map(e => { const h = gobs === "todas" ? e.hallazgos : e.hallazgos.filter(x => x.tipo === gobs);
     return {...e, hallazgos: h, nivel: Math.max(0, ...h.map(x => x.nivel))}; });
@@ -154,6 +164,7 @@ function visibles(){
   return R.estaciones.map(filtrar).filter(e => enZona(e) && ver[e.nivel] && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
 function pintar(){
+  if (modo === "hist") return;
   if (modo === "obs") return pintarObs();
   const g = R.generado ? new Date(R.generado) : null;
   $("#hora").textContent = R.datos_hasta ? `Datos hasta ${R.datos_hasta.slice(0, 16)} UTC · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay resultados";
@@ -197,6 +208,9 @@ function detalle(c, mover = true){
 document.addEventListener("click", ev => {
   const it = ev.target.closest(".it"); if (it) (modo === "obs" ? detalleObs : detalle)(it.dataset.c);
   const mb = ev.target.closest(".modos button"); if (mb){ modo = mb.dataset.m; sel = null; $("#det").style.display = "none";
+    const h = modo === "hist"; document.querySelector("main").hidden = h; $("#hist").hidden = !h; $("#chips").style.visibility = h ? "hidden" : "";
+    if (h){ hInit(); document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb)); if (!HI) hCargar(); return; }
+    setTimeout(() => mapa.invalidateSize(), 50);
     document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb)); $("#grupo").hidden = modo === "obs"; $("#vars").hidden = modo === "obs"; $("#gobs").hidden = modo !== "obs"; R && pintar(); }
   const ch = ev.target.closest(".chip"); if (ch){ const n = +ch.dataset.n; ver[n] = !ver[n]; pintar(); }
   const b = ev.target.closest(".tools button"); if (b){ zona = b.dataset.z; document.querySelectorAll(".tools button").forEach(x => x.classList.toggle("on", x === b)); pintar();
@@ -212,6 +226,72 @@ $("#vbox").addEventListener("change", varsCambio);
 $("#vbox").addEventListener("click", ev => { const q = ev.target.dataset.q; if (q === undefined) return; document.querySelectorAll("#vbox input").forEach(x => x.checked = q === "1"); varsCambio(); });
 document.addEventListener("click", ev => { if (!$("#vars").contains(ev.target)) $("#vars").open = false; });
 $("#gobs").addEventListener("change", ev => { gobs = ev.target.value; R && pintar(); });
+/* ---------- historial ---------- */
+let HI = null, hEst = "";
+const diaISO = d => d.toISOString().slice(0, 10);
+function hInit(){
+  if ($("#hist").dataset.ok) return; $("#hist").dataset.ok = 1;
+  const hoy = new Date(), des = new Date(hoy - 6 * 864e5);
+  $("#hist").innerHTML = `<div class="htools"><label>Desde</label><input type="date" id="hDesde" value="${diaISO(des)}"><label>Hasta</label><input type="date" id="hHasta" value="${diaISO(hoy)}">
+    <select id="hFuente"><option value="obs">Observaciones</option><option value="ema">Estaciones automáticas</option></select>
+    <select id="hEstado"><option value="">Todos los estados</option><option value="abierto">Abiertos</option><option value="corregido">Corregidos</option></select>
+    <select id="hTipo"><option value="">Todos los tipos</option></select>
+    <input id="hBuscar" placeholder="Estación o regla…" style="min-width:180px"><button id="hCargar">Actualizar</button><button id="hCsv">Descargar CSV</button></div>
+    <div class="hres" id="hRes"></div><div class="hcols"><div id="hEst"></div><div id="hTab"></div></div>`;
+  ["hFuente", "hEstado", "hTipo"].forEach(i => $("#" + i).addEventListener("change", () => { if (i === "hFuente") hTipos(); hPintar(); }));
+  $("#hBuscar").addEventListener("input", hPintar); $("#hCargar").addEventListener("click", hCargar); $("#hCsv").addEventListener("click", hCsv);
+  $("#hDesde").addEventListener("change", hCargar); $("#hHasta").addEventListener("change", hCargar);
+  $("#hist").addEventListener("click", ev => { const t = ev.target.closest("tr.hs"); if (t){ hEst = hEst === t.dataset.c ? "" : t.dataset.c; hPintar(); } });
+}
+async function hCargar(){
+  $("#hTab").innerHTML = `<p style="color:var(--mu)">Cargando…</p>`;
+  const r = await fetch(`/api/historial?desde=${$("#hDesde").value}&hasta=${$("#hHasta").value}`, {headers: {"x-clave": clave()}, cache: "no-store"});
+  if (r.status === 401){ $("#login").style.display = "flex"; return; }
+  HI = r.ok ? await r.json() : {dias: {}}; hTipos(); hPintar();
+}
+function hFilas(){
+  const f = $("#hFuente").value, L = [];
+  Object.values(HI.dias).forEach(d => Object.values(d[f] || {}).forEach(x => L.push(x)));
+  return L;
+}
+function hTipos(){
+  const f = $("#hFuente").value, cur = $("#hTipo").value;
+  const ks = [...new Set(hFilas().map(x => f === "obs" ? x.tipo : x.prueba))];
+  $("#hTipo").innerHTML = `<option value="">Todos los tipos</option>` + ks.map(k => `<option value="${k}">${(f === "obs" ? TIPO[k] : PR[k]) || k}</option>`).join("");
+  if (ks.includes(cur)) $("#hTipo").value = cur;
+  $("#hEstado").disabled = f !== "obs";
+}
+function hSel(){
+  if (!HI) return [];
+  const f = $("#hFuente").value, es = $("#hEstado").value, ti = $("#hTipo").value, q = $("#hBuscar").value.trim().toLowerCase();
+  return hFilas().filter(x => (f !== "obs" || !es || x.estado === es) && (!ti || (f === "obs" ? x.tipo : x.prueba) === ti)
+    && (!q || (x.nombre || "").toLowerCase().includes(q) || x.codigo.includes(q) || String(x.regla || x.var || "").toLowerCase() === q));
+}
+function hPintar(){
+  if (!HI) return;
+  const f = $("#hFuente").value, S = hSel(), obs = f === "obs";
+  const ab = S.filter(x => x.estado === "abierto").length, co = S.filter(x => x.estado === "corregido").length;
+  $("#hRes").innerHTML = `<div><b>${S.length}</b><span>hallazgos ${HI.desde} a ${HI.hasta}</span></div>` + (obs ? `<div><b class="ab">${ab}</b><span>abiertos</span></div><div><b class="co">${co}</b><span>corregidos</span></div>` : "")
+    + `<div><b>${new Set(S.map(x => x.codigo)).size}</b><span>estaciones</span></div>`;
+  const por = {}; S.forEach(x => { const p = por[x.codigo] ||= {c: x.codigo, n: x.nombre || x.codigo, t: 0, a: 0}; p.t++; if (x.estado === "abierto") p.a++; });
+  const PE = Object.values(por).sort((a, b) => b.t - a.t);
+  $("#hEst").innerHTML = `<table><tr><th>Estación</th><th>Total</th>${obs ? "<th>Abiertos</th>" : ""}</tr>${PE.map(p => `<tr class="hs ${hEst === p.c ? "on" : ""}" data-c="${p.c}"><td>${esc(p.n)}</td><td>${p.t}</td>${obs ? `<td class="${p.a ? "ab" : ""}">${p.a}</td>` : ""}</tr>`).join("")}</table>`;
+  const T = S.filter(x => !hEst || x.codigo === hEst).sort((a, b) => (b.hora || b.momento).localeCompare(a.hora || a.momento) || a.nombre?.localeCompare(b.nombre || ""));
+  const MAX = 1500;
+  $("#hTab").innerHTML = T.length ? `<table><tr><th>Hora UTC</th><th>Estación</th><th>${obs ? "Tipo" : "Prueba"}</th><th>${obs ? "Regla" : "Variable"}</th><th>Detalle</th><th>${obs ? "Estado" : "Visto"}</th></tr>`
+    + T.slice(0, MAX).map(x => `<tr><td style="white-space:nowrap">${(x.hora || x.momento).slice(5).replace("-", "/")}</td><td>${esc(x.nombre || x.codigo)}</td>
+      <td style="color:${HEX[x.nivel] || "inherit"}">${obs ? TIPO[x.tipo] || x.tipo : PR[x.prueba] || x.prueba}</td><td>${obs ? x.regla : VAR[x.var] || x.var}</td><td>${esc(x.msg)}</td>
+      <td style="white-space:nowrap">${obs ? (x.estado === "corregido" ? `<span class="co">corregido</span><br><small style="color:var(--mu)">${x.corregido.slice(5, 16).replace("-", "/")} UTC</small>` : `<span class="ab">abierto</span>`) : (x.n + (x.n === 1 ? " pasada" : " pasadas"))}</td></tr>`).join("") + `</table>`
+    + (T.length > MAX ? `<p style="color:var(--mu)">Se muestran ${MAX} de ${T.length}; descargue el CSV para verlos todos.</p>` : "")
+    : `<p style="color:var(--mu)">Sin hallazgos guardados con ese filtro. El historial se empezó a guardar el 8 de noviembre de 2026.</p>`;
+}
+function hCsv(){
+  const obs = $("#hFuente").value === "obs", S = hSel().filter(x => !hEst || x.codigo === hEst);
+  const cols = obs ? ["hora", "codigo", "nombre", "tipo", "regla", "nivel", "msg", "estado", "primera", "ultima", "corregido"] : ["momento", "codigo", "nombre", "prueba", "var", "nivel", "valor", "ref", "msg", "primera", "ultima", "n"];
+  const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const txt = "\ufeff" + cols.join(";") + "\n" + S.map(x => cols.map(c => q(x[c])).join(";")).join("\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], {type: "text/csv"})); a.download = `historial_qc_${HI.desde}_${HI.hasta}.csv`; a.click();
+}
 $("#fl").addEventListener("submit", ev => { ev.preventDefault(); const c = $("#clave").value; try { sessionStorage.setItem("qcClave", c); } catch (e) { window._qc = c; } $("#lerr").textContent = ""; cargar(); });
 cargar(); setInterval(cargar, 5 * 60 * 1000);
 </script>
