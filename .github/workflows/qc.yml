@@ -45,3 +45,26 @@ jobs:
           git add -A
           git commit -q -m "datos $(date -u +%Y-%m-%dT%H:%MZ)" || exit 0
           git push -q origin datos
+
+  # Cadena: el cron de GitHub es poco confiable, así que cada ejecución deja lanzada la siguiente (minutos :07 y :37).
+  siguiente:
+    needs: qc
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      actions: write
+    steps:
+      - name: Esperar y lanzar la próxima
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ahora=$(date +%s)
+          objetivo=$(( (ahora / 1800 + 1) * 1800 + 420 ))
+          if [ $(( objetivo - ahora )) -gt 1800 ]; then objetivo=$(( objetivo - 1800 )); fi
+          if [ $(( objetivo - ahora )) -lt 120 ]; then objetivo=$(( objetivo + 1800 )); fi
+          espera=$(( objetivo - ahora ))
+          echo "Esperando $espera s"; sleep $espera
+          n=$(gh run list -R "$GITHUB_REPOSITORY" -w qc.yml --json status -q '[.[] | select(.status=="queued" or .status=="pending" or .status=="waiting")] | length')
+          if [ "$n" != "0" ]; then echo "Ya hay una en cola."; exit 0; fi
+          gh workflow run qc.yml -R "$GITHUB_REPOSITORY" --ref main
