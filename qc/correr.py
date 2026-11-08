@@ -15,7 +15,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
-import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS
+import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC
 
 VERSION = "0.1"
 
@@ -230,6 +230,13 @@ def main():
                 serie[cod] = [[str(m)[11:16]] + [r1(x) for x in fila] for m, *fila in g[["momento"] + CS].itertuples(index=False)]
     except Exception:
         estado["errores"].append(f"serie: {traceback.format_exc(limit=2)}")
+    cerc = {}
+    try:   # incendios cerca de las estaciones (producto de METOTEC sobre GOES-19 y FIRMS)
+        cerc = INC.cercania(E, INC.obtener())
+        alertas = INC.aplicar(alertas, cerc, H["momento"].max() if len(H) else pd.Timestamp.now(), P.alerta)
+        estado["incendios_cerca"] = len(cerc)
+    except Exception as e:
+        estado["errores"].append(f"incendios: {e}")
     try:
         estado["ob_filas"] = archivar_ob(a.datos, H, M, W)
     except Exception:
@@ -250,7 +257,7 @@ def main():
             estado_txt = ["bien", "sospechoso", "erróneo"][nivel]
         est.append(dict(codigo=c, nombre=r["nombre"], oaci=r["oaci"], lat=r["lat"], lon=r["lon"], alt=r["alt"], nivel=nivel, estado=estado_txt,
                         aislada=c in aisladas, vecinas=V.get(c, [])[:6], completitud=comp.get(c), hora=None if u is None else str(u["momento"]),
-                        valores=val, modelo=mod_ult.get(c, {}), serie=serie.get(c, []), alertas=al))
+                        valores=val, modelo=mod_ult.get(c, {}), serie=serie.get(c, []), incendio=cerc.get(c), alertas=al))
     res = dict(serie_campos=["hora", "T", "T_w", "T_om", "Td", "Td_om", "HR", "HR_w", "HR_om", "P_mar", "P_mar_om", "ff10", "ff10_w", "ff10_om"], generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), datos_hasta=estado["hasta"], version=VERSION,
                fuentes={"estaciones": "DMC, red automática", "modelo": " + ".join(x for x in ["WRF-DMC" if W is not None and len(W) else "", "Open-Meteo" if M is not None else ""] if x) or None, "satelite": "GOES-19 (NOAA)" if sat else None},
                resumen={k: sum(1 for e in est if e["estado"] == k) for k in ("bien", "sospechoso", "erróneo", "sin datos")},

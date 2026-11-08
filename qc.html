@@ -95,7 +95,7 @@ main[hidden]{display:none}
  <aside>
   <div class="tools">
    <button data-z="todo" class="on">Todo</button><button data-z="norte">Norte</button><button data-z="centro">Centro</button><button data-z="sur">Sur</button><button data-z="austral">Austral</button>
-   <select id="grupo" title="Pruebas"><option value="todas">Todas las pruebas</option><option value="basicas">Solo básicas</option><option value="vecinas">Solo vecinas</option><option value="modelos">Solo modelos</option><option value="lluvia">Solo lluvia</option><option value="satelite">Solo satélite</option></select>
+   <select id="grupo" title="Pruebas"><option value="todas">Todas las pruebas</option><option value="basicas">Solo básicas</option><option value="vecinas">Solo vecinas</option><option value="modelos">Solo modelos</option><option value="lluvia">Solo lluvia</option><option value="satelite">Solo satélite</option><option value="incendio">Solo incendios cercanos</option></select>
    <details class="vsel" id="vars"><summary id="varsT">Variables: todas ▾</summary><div class="vbox" id="vbox"></div></details>
    <select id="gobs" title="Tipo de revisión" hidden><option value="todas">Todas las revisiones</option><option value="sistema">Reglas del sistema</option><option value="codificacion">Codificación</option><option value="evolucion">Evolución</option><option value="sensor">Frente al sensor</option><option value="satelite">Frente al satélite</option></select>
    <select id="mvar" title="Variable" hidden><option value="T">Temperatura</option><option value="Td">Punto de rocío</option><option value="HR">Humedad</option><option value="P_mar">QFF</option><option value="ff10">Viento</option></select>
@@ -115,12 +115,12 @@ main[hidden]{display:none}
 const COL = {0: "var(--ok)", 1: "var(--sos)", 2: "var(--err)", 3: "var(--sin)"};
 const HEX = {0: "#3fb67a", 1: "#e7b03b", 2: "#e5534b", 3: "#6b778a"};
 const NOM = {0: "Bien", 1: "Sospechoso", 2: "Erróneo", 3: "Sin datos"};
-const PR = {rango: "Rango", salto: "Salto", pegado: "Valor pegado", coherencia: "Coherencia", vecinas: "Vecinas", modelo: "Open-Meteo", wrf: "WRF-DMC", lluvia: "Lluvia", satelite: "Satélite", completitud: "Completitud"};
+const PR = {incendio: "Incendio cercano", rango: "Rango", salto: "Salto", pegado: "Valor pegado", coherencia: "Coherencia", vecinas: "Vecinas", modelo: "Open-Meteo", wrf: "WRF-DMC", lluvia: "Lluvia", satelite: "Satélite", completitud: "Completitud"};
 const VARGR = [["T", "Temperatura", ["T", "Tn12", "Tx12"]], ["Td", "Punto de rocío", ["Td"]], ["HR", "Humedad", ["HR"]], ["P", "Presión", ["P_est", "P_mar", "P_std"]],
   ["V", "Viento", ["ff10", "dd10", "ff2", "dd2", "fx10"]], ["RR", "Precipitación", ["rr1m", "rr1h", "rr3h", "rr6", "rr24"]], ["Rad", "Radiación", ["Rad"]], ["C", "Completitud", ["registros"]]];
 const VAR2G = Object.fromEntries(VARGR.flatMap(([k, , vs]) => vs.map(v => [v, k])));
 let VSEL = new Set(VARGR.map(g => g[0]));
-const GRUPOS = {todas: null, basicas: ["rango", "salto", "pegado", "coherencia", "completitud"], vecinas: ["vecinas"], modelos: ["modelo", "wrf"], lluvia: ["lluvia"], satelite: ["satelite"]};
+const GRUPOS = {todas: null, basicas: ["rango", "salto", "pegado", "coherencia", "completitud"], vecinas: ["vecinas"], modelos: ["modelo", "wrf"], lluvia: ["lluvia"], satelite: ["satelite"], incendio: ["incendio"]};
 let grupo = "todas", modo = "ema", gobs = "todas";
 const TIPO = {sistema: "Regla del sistema", codificacion: "Codificación", evolucion: "Evolución", sensor: "Frente al sensor", satelite: "Frente al satélite"};
 function obsFiltradas(){
