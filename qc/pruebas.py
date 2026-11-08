@@ -243,6 +243,9 @@ def completitud(D, E):
     ini = fin - pd.Timedelta(hours=1)
     if D["momento"].min() > ini + pd.Timedelta(minutes=5):
         return out, pct          # el archivo todavía no cubre esa hora completa
+    red = D[(D["momento"] > ini) & (D["momento"] <= fin)]["momento"].dt.floor("min")
+    if red.nunique() < 57 or red.max() < fin - pd.Timedelta(minutes=2):
+        return out, pct          # hueco en nuestras descargas (no es falla de las estaciones)
     for cod in E["codigo"]:
         g = D[D["codigo"] == cod]
         if g.empty:
