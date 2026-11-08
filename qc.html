@@ -442,6 +442,8 @@ function hCsv(){
 }
 $("#fl").addEventListener("submit", ev => { ev.preventDefault(); const c = $("#clave").value; try { sessionStorage.setItem("qcClave", c); } catch (e) { window._qc = c; } $("#lerr").textContent = ""; cargar(); });
 // metotec.cl/modelo: solo el contraste con modelos (para presentar)
+const VISTA0 = new URLSearchParams(location.search).get("vista");
+if (["obs", "prio", "hist", "mod"].includes(VISTA0)) document.querySelector(`.modos button[data-m="${VISTA0}"]`).click();
 if (/^\/modelo/.test(location.pathname) || new URLSearchParams(location.search).get("vista") === "modelo"){
   document.querySelector('.modos button[data-m="mod"]').click(); document.querySelector(".modos").style.display = "none";
   document.querySelector("header h1").firstChild.textContent = "Control de calidad · contraste con modelos"; document.title = "Contraste con modelos · METOTEC";

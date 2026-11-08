@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Acerca de METOTEC</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<style>
+:root{--noche:#0A1F44;--marino:#082B5C;--azul:#1688D4;--oro:#C9A54C;--fondo:#F5F6F8;--tx:#16202E;--mu:#6B7686;--bd:#E3E7EC}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--fondo);color:var(--tx);font:16px/1.5 Inter,system-ui,"Segoe UI",Roboto,Arial,sans-serif}
+.w{max-width:1280px;margin:0 auto;padding:0 clamp(16px,4vw,56px)}
+header{background:radial-gradient(1100px 380px at 85% 0%,#163a73 0%,var(--noche) 62%);color:#fff;padding:22px 0}
+header .w{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+header .logo img{display:block;height:40px;width:auto}
+header nav{display:flex;gap:26px;font-size:14.5px;font-weight:500}
+header nav a{color:#c8d2e2;text-decoration:none;padding-bottom:4px;border-bottom:2px solid transparent}
+header nav a:hover{color:#fff;border-bottom-color:var(--oro)}
+.rule{height:3px;background:linear-gradient(90deg,var(--oro),rgba(201,165,76,0) 70%)}
+main.w{padding-top:36px;padding-bottom:10px}
+.st{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin:0 0 16px;scroll-margin-top:16px}
+.st h2{margin:0;font-size:20px;font-weight:700}.st span{color:var(--mu);font-size:14px}
+.g4{display:grid;gap:18px;grid-template-columns:repeat(4,1fr)}
+a.c{display:flex;flex-direction:column;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:22px;color:inherit;text-decoration:none;transition:border-color .15s,box-shadow .15s,transform .15s}
+a.c:hover{border-color:#c9d2dd;box-shadow:0 10px 24px rgba(10,31,68,.08);transform:translateY(-2px)}
+.ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14.5px;margin-bottom:16px;flex:none}
+a.c h3{margin:0 0 6px;font-size:17px}
+a.c p{margin:0;color:var(--mu);font-size:13.8px;line-height:1.5;flex:1}
+.ft{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--bd);font-size:13.5px}
+.ft b{color:var(--marino)}.ft i{font-style:normal;color:var(--mu)}
+.g2{display:grid;gap:18px;grid-template-columns:1.4fr 1fr}
+a.big{display:block;background:linear-gradient(135deg,var(--noche),var(--marino));color:#fff;border-radius:14px;padding:30px;text-decoration:none;transition:box-shadow .15s,transform .15s}
+a.big:hover{box-shadow:0 12px 28px rgba(10,31,68,.25);transform:translateY(-2px)}
+a.big .k{color:var(--oro);font-size:12px;font-weight:600;letter-spacing:.2em;text-transform:uppercase}
+a.big h3{margin:8px 0 8px;font-size:23px}
+a.big p{margin:0 0 6px;color:#b9c5d8;font-size:14.5px}
+a.big ul{margin:10px 0 18px;padding-left:18px;color:#d5deeb;font-size:14px}
+.btn{display:inline-block;background:var(--oro);color:var(--noche);font-weight:700;font-size:14px;padding:9px 16px;border-radius:8px}
+a.c.sim{padding:26px}
+footer{margin-top:44px;background:var(--noche);color:#9fb0c8;font-size:13px;padding:22px 0}
+footer .w{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer .l{display:flex;align-items:center;gap:14px}
+footer img{height:26px;width:auto;filter:brightness(0) invert(1);opacity:.8}
+footer a{color:#9fb0c8}
+@media (max-width:1000px){.g4{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+@media (max-width:600px){
+  header{padding:16px 0}header .logo img{height:30px}
+  header nav{width:100%;gap:18px;overflow-x:auto;scrollbar-width:none;font-size:14px}header nav a{white-space:nowrap}
+  main.w{padding-top:24px}.g4{grid-template-columns:1fr;gap:12px}
+  a.c{display:grid;grid-template-columns:38px 1fr;column-gap:14px;padding:16px}a.c .ic{margin:0;grid-row:span 2}a.c .ft{grid-column:1 / 3;margin-top:12px;padding-top:10px}
+  a.c.sim{display:flex;padding:18px}a.big{padding:22px}a.big h3{font-size:20px}
+}
+</style>
+<style>
+.g3{display:grid;gap:18px;grid-template-columns:repeat(3,1fr)}
+a.area{position:relative;display:flex;flex-direction:column;border-radius:14px;padding:26px;color:#fff;text-decoration:none;min-height:230px;overflow:hidden;transition:transform .15s,box-shadow .15s}
+a.area:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(10,31,68,.25)}
+a.area .k{color:var(--oro);font-size:12px;font-weight:700;letter-spacing:.2em;text-transform:uppercase}
+a.area h3{margin:8px 0 8px;font-size:22px}a.area p{margin:0;color:#c3cede;font-size:14.2px;flex:1}
+a.area .btn{align-self:flex-start;margin-top:18px}
+a.area .lock{position:absolute;bottom:32px;right:26px;font-size:12px;font-weight:700;color:#0A1F44;background:#C9A54C;border-radius:999px;padding:3px 10px}
+.a1{background:linear-gradient(135deg,#0A1F44,#14427e)}
+.a2{background:linear-gradient(135deg,#0b2a3f,#0f5a5f)}
+.a3{background:radial-gradient(400px 200px at 80% 20%,rgba(255,80,80,.35),transparent 60%),radial-gradient(300px 160px at 20% 90%,rgba(80,170,255,.35),transparent 60%),linear-gradient(135deg,#0a1324,#1d2744)}
+.g5{display:grid;gap:14px;grid-template-columns:repeat(5,1fr)}
+.g2{display:grid;gap:18px;grid-template-columns:repeat(2,1fr)}
+a.m{display:block;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:16px;color:inherit;text-decoration:none;transition:border-color .15s,transform .15s}
+a.m:hover{border-color:var(--oro);transform:translateY(-2px)}
+a.m h4{margin:10px 0 4px;font-size:15px}a.m p{margin:0;color:var(--mu);font-size:13px;line-height:1.45}
+a.m .ic{width:32px;height:32px;margin:0;font-size:13px}
+.tag{display:inline-block;font-size:11px;font-weight:700;color:var(--marino);background:#eef2f8;border-radius:5px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+.g4.c4 a.c{padding:16px}.g4.c4 a.c p{font-size:13px}.g4.c4 .ic{width:32px;height:32px;margin-bottom:10px}
+.tools{display:flex;gap:12px;flex-wrap:wrap}.tools a{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:10px 14px;color:var(--tx);text-decoration:none;font-size:14px;font-weight:600}
+.tools a:hover{border-color:var(--oro)}
+.inic{margin-top:44px;border-radius:14px;background:linear-gradient(135deg,#0A1F44,#082B5C);color:#dfe6f1;padding:24px 28px;display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.inic img{height:44px}.inic p{margin:0;flex:1;min-width:260px;font-size:14.5px}.inic b{color:#fff}
+.inic a{color:#0A1F44;background:var(--oro);border-radius:8px;padding:9px 14px;font-weight:700;text-decoration:none;white-space:nowrap}
+@media (max-width:1000px){.g3,.g2{grid-template-columns:1fr}.g5{grid-template-columns:repeat(2,1fr)}}
+div.m,div.c{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:18px}div.m h4,div.c h3{margin:0 0 6px;font-size:16px}div.m p,div.c p{margin:0;color:var(--mu);font-size:14px;line-height:1.5}
+</style>
+</head>
+<body>
+<header><div class="w">
+ <a href="index.html" class="logo"><img src="img/logo_blanco.svg" alt="METOTEC"></a>
+ <nav><a href="index.html#formacion">Formación</a><a href="index.html#control">Control de calidad</a><a href="index.html#satelite">Satélite</a><a href="acerca.html">Acerca</a></nav>
+</div></header>
+<div class="rule"></div>
+<main class="w" style="max-width:860px">
+ <div class="st"><h2>Acerca de METOTEC</h2></div>
+ <p style="font-size:17px;line-height:1.6"><b>METOTEC</b> es una iniciativa independiente y <b>sin fines de lucro</b> que desarrolla software y aplicaciones meteorológicas abiertas y gratuitas, en español, para la formación de observadores y el control de calidad de datos. Su único propósito es apoyar el desarrollo de la meteorología en Chile.</p>
+ <div class="g2" style="margin-top:24px">
+  <div class="m"><h4>Misión</h4><p>Poner al alcance de estudiantes, observadores y profesionales herramientas meteorológicas modernas, gratuitas y en español, que mejoren la formación y la calidad de los datos.</p></div>
+  <div class="m"><h4>Visión</h4><p>Ser un referente en Latinoamérica en herramientas abiertas para la observación y el control de calidad meteorológico.</p></div>
+ </div>
+ <div class="st" style="margin-top:32px"><h2>Principios</h2></div>
+ <div class="g4 c4">
+  <div class="c"><h3>Abierto y gratuito</h3><p>Sin costo y sin fines de lucro.</p></div>
+  <div class="c"><h3>En español</h3><p>Pensado para usarse fácil, sin manuales en inglés.</p></div>
+  <div class="c"><h3>Estándares OMM</h3><p>Basado en las normas de la Organización Meteorológica Mundial.</p></div>
+  <div class="c"><h3>Datos responsables</h3><p>Datos públicos, citados y usados con cuidado.</p></div>
+ </div>
+ <div class="st" style="margin-top:32px"><h2>En cifras</h2></div>
+ <div class="g3">
+  <div class="m"><h4 style="font-size:28px;margin:0">415</h4><p>casos de práctica de observación</p></div>
+  <div class="m"><h4 style="font-size:28px;margin:0">135</h4><p>estaciones controladas cada 30 minutos</p></div>
+  <div class="m"><h4 style="font-size:28px;margin:0">10 min</h4><p>entre imágenes GOES-19 procesadas</p></div>
+ </div>
+ <p style="margin-top:32px;color:var(--mu);font-size:14px">Autor: Orlando Álvarez Bustamante. Las herramientas de METOTEC son de apoyo y no reemplazan los sistemas ni los avisos oficiales. Fuentes de datos: Dirección Meteorológica de Chile (portal de climatología), NOAA (GOES-19), NASA FIRMS y Open-Meteo.</p>
+</main>
+<footer><div class="w"><div class="l"><img src="img/isotipo.svg" alt=""><span>© 2026 O. Álvarez B. · Herramientas educativas y de apoyo, no oficiales.</span></div><a href="index.html">Inicio</a></div></footer>
+</body>
+</html>
