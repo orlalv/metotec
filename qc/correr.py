@@ -14,7 +14,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
-import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN
+import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT
 
 VERSION = "0.1"
 
@@ -66,7 +66,7 @@ ESTACIONES_OBS = ["180005", "200006", "220002", "230001", "270001", "270008", "2
                   "430009", "450001", "450004", "450005", "510005", "520006", "530005", "550001", "950001"]
 
 
-def control_sensorial(E, raiz, pausa=0.3):
+def control_sensorial(E, raiz, pausa=0.3, SAT=None):
     """Baja las observaciones de las estaciones con observador, las archiva y las revisa. Sube el resultado al KV (qc/sensorial)."""
     import time, gzip
     p = Path(raiz) / "sensoriales.json"
@@ -83,7 +83,7 @@ def control_sensorial(E, raiz, pausa=0.3):
         n_obs += len(obs)
         A = leer_archivo(raiz, pd.Timestamp.utcnow().tz_localize(None), horas=7)
         A = A[A["codigo"] == cod] if len(A) else A
-        hall = SEN.revisar(cod, obs, A, horas=12)
+        hall = SEN.revisar(cod, obs, A, horas=12, sat=(SAT or {}).get(cod))
         for t, o in obs.items():
             archivo.setdefault(t.strftime("%Y/%m/%d"), {}).setdefault(cod, {})[t.strftime("%H")] = {k: x for k, x in o.items() if k != "_qa"}
         m = nombres.get(cod, {})
@@ -147,6 +147,13 @@ def main():
         except Exception as e:
             estado["errores"].append(f"wrf_ref: {e}")
 
+    sat = None
+    try:
+        sat = SAT.obtener()
+        estado["satelite"] = dict(imagenes=len(sat.get("frames", [])), ultima=sat["frames"][-1]["t"] if sat.get("frames") else None)
+    except Exception as e:
+        estado["errores"].append(f"satelite: {e}")
+
     clusters = leer_clusters(Path(__file__).parent / "clusters.csv")
     V = P.vecinas_de(E, clusters=clusters)
     aisladas = {c for c, L in V.items() if len(L) < 3}
@@ -154,7 +161,8 @@ def main():
     alertas = []
     for nombre, f in [("rango", lambda: P.rango(A)), ("salto", lambda: P.saltos(A)), ("pegado", lambda: P.pegados(A)),
                       ("coherencia", lambda: P.coherencia(H.groupby("codigo").tail(1), E)), ("vecinas", lambda: P.vecinas(H, E, V)),
-                      ("modelo", lambda: P.modelo(H, M, aisladas)), ("wrf", lambda: P.modelo_dmc(H, W, aisladas)), ("lluvia", lambda: P.lluvia(H, M, V))]:
+                      ("modelo", lambda: P.modelo(H, M, aisladas)), ("wrf", lambda: P.modelo_dmc(H, W, aisladas)), ("lluvia", lambda: P.lluvia(H, M, V)),
+                      ("satelite", lambda: SAT.ema(H, A, E, sat))]:
         try:
             alertas += f()
         except Exception:
@@ -194,13 +202,13 @@ def main():
                         aislada=c in aisladas, vecinas=V.get(c, [])[:6], completitud=comp.get(c), hora=None if u is None else str(u["momento"]),
                         valores=val, modelo=mod_ult.get(c, {}), alertas=al))
     res = dict(generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), datos_hasta=estado["hasta"], version=VERSION,
-               fuentes={"estaciones": "DMC, red automática", "modelo": " + ".join(x for x in ["WRF-DMC" if W is not None and len(W) else "", "Open-Meteo" if M is not None else ""] if x) or None, "satelite": None},
+               fuentes={"estaciones": "DMC, red automática", "modelo": " + ".join(x for x in ["WRF-DMC" if W is not None and len(W) else "", "Open-Meteo" if M is not None else ""] if x) or None, "satelite": "GOES-19 (NOAA)" if sat else None},
                resumen={k: sum(1 for e in est if e["estado"] == k) for k in ("bien", "sospechoso", "erróneo", "sin datos")},
                estaciones=est)
     hacer = a.sensorial == "si" or (a.sensorial == "auto" and datetime.now(timezone.utc).minute >= 30 and not a.json)
     if hacer:
         try:
-            estado["sensorial"] = control_sensorial(E, a.datos)
+            estado["sensorial"] = control_sensorial(E, a.datos, SAT=SAT.series(sat))
         except Exception:
             estado["errores"].append(f"sensorial: {traceback.format_exc(limit=2)}")
     txt = json.dumps(res, ensure_ascii=False, default=str)

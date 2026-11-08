@@ -393,15 +393,16 @@ def frente_sensor(t, o, A):
 
 
 # ======================================================================= ciclo
-def revisar(codigo, obs, A=None, horas=None):
+def revisar(codigo, obs, A=None, horas=None, sat=None):
     """Revisa las horas indicadas (por defecto la última) de una estación. Devuelve lista de hallazgos."""
     if not obs:
         return []
     ts = sorted(obs)
     sel = ts[-(horas or 1):]
     out = []
+    from satelite import sensorial as satelital
     for t in sel:
         o = obs[t]
-        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs) + frente_sensor(t, o, A):
+        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs) + frente_sensor(t, o, A) + satelital(t, o, sat):
             out.append(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"))
     return out

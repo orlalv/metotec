@@ -69,22 +69,22 @@ footer{color:var(--mu);font-size:12.5px;padding:6px 20px;border-top:1px solid va
  <aside>
   <div class="tools">
    <button data-z="todo" class="on">Todo</button><button data-z="norte">Norte</button><button data-z="centro">Centro</button><button data-z="sur">Sur</button><button data-z="austral">Austral</button>
-   <select id="grupo" title="Pruebas"><option value="todas">Todas las pruebas</option><option value="basicas">Solo básicas</option><option value="vecinas">Solo vecinas</option><option value="modelos">Solo modelos</option><option value="lluvia">Solo lluvia</option></select>
-   <select id="gobs" title="Tipo de revisión" hidden><option value="todas">Todas las revisiones</option><option value="sistema">Reglas del sistema</option><option value="codificacion">Codificación</option><option value="evolucion">Evolución</option><option value="sensor">Frente al sensor</option></select>
+   <select id="grupo" title="Pruebas"><option value="todas">Todas las pruebas</option><option value="basicas">Solo básicas</option><option value="vecinas">Solo vecinas</option><option value="modelos">Solo modelos</option><option value="lluvia">Solo lluvia</option><option value="satelite">Solo satélite</option></select>
+   <select id="gobs" title="Tipo de revisión" hidden><option value="todas">Todas las revisiones</option><option value="sistema">Reglas del sistema</option><option value="codificacion">Codificación</option><option value="evolucion">Evolución</option><option value="sensor">Frente al sensor</option><option value="satelite">Frente al satélite</option></select>
    <input id="buscar" placeholder="Buscar estación…">
   </div>
   <div id="lista"></div>
   <div id="det"></div>
  </aside>
 </main>
-<footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · completitud</span></footer>
+<footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · satélite GOES-19 · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
 <script>
 const COL = {0: "var(--ok)", 1: "var(--sos)", 2: "var(--err)", 3: "var(--sin)"};
 const HEX = {0: "#3fb67a", 1: "#e7b03b", 2: "#e5534b", 3: "#6b778a"};
 const NOM = {0: "Bien", 1: "Sospechoso", 2: "Erróneo", 3: "Sin datos"};
-const PR = {rango: "Rango", salto: "Salto", pegado: "Valor pegado", coherencia: "Coherencia", vecinas: "Vecinas", modelo: "Open-Meteo", wrf: "WRF-DMC", lluvia: "Lluvia", completitud: "Completitud"};
-const GRUPOS = {todas: null, basicas: ["rango", "salto", "pegado", "coherencia", "completitud"], vecinas: ["vecinas"], modelos: ["modelo", "wrf"], lluvia: ["lluvia"]};
+const PR = {rango: "Rango", salto: "Salto", pegado: "Valor pegado", coherencia: "Coherencia", vecinas: "Vecinas", modelo: "Open-Meteo", wrf: "WRF-DMC", lluvia: "Lluvia", satelite: "Satélite", completitud: "Completitud"};
+const GRUPOS = {todas: null, basicas: ["rango", "salto", "pegado", "coherencia", "completitud"], vecinas: ["vecinas"], modelos: ["modelo", "wrf"], lluvia: ["lluvia"], satelite: ["satelite"]};
 let grupo = "todas", modo = "ema", gobs = "todas";
 const TIPO = {sistema: "Regla del sistema", codificacion: "Codificación", evolucion: "Evolución", sensor: "Frente al sensor"};
 function obsFiltradas(){

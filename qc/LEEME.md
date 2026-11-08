@@ -17,3 +17,10 @@ Una estación con menos de 3 vecinas se marca como aislada y el modelo pasa a se
 - Satélite (GOES-19): lluvia con cielo despejado, posible pluviómetro obstruido bajo convección.
 - Estaciones con personal (`getRecientesSaclim`): N, ww, visibilidad contra satélite.
 - Sesgo propio de cada estación frente al modelo (historial).
+
+## Satélite (GOES-19)
+El visor satelital (repositorio conveccion-chile) publica en cada imagen `data/sat_estaciones.json`
+con lo que ve el satélite a 10 y 30 km de cada estación (banda 13, máscara de nubes ACM, lluvia RRQPE,
+altura de topes ACHA y rayos GLM), últimas 12 h. `qc/satelite.py` lo lee y aplica:
+- automáticas: SAT-RR0 (lluvia satelital y pluviómetro en 0), SAT-RRD (lluvia con cielo despejado), SAT-RAD (radiación baja con cielo despejado);
+- observaciones: SAT1–SAT8 (N, precipitación, tormenta, rayos, cumulonimbo, convección vs CL, niebla).
