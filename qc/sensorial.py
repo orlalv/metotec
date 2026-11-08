@@ -418,10 +418,16 @@ def frente_sensor(t, o, A):
     if ingresado(o, "RRR6", "RRR6"):
         w = A[(A["momento"] > t - pd.Timedelta(hours=6)) & (A["momento"] <= t)]
         if len(w) >= 300:                         # al menos 5 h de datos minutarios
-            suma = w["rr1m"].sum()
+            suma = round(float(w["rr1m"].sum()), 1)
             r6 = rr or 0
-            if abs(suma - r6) > max(1.0, 0.3 * max(suma, r6)):
-                add("SRRR6", 1, f"RRR6 anotado {r6} mm y el pluviómetro automático sumó {suma:.1f} mm en 6 h")
+            traza = v(o, "RRR6", "Traza") == 1
+            d = round(abs(suma - r6), 1)
+            if traza:
+                if suma >= 0.2:
+                    add("SRRR6", 1, f"RRR6 anotado como traza y el pluviómetro automático sumó {suma:.1f} mm en 6 h")
+            elif d >= 0.1:
+                add("SRRR6", 2 if d > max(1.0, 0.3 * max(suma, r6)) else 1,
+                    f"RRR6 anotado {r6:g} mm y el pluviómetro automático sumó {suma:.1f} mm en 6 h (diferencia {d:.1f} mm)")
     return out
 
 
