@@ -1,0 +1,1221 @@
+{
+ "revisadas": 135,
+ "con_datos": 33,
+ "estaciones": [
+  {
+   "codigo": "170001",
+   "nombre": "Visviri Tenencia",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "180005",
+   "nombre": "Chacalluta, Arica Ap.",
+   "oaci": "SCAR",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 24,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "180017",
+   "nombre": "Putre",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "180018",
+   "nombre": "Defensa Civil, Arica",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "180042",
+   "nombre": "Cerro Sombrero, Arica",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "190010",
+   "nombre": "Colchane",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "200006",
+   "nombre": "Diego Aracena Iquique Ap.",
+   "oaci": "SCDA",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 26,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "200007",
+   "nombre": "La Huayca, Pozo Almonte",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "200010",
+   "nombre": "UNAP (Universidad Arturo Prat), Iquique",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "210901",
+   "nombre": "Ollagüe ",
+   "oaci": "SCOY",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "220002",
+   "nombre": "El Loa, Calama Ad.",
+   "oaci": "SCCF",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 24,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "220026",
+   "nombre": "Chorrillos, Calama",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "220028",
+   "nombre": "Maria Elena, Salitrera",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "230001",
+   "nombre": "Cerro Moreno Antofagasta Ap.",
+   "oaci": "SCFA",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 22,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "230002",
+   "nombre": "Universidad Católica del Norte, Antofagasta",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "230004",
+   "nombre": "Toconao",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "230021",
+   "nombre": "Llano de Chajnantor, observatorio APEX",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "230022",
+   "nombre": "Mejillones",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "240005",
+   "nombre": "Cerro Paranal, observatorio astronómico",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "250005",
+   "nombre": "Taltal",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "260010",
+   "nombre": " Ad. Ricardo García Posada, El Salvador",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "270001",
+   "nombre": "Mataveri  Isla de Pascua Ap.",
+   "oaci": "SCIP",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 25,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "270008",
+   "nombre": "Desierto de Atacama, Caldera  Ad.",
+   "oaci": "SCAT",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 24,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "270009",
+   "nombre": "Copiapó Universidad de Atacama",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "270022",
+   "nombre": "Copiapo, Cerro Antenas",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "280010",
+   "nombre": "Freirina Nicolasa",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "280028",
+   "nombre": "Alto del Carmen, Los Sauces",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "290004",
+   "nombre": "La Florida, La Serena Ad.",
+   "oaci": "SCSE",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 26,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "290013",
+   "nombre": "Cerro la Silla, observatorio astronómico",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "300024",
+   "nombre": "Ovalle Escuela Agrícola",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "300046",
+   "nombre": "Vicuña, Parque Los Pimientos",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "300047",
+   "nombre": "Monte Patria, Municipalidad",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "310023",
+   "nombre": "Canela Baja (Liceo Padre José Herde)",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "310024",
+   "nombre": "Liceo Samuel Román Rojas (Combarbalá)",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "310040",
+   "nombre": "Vivero Conaf, Illapel",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320019",
+   "nombre": "San Felipe Escuela Agrícola",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320041",
+   "nombre": "Viña del Mar  Ad. (Torquemada)",
+   "oaci": "SCVM",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 18,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "320045",
+   "nombre": "Llay Llay, Las Peñas",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320049",
+   "nombre": "Chincolco Liceo agrícola",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320051",
+   "nombre": "Los Libertadores",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320055",
+   "nombre": "Catemu",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320056",
+   "nombre": "Quintero, Climatológica",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320063",
+   "nombre": "Zapallar Catapilco",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320121",
+   "nombre": "El Tártaro (Putaendo)",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320122",
+   "nombre": "Panquehue",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320123",
+   "nombre": "San Esteban, Liceo",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320124",
+   "nombre": "Quillota, Liceo Agrícola",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "320127",
+   "nombre": "Planta Transmisora Quintero, Armada",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330006",
+   "nombre": "Jardín Botánico (ex Parque Fauna), Viña del Mar",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330007",
+   "nombre": "Rodelillo, Ad.",
+   "oaci": "SCRD",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 18,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "330019",
+   "nombre": "Eulogio Sánchez, Tobalaba Ad.",
+   "oaci": "SCTB",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 19,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "330020",
+   "nombre": "Quinta Normal, Santiago",
+   "oaci": "SCQN",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 24,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "330021",
+   "nombre": "Pudahuel Santiago ",
+   "oaci": "SCEL",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 24,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "330030",
+   "nombre": "Santo Domingo, Ad.",
+   "oaci": "SCSN",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 24,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "330031",
+   "nombre": "Juan Fernández, Estación Meteorológica.",
+   "oaci": "",
+   "estado": "Datos generador correctamente.",
+   "horas": 11,
+   "elementos": 12,
+   "ultima": "2026-11-08 18:00:00"
+  },
+  {
+   "codigo": "330071",
+   "nombre": "Talagante",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330075",
+   "nombre": "Río Clarillo",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330076",
+   "nombre": "Chorombo Hacienda",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330077",
+   "nombre": "El Colorado",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330111",
+   "nombre": "Lo Prado Cerro San Francisco",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330112",
+   "nombre": "San José  Guayacán",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330113",
+   "nombre": "El Paico",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330114",
+   "nombre": "San Pablo - DASA",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330118",
+   "nombre": "Lo Pinto",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330121",
+   "nombre": "Curacaví Ad.",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330122",
+   "nombre": "Aguas Andinas, La Florida",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330161",
+   "nombre": "San Antonio, Lo Zarate",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330162",
+   "nombre": "Colina (Reg.)",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "330163",
+   "nombre": "Peldehue Ad.",
+   "oaci": "SCPD",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 17,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "330193",
+   "nombre": "Llanos de Caleu - La Dormida",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "340031",
+   "nombre": "General Freire, Curicó Ad.",
+   "oaci": "SCIC",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 22,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "340045",
+   "nombre": "Rancagua",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "340048",
+   "nombre": "Quimávida",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "340066",
+   "nombre": "Nilahue - La Quebrada",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "340093",
+   "nombre": "Portezuelo-Codelco",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "340115",
+   "nombre": "Pichilemu aeródromo",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "350028",
+   "nombre": "Panguilemo",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "350901",
+   "nombre": "Escuela de Artillería Linares",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "360011",
+   "nombre": "General Bernardo O'Higgins, Chillán Ad.",
+   "oaci": "SCCH",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 24,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "360019",
+   "nombre": "Carriel Sur, Concepción Ap.",
+   "oaci": "SCIE",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 23,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "360047",
+   "nombre": "Retiro Copihue",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "370033",
+   "nombre": "María Dolores, Los Angeles Ad.",
+   "oaci": "SCGE",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 23,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "370036",
+   "nombre": "El Huertón liceo agrícola, Los Ángeles",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "370077",
+   "nombre": "La Colcha, Arauco",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "380013",
+   "nombre": "Maquehue, Temuco Ad.",
+   "oaci": "SCTC",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "380018",
+   "nombre": "Lonquimay",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "380029",
+   "nombre": "La Araucanía Ad.",
+   "oaci": "SCQP",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 25,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "380032",
+   "nombre": "Rucamanque-UFRO",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "380033",
+   "nombre": "Maquehue-UFRO",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "380063",
+   "nombre": "Victoria (Reg.)",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "380080",
+   "nombre": "Lequecahue Tirúa Ad.",
+   "oaci": "SCQK",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "390006",
+   "nombre": "Pichoy, Valdivia Ad.",
+   "oaci": "SCVD",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 24,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "390015",
+   "nombre": "Isla Teja  (Universidad Austral Valdivia)",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "390028",
+   "nombre": "Villarrica",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "390043",
+   "nombre": "Corral ESSAL",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "390056",
+   "nombre": "Pucón Aeródromo",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "400013",
+   "nombre": "Juan Kalt Bode (Fundación Adolfo Matthei)",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "400058",
+   "nombre": "La Unión, Agrotec",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "400060",
+   "nombre": "Fundo el Maitén, Paillaco",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "400061",
+   "nombre": "Purranque",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "410005",
+   "nombre": "El Tepual  Puerto Montt Ap.",
+   "oaci": "SCTE",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 26,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "410026",
+   "nombre": "Ancud Liceo Agrícola",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "410027",
+   "nombre": "Escuela Mirasol, Puerto Montt",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "410040",
+   "nombre": "Puerto Varas ESSAL",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "420015",
+   "nombre": "Nueva Chaitén",
+   "oaci": "SCTN",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "430001",
+   "nombre": "Quellón Ad.",
+   "oaci": "SCON",
+   "estado": "Datos generador correctamente.",
+   "horas": 11,
+   "elementos": 13,
+   "ultima": "2026-11-08 18:00:00"
+  },
+  {
+   "codigo": "430002",
+   "nombre": "Futaleufú Ad.",
+   "oaci": "SCFT",
+   "estado": "Datos generador correctamente.",
+   "horas": 11,
+   "elementos": 14,
+   "ultima": "2026-11-08 18:00:00"
+  },
+  {
+   "codigo": "430009",
+   "nombre": "Melinka Ad.",
+   "oaci": "SCMK",
+   "estado": "Datos generador correctamente.",
+   "horas": 11,
+   "elementos": 12,
+   "ultima": "2026-11-08 18:00:00"
+  },
+  {
+   "codigo": "440004",
+   "nombre": "Cisnes Puyuhuapi",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "450001",
+   "nombre": "Puerto Aysén Ad.",
+   "oaci": "SCAS",
+   "estado": "Datos generador correctamente.",
+   "horas": 11,
+   "elementos": 12,
+   "ultima": "2026-11-08 18:00:00"
+  },
+  {
+   "codigo": "450004",
+   "nombre": "Teniente Vidal, Coyhaique Ad.",
+   "oaci": "SCCY",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 24,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "450005",
+   "nombre": "Balmaceda Ad.",
+   "oaci": "SCBA",
+   "estado": "Datos generador correctamente.",
+   "horas": 11,
+   "elementos": 14,
+   "ultima": "2026-11-08 18:00:00"
+  },
+  {
+   "codigo": "450022",
+   "nombre": "Mirador Marchant, Coyhaique",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "480002",
+   "nombre": "Villa O\"Higgins subcomisaría",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "510005",
+   "nombre": "Teniente Gallardo, Puerto Natales Ad.",
+   "oaci": "SCNT",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 19,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "510020",
+   "nombre": "Río Serrano, Torres del Paine",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "520006",
+   "nombre": "Carlos Ibañez, Punta Arenas Ap.",
+   "oaci": "SCCI",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 26,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "520012",
+   "nombre": "Instituto de la Patagonia (Jorge Schytte)",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "520014",
+   "nombre": "Punta Arenas Unidad Aeropolicial",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "520015",
+   "nombre": "Magallanes Villa Tehuelche",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "520030",
+   "nombre": "Cerro Sombrero, Estrecho de Magallanes",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "530005",
+   "nombre": "Fuentes Martínez, Porvenir Ad.",
+   "oaci": "SCFM",
+   "estado": "Datos generador correctamente.",
+   "horas": 11,
+   "elementos": 12,
+   "ultima": "2026-11-08 18:00:00"
+  },
+  {
+   "codigo": "530008",
+   "nombre": "Escuela Alberto Hurtado",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "540008",
+   "nombre": "Pampa Guanaco, Tierra del Fuego ",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "550001",
+   "nombre": "Guardiamarina Zañartu, Pto Williams Ad.",
+   "oaci": "SCGZ",
+   "estado": "Datos generador correctamente.",
+   "horas": 11,
+   "elementos": 25,
+   "ultima": "2026-11-08 18:00:00"
+  },
+  {
+   "codigo": "950001",
+   "nombre": "C.M.A. Eduardo Frei Montalva, Antártica ",
+   "oaci": "SCRM",
+   "estado": "Datos generador correctamente.",
+   "horas": 12,
+   "elementos": 24,
+   "ultima": "2026-11-08 19:00:00"
+  },
+  {
+   "codigo": "950008",
+   "nombre": "Glaciar Unión",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "950010",
+   "nombre": "Punta. Py - INACH",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "950011",
+   "nombre": "Gabriel Gonzalez Videla - INACH",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "950012",
+   "nombre": "Boonen Rivera",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "950015",
+   "nombre": "Punta Armonía",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "950018",
+   "nombre": "Peñón Escuela de Montaña",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "950020",
+   "nombre": "Islote Alcock",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "950021",
+   "nombre": "Base J",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  },
+  {
+   "codigo": "950023",
+   "nombre": "Isla Livington",
+   "oaci": "",
+   "estado": null,
+   "horas": 0,
+   "elementos": 0,
+   "ultima": null
+  }
+ ]
+}
