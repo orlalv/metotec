@@ -268,11 +268,10 @@ def codificacion(o):
     hs = [c[2] for c in capas if c[2] is not None]
     if hs != sorted(hs):
         add("C17", 1, "capas de nubes no ordenadas de la más baja a la más alta")
-    for k, (ns, c, h) in enumerate(capas[1:], 2):
-        minimo = {2: 3, 3: 5}.get(k, 0)
-        if ns is not None and ns < minimo and c != 9:
-            add("C18", 1, f"capa {k} con {ns} octas: la {'segunda' if k == 2 else 'tercera'} capa se informa con {minimo} octas o más (salvo Cb)")
-            break
+    # C18: con superposición, N no puede superar la suma de las capas (sí puede ser menor, porque las capas se tapan)
+    suma = sum(c[0] for c in capas if c[0] is not None)
+    if N is not None and N not in (9,) and capas and N > suma:
+        add("C18", 1, f"N {N} mayor que la suma de las capas ({suma} octas): falta una capa o la cantidad de alguna")
     if any(c[0] == 8 for c in capas[:-1]) and capas[-1][0] != 8 and capas.index(next(c for c in capas if c[0] == 8)) < len(capas) - 1:
         add("C19", 1, "hay capas por encima de una capa de 8 octas: con 8 octas no se ven las nubes superiores")
     if Nh is not None and N is not None and N != 9 and Nh > N:
