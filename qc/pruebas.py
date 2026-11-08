@@ -142,8 +142,10 @@ def vecinas_de(E, radio=120, dz=500, clusters=None):
             if a["codigo"] == b["codigo"]:
                 continue
             d = distancia_km(a["lat"], a["lon"], b["lat"], b["lon"])
-            if clusters:
-                ok = clusters.get(a["codigo"]) is not None and clusters.get(a["codigo"]) == clusters.get(b["codigo"]) and d <= 3 * radio
+            ga, gb = (clusters or {}).get(a["codigo"]), (clusters or {}).get(b["codigo"])
+            if ga is not None:
+                # misma agrupación climática y a menos de 200 km (las agrupaciones abarcan zonas muy amplias)
+                ok = ga == gb and d <= 200 and abs((a["alt"] or 0) - (b["alt"] or 0)) <= 2 * dz
             else:
                 ok = d <= radio and abs((a["alt"] or 0) - (b["alt"] or 0)) <= dz
             if ok:
