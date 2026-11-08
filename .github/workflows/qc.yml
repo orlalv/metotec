@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: "15,45 * * * *"
   workflow_dispatch:
+    inputs:
+      sensorial:
+        description: "Revisar observaciones (auto = solo entre los minutos 10 y 29)"
+        default: "auto"
 permissions:
   contents: write
 concurrency:
@@ -35,7 +39,7 @@ jobs:
             mkdir datos && cd datos && git init -q -b datos && git remote add origin "$URL"
           fi
       - name: Control de calidad
-        run: python qc/correr.py --datos datos --salida qc_ultimo.json
+        run: python qc/correr.py --datos datos --salida qc_ultimo.json --sensorial ${{ inputs.sensorial || 'auto' }}
       - name: Guardar datos
         if: always()
         run: |
