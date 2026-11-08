@@ -70,11 +70,23 @@ def es_sd(o, el, comp=None):
 class _V:
     """Valor que, si falta, hace falsas todas las comparaciones (como un dato ausente)."""
     def __init__(self, x): self.x = x
-    def _c(self, o, f):
+    JS = False        # el dato faltante se compara como en JavaScript (null < 1 es verdadero, null == 0 es falso)
+    COMODIN = False   # el dato faltante cumple cualquier comparación (beneficio de la duda)
+    def _c(self, o, f, igualdad=False):
         a, b = self.x, (o.x if isinstance(o, _V) else o)
-        return False if a is None or b is None or isinstance(a, str) or isinstance(b, str) else f(a, b)
-    __eq__ = lambda s, o: s._c(o, lambda a, b: a == b)
-    __ne__ = lambda s, o: s._c(o, lambda a, b: a != b)
+        a = None if isinstance(a, str) else a
+        b = None if isinstance(b, str) else b
+        if a is None or b is None:
+            if _V.COMODIN:
+                return True
+            if not _V.JS:
+                return False
+            if igualdad:
+                return f(a, b)
+            a, b = a or 0, b or 0
+        return f(a, b)
+    __eq__ = lambda s, o: s._c(o, lambda a, b: a == b, True)
+    __ne__ = lambda s, o: s._c(o, lambda a, b: a != b, True)
     __lt__ = lambda s, o: s._c(o, lambda a, b: a < b)
     __le__ = lambda s, o: s._c(o, lambda a, b: a <= b)
     __gt__ = lambda s, o: s._c(o, lambda a, b: a > b)
@@ -166,9 +178,17 @@ def reglas_sistema(o):
         if any((e.lower(), c.lower()) in sinDato and (e.lower(), c.lower()) not in conhash for e, c in refs):
             continue
         try:
-            ok = eval(code, {"__builtins__": {}}, env)
+            ok = bool(eval(code, {"__builtins__": {}}, env))
+            if not ok:                    # se confirma también como lo evalúa el sistema (dato faltante = null)
+                _V.JS = True
+                ok = bool(eval(code, {"__builtins__": {}}, env))
+            if not ok:                    # y que falle sea cual sea el valor de los campos Sin Dato
+                _V.JS, _V.COMODIN = False, True
+                ok = bool(eval(code, {"__builtins__": {}}, env))
         except Exception:
             continue
+        finally:
+            _V.JS = _V.COMODIN = False
         if not ok:
             out.append(("sistema", r["id"], 2 if r.get("obl") else 1, r["m"].replace("ERROR :", "").strip()))
     return out
