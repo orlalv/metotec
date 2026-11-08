@@ -1,0 +1,21 @@
+{
+ "version": "0.1",
+ "inicio": "2026-11-08T19:03:26+00:00",
+ "errores": [],
+ "estaciones": 133,
+ "con_datos": 120,
+ "registros": 4636,
+ "desde": "2026-11-08 18:01:00",
+ "hasta": "2026-11-08 18:55:00",
+ "horas_archivadas": 1,
+ "modelo": 6384,
+ "kv": "200",
+ "alertas": 14,
+ "resumen": {
+  "bien": 108,
+  "sospechoso": 8,
+  "erróneo": 4,
+  "sin datos": 13
+ },
+ "fin": "2026-11-08T19:04:29+00:00"
+}
