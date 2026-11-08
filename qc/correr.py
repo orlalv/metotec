@@ -14,7 +14,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
-import dmc, pruebas as P, modelo as MO, wrf as WRF
+import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN
 
 VERSION = "0.1"
 
@@ -61,12 +61,57 @@ def subir_kv(clave, texto):
     return f"{r.status_code}"
 
 
+ESTACIONES_OBS = ["180005", "200006", "220002", "230001", "270001", "270008", "290004", "320041", "330007", "330019", "330020", "330021",
+                  "330030", "330031", "330163", "340031", "360011", "360019", "370033", "380029", "390006", "410005", "430001", "430002",
+                  "430009", "450001", "450004", "450005", "510005", "520006", "530005", "550001", "950001"]
+
+
+def control_sensorial(E, raiz, pausa=0.3):
+    """Baja las observaciones de las estaciones con observador, las archiva y las revisa. Sube el resultado al KV (qc/sensorial)."""
+    import time, gzip
+    p = Path(raiz) / "sensoriales.json"
+    cods = [x["codigo"] for x in json.loads(p.read_text())["estaciones"] if x["horas"] > 0] if p.exists() else ESTACIONES_OBS
+    nombres = E.set_index("codigo")[["nombre", "oaci", "lat", "lon"]].to_dict("index")
+    resultado, n_obs, fallas = [], 0, 0
+    archivo = {}
+    for cod in cods:
+        try:
+            obs = SEN.leer(dmc.descargar(f"getRecientesSaclim/{cod}", timeout=90))
+        except Exception:
+            fallas += 1
+            continue
+        n_obs += len(obs)
+        A = leer_archivo(raiz, pd.Timestamp.utcnow().tz_localize(None), horas=7)
+        A = A[A["codigo"] == cod] if len(A) else A
+        hall = SEN.revisar(cod, obs, A, horas=12)
+        for t, o in obs.items():
+            archivo.setdefault(t.strftime("%Y/%m/%d"), {}).setdefault(cod, {})[t.strftime("%H")] = {k: x for k, x in o.items() if k != "_qa"}
+        m = nombres.get(cod, {})
+        resultado.append(dict(codigo=cod, nombre=m.get("nombre"), oaci=m.get("oaci"), lat=m.get("lat"), lon=m.get("lon"),
+                              ultima=str(max(obs)) if obs else None, horas=len(obs), hallazgos=hall,
+                              nivel=max([h["nivel"] for h in hall], default=0)))
+        time.sleep(pausa)
+    # archivo de observaciones (sin identificador del observador)
+    for dia, d in archivo.items():
+        f = Path(raiz) / "sensorial" / f"{dia}.json.gz"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        previo = json.loads(gzip.decompress(f.read_bytes())) if f.exists() else {}
+        for cod, hs in d.items():
+            previo.setdefault(cod, {}).update(hs)
+        f.write_bytes(gzip.compress(json.dumps(previo, ensure_ascii=False, sort_keys=True).encode("utf-8"), mtime=0))
+    txt = json.dumps(dict(generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), estaciones=resultado), ensure_ascii=False, default=str)
+    Path("qc_sensorial.json").write_text(txt, encoding="utf-8")
+    return {"estaciones": len(resultado), "observaciones": n_obs, "fallas": fallas, "hallazgos": sum(len(r["hallazgos"]) for r in resultado),
+            "kv": subir_kv("qc/sensorial", txt)}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--datos", default="datos")
     ap.add_argument("--json")
     ap.add_argument("--sin-modelo", action="store_true")
     ap.add_argument("--salida", default="qc_ultimo.json")
+    ap.add_argument("--sensorial", choices=["auto", "si", "no"], default="auto")
     a = ap.parse_args()
     estado = {"version": VERSION, "inicio": datetime.now(timezone.utc).isoformat(timespec="seconds"), "errores": []}
 
@@ -152,6 +197,12 @@ def main():
                fuentes={"estaciones": "DMC, red automática", "modelo": " + ".join(x for x in ["WRF-DMC" if W is not None and len(W) else "", "Open-Meteo" if M is not None else ""] if x) or None, "satelite": None},
                resumen={k: sum(1 for e in est if e["estado"] == k) for k in ("bien", "sospechoso", "erróneo", "sin datos")},
                estaciones=est)
+    hacer = a.sensorial == "si" or (a.sensorial == "auto" and datetime.now(timezone.utc).minute >= 30 and not a.json)
+    if hacer:
+        try:
+            estado["sensorial"] = control_sensorial(E, a.datos)
+        except Exception:
+            estado["errores"].append(f"sensorial: {traceback.format_exc(limit=2)}")
     txt = json.dumps(res, ensure_ascii=False, default=str)
     Path(a.salida).write_text(txt, encoding="utf-8")
     estado["kv"] = subir_kv("qc/ultimo", txt)
