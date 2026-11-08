@@ -232,13 +232,14 @@ const diaISO = d => d.toISOString().slice(0, 10);
 function hInit(){
   if ($("#hist").dataset.ok) return; $("#hist").dataset.ok = 1;
   const hoy = new Date(), des = new Date(hoy - 6 * 864e5);
-  $("#hist").innerHTML = `<div class="htools"><label>Desde</label><input type="date" id="hDesde" value="${diaISO(des)}"><label>Hasta</label><input type="date" id="hHasta" value="${diaISO(hoy)}">
+  $("#hist").innerHTML = `<div class="htools"><button id="hVolver" style="border-color:var(--oro);color:var(--oro)">← Volver al mapa</button><label>Desde</label><input type="date" id="hDesde" value="${diaISO(des)}"><label>Hasta</label><input type="date" id="hHasta" value="${diaISO(hoy)}">
     <select id="hFuente"><option value="obs">Observaciones</option><option value="ema">Estaciones automáticas</option></select>
     <select id="hEstado"><option value="">Todos los estados</option><option value="abierto">Abiertos</option><option value="corregido">Corregidos</option></select>
     <select id="hTipo"><option value="">Todos los tipos</option></select>
     <input id="hBuscar" placeholder="Estación o regla…" style="min-width:180px"><button id="hCargar">Actualizar</button><button id="hCsv">Descargar CSV</button></div>
     <div class="hres" id="hRes"></div><div class="hcols"><div id="hEst"></div><div id="hTab"></div></div>`;
   ["hFuente", "hEstado", "hTipo"].forEach(i => $("#" + i).addEventListener("change", () => { if (i === "hFuente") hTipos(); hPintar(); }));
+  $("#hVolver").addEventListener("click", () => document.querySelector('.modos button[data-m="ema"]').click());
   $("#hBuscar").addEventListener("input", hPintar); $("#hCargar").addEventListener("click", hCargar); $("#hCsv").addEventListener("click", hCsv);
   $("#hDesde").addEventListener("change", hCargar); $("#hHasta").addEventListener("change", hCargar);
   $("#hist").addEventListener("click", ev => { const t = ev.target.closest("tr.hs"); if (t){ hEst = hEst === t.dataset.c ? "" : t.dataset.c; hPintar(); } });
