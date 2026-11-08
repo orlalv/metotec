@@ -267,7 +267,12 @@ function colDif(d, e){
 function campoSerie(e, fila, c){ const i = (R.serie_campos || []).indexOf(c); return i < 0 || !fila ? null : fila[i]; }
 function refMod(v, ref){ return ref === "w" && !MV[v].w ? "om" : ref; }
 function valMod(e, v, ref, fila){
-  const SS = e.serie || []; fila = fila || SS[SS.length - 1];
+  const SS = e.serie || [];
+  if (!fila){                                  // la hora más reciente que tenga dato de la estación y del modelo (la última hora puede venir incompleta)
+    const r0 = refMod(v, ref), mc = r0 === "w" ? [v + "_w"] : r0 === "om" ? [v + "_om"] : [v + "_w", v + "_om"];
+    fila = [...SS].reverse().find(f => campoSerie(e, f, v) != null && mc.some(c => campoSerie(e, f, c) != null))
+        || [...SS].reverse().find(f => campoSerie(e, f, v) != null) || SS[SS.length - 1];
+  }
   let est = campoSerie(e, fila, v), w = MV[v].w ? campoSerie(e, fila, v + "_w") : null, om = campoSerie(e, fila, v + "_om");
   if (!fila){ const va = e.valores || {}, mo = e.modelo || {};            // sin serie: último valor y modelo del resumen
     est = va[v] ?? null; w = MV[v].w ? (mo[v + "_wrf"] ?? null) : null; om = mo[v] ?? null; }
