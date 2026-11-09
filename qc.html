@@ -400,11 +400,12 @@ function hInit(){
     <select id="hFuente"><option value="obs">Observaciones</option><option value="ema">Estaciones automáticas</option></select>
     <select id="hEstado"><option value="">Todos los estados</option><option value="abierto">Abiertos</option><option value="corregido">Corregidos</option></select>
     <select id="hTipo"><option value="">Todos los tipos</option></select>
-    <input id="hBuscar" placeholder="Estación o regla…" style="min-width:180px"><button id="hCargar">Actualizar</button><button id="hCsv">Descargar CSV</button></div>
+    <input id="hBuscar" placeholder="Estación o regla…" style="min-width:180px"><button id="hCargar">Actualizar</button><button id="hCsv">Descargar CSV</button><button id="hResumen" style="border-color:var(--oro);color:var(--oro)">Resumen para informe</button></div>
+    <div id="hInf" hidden style="background:var(--panel);border:1px solid var(--oro);border-radius:10px;padding:12px 14px;margin-bottom:12px"></div>
     <div class="hres" id="hRes"></div><div class="hcols"><div id="hEst"></div><div id="hTab"></div></div>`;
   ["hFuente", "hEstado", "hTipo"].forEach(i => $("#" + i).addEventListener("change", () => { if (i === "hFuente") hTipos(); hPintar(); }));
   $("#hVolver").addEventListener("click", () => document.querySelector('.modos button[data-m="ema"]').click());
-  $("#hBuscar").addEventListener("input", hPintar); $("#hCargar").addEventListener("click", hCargar); $("#hCsv").addEventListener("click", hCsv);
+  $("#hBuscar").addEventListener("input", hPintar); $("#hCargar").addEventListener("click", hCargar); $("#hCsv").addEventListener("click", hCsv); $("#hResumen").addEventListener("click", hResumen);
   $("#hDesde").addEventListener("change", hCargar); $("#hHasta").addEventListener("change", hCargar);
   $("#hist").addEventListener("click", ev => { const b = ev.target.closest(".rv"); if (b){ revisar(b.dataset.d, b.dataset.i, b.classList.contains("on") ? "" : b.dataset.v); return; }
     const t = ev.target.closest("tr.hs"); if (t){ hEst = hEst === t.dataset.c ? "" : t.dataset.c; hPintar(); } });
@@ -463,6 +464,39 @@ function hPintar(){
       <td style="white-space:nowrap"><button class="rv ${x._rev === "real" ? "on r" : ""}" data-d="${x._dia}" data-i="${esc(x._id)}" data-v="real" title="Era un error real">✓ real</button> <button class="rv ${x._rev === "falsa" ? "on f" : ""}" data-d="${x._dia}" data-i="${esc(x._id)}" data-v="falsa" title="Falsa alarma">✗ falsa</button></td></tr>`).join("") + `</table>`
     + (T.length > MAX ? `<p style="color:var(--mu)">Se muestran ${MAX} de ${T.length}; descargue el CSV para verlos todos.</p>` : "")
     : `<p style="color:var(--mu)">Sin hallazgos guardados con ese filtro. El historial se empezó a guardar el 8 de noviembre de 2026.</p>`;
+}
+function hResumen(){
+  if (!HI) return;
+  const fmt = n => n.toLocaleString("es-CL");
+  const O = []; const A = []; const RV = HI.revisiones || {};
+  Object.entries(HI.dias).forEach(([d, x]) => { Object.entries(x.obs || {}).forEach(([id, h]) => O.push({...h, _rev: ((RV[d] || {})[id] || {}).v})); Object.values(x.ema || {}).forEach(h => A.push(h)); });
+  const ab = O.filter(h => h.estado === "abierto"), co = O.filter(h => h.estado === "corregido");
+  const tiempos = co.map(h => (Date.parse(h.corregido.replace(" ", "T") + ":00Z") - Date.parse(h.primera.replace(" ", "T") + ":00Z")) / 60000).filter(x => x >= 0).sort((a, b) => a - b);
+  const med = tiempos.length ? tiempos[Math.floor(tiempos.length / 2)] : null;
+  const top = (L, k, n = 5) => { const c = {}; L.forEach(h => { const v = k(h); c[v] = (c[v] || 0) + 1; }); return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, n); };
+  const tipo = h => TIPO[h.tipo] || h.tipo, prue = h => PR[h.prueba] || h.prueba;
+  const rv = O.concat(A).filter(h => h._rev), re = rv.filter(h => h._rev === "real").length;
+  const lin = [
+    `Control de calidad · ${HI.desde} a ${HI.hasta}`,
+    ``,
+    `OBSERVACIONES (33 estaciones con observador)`,
+    `- ${fmt(O.length)} hallazgos: ${fmt(co.length)} corregidos (${O.length ? Math.round(100 * co.length / O.length) : 0} %) y ${fmt(ab.length)} abiertos.`,
+    med != null ? `- Tiempo mediano hasta la corrección: ${med < 60 ? Math.round(med) + " min" : (med / 60).toFixed(1) + " h"}.` : `- Sin correcciones registradas en el período.`,
+    `- Estaciones con más hallazgos: ${top(O, h => h.nombre || h.codigo).map(([k, v]) => `${k} (${v})`).join(", ") || "—"}.`,
+    `- Por tipo: ${top(O, tipo, 6).map(([k, v]) => `${k} ${v}`).join(" · ") || "—"}.`,
+    `- Reglas más frecuentes: ${top(O, h => h.regla).map(([k, v]) => `${k} (${v})`).join(", ") || "—"}.`,
+    ``,
+    `ESTACIONES AUTOMÁTICAS`,
+    `- ${fmt(A.length)} avisos en ${new Set(A.map(h => h.codigo)).size} estaciones.`,
+    `- Por prueba: ${top(A, prue, 8).map(([k, v]) => `${k} ${v}`).join(" · ") || "—"}.`,
+    `- Estaciones con más avisos: ${top(A, h => h.nombre || h.codigo).map(([k, v]) => `${k} (${v})`).join(", ") || "—"}.`,
+    ``,
+    rv.length ? `DESEMPEÑO: ${rv.length} avisos revisados a mano, ${Math.round(100 * re / rv.length)} % fueron errores reales.` : `DESEMPEÑO: aún no hay avisos revisados a mano.`,
+  ];
+  const txt = lin.join("\n");
+  $("#hInf").hidden = false;
+  $("#hInf").innerHTML = `<pre style="white-space:pre-wrap;font:13.5px/1.5 inherit;margin:0">${esc(txt)}</pre><button id="hCopiar" style="margin-top:8px">Copiar texto</button>`;
+  $("#hCopiar").onclick = async () => { try { await navigator.clipboard.writeText(txt); $("#hCopiar").textContent = "¡Copiado!"; } catch (e) { prompt("Copie el resumen:", txt); } };
 }
 function hCsv(){
   const obs = $("#hFuente").value === "obs", S = hSel().filter(x => !hEst || x.codigo === hEst);
