@@ -43,7 +43,9 @@ def cercania(E, js, horas=3, radio=10):
         return {}
     ahora = datetime.now(timezone.utc)
     lim = (ahora - timedelta(hours=horas)).strftime("%Y-%m-%dT%H:%MZ")
-    F = [f for f in js.get("focos", []) if not f.get("industrial") and f["t"] >= lim]
+    R = [i for i in js.get("incendios", []) if i.get("relevante", True)]          # solo incendios relevantes, no quemas chicas
+    F = [f for f in js.get("focos", []) if not f.get("industrial") and f["t"] >= lim
+         and any(_km(f["lat"], f["lon"], i["lat"], i["lon"]) <= 8 for i in R)]
     V = js.get("viento") or []
     out = {}
     for r in E.to_dict("records"):
