@@ -47,18 +47,22 @@ async function cargar(cod, dia, local){
   const fin = ini + 864e5, d0 = Date.UTC(y, m - 1, d), filas = [];
   const a = Math.min(ini, d0), b = Math.max(fin, d0 + 864e5);           // siempre se lee también el día UTC completo (extremas sinópticas)
   const horas = []; for (let t = a; t <= b; t += 3600e3) horas.push(t);
-  const txt = await Promise.all(horas.map(t => t <= Date.now() ? hora(t) : null));
-  let cab = null, sinArchivo = 0;
-  txt.forEach((tx, i) => {
-    if (!tx){ if (horas[i] < Date.now() - 3600e3) sinArchivo++; return; }
-    const ls = tx.split("\n"); cab = cab || ls[0].split(",");
-    const c0 = ls[0].split(","), pre = cod + ",";
-    for (let i = 1; i < ls.length; i++) if (ls[i].startsWith(pre)){
-      const v = ls[i].split(","), o = {t: Date.parse(v[1].replace(" ", "T") + "Z")};
-      c0.forEach((c, j) => { if (j > 1) o[c] = v[j] === "" ? null : +v[j]; });
-      filas.push(o);
-    }
-  });
+  let sinArchivo = 0;
+  const leer = (c0, lineas) => lineas.forEach(l => { const v = l.split(","), o = {t: Date.parse(v[1].replace(" ", "T") + "Z")};
+    c0.forEach((c, j) => { if (j > 1) o[c] = v[j] === "" ? null : +v[j]; }); filas.push(o); });
+  let api = null;                                   // primero el servidor de METOTEC: una sola descarga
+  try { const iso = t => new Date(t).toISOString().slice(0, 13);
+    const r = await fetch(`/api/minutarios?cod=${cod}&desde=${iso(a)}&hasta=${iso(b)}`); if (r.ok) api = await r.json(); } catch (e) {}
+  if (api && api.cab){
+    leer(api.cab.split(","), api.filas);
+    sinArchivo = api.faltan.filter(k => Date.parse(k + ":00:00Z") < Date.now() - 3600e3).length;
+  } else {                                          // si no responde, directo desde GitHub hora por hora
+    const txt = await Promise.all(horas.map(t => t <= Date.now() ? hora(t) : null));
+    txt.forEach((tx, i) => {
+      if (!tx){ if (horas[i] < Date.now() - 3600e3) sinArchivo++; return; }
+      const ls = tx.split("\n"); leer(ls[0].split(","), ls.slice(1).filter(l => l.startsWith(cod + ",")));
+    });
+  }
   const vistos = new Set(), T = filas.filter(o => !vistos.has(o.t) && vistos.add(o.t)).sort((p, q) => p.t - q.t);
   marcarPicos(T);
   return {cod, dia, local, ini, fin, F: T.filter(o => o.t > ini && o.t <= fin), T, sinArchivo, horas: horas.length};
