@@ -183,7 +183,9 @@ function init(){
   $("#mVolver").addEventListener("click", () => document.querySelector('.modos button[data-m="ema"]').click());
   $("#mVer").addEventListener("click", generar); $("#mEst").addEventListener("change", generar); $("#mDia").addEventListener("change", generar); $("#mDiaT").addEventListener("change", generar);
   $("#mCsv").addEventListener("click", csv);
-  s.addEventListener("change", ev => { const c = ev.target.closest(".mcmp"); if (c){ const k = c.dataset.c;
+  s.addEventListener("toggle", ev => { const d = ev.target; if (d.classList && d.classList.contains("mblo")) d.open ? CERR.delete(d.dataset.k) : CERR.add(d.dataset.k); }, true);
+  s.addEventListener("change", ev => { if (ev.target.id === "mSoloDif"){ soloDif = ev.target.checked; grafico(); return; }
+    const c = ev.target.closest(".mcmp"); if (c){ const k = c.dataset.c;
       if (c.checked){ if (M.cmp.length >= 2) M.cmp.shift(); M.cmp.push(k); } else M.cmp = M.cmp.filter(x => x !== k); vecinas(); }
     if (ev.target.id === "mAgr"){ const k = buscarCod(ev.target.value);
       if (k && k !== M.cod && !M.vec.includes(k)){ M.vec.push(k); if (M.cmp.length < 2) M.cmp.push(k); } ev.target.value = ""; vecinas(); } });
@@ -214,17 +216,20 @@ function pintar(){
       ${tarjeta("Mínima del período", d.Tmin, "°C")}${tarjeta("Máxima del período", d.Tmax, "°C")}${tarjeta("Racha máxima", d.fx, "kt")}${tarjeta("Humedad mínima", d.HRmin, "%")}${tarjeta("QFE mínimo", d.Pmin, "hPa")}${tarjeta("QFE máximo", d.Pmax, "hPa")}</div>
     <div class="hres">${r.per.map(p => `<div><span>Agua caída ${String(p.a).padStart(2, "0")}–${String(p.a + 6).padStart(2, "0")} UTC</span><b>${p.n ? f1(p.s || 0) + " mm" : "—"}</b><span>${p.inf != null ? "RRR6 informada " + f1(p.inf) : "sin RRR6 informada"}${p.n ? ` · ${p.n} reg.` : ""}</span></div>`).join("")}
       <div><span>Total del período</span><b>${d.rr != null ? f1(d.rr) + " mm" : "—"}</b><span>suma de agua caída del minuto</span></div></div>
-    <h4 style="margin:14px 0 6px">Inconsistencias en la serie (${M.I.length})</h4>
-    ${M.I.length ? `<table><tr><th>Nivel</th><th>Desde (UTC)</th><th>Hasta</th><th>Elemento</th><th>Detalle</th></tr>${M.I.map(i => `<tr class="inc" data-t="${i.t1}" style="cursor:pointer"><td><span class="pb" style="background:${i.nivel === 2 ? "#eb5757" : "#f2c94c"};color:#111">${i.nivel === 2 ? "Erróneo" : "Sospechoso"}</span></td><td>${hhmm(i.t1)}</td><td>${i.t2 !== i.t1 ? hhmm(i.t2) : ""}</td><td>${esc(NOM[i.v] || "General")}</td><td>${esc(i.msg)}</td></tr>`).join("")}</table>` : `<p style="color:#6fcf97">Sin inconsistencias en la serie.</p>`}
-    <h4 style="margin:16px 0 6px">Estaciones cercanas</h4>
-    <div class="htools"><input id="mAgr" list="mLista" placeholder="Agregar otra estación…" style="min-width:260px"><span style="color:var(--mu);font-size:12.5px">Marque hasta 2 para compararlas minuto a minuto con ${esc(M.nombre)}.</span></div>
-    <div id="mVec"><p style="color:var(--mu)">Buscando las más cercanas…</p></div>
-    <h4 style="margin:16px 0 6px">Gráfico</h4><div class="htools">${vars.filter(v => !["rr6", "rr24", "Tn12", "Tx12"].includes(v[0])).map(v => `<button data-mv="${v[0]}" ${v[0] === mVar ? 'style="border-color:var(--oro);color:var(--oro)"' : ""}>${v[1]}</button>`).join("")}</div><div id="mGraf"></div><div id="mCompTab"></div>
-    <h4 style="margin:16px 0 6px">Datos minutarios</h4>
-    <div style="max-height:60vh;overflow:auto;border:1px solid var(--bd);border-radius:8px"><table class="mtab"><tr><th>UTC</th><th>Local</th>${vars.map(v => `<th>${v[1]}<br><small>${v[2]}</small></th>`).join("")}</tr>
-    ${M.F.map(o => `<tr id="m${o.t}"><td>${hhmm(o.t)}</td><td>${loc(o.t)}</td>${vars.map(v => { const n = (mal[o.t] || {})[v[0]]; return `<td${n ? ` style="background:${n === 2 ? "#5a1f1f" : "#4a3f12"}"` : ""}>${o[v[0]] ?? ""}</td>`; }).join("")}</tr>`).join("")}</table></div>`;
+    ${bloque("inc", `Inconsistencias en la serie (${M.I.length})`, M.I.length ? `<table><tr><th>Nivel</th><th>Desde (UTC)</th><th>Hasta</th><th>Elemento</th><th>Detalle</th></tr>${M.I.map(i => `<tr class="inc" data-t="${i.t1}" style="cursor:pointer"><td><span class="pb" style="background:${i.nivel === 2 ? "#eb5757" : "#f2c94c"};color:#111">${i.nivel === 2 ? "Erróneo" : "Sospechoso"}</span></td><td>${hhmm(i.t1)}</td><td>${i.t2 !== i.t1 ? hhmm(i.t2) : ""}</td><td>${esc(NOM[i.v] || "General")}</td><td>${esc(i.msg)}</td></tr>`).join("")}</table>` : `<p style="color:#6fcf97">Sin inconsistencias en la serie.</p>`)}
+    ${bloque("vec", "Estaciones cercanas", `<div class="htools"><input id="mAgr" list="mLista" placeholder="Agregar otra estación…" style="min-width:260px"><span style="color:var(--mu);font-size:12.5px">Marque hasta 2 para compararlas minuto a minuto con ${esc(M.nombre)}.</span></div>
+    <div id="mVec"><p style="color:var(--mu)">Buscando las más cercanas…</p></div>`)}
+    ${bloque("graf", "Gráfico", `<div class="htools">${vars.filter(v => !["rr6", "rr24", "Tn12", "Tx12"].includes(v[0])).map(v => `<button data-mv="${v[0]}" ${v[0] === mVar ? 'style="border-color:var(--oro);color:var(--oro)"' : ""}>${v[1]}</button>`).join("")}</div><div id="mGraf"></div>`)}<div id="mCompTab"></div>
+    ${bloque("datos", "Datos minutarios", `<div style="max-height:60vh;overflow:auto;border:1px solid var(--bd);border-radius:8px"><table class="mtab"><tr><th>UTC</th><th>Local</th>${vars.map(v => `<th>${v[1]}<br><small>${v[2]}</small></th>`).join("")}</tr>
+    ${M.F.map(o => `<tr id="m${o.t}"><td>${hhmm(o.t)}</td><td>${loc(o.t)}</td>${vars.map(v => { const n = (mal[o.t] || {})[v[0]]; return `<td${n ? ` style="background:${n === 2 ? "#5a1f1f" : "#4a3f12"}"` : ""}>${o[v[0]] ?? ""}</td>`; }).join("")}</tr>`).join("")}</table></div>`)}`;
   grafico(); vecinas();
 }
+/* bloques que se pliegan: se recuerda cuáles cerró el usuario */
+const CERR = new Set();
+const bloque = (k, titulo, html) => `<details class="mblo" data-k="${k}" ${CERR.has(k) ? "" : "open"}><summary>${titulo}</summary><div class="mcont">${html}</div></details>`;
+/* umbral de diferencia entre estaciones por variable (se marca desde 1 umbral; fuerte desde 2) */
+const UMB = {T: 1, Td: 2, HR: 10, P_est: .5, P_mar: 1, P_std: .5, ff10: 5, fx10: 8, dd10: 45, rr1m: .2, Rad: 100};
+let soloDif = false;
 /* ---------- estaciones cercanas y comparación ---------- */
 const DC = new Map(), COLS = ["#C9A54C", "#56CCF2", "#EB5757"];
 const km = (a, b) => 6371 * Math.hypot((b.lat - a.lat) * Math.PI / 180, (b.lon - a.lon) * Math.PI / 180 * Math.cos(a.lat * Math.PI / 180));
@@ -284,11 +289,16 @@ function tablaComp(S, series){
   const tiempos = [...new Set(base.map(p => p[0]))].filter(t => t > M.ini && t <= M.fin).sort((a, b) => a - b);
   const dif = S.slice(1).map((D, j) => { const d = tiempos.map(t => idx[0].has(t) && idx[j + 1].has(t) ? idx[j + 1].get(t) - idx[0].get(t) : null).filter(x => x != null);
     return d.length ? {m: d.reduce((a, b) => a + b, 0) / d.length, n: d.length, max: d.reduce((a, b) => Math.abs(b) > Math.abs(a) ? b : a, 0)} : null; });
-  $("#mCompTab").innerHTML = `<div class="hres" style="margin-top:10px">${S.slice(1).map((D, j) => `<div><span style="color:${COLS[j + 1]}">● ${esc(D.nombre)} − ${esc(M.nombre)}</span><b>${dif[j] ? (dif[j].m > 0 ? "+" : "") + f1(dif[j].m) + " " + UNI[v] : "—"}</b><span>${dif[j] ? `diferencia media en ${dif[j].n} min · mayor ${dif[j].max > 0 ? "+" : ""}${f1(dif[j].max)}` : "sin minutos en común"}</span></div>`).join("")}</div>
-    <h4 style="margin:10px 0 6px">Comparación minuto a minuto · ${NOM[v]} (${UNI[v]})</h4>
+  const U = UMB[v] || Infinity, dd = (a, b) => v === "dd10" ? ((b - a + 540) % 360) - 180 : b - a;
+  const col = d => d == null ? "" : Math.abs(d) >= 2 * U ? "#6b2020" : Math.abs(d) >= U ? "#5a4a12" : Math.abs(d) >= U / 2 ? "#1f3a66" : "";
+  const filasT = tiempos.filter(t => !soloDif || idx.slice(1).some(m => { const a = idx[0].get(t), b = m.get(t); return a != null && b != null && Math.abs(dd(a, b)) >= U; }));
+  $("#mCompTab").innerHTML = bloque("comp", `Comparación entre estaciones · ${NOM[v]}${v === "rr1m" ? " acumulada" : ""} (${UNI[v]})`, `<div class="hres" style="margin-top:4px">${S.slice(1).map((D, j) => `<div><span style="color:${COLS[j + 1]}">● ${esc(D.nombre)} − ${esc(M.nombre)}</span><b>${dif[j] ? (dif[j].m > 0 ? "+" : "") + f1(dif[j].m) + " " + UNI[v] : "—"}</b><span>${dif[j] ? `diferencia media en ${dif[j].n} min · mayor ${dif[j].max > 0 ? "+" : ""}${f1(dif[j].max)}` : "sin minutos en común"}</span></div>`).join("")}</div>
+    <div class="htools" style="font-size:12.5px;color:var(--mu)"><label style="display:flex;gap:6px;align-items:center;cursor:pointer"><input type="checkbox" id="mSoloDif" ${soloDif ? "checked" : ""}> Solo filas con diferencia de ${U === Infinity ? "—" : U} ${UNI[v]} o más</label>
+      <span><i style="display:inline-block;width:12px;height:12px;background:#1f3a66;vertical-align:-2px"></i> ≥ ${U / 2}</span><span><i style="display:inline-block;width:12px;height:12px;background:#5a4a12;vertical-align:-2px"></i> ≥ ${U}</span><span><i style="display:inline-block;width:12px;height:12px;background:#6b2020;vertical-align:-2px"></i> ≥ ${2 * U} ${UNI[v]}</span><span>${filasT.length} filas</span></div>
     <div style="max-height:45vh;overflow:auto;border:1px solid var(--bd);border-radius:8px"><table class="mtab mcomp"><tr><th>UTC</th><th>Local</th>${S.map((D, i) => `<th style="color:${COLS[i]}">${esc(D.nombre)}</th>`).join("")}${S.slice(1).map((D, j) => `<th>Dif. ${j + 2} − 1</th>`).join("")}</tr>
-    ${tiempos.map(t => { const a = idx[0].get(t); return `<tr><td>${hhmm(t)}</td><td>${loc(t)}</td>${idx.map(m => `<td>${m.has(t) ? f1(m.get(t)) : ""}</td>`).join("")}${idx.slice(1).map(m => { const b = m.get(t), d = a != null && b != null ? b - a : null;
-      return `<td${d != null && Math.abs(d) > ({T: 3, Td: 4, HR: 15, P_est: 2, P_mar: 2, P_std: 2}[v] || Infinity) ? ' style="background:#4a3f12"' : ""}>${d == null ? "" : (d > 0 ? "+" : "") + f1(d)}</td>`; }).join("")}</tr>`; }).join("")}</table></div>`;
+    ${filasT.map(t => { const a = idx[0].get(t), ds = idx.slice(1).map(m => { const b = m.get(t); return a != null && b != null ? dd(a, b) : null; });
+      return `<tr><td>${hhmm(t)}</td><td>${loc(t)}</td>${idx.map((m, i) => { const c = i ? col(ds[i - 1]) : "";
+        return `<td${c ? ` style="background:${c}"` : ""}>${m.has(t) ? f1(m.get(t)) : ""}</td>`; }).join("")}${ds.map(d => `<td${col(d) ? ` style="background:${col(d)};font-weight:700"` : ""}>${d == null ? "" : (d > 0 ? "+" : "") + f1(d)}</td>`).join("")}</tr>`; }).join("")}</table></div>`);
 }
 function csv(){
   if (!M) return;
