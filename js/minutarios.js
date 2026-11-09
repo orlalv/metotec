@@ -32,8 +32,18 @@ async function hora(t){
 }
 async function estaciones(){
   if (EST.length) return EST;
-  try { const r = await fetch(RAW + "estaciones.json"); const j = await r.json(); EST = (Array.isArray(j) ? j : j.estaciones || []).sort((a, b) => a.codigo.localeCompare(b.codigo)); } catch (e) { EST = []; }
+  for (const url of ["/api/minutarios?estaciones=1", RAW + "estaciones.json"]){
+    try { const r = await fetch(url); const j = await r.json(); EST = (Array.isArray(j) ? j : j.estaciones || []).sort((a, b) => a.codigo.localeCompare(b.codigo)); if (EST.length) break; } catch (e) {}
+  }
   return EST;
+}
+const sinTilde = x => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+function buscarCod(q){                 // acepta «330006 · nombre», el código solo o parte del nombre (sin importar tildes)
+  q = String(q || "").trim(); if (!q) return null;
+  const m = q.match(/^(\d+)/);
+  if (m){ const e = EST.find(x => x.codigo === m[1]) || EST.find(x => x.codigo.startsWith(m[1])); return e ? e.codigo : (EST.length ? null : m[1]); }
+  const t = sinTilde(q), e = EST.find(x => sinTilde(x.nombre).startsWith(t)) || EST.find(x => sinTilde(x.nombre).includes(t)) || EST.find(x => (x.oaci || "").toLowerCase() === t);
+  return e ? e.codigo : null;
 }
 function offsetChile(t){            // horas de diferencia de Chile continental con UTC en esa fecha (3 o 4)
   const s = new Date(t).toLocaleString("en-US", {timeZone: "America/Santiago", hour12: false, hour: "2-digit"});
@@ -175,15 +185,16 @@ function init(){
   $("#mCsv").addEventListener("click", csv);
   s.addEventListener("change", ev => { const c = ev.target.closest(".mcmp"); if (c){ const k = c.dataset.c;
       if (c.checked){ if (M.cmp.length >= 2) M.cmp.shift(); M.cmp.push(k); } else M.cmp = M.cmp.filter(x => x !== k); vecinas(); }
-    if (ev.target.id === "mAgr"){ const q = ev.target.value.trim(), k = (q.match(/^\d{6}/) || [])[0] || (EST.find(e => (e.nombre || "").toLowerCase().includes(q.toLowerCase())) || {}).codigo;
+    if (ev.target.id === "mAgr"){ const k = buscarCod(ev.target.value);
       if (k && k !== M.cod && !M.vec.includes(k)){ M.vec.push(k); if (M.cmp.length < 2) M.cmp.push(k); } ev.target.value = ""; vecinas(); } });
   s.addEventListener("click", ev => { const b = ev.target.closest("[data-mv]"); if (b){ mVar = b.dataset.mv; grafico(); }
     const qx = ev.target.closest(".mqui"); if (qx){ M.vec = M.vec.filter(x => x !== qx.dataset.c); M.cmp = M.cmp.filter(x => x !== qx.dataset.c); vecinas(); return; }
     const i = ev.target.closest("tr.inc"); if (i){ const r = document.getElementById("m" + i.dataset.t); if (r){ r.scrollIntoView({block: "center"}); r.classList.add("vis"); setTimeout(() => r.classList.remove("vis"), 2500); } } });
 }
 async function generar(){
-  const q = $("#mEst").value.trim(), cod = (q.match(/^\d{6}/) || [])[0] || (EST.find(e => (e.nombre || "").toLowerCase().includes(q.toLowerCase())) || {}).codigo;
-  if (!cod){ $("#mOut").innerHTML = `<p style="color:var(--mu)">Elija una estación de la lista.</p>`; return; }
+  await estaciones();
+  const cod = buscarCod($("#mEst").value);
+  if (!cod){ $("#mOut").innerHTML = `<p style="color:var(--mu)">No encontré esa estación. Escriba el código (6 dígitos), el nombre o el OACI.</p>`; return; }
   $("#mOut").innerHTML = `<p style="color:var(--mu)">Leyendo 25 horas de datos…</p>`;
   M = await cargar(cod, $("#mDia").value, $("#mDiaT").value === "loc");
   const e = EST.find(x => x.codigo === cod) || {};

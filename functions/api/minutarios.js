@@ -6,6 +6,10 @@ const RAW = "https://raw.githubusercontent.com/orlalv/metotec/datos/ema/";
 
 export async function onRequestGet({ request }){
   const u = new URL(request.url), cod = (u.searchParams.get("cod") || "").trim();
+  if (u.searchParams.has("estaciones")){            // catálogo de estaciones (código, nombre, coordenadas, altura)
+    const r = await fetch("https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json", { cf: { cacheTtl: 3600, cacheEverything: true } });
+    return new Response(r.ok ? await r.text() : "[]", { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=3600" } });
+  }
   const desde = Date.parse((u.searchParams.get("desde") || "") + ":00:00Z"), hasta = Date.parse((u.searchParams.get("hasta") || "") + ":00:00Z");
   if (!/^\d{4,7}$/.test(cod) || !desde || !hasta || hasta < desde || hasta - desde > 49 * 3600e3)
     return new Response(JSON.stringify({ error: "parámetros: cod, desde y hasta (AAAA-MM-DDTHH, máx. 49 h)" }), { status: 400, headers: { "content-type": "application/json" } });
