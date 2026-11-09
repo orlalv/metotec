@@ -65,7 +65,8 @@ async function cargar(cod, dia, local){
   const sub = subidos(cod, a, b);                   // 1) archivos de la DMC que subió el usuario
   let api = null, origen = "archivo METOTEC", errApi = "";
   if (sub.length){ filas.push(...sub); origen = "archivos subidos"; }
-  else try {                                        // 2) el servidor de METOTEC: una sola descarga const iso = t => new Date(t).toISOString().slice(0, 13);
+  else try {                                        // 2) el servidor de METOTEC: una sola descarga
+    const iso = t => new Date(t).toISOString().slice(0, 13);
     const ac = new AbortController(), to = setTimeout(() => ac.abort(), 20000);          // si el servidor tarda, se usa el respaldo
     const r = await fetch(`/api/minutarios?cod=${cod}&desde=${iso(a)}&hasta=${iso(b)}`, {signal: ac.signal, cache: "no-store"});
     if (r.ok) api = await r.json(); else errApi = "el servidor respondió " + r.status; clearTimeout(to); } catch (e) { errApi = e.name === "AbortError" ? "el servidor tardó más de 20 s" : e.message; }
