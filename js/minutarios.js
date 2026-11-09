@@ -117,8 +117,7 @@ async function zipLib(){
   await new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"; sc.onload = ok; sc.onerror = mal; document.head.appendChild(sc); });
   return window.JSZip;
 }
-async function subir(files){
-  const out = $("#mSubInfo"); out.innerHTML = `<span style="color:var(--mu)">Leyendo ${files.length} archivo(s)…</span>`;
+async function leerArchivos(files){
   for (const f of files){
     try {
       if (/\.zip$/i.test(f.name)){
@@ -127,7 +126,11 @@ async function subir(files){
       } else ARCH.push(leerCSV(f.name, await f.text()) || {nombre: f.name, error: "vacío"});
     } catch (e){ ARCH.push({nombre: f.name, error: "no se pudo leer (" + e.message + ")"}); }
   }
-  DC.clear(); pintarSub();
+  DC.clear();
+}
+async function subir(files){
+  $("#mSubInfo").innerHTML = `<span style="color:var(--mu)">Leyendo ${files.length} archivo(s)…</span>`;
+  await leerArchivos(files); pintarSub();
   const ok = ARCH.filter(a => !a.error && a.n);
   if (ok.length){                                   // deja lista la estación y el primer día de los archivos, y genera
     const a = ok[ok.length - 1], c = a.cods[0], e = EST.find(x => x.codigo === c);
@@ -137,9 +140,9 @@ async function subir(files){
     generar();
   }
 }
-function pintarSub(){
-  const d = t => new Date(t).toISOString().slice(0, 10);
-  $("#mSubInfo").innerHTML = ARCH.length ? `<table style="width:auto;font-size:12.5px">${ARCH.map(a => a.error ? `<tr><td>${esc(a.nombre)}</td><td colspan="3" style="color:#eb5757">${esc(a.error)}</td></tr>`
+function pintarSub(sel){
+  const d = t => new Date(t).toISOString().slice(0, 10), el = document.querySelector(sel || "#mSubInfo"); if (!el) return;
+  el.innerHTML = ARCH.length ? `<table style="width:auto;font-size:12.5px">${ARCH.map(a => a.error ? `<tr><td>${esc(a.nombre)}</td><td colspan="3" style="color:#eb5757">${esc(a.error)}</td></tr>`
     : `<tr><td>${esc(a.nombre)}</td><td>${a.cods.map(c => esc((EST.find(e => e.codigo === c) || {}).nombre || c)).join(", ")}</td><td>${d(a.t0)} a ${d(a.t1)}</td><td>${a.n.toLocaleString("es-CL")} filas · ${esc(a.vars.join(", "))}</td></tr>`).join("")}</table>
     <p class="nota" style="margin:4px 0 0">Los archivos se leen solo en este navegador (no se suben a ningún servidor). Para un día con archivos subidos se usan esos datos en vez del archivo de METOTEC.</p>` : "";
 }
@@ -380,5 +383,6 @@ function csv(){
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + L.join("\n")], {type: "text/csv"}));
   a.download = `minutarios_${M.cod}_${M.dia}.csv`; a.click();
 }
-window.MINU = {init, cargar, inconsistencias, R};
+window.MINU = {init, cargar, inconsistencias, R, estaciones, buscarCod, leerArchivos, pintarSub, get EST(){ return EST; }, SUB, ARCH, VAL, VARS, NOM, UNI,
+  cadencia, f1, hhmm, loc, km, esc, fechaArchivo: () => { const ok = ARCH.filter(a => !a.error && a.n); return ok.length ? ok[ok.length - 1] : null; }};
 })();
