@@ -39,9 +39,11 @@ async function estaciones(){
 }
 const sinTilde = x => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 function buscarCod(q){                 // acepta «330006 · nombre», el código solo o parte del nombre (sin importar tildes)
-  q = String(q || "").trim(); if (!q) return null;
+  q = String(q || "").trim();
+  if (!q) return SUB.size ? [...SUB.keys()][0] : null;               // sin texto: la estación de los archivos subidos
   const m = q.match(/^(\d+)/);
-  if (m){ const e = EST.find(x => x.codigo === m[1]) || EST.find(x => x.codigo.startsWith(m[1])); return e ? e.codigo : (EST.length ? null : m[1]); }
+  if (m){ if (SUB.has(m[1])) return m[1];
+    const e = EST.find(x => x.codigo === m[1]) || EST.find(x => x.codigo.startsWith(m[1])); return e ? e.codigo : (EST.length ? null : m[1]); }
   const t = sinTilde(q), e = EST.find(x => sinTilde(x.nombre).startsWith(t)) || EST.find(x => sinTilde(x.nombre).includes(t)) || EST.find(x => (x.oaci || "").toLowerCase() === t);
   return e ? e.codigo : null;
 }
@@ -126,7 +128,14 @@ async function subir(files){
     } catch (e){ ARCH.push({nombre: f.name, error: "no se pudo leer (" + e.message + ")"}); }
   }
   DC.clear(); pintarSub();
-  if (M) generar();
+  const ok = ARCH.filter(a => !a.error && a.n);
+  if (ok.length){                                   // deja lista la estación y el primer día de los archivos, y genera
+    const a = ok[ok.length - 1], c = a.cods[0], e = EST.find(x => x.codigo === c);
+    if (!buscarCod($("#mEst").value) || !SUB.has(buscarCod($("#mEst").value))) $("#mEst").value = c + (e ? " · " + e.nombre : "");
+    const dia = $("#mDia").value, t = Date.parse(dia + "T12:00Z");
+    if (!(t >= a.t0 && t <= a.t1)) $("#mDia").value = new Date(a.t0 + 864e5 / 2).toISOString().slice(0, 10);
+    generar();
+  }
 }
 function pintarSub(){
   const d = t => new Date(t).toISOString().slice(0, 10);
