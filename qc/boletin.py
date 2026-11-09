@@ -123,12 +123,26 @@ def revisar_dia(dia, bol, raiz, ayer=None):
         marcas = {}
 
         def marca(col, nivel, corto, msg, real=None):
+            # siempre que se pueda, se dice qué valor debería ir (no solo que «está raro»)
+            if real and real.get("valor") is not None:
+                u = " mm" if col in ("rr24", "acum", "normal_f", "normal_a") else " %" if col == "defsup" else " °C"
+                vtxt = f"{real['valor']:.1f}" if isinstance(real["valor"], (int, float)) else str(real["valor"])
+                fuente = {"automática": "según la estación automática", "cálculo": "según el cálculo",
+                          "observador": "según lo ingresado por el observador; sin minutario completo para confirmarlo"}[real["fuente"]]
+                pre = "Probable" if real["fuente"] == "observador" else "Debería ir"
+                if col.endswith("_h"):
+                    corto = f"→ {real.get('hora')}"
+                    msg += f" {pre}: {real.get('hora')} ({vtxt}{u}, {fuente})."
+                else:
+                    corto = f"→ {vtxt}" + (f" · {real['hora']}" if real.get("hora") else "")
+                    msg += f" {pre}: {vtxt}{u}" + (f" a las {real['hora']}" if real.get("hora") else "") + f" ({fuente})."
             marcas[col] = dict(nivel=nivel, sub=corto, msg=msg, real=real)
             items.append(dict(estacion=nom, col=col, nivel=nivel, msg=msg, real=real))
 
         g = A[A["codigo"] == ce].sort_values("momento") if ce else A.iloc[0:0]
         o = OBS.get(co, {}) if co else {}
         tn, tx, rr = num(v["tn"]), num(v["tx"]), v["rr24"]
+        realEMA = {}
         # ---- extremas frente a la automática
         for col, val, hora_txt, ini, fin, minimo, el_obs, h_obs in (
                 ("tn", tn, v["tn_h"], t12 - pd.Timedelta(hours=12), t12, True, "TnAM", t12),
@@ -144,6 +158,7 @@ def revisar_dia(dia, bol, raiz, ayer=None):
                 otros = [float(w2["T"].min() if minimo else w2["T"].max())]
                 d = min(abs(val - ref), *[abs(val - x) for x in otros])
                 real = dict(valor=ref, hora=f"{loc(tref):%H:%M}", fuente="automática")
+                realEMA[col] = real
                 if d > 0.5:
                     imposible = (val < ref - 0.5) if minimo else (val > max([ref] + otros) + 0.5)
                     marca(col, "err" if d > 1.0 or imposible else "warn", f"EMA {ref:.1f} · {loc(tref):%H:%M}",
@@ -168,12 +183,17 @@ def revisar_dia(dia, bol, raiz, ayer=None):
             ob = o.get(h_obs)
             x, fh = _v(ob, el_obs), ((ob or {}).get(el_obs) or {}).get("FechaHora")
             if val is not None and x is not None and abs(x - val) > 0.05 and col not in marcas:
-                marca(col, "warn", f"obs. {x:.1f}", f"{nombre.capitalize()} del boletín {val:.1f} °C; el observador ingresó {x:.1f} °C"
-                      + (f" a las {str(fh)[11:16]}" if fh else "") + f" ({el_obs}).", dict(valor=x, hora=str(fh)[11:16] if fh else None, fuente="observador"))
+                re_ = realEMA.get(col) or dict(valor=x, hora=str(fh)[11:16] if fh else None, fuente="observador")
+                marca(col, "warn", "", f"{nombre.capitalize()} del boletín {val:.1f} °C; el observador ingresó {x:.1f} °C"
+                      + (f" a las {str(fh)[11:16]}" if fh else "") + f" ({el_obs}).", re_)
             if minimo is False and val is not None and re.fullmatch(r"\d\d:\d\d", hora_txt or "") and col + "_h" not in marcas:
                 hh = int(hora_txt[:2])
                 if zona != PAS and (hh < 10 or hh >= 21):
-                    marca("tx_h", "warn", "hora rara", f"Máxima de ayer a las {hora_txt}: es rara una máxima a esa hora; revisar con la serie.")
+                    re_ = realEMA.get("tx")
+                    if not re_ and x is not None and fh and str(fh)[11:16] != hora_txt:
+                        re_ = dict(valor=x, hora=str(fh)[11:16], fuente="observador")
+                    marca("tx_h", "warn", "hora rara", f"Máxima de ayer a las {hora_txt}: es rara una máxima a esa hora."
+                          + ("" if re_ else " No hay minutario completo ni otra hora del observador para decir cuál fue la hora real."), re_)
         # ---- agua caída 24 h
         r24 = 0.0 if rr == "S/P" else num(rr)
         if r24 is not None and len(g):
@@ -194,7 +214,7 @@ def revisar_dia(dia, bol, raiz, ayer=None):
             if all(x is not None for x in r6):
                 s = round(sum(r6), 1)
                 if abs(s - r24) >= 0.1 and "rr24" not in marcas:
-                    marca("rr24", "warn", f"obs. {s:.1f} mm", f"Agua caída 24 h del boletín {rr}; la suma de los RRR6 del observador (18, 00, 06 y 12 UTC) es {s:.1f} mm"
+                    marca("rr24", "warn", "", f"Agua caída 24 h del boletín {rr}; la suma de los RRR6 del observador (18, 00, 06 y 12 UTC) es {s:.1f} mm"
                           + (" (con traza)" if tz else "") + ".", dict(valor=s, fuente="observador"))
         # ---- A la fecha, Déf/Sup y normales
         acum, nf, ds, na = num(v["acum"]), num(v["normal_f"]), num(v["defsup"]), num(v["normal_a"])

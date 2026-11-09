@@ -72,7 +72,7 @@ function pintar(){
       <tbody>${filas}</tbody></table></div>
     <div class="lado"><h4>Inconsistencias${selFila ? " · " + esc(selFila) + ` <a data-f="${esc(selFila)}" style="color:var(--mu);font-size:12px;cursor:pointer">(ver todas)</a>` : ""}</h4>
       <div class="ley"><span><i style="background:#f8d7da;border:1px solid #dc3545"></i>dudoso</span><span><i style="background:#fff3cd"></i>revisar</span><span><i style="background:#e7f1ff"></i>informativo</span></div>
-      ${items.length ? items.map(x => `<div class="bit ${x.nivel}" data-f="${esc(x.estacion)}"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b><p>${esc(x.msg)}${realTxt(x.real)}</p></div>`).join("")
+      ${items.length ? items.map(x => `<div class="bit ${x.nivel}" data-f="${esc(x.estacion)}"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b><p>${esc(x.msg).replace(/(Debería ir|Probable): ([^(]+)/, "<br>$1: <em>$2</em>")}</p></div>`).join("")
         : `<p style="color:#6fcf97;margin:0">${selFila ? "Esta estación no tiene" : "El boletín no tiene"} inconsistencias.</p>`}
       ${cambios.length ? `<h4 style="margin-top:14px">Cambios entre pasadas</h4>${cambios.map(c => `<div class="bit info"><b>${esc(c.estacion)} · ${esc(NCOL[c.col] || c.col)}</b><p>A las ${esc(c.hora)} pasó de <em>${esc(c.antes)}</em> a <em>${esc(c.ahora)}</em>.</p></div>`).join("")}` : ""}
       <p class="nota" style="margin:10px 0 0;color:var(--mu);font-size:12px">Se compara con la estación automática (mínima 00–12 UTC, máxima de ayer 12–24 UTC o el día local completo, agua caída 12–12 UTC), con lo que ingresó el observador (TnAM, TxPM y los cuatro RRR6) y con el boletín de ayer (A la fecha = ayer + 24 h). Pase el mouse por una celda marcada para ver el detalle.</p></div></div>`;
