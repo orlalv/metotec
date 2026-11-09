@@ -8,12 +8,10 @@ jobs:
       AC: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - run: |
-          curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/accounts/$AC/pages/projects/metotec" | python3 -c "
-          import json,sys;d=json.load(sys.stdin);r=d.get('result') or {};print('ok',d.get('success'),d.get('errors'));print('prod branch',r.get('production_branch'),'domains',r.get('domains'));
-          cd=r.get('canonical_deployment') or {};print('canonical',cd.get('id'),cd.get('created_on'),cd.get('url'))"
-          curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/accounts/$AC/pages/projects/metotec/deployments?per_page=6" | python3 -c "
-          import json,sys;d=json.load(sys.stdin);print(d.get('success'),d.get('errors'))
-          for x in d.get('result') or []: print(x['id'][:8],x['created_on'],x['environment'],x.get('deployment_trigger',{}).get('metadata',{}).get('branch'),x['latest_stage']['name'],x['latest_stage']['status'],x['url'])"
-          curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/accounts/$AC/pages/projects" | python3 -c "
-          import json,sys;d=json.load(sys.stdin)
-          for p in d.get('result') or []: print('proyecto',p['name'],p.get('domains'))"
+          for d in 92435031-aa42-4077-bf1b-4a14f2c1879f; do
+          curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/accounts/$AC/pages/projects/metotec/deployments/$d" | python3 -c "
+          import json,sys;d=json.load(sys.stdin);r=d.get('result') or {}
+          print({k:r.get(k) for k in ('id','url','aliases','environment','is_skipped','production_branch','short_id')})
+          print([ (s['name'],s['status']) for s in r.get('stages',[])])"
+          done
+          for h in metotec.cl metotec.pages.dev; do echo == $h; curl -s -o /dev/null -w "%{http_code} %{size_download}\n" "https://$h/js/minutarios.js?z=$RANDOM"; curl -s "https://$h/js/minutarios.js?z=$RANDOM" | grep -c "Subir archivos"; done
