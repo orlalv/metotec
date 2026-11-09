@@ -162,7 +162,7 @@ function R(D){                     // resumen del día
 /* --------- pantalla --------- */
 function init(){
   const s = $("#minu"); if (s.dataset.ok) return; s.dataset.ok = 1;
-  const ayer = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  const ayer = new Date(Date.now() - (new Date().getUTCHours() < 6 ? 864e5 : 0)).toISOString().slice(0, 10);   // hoy (UTC), salvo recién empezado el día
   s.innerHTML = `<div class="htools"><button id="mVolver" style="border-color:var(--oro);color:var(--oro)">← Volver al mapa</button>
     <input id="mEst" list="mLista" placeholder="Estación (nombre o código)" style="min-width:280px"><datalist id="mLista"></datalist>
     <input type="date" id="mDia" value="${ayer}" min="2026-11-08"><select id="mDiaT"><option value="utc">Día UTC (00 a 24 UTC)</option><option value="loc">Día local (00 a 24 hora de Chile)</option></select>
