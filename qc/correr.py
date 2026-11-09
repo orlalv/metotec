@@ -254,9 +254,9 @@ def main():
         for cod, c in c30.items():
             g = H[H["codigo"] == cod].sort_values("momento").tail(7)
             fila = lambda x: None if pd.isna(x) else round(float(x), 1)
-            serie = [[str(m)[11:16]] + [fila(r.get(v)) for v in ("T", "HR", "ff10", "dd10")] for m, r in zip(g["momento"], g.to_dict("records"))]
+            ser = [[str(m)[11:16]] + [fila(r.get(v)) for v in ("T", "HR", "ff10", "dd10")] for m, r in zip(g["momento"], g.to_dict("records"))]
             pub.append(dict(codigo=cod, nombre=nom.at[cod, "nombre"], lat=float(nom.at[cod, "lat"]), lon=float(nom.at[cod, "lon"]),
-                            alt=None if pd.isna(nom.at[cod, "alt"]) else float(nom.at[cod, "alt"]), **c, serie=serie))
+                            alt=None if pd.isna(nom.at[cod, "alt"]) else float(nom.at[cod, "alt"]), **c, serie=ser))
         estado["kv_incendios"] = subir_kv("pub/incendios_estaciones", json.dumps({"generado": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                                           "campos": ["hora", "T", "HR", "ff10", "dd10"], "estaciones": pub}, ensure_ascii=False))
     except Exception as e:
