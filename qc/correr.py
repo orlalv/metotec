@@ -196,6 +196,10 @@ def main():
             estado["errores"].append(f"{nombre}: {traceback.format_exc(limit=2)}")
     comp_al, comp = P.completitud(A, E)
     alertas += comp_al
+    try:
+        n0 = len(alertas); alertas = P.consenso(alertas, H, M, W); estado["consenso_quitados"] = n0 - len(alertas)
+    except Exception:
+        estado["errores"].append(f"consenso: {traceback.format_exc(limit=2)}")
 
     # resumen por estación
     ult = H.sort_values("momento").groupby("codigo").tail(1).set_index("codigo") if len(H) else pd.DataFrame()

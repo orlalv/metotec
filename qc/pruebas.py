@@ -281,3 +281,35 @@ def modelo_dmc(H, W, aisladas=()):
                 out.append(alerta(r["codigo"], "wrf", v, 2 if d > s2 else 1, r["momento"], o, m,
                                   f"diferencia con el WRF-DMC de {d:.1f} (mediana de {int(r['n_w'])} corridas){extra}"))
     return out
+
+
+# ------------------------------------------------------------------ consenso entre modelos
+TOL_CONS = {"T": 6, "Td": 9, "HR": 35, "P_mar": 5, "ff10": 15}
+
+
+def consenso(al, H, M, W):
+    """Quita el aviso de un modelo cuando el OTRO modelo coincide con la estación en esa variable (dentro de la tolerancia):
+    si los modelos discrepan entre sí y la estación concuerda con uno, lo más probable es que falle el otro modelo
+    (ej. Juan Fernández: WRF 38 % de humedad, Open-Meteo 81 %, estación 74 %)."""
+    ref = {}
+    if M is not None and len(M) and len(H):
+        X = H.merge(M, on=["codigo", "momento"], suffixes=("", "_m")).sort_values("momento").groupby("codigo").tail(1)
+        for r in X.to_dict("records"):
+            for v in TOL_CONS:
+                if pd.notna(r.get(v)) and pd.notna(r.get(v + "_m")):
+                    ref[("modelo", r["codigo"], v)] = abs(r[v] - r[v + "_m"])
+    if W is not None and len(W) and len(H):
+        X = H.merge(W, on=["codigo", "momento"]).sort_values("momento").groupby("codigo").tail(1)
+        for r in X.to_dict("records"):
+            for v in ("T", "HR", "ff10"):
+                if pd.notna(r.get(v)) and pd.notna(r.get(v + "_w")):
+                    ref[("wrf", r["codigo"], v)] = abs(r[v] - r[v + "_w"])
+    out = []
+    for a in al:
+        if a["prueba"] in ("modelo", "wrf"):
+            otro = "wrf" if a["prueba"] == "modelo" else "modelo"
+            d = ref.get((otro, a["codigo"], a["var"]))
+            if d is not None and d <= TOL_CONS.get(a["var"], 0):
+                continue
+        out.append(a)
+    return out
