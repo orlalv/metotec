@@ -63,11 +63,12 @@ async function cargar(cod, dia, local){
   const leer = (c0, lineas) => lineas.forEach(l => { const v = l.split(","), o = {t: Date.parse(v[1].replace(" ", "T") + "Z")};
     c0.forEach((c, j) => { if (j > 1) o[c] = v[j] === "" ? null : +v[j]; }); filas.push(o); });
   const sub = subidos(cod, a, b);                   // 1) archivos de la DMC que subió el usuario
-  let api = null, origen = "archivo METOTEC";
+  let api = null, origen = "archivo METOTEC", errApi = "";
   if (sub.length){ filas.push(...sub); origen = "archivos subidos"; }
   else try {                                        // 2) el servidor de METOTEC: una sola descarga const iso = t => new Date(t).toISOString().slice(0, 13);
     const ac = new AbortController(), to = setTimeout(() => ac.abort(), 20000);          // si el servidor tarda, se usa el respaldo
-    const r = await fetch(`/api/minutarios?cod=${cod}&desde=${iso(a)}&hasta=${iso(b)}`, {signal: ac.signal}); if (r.ok) api = await r.json(); clearTimeout(to); } catch (e) {}
+    const r = await fetch(`/api/minutarios?cod=${cod}&desde=${iso(a)}&hasta=${iso(b)}`, {signal: ac.signal, cache: "no-store"});
+    if (r.ok) api = await r.json(); else errApi = "el servidor respondió " + r.status; clearTimeout(to); } catch (e) { errApi = e.name === "AbortError" ? "el servidor tardó más de 20 s" : e.message; }
   if (sub.length){}
   else if (api && api.cab){
     leer(api.cab.split(","), api.filas);
@@ -81,7 +82,7 @@ async function cargar(cod, dia, local){
   }
   const vistos = new Set(), T = filas.filter(o => !vistos.has(o.t) && vistos.add(o.t)).sort((p, q) => p.t - q.t);
   marcarPicos(T);
-  return {cod, dia, local, ini, fin, F: T.filter(o => o.t > ini && o.t <= fin), T, sinArchivo: sub.length ? 0 : sinArchivo, horas: horas.length, origen};
+  return {cod, dia, local, ini, fin, F: T.filter(o => o.t > ini && o.t <= fin), T, sinArchivo: sub.length ? 0 : sinArchivo, horas: horas.length, origen: api || sub.length ? origen : "GitHub directo (respaldo)", errApi};
 }
 
 /* --------- archivos de la DMC subidos por el usuario (portal: datos históricos EMA, ZIP o CSV mensual por variable) --------- */
@@ -272,7 +273,7 @@ async function generar(){
   M = await cargar(cod, $("#mDia").value, $("#mDiaT").value === "loc");
   const e = EST.find(x => x.codigo === cod) || {};
   M.nombre = e.nombre || cod; M.alt = e.alt ?? null;
-  if (!M.F.length){ $("#mOut").innerHTML = `<p style="color:var(--mu)">No hay datos de ${esc(M.nombre)} para ese día en el archivo de METOTEC (parte el 8-11-2026). Para fechas anteriores use «Completar serie», que acepta los ZIP del portal de climatología${M.sinArchivo ? ` (faltan ${M.sinArchivo} de ${M.horas} horas de archivo)` : ""}.</p>`; return; }
+  if (!M.F.length){ $("#mOut").innerHTML = `<p style="color:var(--mu)">No hay datos de ${esc(M.nombre)} para ese día en el archivo de METOTEC (parte el 8-11-2026). Para fechas anteriores use «Completar serie», que acepta los ZIP del portal de climatología${M.sinArchivo ? ` (faltan ${M.sinArchivo} de ${M.horas} horas de archivo)` : ""}.${M.errApi ? ` <br><b style="color:#f2c94c">No se pudo usar el servidor de METOTEC (${esc(M.errApi)}); se intentó directo desde GitHub, que su red puede bloquear.</b>` : ""}</p>`; return; }
   M.I = inconsistencias(M, M.alt); pintar();
 }
 function tarjeta(t, x, u, sub){ return `<div><span>${t}</span><b>${x ? f1(x.v) + " " + u : "—"}</b>${x ? `<span>${hhmm(x.t)} UTC · ${loc(x.t)} hora local</span>` : ""}${sub ? `<span>${sub}</span>` : ""}</div>`; }
