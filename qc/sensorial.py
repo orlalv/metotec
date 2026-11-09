@@ -222,6 +222,10 @@ FEN_METAR = {1: "DZ", 2: "RA", 9: "BR", 10: "FG", 15: "HZ"}
 FEN_W = {"DZ": 5, "RA": 6, "FG": 4}                     # categoría de tiempo pasado (W) que respalda cada fenómeno
 
 
+NOM_C = {0: "Ci", 1: "Cc", 2: "Cs", 3: "Ac", 4: "As", 5: "Ns", 6: "Sc", 7: "St", 8: "Cu", 9: "Cb", 10: "TCu"}
+PIE = 3.281
+
+
 def fen_metar(o):
     """Siglas de los fenómenos METAR ingresados en esa hora."""
     out = []
@@ -306,6 +310,14 @@ def codificacion(o):
     i8 = next((i for i, c in enumerate(capas) if c[0] == 8), None)
     if i8 is not None and i8 < len(capas) - 1:
         add("C19", 1, "hay capas por encima de una capa de 8 octas: con 8 octas no se ven las nubes superiores")
+    # altura de las capas en pies en vez de metros (el nefobasímetro/cielómetro entrega pies; hshshs va en metros)
+    for Ns_, C_, h_ in capas:
+        if h_ is None or C_ is None:
+            continue
+        if C_ == 7 and h_ > 900:
+            add("C38", 1, f"St con base a {h_:g} m: el estrato rara vez pasa de 600 m. Si el dato viene del cielómetro (en pies) serían {h_ / 3.281:.0f} m")
+        elif C_ in (5, 6, 8, 9, 10) and h_ > 3000:
+            add("C39", 1, f"{NOM_C.get(C_, C_)} con base a {h_:g} m: muy alta para una nube baja. Si el dato viene del cielómetro (en pies) serían {h_ / 3.281:.0f} m")
     if Nh is not None and N is not None and N != 9 and Nh > N:
         add("C20", 2, f"Nh {Nh} mayor que N {N}")
     if CL in (3, 9) and capas and not any(c[1] == 9 for c in capas):
@@ -375,6 +387,17 @@ def evolucion(t, o, hist):
         qa, qn = v(ant, "QFE"), v(o, "QFE")       # QFE: en estaciones altas el QFF depende de la temperatura
         if qa is not None and qn is not None and abs(qn - qa) > 2.5:
             add("E09", 1, f"QFE cambió {qn - qa:+.1f} hPa en una hora")
+    # capa más baja que se multiplica por ~3,3 respecto de la hora anterior (y vuelve a la siguiente, si ya está): pies en vez de metros
+    sig = hist.get(t + pd.Timedelta(hours=1))
+    C0, h0 = v(o, "CapaNube", "C"), v(o, "CapaNube", "hshshs")
+    if ant and C0 is not None and h0:
+        Ca, ha = v(ant, "CapaNube", "C"), v(ant, "CapaNube", "hshshs")
+        Cs_, hs_ = (v(sig, "CapaNube", "C"), v(sig, "CapaNube", "hshshs")) if sig else (None, None)
+        sube = Ca == C0 and ha and 2.7 <= h0 / ha <= 4.0
+        vuelve = not sig or (Cs_ == C0 and hs_ and 2.7 <= h0 / hs_ <= 4.0)
+        if sube and vuelve and h0 >= 300:
+            add("E18", 1, f"la base de {NOM_C.get(C0, C0)} pasó de {ha:g} m a {h0:g} m (×{h0 / ha:.1f})" + (f" y a la hora siguiente volvió a {hs_:g} m" if sig else "")
+                + f": parece anotada en pies (en metros serían {h0 / PIE:.0f} m)")
     # período de tiempo pasado
     per = 6 if t.hour % 6 == 0 else 3
     horas = [hist.get(t - pd.Timedelta(hours=k)) for k in range(1, per)]
@@ -490,7 +513,11 @@ def frente_sensor(t, o, A, sesgo=None):
     if ff is not None and len(sff):
         lo, hi = float(sff.min()), float(sff.max())
         d = 0 if lo <= ff <= hi else min(abs(ff - lo), abs(ff - hi))
-        if d > 6:
+        kmh = ff / 1.852
+        if ff >= 6 and not (lo - 1 <= ff <= hi + 1) and lo - 1.5 <= kmh <= hi + 1.5:
+            add("Sffkmh", 2, f"viento anotado {ff} kt y la estación automática marcó " + (f"entre {lo:.0f} y {hi:.0f} kt" if round(hi) > round(lo) else f"{lo:.0f} kt")
+                + f": {ff} km/h son {kmh:.0f} kt, justo lo de la estación. Parece anotado en km/h en vez de nudos (correspondería {round(kmh)} kt)")
+        elif d > 6:
             add("Sff", 1, f"viento anotado {ff} kt y la estación automática marcó " + (f"entre {lo:.0f} y {hi:.0f} kt en los {VENTANA} min previos" if hi > lo else f"{lo:.0f} kt"))
     ffa = r.get("ff10")
     dd, dda = v(o, "VTO", "dd"), r.get("dd10")
