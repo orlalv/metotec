@@ -95,6 +95,8 @@ main[hidden]{display:none}
 #rell .rcols{display:grid;grid-template-columns:1fr 440px;gap:12px;align-items:start}#rell .htools button.on{border-color:var(--oro);color:#10203f;background:var(--oro)}
 #rell .ley{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--mu);margin:4px 0 6px}#rell .ley i{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:5px}
 #rell .rtip{position:absolute;background:#0A1F44;border:1px solid var(--oro);border-radius:8px;padding:7px 10px;font-size:12px;min-width:200px;pointer-events:none}#rell .rtip div{display:flex;justify-content:space-between;gap:10px}#rell .rtip span{color:var(--mu)}
+#rell .rdias{display:flex;flex-wrap:wrap;gap:3px}#rell .rdias button{position:relative;width:30px;height:26px;border:1px solid #0000;border-radius:5px;color:#fff;font:700 11.5px inherit;cursor:pointer;padding:0}#rell .rdias button.on{outline:2px solid var(--oro);outline-offset:1px}#rell .rdias button i{position:absolute;top:2px;right:2px;width:5px;height:5px;border-radius:50%;background:#fff}
+#rell .rlista td{font-size:12.5px}#rell .mtab.rlista th,#rell .mtab.rlista td{text-align:left}
 @media (max-width:1200px){#rell .rcols{grid-template-columns:1fr}}
 #hist .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 #hist .htools input,#hist .htools select,#hist .htools button{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font:600 13px inherit}
@@ -139,7 +141,7 @@ main[hidden]{display:none}
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
 <script src="js/prioridad.js?v=202611091300"></script>
 <script src="js/minutarios.js?v=202611091342"></script>
-<script src="js/rellenar.js?v=202611091342"></script>
+<script src="js/rellenar.js?v=202611091412"></script>
 <script>
 (function(){ const r = document.getElementById("relojUTC");
   const t = () => { const d = new Date(); r.innerHTML = d.toISOString().slice(11, 19) + " UTC <small>(" + d.toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit", hour12: false}) + " local)</small>"; };

@@ -24,21 +24,24 @@ function init(){
     <input type="date" id="rDia" value="${hoy}">
     <select id="rVar">${VARS_OK.map(v => `<option value="${v[0]}">${v[1]}</option>`).join("")}</select>
     <button id="rVer" style="border-color:var(--oro);color:var(--oro)">Cargar</button>
+    <button id="rAnt" title="Problema anterior de la serie" hidden>◀ Anterior</button><button id="rSig" title="Siguiente problema de la serie" hidden>Siguiente ▶</button>
     <label style="cursor:pointer;background:var(--panel);border:1px dashed var(--oro);color:var(--oro);border-radius:8px;padding:6px 10px;font:600 13px inherit">⬆ Subir archivos de la DMC (ZIP o CSV)<input type="file" id="rArch" multiple accept=".zip,.csv,.txt" hidden></label></div>
-    <div id="rSubInfo" style="margin:-2px 0 8px"></div>
+    <div id="rSubInfo" style="margin:-2px 0 8px;overflow-x:auto"></div><div id="rRev"></div>
     <p class="nota" style="margin:0 0 10px">Para huecos de temperatura, humedad o presión. Dibuje con el mouse sobre las zonas sombreadas: el trazo se suaviza y se empalma con los datos válidos a cada lado. Las vecinas aparecen corridas por su relación con la estación (regresión con los datos del mismo día), como guía. El dato original no se modifica: lo estimado se descarga aparte con bandera <b>E</b>.</p>
     <div id="rOut"></div>`;
   M().estaciones().then(E => { $("#rLista").innerHTML = E.map(e => `<option value="${e.codigo} · ${M().esc(e.nombre)}">`).join(""); });
   $("#rVolver").addEventListener("click", () => document.querySelector('.modos button[data-m="ema"]').click());
   $("#rVer").addEventListener("click", cargar); $("#rEst").addEventListener("change", cargar); $("#rDia").addEventListener("change", cargar);
-  $("#rVar").addEventListener("change", () => { vSel = $("#rVar").value; if (S) preparar(S.D, S.refs); });
+  $("#rVar").addEventListener("change", () => { vSel = $("#rVar").value; revisar(); if (S) preparar(S.D, S.refs); });
+  $("#rEst").addEventListener("change", revisar);
+  $("#rAnt").addEventListener("click", () => saltar(-1)); $("#rSig").addEventListener("click", () => saltar(1));
   $("#rArch").addEventListener("change", async ev => { const fs = [...ev.target.files]; ev.target.value = ""; if (!fs.length) return;
     $("#rSubInfo").innerHTML = `<span style="color:var(--mu)">Leyendo ${fs.length} archivo(s)…</span>`;
     await M().leerArchivos(fs); M().pintarSub("#rSubInfo");
     const a = M().fechaArchivo(); if (a){ const c = a.cods[0], e = M().EST.find(x => x.codigo === c);
-      if (!M().SUB.has(M().buscarCod($("#rEst").value))) $("#rEst").value = c + (e ? " · " + e.nombre : "");
+      if (!$("#rEst").value.trim() || !M().SUB.has(M().buscarCod($("#rEst").value))) $("#rEst").value = c + (e ? " · " + e.nombre : "");
       const t = Date.parse($("#rDia").value + "T12:00Z"); if (!(t >= a.t0 && t <= a.t1)) $("#rDia").value = new Date(a.t0 + 432e5).toISOString().slice(0, 10);
-      cargar(); } });
+      revisar(); const E0 = REV && REV.eps[0]; if (E0) ir(0); else cargar(); } });
   s.addEventListener("click", ev => {
     const b = ev.target.closest("[data-rm]"); if (b){ modo = b.dataset.rm; pintarBotones(); return; }
     const a = ev.target.closest("[data-ra]"); if (!a || !S) return;
@@ -47,6 +50,9 @@ function init(){
     if (k === "borrar"){ guardarDeshacer(); S.dib = new Map(); recalcular(); }
     if (k === "propuesta"){ guardarDeshacer(); S.dib = new Map([...S.prop].filter(([t]) => !valido(t))); recalcular(); }
     if (k === "csvh") csv(true); if (k === "csvm") csv(false);
+    const ie = ev.target.closest("[data-ie]"); if (ie){ ir(+ie.dataset.ie); return; }
+    const id = ev.target.closest("[data-id]"); if (id){ REV.i = -1; FOCO = null; S && (S.foco = null); $("#rDia").value = id.dataset.id; cargar(); return; }
+    const ft = ev.target.closest("[data-ft]"); if (ft){ REV.filtro = ft.dataset.ft === REV.filtro ? "" : ft.dataset.ft; pintarRev(); return; }
     const rq = ev.target.closest("[data-rq]"); if (rq){ S.refs = S.refs.filter(r => r.cod !== rq.dataset.rq); preparar(S.D, S.refs); }
   });
   s.addEventListener("change", async ev => {
@@ -64,10 +70,94 @@ async function cargar(){
   const cod = M().buscarCod($("#rEst").value);
   if (!cod){ $("#rOut").innerHTML = `<p style="color:var(--mu)">Escriba el código, el nombre o el OACI de la estación, o suba archivos.</p>`; return; }
   $("#rOut").innerHTML = `<p style="color:var(--mu)">Cargando la estación y sus vecinas…</p>`;
+  if (REV && REV.cod !== cod) revisar(); else if (REV) pintarRev();
   const D = await cargarUna(cod), yo = M().EST.find(e => e.codigo === cod);
+  if (M().SUB.has(cod) && !D.F.some(o => o[vSel] != null)){
+    const hay = VARS_OK.filter(v => D.F.some(o => o[v[0]] != null)).map(v => v[1]);
+    $("#rOut").innerHTML = `<p style="color:#f2c94c">Los archivos subidos de esta estación no traen ${NOMV[vSel]} para el ${$("#rDia").value}. ${hay.length ? "Ese día sí traen: " + hay.join(", ") + ". Cámbielo en el selector de variable." : "Esta herramienta completa Ts, Td, HR y presiones: suba los archivos <b>Temperatura</b> o <b>PresionHumedad</b> (el de agua caída no sirve aquí)."}</p>`; return; }
   const vec = yo && yo.lat != null ? M().EST.filter(e => e.codigo !== cod && e.lat != null).map(e => ({c: e.codigo, d: M().km(yo, e)})).filter(x => x.d <= 60).sort((a, b) => a.d - b.d).slice(0, 4) : [];
   const Rs = (await Promise.all(vec.map(x => cargarUna(x.c)))).filter(R => R.F.length);
   preparar(D, Rs.slice(0, 2));
+}
+
+/* ---------- revisión de toda la serie subida: lleva a cada problema ---------- */
+// Recorre todo el período de los archivos subidos (no solo un día) y arma la lista de problemas de la variable elegida:
+// huecos (> 5 min), valores fuera de rango, picos aislados y valores pegados. «Anterior/Siguiente» y la lista llevan a cada uno.
+let REV = null, FOCO = null;
+const PICO_U = {T: 3, Td: 4, HR: 15, P_est: 2, P_mar: 2, P_std: 2}, PEGADO = {T: 2, Td: 3, HR: 3, P_est: 4, P_mar: 4, P_std: 4};   // h
+const TIPOS = {hueco: ["Hueco", "#8aa0c8"], rango: ["Fuera de rango", "#eb5757"], pico: ["Pico aislado", "#F2994A"], pegado: ["Valor pegado", "#f2c94c"]};
+const diaUTC = t => new Date(t).toISOString().slice(0, 10);
+const durTxt = ms => { const m = Math.round(ms / 60e3); return m >= 1440 ? `${Math.floor(m / 1440)} d ${Math.floor(m % 1440 / 60)} h` : m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`; };
+function revisar(){
+  const cod = M().buscarCod($("#rEst").value), m = cod && M().SUB.get(cod), v = vSel;
+  REV = null; $("#rAnt").hidden = $("#rSig").hidden = true;
+  if (!m){ $("#rRev").innerHTML = ""; return; }
+  const F = [...m.values()].filter(o => v in o).sort((a, b) => a.t - b.t);
+  if (!F.length){ const hay = VARS_OK.filter(x => [...m.values()].some(o => o[x[0]] != null)).map(x => x[1]);
+    $("#rRev").innerHTML = `<p class="nota" style="color:#f2c94c">Los archivos subidos no traen ${NOMV[v]}. ${hay.length ? "Traen: " + hay.join(", ") + "." : "Para completar series suba los archivos <b>Temperatura</b> o <b>PresionHumedad</b>."}</p>`; return; }
+  const step = M().cadencia(F), L = M().VAL[v] || [-Infinity, Infinity], t0 = F[0].t, t1 = F[F.length - 1].t;
+  const val = new Map(F.map(o => [o.t, o[v]])), eps = [];
+  const malo = new Map();                 // t → tipo
+  const buenos = F.filter(o => o[v] != null && o[v] >= L[0] && o[v] <= L[1]);
+  F.forEach(o => { if (o[v] != null && !(o[v] >= L[0] && o[v] <= L[1])) malo.set(o.t, "rango"); });
+  const U = PICO_U[v] || 3;
+  buenos.forEach((o, i) => { const w = buenos.slice(Math.max(0, i - 5), i).concat(buenos.slice(i + 1, i + 6)).filter(q => Math.abs(q.t - o.t) <= 20 * 60e3).map(q => q[v]).sort((a, b) => a - b);
+    if (w.length >= 2 && Math.abs(o[v] - w[Math.floor(w.length / 2)]) > U) malo.set(o.t, "pico"); });
+  // valores pegados: el mismo valor repetido durante más de PEGADO[v] horas
+  let ia = 0;
+  for (let i = 1; i <= buenos.length; i++){
+    if (i < buenos.length && buenos[i][v] === buenos[ia][v] && buenos[i].t - buenos[i - 1].t <= 30 * 60e3) continue;
+    const a = buenos[ia].t, b = buenos[i - 1].t;
+    if (b - a >= (PEGADO[v] || 3) * 3600e3) eps.push({tipo: "pegado", a, b, det: `${M().f1(buenos[ia][v])} ${UNIV[v]} sin cambio`});
+    ia = i;
+  }
+  // recorrido por la grilla: huecos (sin registro o vacío), picos y fuera de rango, agrupados en episodios
+  let cur = null; const n = {}, tot = {}, dias = {};
+  const cerrar = () => { if (!cur) return; const largo = cur.b - cur.a + step;
+    if (cur.tipo !== "hueco" || largo > Math.max(step, 5 * 60e3)) eps.push({tipo: cur.tipo, a: cur.a, b: cur.b,
+      det: cur.tipo === "hueco" ? `${durTxt(largo)} sin dato` : cur.tipo === "rango" ? `valor ${M().f1(cur.x)} ${UNIV[v]}` : `${M().f1(cur.x)} ${UNIV[v]}`}); cur = null; };
+  for (let t = t0; t <= t1; t += step){
+    const x = val.get(t), d = diaUTC(t), tipo = x == null ? "hueco" : malo.get(t) || null;
+    dias[d] = dias[d] || {n: 0, ok: 0}; dias[d].n++; if (!tipo) dias[d].ok++;
+    if (tipo && cur && cur.tipo === tipo && t - cur.b <= step * (tipo === "pico" ? 3 : 1)){ cur.b = t; continue; }
+    cerrar(); if (tipo) cur = {tipo, a: t, b: t, x};
+  }
+  cerrar();
+  eps.sort((p, q) => p.a - q.a);
+  eps.forEach(e => { const d = diaUTC(e.a); dias[d] && (dias[d].p = (dias[d].p || 0) + 1); });
+  REV = {cod, v, step, t0, t1, eps, dias, i: -1, filtro: ""};
+  pintarRev();
+}
+function visibles(){ return REV.eps.map((e, i) => [e, i]).filter(([e]) => !REV.filtro || e.tipo === REV.filtro); }
+function pintarRev(){
+  const R = REV, cnt = {}; R.eps.forEach(e => cnt[e.tipo] = (cnt[e.tipo] || 0) + 1);
+  $("#rAnt").hidden = $("#rSig").hidden = !R.eps.length;
+  const dd = Object.entries(R.dias), col = x => x.ok === x.n ? "#2f7d57" : x.ok / x.n > .9 ? "#9a8a2e" : x.ok / x.n > .5 ? "#b8642a" : "#a33a3a";
+  const actual = $("#rDia").value, V = visibles(), MAX = 400;
+  $("#rRev").innerHTML = `<details class="mblo" open><summary>Revisión de toda la serie · ${NOMV[R.v]} · ${diaUTC(R.t0)} a ${diaUTC(R.t1)} · ${R.eps.length ? `${R.eps.length} problemas` : "sin problemas"}</summary><div class="mcont">
+    <div class="rdias">${dd.map(([d, x]) => `<button data-id="${d}" class="${d === actual ? "on" : ""}" title="${d}: ${Math.round(100 * x.ok / x.n)} % válido${x.p ? ` · ${x.p} problema(s)` : ""}" style="background:${col(x)}">${+d.slice(8)}${x.p ? "<i></i>" : ""}</button>`).join("")}</div>
+    <p class="nota" style="margin:4px 0 8px">Cada cuadro es un día UTC (verde completo · amarillo &gt; 90 % · naranjo &gt; 50 % · rojo menos). Clic en un día o en un problema para abrirlo; el tramo queda marcado en el gráfico. También puede usar ◀ Anterior / Siguiente ▶.</p>
+    ${R.eps.length ? `<div class="htools">${Object.entries(TIPOS).filter(([k]) => cnt[k]).map(([k, [nom, c]]) => `<button data-ft="${k}" class="${R.filtro === k ? "on" : ""}" style="border-color:${c}">${nom}: ${cnt[k]}</button>`).join("")}${R.filtro ? `<span style="color:var(--mu);font-size:12.5px">(clic de nuevo para ver todos)</span>` : ""}</div>
+    <div style="max-height:260px;overflow:auto"><table class="mtab rlista"><tr><th>Día</th><th>Desde (UTC)</th><th>Hasta</th><th>Duración</th><th>Problema</th><th>Detalle</th></tr>
+    ${V.slice(0, MAX).map(([e, i]) => `<tr data-ie="${i}" class="inc${i === R.i ? " vis" : ""}" style="cursor:pointer"><td>${diaUTC(e.a)}</td><td>${hhmm(e.a)}</td><td>${diaUTC(e.b) === diaUTC(e.a) ? "" : diaUTC(e.b).slice(5) + " "}${hhmm(e.b)}</td><td>${durTxt(e.b - e.a + R.step)}</td>
+      <td><span style="color:${TIPOS[e.tipo][1]};font-weight:700">● ${TIPOS[e.tipo][0]}</span></td><td>${M().esc(e.det)}</td></tr>`).join("")}</table>
+    ${V.length > MAX ? `<p class="nota">Se muestran los primeros ${MAX} de ${V.length}.</p>` : ""}</div>` : `<p style="color:#6fcf97;margin:0">La serie completa no tiene huecos de más de 5 min, valores fuera de rango, picos ni valores pegados.</p>`}
+  </div></details>`;
+}
+function ir(i){
+  const e = REV && REV.eps[i]; if (!e) return;
+  REV.i = i; FOCO = [e.a, e.b]; if (S) S.foco = FOCO;
+  const d = diaUTC(e.a);
+  if (S && S.D.cod === REV.cod && S.D.dia === d && $("#rDia").value === d){ pintarRev(); pintar(); }
+  else { $("#rDia").value = d; pintarRev(); cargar(); }
+  const fila = document.querySelector(`#rRev tr[data-ie="${i}"]`); fila && fila.scrollIntoView({block: "nearest"});
+}
+function saltar(dir){
+  if (!REV || !REV.eps.length) return;
+  const V = visibles().map(x => x[1]); if (!V.length) return;
+  let k = V.indexOf(REV.i);
+  if (k < 0){ const d = $("#rDia").value; let j = V.findIndex(i => diaUTC(REV.eps[i].a) >= d); if (j < 0) j = V.length; k = dir > 0 ? j - 1 : j; }
+  k = Math.max(0, Math.min(V.length - 1, k + dir)); ir(V[k]);
 }
 
 /* ---------- cálculo ---------- */
@@ -95,7 +185,7 @@ function preparar(D, refs){
     }
     return {D: r, serie, a, b, r: rr, n: pares.length};
   });
-  S = {D, refs, R, v, step, grid, obs, malos: S && S.D === D && S.v === v ? S.malos : new Set(), dib: S && S.D === D && S.v === v ? S.dib : new Map(), prop: new Map(), deshacer: []};
+  S = {D, refs, R, v, step, grid, obs, malos: S && S.D === D && S.v === v ? S.malos : new Set(), dib: S && S.D === D && S.v === v ? S.dib : new Map(), prop: new Map(), deshacer: [], foco: FOCO};
   recalcular();
 }
 function huecos(){
@@ -171,7 +261,7 @@ function pintar(){
   const mejor = S.R.reduce((m, x) => Math.max(m, x.r), 0);
   const apto = !H.length ? ["Sin huecos", "#6fcf97", "la serie está completa"] : largo > 10 * 3600e3 ? ["No recomendado", "#eb5757", "hueco de más de 10 h"]
     : mejor < .7 && largo > 3 * 3600e3 ? ["Con cuidado", "#f2c94c", "vecinas poco parecidas y hueco de más de 3 h"] : ["Apto", "#6fcf97", `vecinas con r = ${mejor.toFixed(2).replace(".", ",")}`];
-  const dur = ms => { const m = Math.round(ms / 60e3); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`; };
+  const dur = ms => { const m = Math.round(ms / 60e3); return m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`; };
   $("#rOut").innerHTML = `<h3 style="margin:4px 0 10px">${M().esc(D.nombre)} <small style="color:var(--mu)">${D.cod} · ${D.dia} (día UTC) · ${NOMV[S.v]} · datos cada ${S.step / 60e3} min · fuente: ${D.origen}</small></h3>
     <div class="hres"><div><b>${H.length}</b><span>huecos de más de ${CORTO() / 60e3} min${Htodos.length > H.length ? ` (+${Htodos.length - H.length} cortos, interpolados solos)` : ""}</span></div><div><b>${dur(sinDato * S.step)}</b><span>sin dato válido · ${Math.round(100 * sinDato / Math.max(1, S.grid.length))} % del período</span></div>
       <div><b>${horasEst}</b><span>horas (HH:00) sin dato</span></div><div><b>${dur(largo)}</b><span>hueco más largo</span></div>
@@ -200,6 +290,8 @@ function grafico(){
     return `<path d="${p}" fill="none" stroke="${col}" stroke-width="${w}" ${dash ? `stroke-dasharray="${dash}"` : ""} opacity="${op || 1}" stroke-linejoin="round"/>`; };
   let svg = "";
   huecos().forEach(([a, b]) => svg += `<rect x="${X(a - S.step / 2)}" y="${ar}" width="${Math.max(2, X(b + S.step / 2) - X(a - S.step / 2))}" height="${Hh - ar - ab}" fill="#8aa0c8" opacity=".13"/>`);
+  if (S.foco){ const a = Math.max(D.ini, S.foco[0] - S.step / 2), b = Math.min(D.fin, S.foco[1] + S.step / 2);
+    if (b >= a) svg += `<rect x="${X(a) - 3}" y="${ar - 2}" width="${Math.max(6, X(b) - X(a) + 6)}" height="${Hh - ar - ab + 4}" fill="none" stroke="#F2994A" stroke-width="2" stroke-dasharray="5 3" rx="3"/>`; }
   for (let h = 0; h <= 24; h += 3){ const t = D.ini + h * 3600e3; svg += `<line x1="${X(t)}" x2="${X(t)}" y1="${ar}" y2="${Hh - ab}" stroke="#ffffff14"/><text x="${X(t)}" y="${Hh - 8}" fill="#9fb0cc" font-size="11" text-anchor="middle">${String(h).padStart(2, "0")}:00</text>`; }
   const paso = (y1 - y0) > 20 ? 5 : (y1 - y0) > 8 ? 2 : (y1 - y0) > 3 ? 1 : .5;
   for (let y = Math.ceil(y0 / paso) * paso; y <= y1; y += paso) svg += `<line x1="${iz}" x2="${W - de}" y1="${Y(y)}" y2="${Y(y)}" stroke="#ffffff0d"/><text x="${iz - 6}" y="${Y(y) + 4}" fill="#9fb0cc" font-size="11" text-anchor="end">${paso < 1 ? f1(y) : y}</text>`;
