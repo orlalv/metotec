@@ -1,0 +1,27 @@
+name: Explorar SACLIM
+on: workflow_dispatch
+jobs:
+  e:
+    runs-on: ubuntu-latest
+    env:
+      DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
+      DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q requests pandas
+      - run: |
+          cd qc && python - <<'PY'
+          import dmc, json
+          js = dmc.descargar("getRecientesSaclim/330020", timeout=90)
+          def forma(x, prof=0):
+              if isinstance(x, dict):
+                  return {k: forma(v, prof+1) for k, v in list(x.items())[:6]}
+              if isinstance(x, list):
+                  return [forma(x[0], prof+1)] if x else []
+              return x
+          print(json.dumps({k: forma(v) for k, v in js.items() if k != "datosElementos"}, ensure_ascii=False, indent=1)[:6000])
+          b = js["datos"][0]; t = sorted(b)[-1]; h = b[t]
+          print("HORA", t, "claves de la hora:", list(h.keys()))
+          print(json.dumps({k: v for k, v in h.items() if k != "datos"}, ensure_ascii=False)[:1500])
+          d = h["datos"]; e = next(iter(d.values())); print("ejemplo elemento:", json.dumps(e, ensure_ascii=False)[:800])
+          PY
