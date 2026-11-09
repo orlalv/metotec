@@ -17,12 +17,18 @@ const loc = t => new Date(t).toLocaleTimeString("es-CL", {timeZone: "America/San
 async function hora(t){
   const k = new Date(t).toISOString().slice(0, 13);
   if (CACHE.has(k)) return CACHE.get(k);
+  const url = RAW + "ema/" + k.replace(/-/g, "/").replace("T", "/") + ".csv.gz";
   const p = (async () => {
-    const r = await fetch(RAW + "ema/" + k.replace(/-/g, "/").replace("T", "/") + ".csv.gz");
-    if (!r.ok) return null;
-    return await new Response(r.body.pipeThrough(new DecompressionStream("gzip"))).text();
-  })().catch(() => null);
-  CACHE.set(k, p); return p;
+    for (let i = 0; i < 3; i++){                       // hasta 3 intentos: GitHub a veces corta descargas seguidas
+      try { const r = await fetch(url + (i ? "?r=" + i : ""));
+        if (r.status === 404) return null;
+        if (r.ok) return await new Response(r.body.pipeThrough(new DecompressionStream("gzip"))).text(); } catch (e) {}
+      await new Promise(z => setTimeout(z, 800 * (i + 1)));
+    }
+    throw new Error("sin conexión");
+  })();
+  CACHE.set(k, p); p.catch(() => CACHE.delete(k));      // lo que falla no queda guardado: se reintenta al volver a generar
+  return p.catch(() => null);
 }
 async function estaciones(){
   if (EST.length) return EST;
