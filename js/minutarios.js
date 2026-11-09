@@ -258,12 +258,14 @@ function grafico(){
 function tablaComp(S, series){
   if (S.length < 2){ $("#mCompTab").innerHTML = ""; return; }
   const v = mVar, idx = series.map(p => new Map(p.map(x => [x[0], x[1]])));
-  const tiempos = [...new Set(series.flat().map(p => p[0]))].filter(t => t > M.ini && t <= M.fin).sort((a, b) => a - b);
+  const cads = S.map(D => cadencia(D.F)), gruesa = cads.indexOf(Math.max(...cads));     // con cadencias distintas (1 y 10 min) se usan los horarios de la más espaciada
+  const base = Math.max(...cads) > Math.min(...cads) ? series[gruesa] : series.flat();
+  const tiempos = [...new Set(base.map(p => p[0]))].filter(t => t > M.ini && t <= M.fin).sort((a, b) => a - b);
   const dif = S.slice(1).map((D, j) => { const d = tiempos.map(t => idx[0].has(t) && idx[j + 1].has(t) ? idx[j + 1].get(t) - idx[0].get(t) : null).filter(x => x != null);
     return d.length ? {m: d.reduce((a, b) => a + b, 0) / d.length, n: d.length, max: d.reduce((a, b) => Math.abs(b) > Math.abs(a) ? b : a, 0)} : null; });
   $("#mCompTab").innerHTML = `<div class="hres" style="margin-top:10px">${S.slice(1).map((D, j) => `<div><span style="color:${COLS[j + 1]}">● ${esc(D.nombre)} − ${esc(M.nombre)}</span><b>${dif[j] ? (dif[j].m > 0 ? "+" : "") + f1(dif[j].m) + " " + UNI[v] : "—"}</b><span>${dif[j] ? `diferencia media en ${dif[j].n} min · mayor ${dif[j].max > 0 ? "+" : ""}${f1(dif[j].max)}` : "sin minutos en común"}</span></div>`).join("")}</div>
     <h4 style="margin:10px 0 6px">Comparación minuto a minuto · ${NOM[v]} (${UNI[v]})</h4>
-    <div style="max-height:45vh;overflow:auto;border:1px solid var(--bd);border-radius:8px"><table class="mtab"><tr><th>UTC</th><th>Local</th>${S.map((D, i) => `<th style="color:${COLS[i]}">${esc(D.nombre)}</th>`).join("")}${S.slice(1).map((D, j) => `<th>Dif. ${j + 2} − 1</th>`).join("")}</tr>
+    <div style="max-height:45vh;overflow:auto;border:1px solid var(--bd);border-radius:8px"><table class="mtab mcomp"><tr><th>UTC</th><th>Local</th>${S.map((D, i) => `<th style="color:${COLS[i]}">${esc(D.nombre)}</th>`).join("")}${S.slice(1).map((D, j) => `<th>Dif. ${j + 2} − 1</th>`).join("")}</tr>
     ${tiempos.map(t => { const a = idx[0].get(t); return `<tr><td>${hhmm(t)}</td><td>${loc(t)}</td>${idx.map(m => `<td>${m.has(t) ? f1(m.get(t)) : ""}</td>`).join("")}${idx.slice(1).map(m => { const b = m.get(t), d = a != null && b != null ? b - a : null;
       return `<td${d != null && Math.abs(d) > ({T: 3, Td: 4, HR: 15, P_est: 2, P_mar: 2, P_std: 2}[v] || Infinity) ? ' style="background:#4a3f12"' : ""}>${d == null ? "" : (d > 0 ? "+" : "") + f1(d)}</td>`; }).join("")}</tr>`; }).join("")}</table></div>`;
 }
