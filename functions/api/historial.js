@@ -11,5 +11,7 @@ export async function onRequestGet({ request, env }){
   const dias = [];
   for (let t = +desde; t <= +hasta; t += 864e5) dias.push(dia(new Date(t)));
   const vals = await Promise.all(dias.map(d => env.DATOS.get("qc/hist/" + d, "json")));
-  return json({ desde: dia(desde), hasta: dia(hasta), dias: Object.fromEntries(dias.map((d, i) => [d, vals[i]]).filter(x => x[1])) });
+  const revs = await Promise.all(dias.map(d => env.DATOS.get("qc/rev/" + d, "json")));
+  return json({ desde: dia(desde), hasta: dia(hasta), dias: Object.fromEntries(dias.map((d, i) => [d, vals[i]]).filter(x => x[1])),
+                revisiones: Object.fromEntries(dias.map((d, i) => [d, revs[i]]).filter(x => x[1])) });
 }

@@ -79,7 +79,9 @@ main[hidden]{display:none}
 #hist .hres{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}#hist .hres div{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px 14px}
 #hist .hres b{display:block;font-size:20px}#hist .hres span{color:var(--mu);font-size:12.5px}
 #hist .hcols{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:16px;align-items:start}
-#hist .ab{color:#f2c94c;font-weight:700}#hist .co{color:#6fcf97;font-weight:700}#hist tr.hs{cursor:pointer}#hist tr.hs:hover,#hist tr.hs.on{background:#16264a}
+#hist .ab{color:#f2c94c;font-weight:700}#hist .co{color:#6fcf97;font-weight:700}#hist .rv{background:none;border:1px solid var(--bd);color:var(--mu);border-radius:6px;padding:2px 7px;font:600 12px inherit;cursor:pointer}
+#hist .rv.on.r{background:#1f5a3a;border-color:#6fcf97;color:#fff}#hist .rv.on.f{background:#5a1f1f;border-color:#eb5757;color:#fff}
+#hist tr.hs{cursor:pointer}#hist tr.hs:hover,#hist tr.hs.on{background:#16264a}
 @media (max-width:900px){main{grid-template-columns:1fr}#mapa{height:55vh}aside{border-left:0}}
 </style>
 </head>
@@ -394,7 +396,8 @@ function hInit(){
   $("#hVolver").addEventListener("click", () => document.querySelector('.modos button[data-m="ema"]').click());
   $("#hBuscar").addEventListener("input", hPintar); $("#hCargar").addEventListener("click", hCargar); $("#hCsv").addEventListener("click", hCsv);
   $("#hDesde").addEventListener("change", hCargar); $("#hHasta").addEventListener("change", hCargar);
-  $("#hist").addEventListener("click", ev => { const t = ev.target.closest("tr.hs"); if (t){ hEst = hEst === t.dataset.c ? "" : t.dataset.c; hPintar(); } });
+  $("#hist").addEventListener("click", ev => { const b = ev.target.closest(".rv"); if (b){ revisar(b.dataset.d, b.dataset.i, b.classList.contains("on") ? "" : b.dataset.v); return; }
+    const t = ev.target.closest("tr.hs"); if (t){ hEst = hEst === t.dataset.c ? "" : t.dataset.c; hPintar(); } });
 }
 async function hCargar(){
   $("#hTab").innerHTML = `<p style="color:var(--mu)">Cargando…</p>`;
@@ -403,10 +406,18 @@ async function hCargar(){
   HI = r.ok ? await r.json() : {dias: {}}; hTipos(); hPintar();
 }
 function hFilas(){
-  const f = $("#hFuente").value, L = [];
-  Object.values(HI.dias).forEach(d => Object.values(d[f] || {}).forEach(x => L.push(x)));
+  const f = $("#hFuente").value, L = [], RV = HI.revisiones || {};
+  Object.entries(HI.dias).forEach(([dia, d]) => Object.entries(d[f] || {}).forEach(([id, x]) => L.push({...x, _id: id, _dia: dia, _rev: ((RV[dia] || {})[id] || {}).v})));
   return L;
 }
+async function revisar(dia, id, v){
+  const r = await fetch("/api/revision", {method: "POST", headers: {"x-clave": clave(), "content-type": "application/json"}, body: JSON.stringify({dia, id, v})});
+  if (!r.ok) return alertaTxt("No se pudo guardar la revisión.");
+  HI.revisiones = HI.revisiones || {}; const R = HI.revisiones[dia] = HI.revisiones[dia] || {};
+  if (v) R[id] = {v}; else delete R[id];
+  hPintar();
+}
+function alertaTxt(t){ $("#hRes").insertAdjacentHTML("afterbegin", `<div style="border-color:#eb5757"><span>${t}</span></div>`); }
 function hTipos(){
   const f = $("#hFuente").value, cur = $("#hTipo").value;
   const ks = [...new Set(hFilas().map(x => f === "obs" ? x.tipo : x.prueba))];
@@ -425,16 +436,21 @@ function hPintar(){
   const f = $("#hFuente").value, S = hSel(), obs = f === "obs";
   const ab = S.filter(x => x.estado === "abierto").length, co = S.filter(x => x.estado === "corregido").length;
   $("#hRes").innerHTML = `<div><b>${S.length}</b><span>hallazgos ${HI.desde} a ${HI.hasta}</span></div>` + (obs ? `<div><b class="ab">${ab}</b><span>abiertos</span></div><div><b class="co">${co}</b><span>corregidos</span></div>` : "")
-    + `<div><b>${new Set(S.map(x => x.codigo)).size}</b><span>estaciones</span></div>`;
+    + `<div><b>${new Set(S.map(x => x.codigo)).size}</b><span>estaciones</span></div>`
+    + (() => { const rv = S.filter(x => x._rev), re = rv.filter(x => x._rev === "real").length;
+        return `<div><b>${rv.length ? Math.round(100 * re / rv.length) + " %" : "—"}</b><span>aciertos (${rv.length} revisados: ${re} reales, ${rv.length - re} falsas alarmas)</span></div>`; })();
   const por = {}; S.forEach(x => { const p = por[x.codigo] ||= {c: x.codigo, n: x.nombre || x.codigo, t: 0, a: 0}; p.t++; if (x.estado === "abierto") p.a++; });
   const PE = Object.values(por).sort((a, b) => b.t - a.t);
-  $("#hEst").innerHTML = `<table><tr><th>Estación</th><th>Total</th>${obs ? "<th>Abiertos</th>" : ""}</tr>${PE.map(p => `<tr class="hs ${hEst === p.c ? "on" : ""}" data-c="${p.c}"><td>${esc(p.n)}</td><td>${p.t}</td>${obs ? `<td class="${p.a ? "ab" : ""}">${p.a}</td>` : ""}</tr>`).join("")}</table>`;
+  const porP = {}; S.filter(x => x._rev).forEach(x => { const k = obs ? (x.regla || x.tipo) : (PR[x.prueba] || x.prueba); const q = porP[k] ||= {n: 0, r: 0}; q.n++; if (x._rev === "real") q.r++; });
+  const tablaP = Object.keys(porP).length ? `<h3 style="font-size:13px;margin:16px 0 6px;color:var(--mu)">DESEMPEÑO POR ${obs ? "REGLA" : "PRUEBA"} (avisos revisados)</h3><table><tr><th>${obs ? "Regla" : "Prueba"}</th><th>Revisados</th><th>Aciertos</th></tr>${Object.entries(porP).sort((a, b) => b[1].n - a[1].n).map(([k, q]) => `<tr><td>${esc(k)}</td><td>${q.n}</td><td style="color:${q.r / q.n >= .7 ? "#6fcf97" : q.r / q.n >= .4 ? "#f2c94c" : "#eb5757"};font-weight:700">${Math.round(100 * q.r / q.n)} %</td></tr>`).join("")}</table>` : "";
+  $("#hEst").innerHTML = `<table><tr><th>Estación</th><th>Total</th>${obs ? "<th>Abiertos</th>" : ""}</tr>${PE.map(p => `<tr class="hs ${hEst === p.c ? "on" : ""}" data-c="${p.c}"><td>${esc(p.n)}</td><td>${p.t}</td>${obs ? `<td class="${p.a ? "ab" : ""}">${p.a}</td>` : ""}</tr>`).join("")}</table>` + tablaP;
   const T = S.filter(x => !hEst || x.codigo === hEst).sort((a, b) => (b.hora || b.momento).localeCompare(a.hora || a.momento) || a.nombre?.localeCompare(b.nombre || ""));
   const MAX = 1500;
-  $("#hTab").innerHTML = T.length ? `<table><tr><th>Día y hora UTC</th><th>Estación</th><th>${obs ? "Tipo" : "Prueba"}</th><th>${obs ? "Regla" : "Variable"}</th><th>Detalle</th><th>${obs ? "Estado" : "Visto"}</th></tr>`
+  $("#hTab").innerHTML = T.length ? `<table><tr><th>Día y hora UTC</th><th>Estación</th><th>${obs ? "Tipo" : "Prueba"}</th><th>${obs ? "Regla" : "Variable"}</th><th>Detalle</th><th>${obs ? "Estado" : "Visto"}</th><th>Revisión</th></tr>`
     + T.slice(0, MAX).map(x => `<tr><td style="white-space:nowrap">${(x.hora || x.momento).slice(8, 10)}/${(x.hora || x.momento).slice(5, 7)} ${(x.hora || x.momento).slice(11, 16)}</td><td>${esc(x.nombre || x.codigo)}</td>
       <td style="color:${HEX[x.nivel] || "inherit"}">${obs ? TIPO[x.tipo] || x.tipo : PR[x.prueba] || x.prueba}</td><td>${obs ? x.regla : VAR[x.var] || x.var}</td><td>${esc(x.msg)}</td>
-      <td style="white-space:nowrap">${obs ? (x.estado === "corregido" ? `<span class="co">corregido</span><br><small style="color:var(--mu)">${x.corregido.slice(8, 10)}/${x.corregido.slice(5, 7)} ${x.corregido.slice(11, 16)} UTC</small>` : `<span class="ab">abierto</span>`) : (x.n + (x.n === 1 ? " pasada" : " pasadas"))}</td></tr>`).join("") + `</table>`
+      <td style="white-space:nowrap">${obs ? (x.estado === "corregido" ? `<span class="co">corregido</span><br><small style="color:var(--mu)">${x.corregido.slice(8, 10)}/${x.corregido.slice(5, 7)} ${x.corregido.slice(11, 16)} UTC</small>` : `<span class="ab">abierto</span>`) : (x.n + (x.n === 1 ? " pasada" : " pasadas"))}</td>
+      <td style="white-space:nowrap"><button class="rv ${x._rev === "real" ? "on r" : ""}" data-d="${x._dia}" data-i="${esc(x._id)}" data-v="real" title="Era un error real">✓ real</button> <button class="rv ${x._rev === "falsa" ? "on f" : ""}" data-d="${x._dia}" data-i="${esc(x._id)}" data-v="falsa" title="Falsa alarma">✗ falsa</button></td></tr>`).join("") + `</table>`
     + (T.length > MAX ? `<p style="color:var(--mu)">Se muestran ${MAX} de ${T.length}; descargue el CSV para verlos todos.</p>` : "")
     : `<p style="color:var(--mu)">Sin hallazgos guardados con ese filtro. El historial se empezó a guardar el 8 de noviembre de 2026.</p>`;
 }
