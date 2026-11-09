@@ -2,3 +2,9 @@
   X-Robots-Tag: noindex
 /resultados
   X-Robots-Tag: noindex
+/js/*
+  Cache-Control: no-cache
+/qc
+  Cache-Control: no-cache
+/qc.html
+  Cache-Control: no-cache
