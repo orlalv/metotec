@@ -217,6 +217,21 @@ def categoria_W(ww):
     return None
 
 
+# fenómenos METAR en SACLIM (WWMETAR FEN1..FEN3x): código → sigla (vistos en el servicio)
+FEN_METAR = {1: "DZ", 2: "RA", 9: "BR", 10: "FG", 15: "HZ"}
+FEN_W = {"DZ": 5, "RA": 6, "FG": 4}                     # categoría de tiempo pasado (W) que respalda cada fenómeno
+
+
+def fen_metar(o):
+    """Siglas de los fenómenos METAR ingresados en esa hora."""
+    out = []
+    for k in ("FEN1", "FEN12", "FEN13", "FEN2", "FEN22", "FEN23", "FEN3", "FEN32", "FEN33"):
+        x = v(o, "WWMETAR", k)
+        if x is not None:
+            out.append(FEN_METAR.get(int(x), f"código {int(x)}"))
+    return out
+
+
 PRECIP = set(range(50, 100)) - {76, 77, 78}           # precipitación en la estación (ww 76 cristales: no siempre se mide)
 VIS_SYNOP = set(range(0, 5001, 100)) | set(range(6000, 30001, 1000)) | set(range(35000, 70001, 5000)) | {70000, 75000, 80000, 90000}
 
@@ -241,6 +256,19 @@ def codificacion(o):
             add("C04", 1, f"niebla baja (ww {ww}) con visibilidad de {VV} m: si la visibilidad es menor de 1000 m es niebla (40–49)")
         if VV < 1000 and ww < 40 and ww not in PRECIP and ww not in (4, 6, 7, 8, 9, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39):
             add("C05", 1, f"visibilidad de {VV} m sin un fenómeno que la explique (ww {ww:02d})")
+    if VV is not None and ww is not None and 1000 <= VV < 5000 and ww <= 3:
+        sug = "neblina (10)" if (HR or 0) >= 80 else "bruma o calima (05)"
+        add("C33", 2, f"visibilidad de {VV} m con ww {ww:02d} (sin fenómeno): con menos de 5000 m debe informarse lo que la reduce, p. ej. {sug} o precipitación")
+    fm = fen_metar(o)
+    if ww is not None and fm:
+        if ("DZ" in fm or "RA" in fm) and not (ww in PRECIP or 20 <= ww <= 29 or 13 <= ww <= 16):
+            add("C34", 2, f"el METAR informa {'/'.join(f for f in fm if f in ('DZ', 'RA'))} y el SYNOP ww {ww:02d} no tiene precipitación")
+        if "BR" in fm and ww not in (10,) and ww < 10:
+            add("C35", 1, f"el METAR informa BR (neblina) y el SYNOP ww {ww:02d}: correspondería ww 10 si no hay otro fenómeno más importante")
+        if "FG" in fm and not 40 <= ww <= 49 and ww not in (11, 12, 28):
+            add("C36", 2, f"el METAR informa FG (niebla) y el SYNOP ww {ww:02d} no es niebla (40–49)")
+        if "HZ" in fm and ww < 4:
+            add("C37", 1, f"el METAR informa HZ (calima) y el SYNOP ww {ww:02d}: correspondería ww 05")
     if VV is not None and VV not in VIS_SYNOP:
         add("C06", 1, f"visibilidad {VV} m no se puede cifrar en SYNOP (pasos de 100 m hasta 5 km y de 1 km hasta 30 km)")
     if ww == 10 and HR is not None and HR < 60:
@@ -354,11 +382,15 @@ def evolucion(t, o, hist):
     W1, W2 = v(o, "W1W2", "W1"), v(o, "W1W2", "W2")
     if W1 is not None and len(disponibles) >= per - 2:
         cats = [categoria_W(v(h, "WWSINOP", "ww")) for h in disponibles] + [categoria_W(ww)]
+        cats += [FEN_W[f] for h in disponibles + [o] for f in fen_metar(h) if f in FEN_W]     # también lo informado en los METAR
         mx = max([c for c in cats if c is not None], default=None)
         if mx is not None and W1 < mx:
             add("E10", 2, f"en el período de {per} h se informó un fenómeno de categoría W {mx}, pero W1 es {W1}")
         if W1 >= 5 and (mx is None or mx < 5):
-            add("E11", 1, f"W1 {W1} (precipitación o tormenta en el período de {per} h) sin ningún ww horario que lo respalde")
+            add("E11", 1, f"W1 {W1} (precipitación o tormenta en el período de {per} h) sin ningún ww ni METAR horario que lo respalde")
+    rr6, tz = v(o, "RRR6", "RRR6"), v(o, "RRR6", "Traza")
+    if t.hour % 6 == 0 and rr6 == 0 and not tz and ((W1 or 0) in (5, 6, 7, 8) or (W2 or 0) in (5, 6, 7, 8) or (ww is not None and 50 <= ww <= 90)):
+        add("E17", 1, f"precipitación informada (W1 {W1}, W2 {W2}, ww {ww}) y RRR6 0 sin traza: si llovió o lloviznó debe ir al menos traza")
     # precipitación del período
     rr, traza = v(o, "RRR6", "RRR6"), v(o, "RRR6", "Traza")
     if ingresado(o, "RRR6", "RRR6") and len(disponibles) >= 4:
