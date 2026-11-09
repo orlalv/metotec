@@ -179,21 +179,29 @@ def revisar_dia(dia, bol, raiz, ayer=None):
                     if best is not None and abs(best - val) > 1.0:
                         marca(col + "_h", "warn", f"EMA {ref:.1f} · {loc(tref):%H:%M}",
                               f"Hora de la {nombre} {hora_txt}: a esa hora la automática marcaba {best:.1f} °C; su {('mínimo' if minimo else 'máximo')} ({ref:.1f} °C) fue a las {loc(tref):%H:%M}.", real)
-            # frente al observador
-            ob = o.get(h_obs)
-            x, fh = _v(ob, el_obs), ((ob or {}).get(el_obs) or {}).get("FechaHora")
-            if val is not None and x is not None and abs(x - val) > 0.05 and col not in marcas:
-                re_ = realEMA.get(col) or dict(valor=x, hora=str(fh)[11:16] if fh else None, fuente="observador")
-                marca(col, "warn", "", f"{nombre.capitalize()} del boletín {val:.1f} °C; el observador ingresó {x:.1f} °C"
-                      + (f" a las {str(fh)[11:16]}" if fh else "") + f" ({el_obs}).", re_)
-            if minimo is False and val is not None and re.fullmatch(r"\d\d:\d\d", hora_txt or "") and col + "_h" not in marcas:
-                hh = int(hora_txt[:2])
-                if zona != PAS and (hh < 10 or hh >= 21):
-                    re_ = realEMA.get("tx")
-                    if not re_ and x is not None and fh and str(fh)[11:16] != hora_txt:
-                        re_ = dict(valor=x, hora=str(fh)[11:16], fuente="observador")
-                    marca("tx_h", "warn", "hora rara", f"Máxima de ayer a las {hora_txt}: es rara una máxima a esa hora."
-                          + ("" if re_ else " No hay minutario completo ni otra hora del observador para decir cuál fue la hora real."), re_)
+            # frente al observador. La máxima del boletín es la del día completo: la mayor entre TxAM (12 UTC de ayer, de la
+            # mañana) y TxPM (00 UTC, de la tarde); la mínima es TnAM de las 12 UTC.
+            cands = []
+            for hh_, el_ in ([(t12, "TnAM")] if minimo else [(t12 - pd.Timedelta(hours=24), "TxAM"), (t12 - pd.Timedelta(hours=12), "TxPM")]):
+                ob = o.get(hh_)
+                xv, fh_ = _v(ob, el_), ((ob or {}).get(el_) or {}).get("FechaHora")
+                if xv is not None:
+                    cands.append((xv, str(fh_)[11:16] if fh_ else None, el_))
+            if cands:
+                x, hx, elx = (min if minimo else max)(cands, key=lambda c: c[0])
+                det = " y ".join(f"{e} {xv:.1f} °C" + (f" a las {h}" if h else "") for xv, h, e in cands)
+                if val is not None and abs(x - val) > 0.05 and col not in marcas:
+                    re_ = realEMA.get(col) or dict(valor=x, hora=hx, fuente="observador")
+                    marca(col, "warn", "", f"{nombre.capitalize()} del boletín {val:.1f} °C; el observador ingresó {det}"
+                          + ("" if minimo else f": la máxima del día es {x:.1f} °C ({elx})") + ".", re_)
+                elif val is not None and hx and hora_txt and hx != hora_txt and col + "_h" not in marcas:
+                    marca(col + "_h", "warn", "", f"Hora de la {nombre} {hora_txt}; el observador la ingresó a las {hx} ({elx}).",
+                          dict(valor=x, hora=hx, fuente="observador") if col not in realEMA else dict(realEMA[col]))
+                elif not minimo and val is not None and elx == "TxAM" and hora_txt == hx and col + "_h" not in marcas:
+                    marcas["tx_h"] = dict(nivel="info", sub="máx. en la mañana", msg=None, real=None)
+                    items.append(dict(estacion=nom, col="tx_h", nivel="info", real=None,
+                                      msg=f"La máxima de ayer se dio en la mañana ({val:.1f} °C a las {hora_txt}, TxAM), más alta que la de la tarde"
+                                      + "".join(f" ({xv:.1f} °C a las {h})" for xv, h, e in cands if e == "TxPM") + ". Calza con lo ingresado por el observador."))
         # ---- agua caída 24 h
         r24 = 0.0 if rr == "S/P" else num(rr)
         if r24 is not None and len(g):
