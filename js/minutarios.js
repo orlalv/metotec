@@ -60,10 +60,13 @@ async function cargar(cod, dia, local){
   let sinArchivo = 0;
   const leer = (c0, lineas) => lineas.forEach(l => { const v = l.split(","), o = {t: Date.parse(v[1].replace(" ", "T") + "Z")};
     c0.forEach((c, j) => { if (j > 1) o[c] = v[j] === "" ? null : +v[j]; }); filas.push(o); });
-  let api = null;                                   // primero el servidor de METOTEC: una sola descarga
-  try { const iso = t => new Date(t).toISOString().slice(0, 13);
+  const sub = subidos(cod, a, b);                   // 1) archivos de la DMC que subió el usuario
+  let api = null, origen = "archivo METOTEC";
+  if (sub.length){ filas.push(...sub); origen = "archivos subidos"; }
+  else try {                                        // 2) el servidor de METOTEC: una sola descarga const iso = t => new Date(t).toISOString().slice(0, 13);
     const r = await fetch(`/api/minutarios?cod=${cod}&desde=${iso(a)}&hasta=${iso(b)}`); if (r.ok) api = await r.json(); } catch (e) {}
-  if (api && api.cab){
+  if (sub.length){}
+  else if (api && api.cab){
     leer(api.cab.split(","), api.filas);
     sinArchivo = api.faltan.filter(k => Date.parse(k + ":00:00Z") < Date.now() - 3600e3).length;
   } else {                                          // si no responde, directo desde GitHub hora por hora
@@ -75,7 +78,61 @@ async function cargar(cod, dia, local){
   }
   const vistos = new Set(), T = filas.filter(o => !vistos.has(o.t) && vistos.add(o.t)).sort((p, q) => p.t - q.t);
   marcarPicos(T);
-  return {cod, dia, local, ini, fin, F: T.filter(o => o.t > ini && o.t <= fin), T, sinArchivo, horas: horas.length};
+  return {cod, dia, local, ini, fin, F: T.filter(o => o.t > ini && o.t <= fin), T, sinArchivo: sub.length ? 0 : sinArchivo, horas: horas.length, origen};
+}
+
+/* --------- archivos de la DMC subidos por el usuario (portal: datos históricos EMA, ZIP o CSV mensual por variable) --------- */
+const SUB = new Map();                   // código → Map(t → fila)
+const MAPA = {ts: "T", td: "Td", tMin12Horas: "Tn12", tMax12Horas: "Tx12", hr: "HR", qfe1: "P_est", qff: "P_mar", qnh: "P_std",
+  dd10Minutos: "dd10", ff10Minutos: "ff10", ff10MinutosMax: "fx10", dd02Minutos: "dd2", ff02Minutos: "ff2",
+  rrInst: "rr1m", rr6Horas: "rr6", rr24Horas: "rr24", radiacionGlobalInst: "Rad",
+  Ts: "T", Td: "Td", HR: "HR", QFE: "P_est", QFF: "P_mar", dd: "dd10", ff: "ff10"};          // también los anuales horarios (Instante)
+const ARCH = [];
+function subidos(cod, a, b){
+  const m = SUB.get(String(cod)); if (!m) return [];
+  return [...m.values()].filter(o => o.t >= a && o.t <= b);
+}
+function leerCSV(nombre, tx){
+  const ls = tx.replace(/\r/g, "").split("\n").filter(Boolean); if (ls.length < 2) return null;
+  const sep = ls[0].includes(";") ? ";" : ",", cab = ls[0].split(sep).map(x => x.trim());
+  const iC = cab.findIndex(c => /^codigo/i.test(c)), iT = cab.findIndex(c => c === "momento" || c === "Instante"), iR = cab.indexOf("momentoRegistro");
+  if (iC < 0 || iT < 0) return {nombre, error: "formato no reconocido (se esperan columnas codigoNacional y momento o Instante)"};
+  const cols = cab.map((c, j) => [j, MAPA[c]]).filter(x => x[1]);
+  let n = 0, t0 = Infinity, t1 = -Infinity; const cods = new Set();
+  for (let i = 1; i < ls.length; i++){
+    const v = ls[i].split(sep), cod = v[iC].trim(), t = Date.parse(v[iT].trim().replace(" ", "T") + (v[iT].length <= 16 ? ":00Z" : "Z"));
+    if (!cod || !t) continue;
+    let m = SUB.get(cod); if (!m){ m = new Map(); SUB.set(cod, m); }
+    const o = m.get(t) || {t};
+    cols.forEach(([j, k]) => { const x = v[j] === undefined || v[j] === "" ? null : +v[j]; if (x != null && !isNaN(x)) o[k] = x; else if (!(k in o)) o[k] = null; });
+    if (iR >= 0 && v[iR]) o._reg = Math.round((Date.parse(v[iR].replace(" ", "T") + "Z") - t) / 60e3);
+    m.set(t, o); n++; cods.add(cod); t0 = Math.min(t0, t); t1 = Math.max(t1, t);
+  }
+  return {nombre, n, cods: [...cods], t0, t1, vars: [...new Set(cols.map(x => NOM[x[1]] || x[1]))]};
+}
+async function zipLib(){
+  if (window.JSZip) return window.JSZip;
+  await new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"; sc.onload = ok; sc.onerror = mal; document.head.appendChild(sc); });
+  return window.JSZip;
+}
+async function subir(files){
+  const out = $("#mSubInfo"); out.innerHTML = `<span style="color:var(--mu)">Leyendo ${files.length} archivo(s)…</span>`;
+  for (const f of files){
+    try {
+      if (/\.zip$/i.test(f.name)){
+        const Z = await (await zipLib()).loadAsync(f);
+        for (const e of Object.values(Z.files)) if (!e.dir && /\.(csv|txt)$/i.test(e.name)) ARCH.push(leerCSV(e.name, await e.async("string")) || {nombre: e.name, error: "vacío"});
+      } else ARCH.push(leerCSV(f.name, await f.text()) || {nombre: f.name, error: "vacío"});
+    } catch (e){ ARCH.push({nombre: f.name, error: "no se pudo leer (" + e.message + ")"}); }
+  }
+  DC.clear(); pintarSub();
+  if (M) generar();
+}
+function pintarSub(){
+  const d = t => new Date(t).toISOString().slice(0, 10);
+  $("#mSubInfo").innerHTML = ARCH.length ? `<table style="width:auto;font-size:12.5px">${ARCH.map(a => a.error ? `<tr><td>${esc(a.nombre)}</td><td colspan="3" style="color:#eb5757">${esc(a.error)}</td></tr>`
+    : `<tr><td>${esc(a.nombre)}</td><td>${a.cods.map(c => esc((EST.find(e => e.codigo === c) || {}).nombre || c)).join(", ")}</td><td>${d(a.t0)} a ${d(a.t1)}</td><td>${a.n.toLocaleString("es-CL")} filas · ${esc(a.vars.join(", "))}</td></tr>`).join("")}</table>
+    <p class="nota" style="margin:4px 0 0">Los archivos se leen solo en este navegador (no se suben a ningún servidor). Para un día con archivos subidos se usan esos datos en vez del archivo de METOTEC.</p>` : "";
 }
 
 /* --------- cálculos --------- */
@@ -175,14 +232,20 @@ function init(){
   const ayer = new Date(Date.now() - (new Date().getUTCHours() < 6 ? 864e5 : 0)).toISOString().slice(0, 10);   // hoy (UTC), salvo recién empezado el día
   s.innerHTML = `<div class="htools"><button id="mVolver" style="border-color:var(--oro);color:var(--oro)">← Volver al mapa</button>
     <input id="mEst" list="mLista" placeholder="Estación (nombre o código)" style="min-width:280px"><datalist id="mLista"></datalist>
-    <input type="date" id="mDia" value="${ayer}" min="2026-11-08"><select id="mDiaT"><option value="utc">Día UTC (00 a 24 UTC)</option><option value="loc">Día local (00 a 24 hora de Chile)</option></select>
-    <button id="mVer" style="border-color:var(--oro);color:var(--oro)">Generar</button><button id="mCsv">Descargar CSV</button></div>
-    <p class="nota" style="margin:0 0 10px">Las extremas descartan valores fuera de rango y picos aislados (minutos que se apartan bruscamente de sus vecinos). Datos minutarios del archivo de METOTEC (guardado cada 30 min desde el 8-11-2026, todas las estaciones automáticas). Extremas sinópticas: mínima de 00 a 12 UTC (se informa a las 12) y máxima de 12 a 24 UTC (se informa a las 00). Cada minuto cuenta para el período que termina en él.</p>
+    <input type="date" id="mDia" value="${ayer}"><select id="mDiaT"><option value="utc">Día UTC (00 a 24 UTC)</option><option value="loc">Día local (00 a 24 hora de Chile)</option></select>
+    <button id="mVer" style="border-color:var(--oro);color:var(--oro)">Generar</button><button id="mCsv">Descargar CSV</button>
+    <label id="mSubir" style="cursor:pointer;background:var(--panel);border:1px dashed var(--oro);color:var(--oro);border-radius:8px;padding:6px 10px;font:600 13px inherit">⬆ Subir archivos de la DMC (ZIP o CSV)<input type="file" id="mArch" multiple accept=".zip,.csv,.txt" hidden></label></div>
+    <div id="mSubInfo" style="margin:-2px 0 8px"></div>
+    <p class="nota" style="margin:0 0 10px">Las extremas descartan valores fuera de rango y picos aislados (minutos que se apartan bruscamente de sus vecinos). Datos minutarios del archivo de METOTEC (guardado cada 30 min desde el 8-11-2026, todas las estaciones automáticas) o de los archivos que suba desde el portal de climatología (Datos históricos EMA: un ZIP por mes y variable; puede subir varios a la vez, de varias estaciones). Extremas sinópticas: mínima de 00 a 12 UTC (se informa a las 12) y máxima de 12 a 24 UTC (se informa a las 00). Cada minuto cuenta para el período que termina en él.</p>
     <div id="mOut"></div>`;
   estaciones().then(E => { $("#mLista").innerHTML = E.map(e => `<option value="${e.codigo} · ${esc(e.nombre)}">`).join(""); });
   $("#mVolver").addEventListener("click", () => document.querySelector('.modos button[data-m="ema"]').click());
   $("#mVer").addEventListener("click", generar); $("#mEst").addEventListener("change", generar); $("#mDia").addEventListener("change", generar); $("#mDiaT").addEventListener("change", generar);
   $("#mCsv").addEventListener("click", csv);
+  $("#mArch").addEventListener("change", ev => { if (ev.target.files.length) subir([...ev.target.files]); ev.target.value = ""; });
+  s.addEventListener("dragover", ev => { ev.preventDefault(); $("#mSubir").style.background = "#2a2410"; });
+  s.addEventListener("dragleave", () => $("#mSubir").style.background = "");
+  s.addEventListener("drop", ev => { ev.preventDefault(); $("#mSubir").style.background = ""; if (ev.dataTransfer.files.length) subir([...ev.dataTransfer.files]); });
   s.addEventListener("toggle", ev => { const d = ev.target; if (d.classList && d.classList.contains("mblo")) d.open ? CERR.delete(d.dataset.k) : CERR.add(d.dataset.k); }, true);
   s.addEventListener("change", ev => { if (ev.target.id === "mSoloDif"){ soloDif = ev.target.checked; grafico(); return; }
     const c = ev.target.closest(".mcmp"); if (c){ const k = c.dataset.c;
@@ -201,7 +264,7 @@ async function generar(){
   M = await cargar(cod, $("#mDia").value, $("#mDiaT").value === "loc");
   const e = EST.find(x => x.codigo === cod) || {};
   M.nombre = e.nombre || cod; M.alt = e.alt ?? null;
-  if (!M.F.length){ $("#mOut").innerHTML = `<p style="color:var(--mu)">No hay datos de ${esc(M.nombre)} para ese día en el archivo${M.sinArchivo ? ` (faltan ${M.sinArchivo} de ${M.horas} horas de archivo)` : ""}.</p>`; return; }
+  if (!M.F.length){ $("#mOut").innerHTML = `<p style="color:var(--mu)">No hay datos de ${esc(M.nombre)} para ese día en el archivo de METOTEC (parte el 8-11-2026). Para fechas anteriores, suba los ZIP del portal de climatología (Datos históricos EMA)${M.sinArchivo ? ` (faltan ${M.sinArchivo} de ${M.horas} horas de archivo)` : ""}.</p>`; return; }
   M.I = inconsistencias(M, M.alt); pintar();
 }
 function tarjeta(t, x, u, sub){ return `<div><span>${t}</span><b>${x ? f1(x.v) + " " + u : "—"}</b>${x ? `<span>${hhmm(x.t)} UTC · ${loc(x.t)} hora local</span>` : ""}${sub ? `<span>${sub}</span>` : ""}</div>`; }
@@ -211,7 +274,7 @@ function pintar(){
   const cmp = c => !c ? "" : c.inf == null ? "sin valor informado" : `informada ${f1(c.inf)} · ${c.cal != null && Math.abs(c.inf - c.cal) > c.tol ? `<b style="color:#f2c94c;display:inline;font-size:inherit">no cuadra</b>` : "cuadra"}`;
   const cn = r.comp.find(c => c.v === "Tn12"), cx = r.comp.find(c => c.v === "Tx12");
   const vars = VARS.filter(v => M.F.some(o => o[v[0]] != null));
-  $("#mOut").innerHTML = `<h3 style="margin:4px 0 10px">${esc(M.nombre)} <small style="color:var(--mu)">${M.cod}${M.alt != null ? " · " + M.alt + " m" : ""} · ${M.dia} ${M.local ? "(día local)" : "(día UTC)"} · ${M.F.length} registros cada ${cadencia(M.F) / 60e3} min</small></h3>
+  $("#mOut").innerHTML = `<h3 style="margin:4px 0 10px">${esc(M.nombre)} <small style="color:var(--mu)">${M.cod}${M.alt != null ? " · " + M.alt + " m" : ""} · ${M.dia} ${M.local ? "(día local)" : "(día UTC)"} · ${M.F.length} registros cada ${cadencia(M.F) / 60e3} min · fuente: ${M.origen}</small></h3>
     <div class="hres">${tarjeta("Mínima 00–12 UTC (Tn12)", r.tn, "°C", cmp(cn))}${tarjeta("Máxima 12–24 UTC (Tx12)", r.tx, "°C", cmp(cx))}
       ${tarjeta("Mínima del período", d.Tmin, "°C")}${tarjeta("Máxima del período", d.Tmax, "°C")}${tarjeta("Racha máxima", d.fx, "kt")}${tarjeta("Humedad mínima", d.HRmin, "%")}${tarjeta("QFE mínimo", d.Pmin, "hPa")}${tarjeta("QFE máximo", d.Pmax, "hPa")}</div>
     <div class="hres">${r.per.map(p => `<div><span>Agua caída ${String(p.a).padStart(2, "0")}–${String(p.a + 6).padStart(2, "0")} UTC</span><b>${p.n ? f1(p.s || 0) + " mm" : "—"}</b><span>${p.inf != null ? "RRR6 informada " + f1(p.inf) : "sin RRR6 informada"}${p.n ? ` · ${p.n} reg.` : ""}</span></div>`).join("")}
