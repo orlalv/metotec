@@ -4,9 +4,9 @@
    de la DMC cada 30 minutos desde el 8 de noviembre de 2026. */
 (function(){
 const RAW = "https://raw.githubusercontent.com/orlalv/metotec/datos/";
-const VARS = [["T", "Temperatura", "°C"], ["Td", "Punto de rocío", "°C"], ["HR", "Humedad", "%"], ["P_est", "QFE", "hPa"], ["P_mar", "QFF", "hPa"],
+const VARS = [["T", "Ts (temp. seca)", "°C"], ["Td", "Td (punto de rocío)", "°C"], ["HR", "Humedad", "%"], ["P_est", "QFE", "hPa"], ["P_mar", "QFF", "hPa"],
   ["P_std", "QNH", "hPa"], ["dd10", "Dir. 10 min", "°"], ["ff10", "Viento 10 min", "kt"], ["fx10", "Racha", "kt"], ["rr1m", "Agua caída", "mm"],
-  ["rr6", "RRR6 informada", "mm"], ["rr24", "RRR24 informada", "mm"], ["Tn12", "Tn12 informada", "°C"], ["Tx12", "Tx12 informada", "°C"], ["Rad", "Radiación", "W/m²"]];
+  ["rr6", "RRR6 informada", "mm"], ["rr24", "RRR24 informada", "mm"], ["Tn12", "Tmín 12 h informada", "°C"], ["Tx12", "Tmáx 12 h informada", "°C"], ["Rad", "Radiación", "W/m²"]];
 const NOM = Object.fromEntries(VARS.map(v => [v[0], v[1]])), UNI = Object.fromEntries(VARS.map(v => [v[0], v[2]]));
 const CACHE = new Map();
 let EST = [], M = null, mVar = "T";
