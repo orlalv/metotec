@@ -4,26 +4,16 @@ jobs:
   e:
     runs-on: ubuntu-latest
     env:
-      DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
-      DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
+      CF: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      AC: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
-      - uses: actions/checkout@v4
-      - run: pip install -q requests pandas
       - run: |
-          cd qc && python - <<'PY'
-          import dmc, json
-          vistos = {}
-          for cod in ["290004", "330020", "410005", "380029", "450001", "520006", "330030", "360011"]:
-              try: js = dmc.descargar(f"getRecientesSaclim/{cod}", timeout=90)
-              except Exception as e: print(cod, e); continue
-              nombres = {k: v.get("elementoNombreCorto") for k, v in (js.get("datosElementos") or {}).items()}
-              for b in (js.get("datosRecientes") or {}, *(js.get("datos") or [])):
-                  for t, h in (b or {}).items():
-                      for eid, lin in ((h or {}).get("datos") or {}).items():
-                          if nombres.get(eid) not in ("WWMETAR", "WWSINOP", "W1W2"): continue
-                          for comps in (lin or {}).values():
-                              for cn, c in (comps or {}).items():
-                                  if c.get("valor") not in (None, ""):
-                                      vistos[(nombres[eid], cn, str(c.get("valor")))] = c.get("valorDescripcion")
-          for k in sorted(vistos): print(k, "→", vistos[k])
-          PY
+          curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/accounts/$AC/pages/projects/metotec" | python3 -c "
+          import json,sys;d=json.load(sys.stdin);r=d.get('result') or {};print('ok',d.get('success'),d.get('errors'));print('prod branch',r.get('production_branch'),'domains',r.get('domains'));
+          cd=r.get('canonical_deployment') or {};print('canonical',cd.get('id'),cd.get('created_on'),cd.get('url'))"
+          curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/accounts/$AC/pages/projects/metotec/deployments?per_page=6" | python3 -c "
+          import json,sys;d=json.load(sys.stdin);print(d.get('success'),d.get('errors'))
+          for x in d.get('result') or []: print(x['id'][:8],x['created_on'],x['environment'],x.get('deployment_trigger',{}).get('metadata',{}).get('branch'),x['latest_stage']['name'],x['latest_stage']['status'],x['url'])"
+          curl -s -H "Authorization: Bearer $CF" "https://api.cloudflare.com/client/v4/accounts/$AC/pages/projects" | python3 -c "
+          import json,sys;d=json.load(sys.stdin)
+          for p in d.get('result') or []: print('proyecto',p['name'],p.get('domains'))"
