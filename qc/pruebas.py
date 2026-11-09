@@ -190,7 +190,11 @@ def vecinas(H, E, V):
 MOD = {"T": (7, 12), "Td": (9, 15), "P_mar": (5, 10)}
 
 
-def modelo(H, M, aisladas=()):
+PISOS = {"T": (2, 4), "Td": (3, 6), "HR": (10, 20), "P_mar": (1.5, 3), "ff10": (5, 10)}
+
+
+def modelo(H, M, aisladas=(), cal=None):
+    import calibrar as CAL
     out = []
     if M is None or M.empty:
         return out
@@ -201,10 +205,12 @@ def modelo(H, M, aisladas=()):
             o, m = r[v], r[v + "_m"]
             if pd.isna(o) or pd.isna(m):
                 continue
-            d = abs(o - m)
-            if d > s1:
+            u = CAL.umbral(cal, r.codigo, v, "om", r.momento.hour, PISOS.get(v, (s1 / 2, s2 / 2)))
+            b, t1, t2, cal_txt = (u[0], u[1], u[2], f" (calibrado: sesgo habitual {u[0]:+.1f})") if u else (0, s1, s2, "")
+            d = abs(o - m - b)
+            if d > t1:
                 extra = " (estación aislada: el modelo es su principal referencia)" if r.codigo in aisladas else ""
-                out.append(alerta(r.codigo, "modelo", v, 2 if d > s2 else 1, r.momento, o, m, f"diferencia con el modelo de {d:.1f}{extra}"))
+                out.append(alerta(r.codigo, "modelo", v, 2 if d > t2 else 1, r.momento, o, m, f"diferencia con el modelo de {abs(o - m):.1f}{cal_txt}{extra}"))
     return out
 
 
@@ -262,7 +268,7 @@ def completitud(D, E):
 
 
 # ------------------------------------------------------------------ 6b. modelo WRF-DMC (varias corridas)
-def modelo_dmc(H, W, aisladas=()):
+def modelo_dmc(H, W, aisladas=(), cal=None):
     """Compara con la mediana de las últimas corridas del WRF-DMC; el umbral crece con la dispersión entre corridas."""
     out = []
     if W is None or W.empty or H.empty:
@@ -276,10 +282,15 @@ def modelo_dmc(H, W, aisladas=()):
             if o is None or m is None or pd.isna(o) or pd.isna(m):
                 continue
             s1, s2 = (max(b1, k * sd), max(b2, (k + 2) * sd)) if k else (b1, b2)
-            d = abs(o - m)
+            import calibrar as CAL
+            u = CAL.umbral(cal, r["codigo"], v, "wrf", r["momento"].hour, PISOS[v])
+            b, cal_txt = (u[0], f", calibrado: sesgo habitual {u[0]:+.1f}") if u else (0, "")
+            if u:
+                s1, s2 = max(u[1], k * sd), max(u[2], (k + 2) * sd)
+            d = abs(o - m - b)
             if d > s1:
                 out.append(alerta(r["codigo"], "wrf", v, 2 if d > s2 else 1, r["momento"], o, m,
-                                  f"diferencia con el WRF-DMC de {d:.1f} (mediana de {int(r['n_w'])} corridas){extra}"))
+                                  f"diferencia con el WRF-DMC de {abs(o - m):.1f} (mediana de {int(r['n_w'])} corridas{cal_txt}){extra}"))
     return out
 
 

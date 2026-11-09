@@ -325,6 +325,15 @@ function grafico(e, v){
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block">${ticks}${xs}${S.map(s => `<path d="${lin(s)}" fill="none" stroke="${s[1]}" stroke-width="2.2" stroke-dasharray="${s[2]}"/>${pts(s)}`).join("")}</svg>
    <div style="display:flex;gap:14px;font-size:12.5px;color:var(--mu)">${S.map(s => `<span><i style="display:inline-block;width:14px;height:3px;background:${s[1]};vertical-align:middle;margin-right:5px"></i>${s[0]}</span>`).join("")}<span>${info.n} (${info.u}), horas UTC</span></div>`;
 }
+function verifTxt(e){
+  const V = e.verif; if (!V) return `<p style="color:var(--mu);font-size:13px;margin:10px 0 0">Verificación de modelos: se mostrará cuando haya historia suficiente (se guarda desde el 8 de noviembre de 2026).</p>`;
+  const f = Object.entries(MV).filter(([k]) => V[k]).map(([k, i]) => { const w = V[k].wrf, o = V[k].om;
+    const gana = w && o ? (w[0] < o[0] ? "WRF-DMC" : "Open-Meteo") : w ? "WRF-DMC" : "Open-Meteo";
+    return `<tr><td>${i.n}</td><td>${w ? w[0] + " " + i.u + " <small>(" + w[2] + " %)</small>" : "—"}</td><td>${o ? o[0] + " " + i.u + " <small>(" + o[2] + " %)</small>" : "—"}</td><td><b>${gana}</b></td></tr>`; }).join("");
+  return `<h3 style="font-size:14px;margin:12px 0 6px">¿Qué modelo atina más aquí? (últimos ${R.verif_dias} días)</h3>
+   <table><tr><th>Variable</th><th>Error medio WRF-DMC</th><th>Error medio Open-Meteo</th><th>Atina más</th></tr>${f}</table>
+   <p style="color:var(--mu);font-size:12px;margin:4px 0 0">Entre paréntesis, % de horas con error pequeño (T y Td ≤ 2 °C, HR ≤ 10 %, QFF ≤ 2 hPa, viento ≤ 5 kt).</p>`;
+}
 function detalleMod(c, mover = true){
   const e = R.estaciones.find(x => x.codigo === c); if (!e) return; sel = c;
   document.querySelectorAll(".it").forEach(x => x.classList.toggle("sel", x.dataset.c === c));
@@ -338,6 +347,7 @@ function detalleMod(c, mover = true){
    <div class="sub">${e.codigo} · ${e.alt ?? "—"} m${e.aislada ? " · estación aislada: el modelo es su referencia principal" : ""}</div>
    ${grafico(e, v)}
    <table style="margin-top:10px"><tr><th>Variable</th><th>Estación</th><th>WRF-DMC</th><th>Open-Meteo</th><th>Est. − Open-Meteo</th></tr>${filas}</table>
+   ${verifTxt(e)}
    ${al.length ? `<h3 style="font-size:14px;margin:12px 0 6px">Avisos frente al modelo</h3><table>${al.map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba]}</td><td>${VAR[a.var] || a.var}</td><td>${esc(a.msg)}</td></tr>`).join("")}</table>` : ""}`;
 }
 $("#mvar").addEventListener("change", () => { leyenda(true); R && pintar(); });

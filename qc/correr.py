@@ -185,10 +185,17 @@ def main():
     V = P.vecinas_de(E, clusters=clusters)
     aisladas = {c for c, L in V.items() if len(L) < 3}
 
+    cal = None
+    try:   # calibración por estación (sesgo y dispersión O−B); se recalcula una vez por semana
+        import calibrar as CAL
+        cal = CAL.cargar(a.datos)
+        estado["calibracion"] = dict(dias=cal["dias"], filas=cal["filas"], activa=cal["dias"] >= 14)
+    except Exception:
+        estado["errores"].append(f"calibración: {traceback.format_exc(limit=2)}")
     alertas = []
     for nombre, f in [("rango", lambda: P.rango(A)), ("salto", lambda: P.saltos(A)), ("pegado", lambda: P.pegados(A)),
                       ("coherencia", lambda: P.coherencia(H.groupby("codigo").tail(1), E)), ("vecinas", lambda: P.vecinas(H, E, V)),
-                      ("modelo", lambda: P.modelo(H, M, aisladas)), ("wrf", lambda: P.modelo_dmc(H, W, aisladas)), ("lluvia", lambda: P.lluvia(H, M, V)),
+                      ("modelo", lambda: P.modelo(H, M, aisladas, cal)), ("wrf", lambda: P.modelo_dmc(H, W, aisladas, cal)), ("lluvia", lambda: P.lluvia(H, M, V)),
                       ("satelite", lambda: SAT.ema(H, A, E, sat))]:
         try:
             alertas += f()
@@ -274,8 +281,8 @@ def main():
             estado_txt = ["bien", "sospechoso", "erróneo"][nivel]
         est.append(dict(codigo=c, nombre=r["nombre"], oaci=r["oaci"], lat=r["lat"], lon=r["lon"], alt=r["alt"], nivel=nivel, estado=estado_txt,
                         aislada=c in aisladas, vecinas=V.get(c, [])[:6], completitud=comp.get(c), hora=None if u is None else str(u["momento"]),
-                        valores=val, modelo=mod_ult.get(c, {}), serie=serie.get(c, []), incendio=cerc.get(c), alertas=al))
-    res = dict(serie_campos=["hora", "T", "T_w", "T_om", "Td", "Td_om", "HR", "HR_w", "HR_om", "P_mar", "P_mar_om", "ff10", "ff10_w", "ff10_om"], generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), datos_hasta=estado["hasta"], version=VERSION,
+                        valores=val, modelo=mod_ult.get(c, {}), serie=serie.get(c, []), incendio=cerc.get(c), verif=(cal or {}).get("verif", {}).get(c), alertas=al))
+    res = dict(verif_dias=(cal or {}).get("dias", 0), verif_resumen=(cal or {}).get("resumen"), serie_campos=["hora", "T", "T_w", "T_om", "Td", "Td_om", "HR", "HR_w", "HR_om", "P_mar", "P_mar_om", "ff10", "ff10_w", "ff10_om"], generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), datos_hasta=estado["hasta"], version=VERSION,
                fuentes={"estaciones": "DMC, red automática", "modelo": " + ".join(x for x in ["WRF-DMC" if W is not None and len(W) else "", "Open-Meteo" if M is not None else ""] if x) or None, "satelite": "GOES-19 (NOAA)" if sat else None},
                resumen={k: sum(1 for e in est if e["estado"] == k) for k in ("bien", "sospechoso", "erróneo", "sin datos")},
                estaciones=est)
