@@ -182,9 +182,13 @@ def revisar_dia(dia, bol, raiz, ayer=None):
             # frente al observador. La máxima del boletín es la del día completo: la mayor entre TxAM (12 UTC de ayer, de la
             # mañana) y TxPM (00 UTC, de la tarde); la mínima es TnAM de las 12 UTC.
             cands = []
-            for hh_, el_ in ([(t12, "TnAM")] if minimo else [(t12 - pd.Timedelta(hours=24), "TxAM"), (t12 - pd.Timedelta(hours=12), "TxPM")]):
+            # (la TxAM de las 12 UTC de hoy también cuenta si ocurrió antes de medianoche local de ayer, p. ej. 21:04)
+            ayer_loc = str(dia - timedelta(days=1))
+            for hh_, el_ in ([(t12, "TnAM")] if minimo else [(t12 - pd.Timedelta(hours=24), "TxAM"), (t12 - pd.Timedelta(hours=12), "TxPM"), (t12, "TxAM")]):
                 ob = o.get(hh_)
                 xv, fh_ = _v(ob, el_), ((ob or {}).get(el_) or {}).get("FechaHora")
+                if not minimo and hh_ == t12 and not str(fh_ or "").startswith(ayer_loc):
+                    continue
                 if xv is not None:
                     cands.append((xv, str(fh_)[11:16] if fh_ else None, el_))
             if cands:
