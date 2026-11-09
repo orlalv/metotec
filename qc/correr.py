@@ -248,14 +248,19 @@ def main():
         alertas = INC.aplicar(alertas, cerc, H["momento"].max() if len(H) else pd.Timestamp.now(), P.alerta)
         estado["incendios_cerca"] = len(cerc)
         # público: estaciones a ≤ 30 km de un incendio de las últimas 6 h, con su evolución (para el visor de incendios)
-        c30 = INC.cercania(E, INC.ultimo, horas=6, radio=30)
+        c30 = INC.cercania(E, INC.ultimo, horas=12, radio=30)
         pub = []
         nom = E.set_index("codigo")
         for cod, c in c30.items():
             g = H[H["codigo"] == cod].sort_values("momento").tail(7)
             fila = lambda x: None if pd.isna(x) else round(float(x), 1)
             ser = [[str(m)[11:16]] + [fila(r.get(v)) for v in ("T", "HR", "ff10", "dd10")] for m, r in zip(g["momento"], g.to_dict("records"))]
-            pub.append(dict(codigo=cod, nombre=nom.at[cod, "nombre"], lat=float(nom.at[cod, "lat"]), lon=float(nom.at[cod, "lon"]),
+            ua = A[A["codigo"] == cod].sort_values("momento").tail(1)          # último dato minutario (casi en tiempo real)
+            u = ua.iloc[0] if len(ua) else None
+            act = {} if u is None else {v: (None if pd.isna(u.get(v)) else round(float(u[v]), 1)) for v in ("T", "HR", "ff10", "dd10", "fx10") if v in u}
+            if u is not None:
+                act["hora"] = str(u["momento"])[11:16]
+            pub.append(dict(actual=act, codigo=cod, nombre=nom.at[cod, "nombre"], lat=float(nom.at[cod, "lat"]), lon=float(nom.at[cod, "lon"]),
                             alt=None if pd.isna(nom.at[cod, "alt"]) else float(nom.at[cod, "alt"]), **c, serie=ser))
         estado["kv_incendios"] = subir_kv("pub/incendios_estaciones", json.dumps({"generado": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                                           "campos": ["hora", "T", "HR", "ff10", "dd10"], "estaciones": pub}, ensure_ascii=False))
