@@ -54,15 +54,25 @@ async function cargar(cod, dia, local){
     }
   });
   const vistos = new Set(), T = filas.filter(o => !vistos.has(o.t) && vistos.add(o.t)).sort((p, q) => p.t - q.t);
+  marcarPicos(T);
   return {cod, dia, local, ini, fin, F: T.filter(o => o.t > ini && o.t <= fin), T, sinArchivo, horas: horas.length};
 }
 
 /* --------- cálculos --------- */
+/* picos aislados: valor que se aparta más de U de la mediana de sus vecinos válidos (±5 registros, hasta 20 min) */
+const PICO = {T: 3, Td: 4, HR: 15, P_est: 2};
+function marcarPicos(T){
+  Object.entries(PICO).forEach(([v, u]) => {
+    const L = VAL[v], P = T.filter(o => o[v] != null && o[v] >= L[0] && o[v] <= L[1]);
+    P.forEach((o, i) => { const w = P.slice(Math.max(0, i - 5), i).concat(P.slice(i + 1, i + 6)).filter(q => Math.abs(q.t - o.t) <= 20 * 60e3).map(q => q[v]).sort((a, b) => a - b);
+      if (w.length >= 2 && Math.abs(o[v] - w[Math.floor(w.length / 2)]) > u) o["_p" + v] = 1; });
+  });
+}
 const en = (F, a, b) => F.filter(o => o.t > a && o.t <= b);           // minuto m = período (m−1, m]
-const VAL = {T: [-40, 45], HR: [1, 100], P_est: [450, 1080], fx10: [0, 200], ff10: [0, 150]};
+const VAL = {T: [-40, 45], Td: [-60, 35], HR: [1, 100], P_est: [450, 1080], fx10: [0, 200], ff10: [0, 150]};
 function ext(F, v, max){
   const L = VAL[v] || [-Infinity, Infinity];
-  let r = null; F.forEach(o => { const x = o[v]; if (x != null && x >= L[0] && x <= L[1] && (r == null || (max ? x > r.v : x < r.v))) r = {v: x, t: o.t}; }); return r;
+  let r = null; F.forEach(o => { const x = o[v]; if (x != null && x >= L[0] && x <= L[1] && !o["_p" + v] && (r == null || (max ? x > r.v : x < r.v))) r = {v: x, t: o.t}; }); return r;
 }
 const suma = (F, v) => { const x = F.map(o => o[v]).filter(x => x != null); return x.length ? x.reduce((a, b) => a + b, 0) : null; };
 const fila = (F, t) => F.find(o => o.t === t);
@@ -147,13 +157,18 @@ function init(){
     <input id="mEst" list="mLista" placeholder="Estación (nombre o código)" style="min-width:280px"><datalist id="mLista"></datalist>
     <input type="date" id="mDia" value="${ayer}" min="2026-11-08"><select id="mDiaT"><option value="utc">Día UTC (00 a 24 UTC)</option><option value="loc">Día local (00 a 24 hora de Chile)</option></select>
     <button id="mVer" style="border-color:var(--oro);color:var(--oro)">Generar</button><button id="mCsv">Descargar CSV</button></div>
-    <p class="nota" style="margin:0 0 10px">Las extremas usan solo valores dentro de rango físico. Datos minutarios del archivo de METOTEC (guardado cada 30 min desde el 8-11-2026, todas las estaciones automáticas). Extremas sinópticas: mínima de 00 a 12 UTC (se informa a las 12) y máxima de 12 a 24 UTC (se informa a las 00). Cada minuto cuenta para el período que termina en él.</p>
+    <p class="nota" style="margin:0 0 10px">Las extremas descartan valores fuera de rango y picos aislados (minutos que se apartan bruscamente de sus vecinos). Datos minutarios del archivo de METOTEC (guardado cada 30 min desde el 8-11-2026, todas las estaciones automáticas). Extremas sinópticas: mínima de 00 a 12 UTC (se informa a las 12) y máxima de 12 a 24 UTC (se informa a las 00). Cada minuto cuenta para el período que termina en él.</p>
     <div id="mOut"></div>`;
   estaciones().then(E => { $("#mLista").innerHTML = E.map(e => `<option value="${e.codigo} · ${esc(e.nombre)}">`).join(""); });
   $("#mVolver").addEventListener("click", () => document.querySelector('.modos button[data-m="ema"]').click());
   $("#mVer").addEventListener("click", generar); $("#mEst").addEventListener("change", generar); $("#mDia").addEventListener("change", generar); $("#mDiaT").addEventListener("change", generar);
   $("#mCsv").addEventListener("click", csv);
+  s.addEventListener("change", ev => { const c = ev.target.closest(".mcmp"); if (c){ const k = c.dataset.c;
+      if (c.checked){ if (M.cmp.length >= 2) M.cmp.shift(); M.cmp.push(k); } else M.cmp = M.cmp.filter(x => x !== k); vecinas(); }
+    if (ev.target.id === "mAgr"){ const q = ev.target.value.trim(), k = (q.match(/^\d{6}/) || [])[0] || (EST.find(e => (e.nombre || "").toLowerCase().includes(q.toLowerCase())) || {}).codigo;
+      if (k && k !== M.cod && !M.vec.includes(k)){ M.vec.push(k); if (M.cmp.length < 2) M.cmp.push(k); } ev.target.value = ""; vecinas(); } });
   s.addEventListener("click", ev => { const b = ev.target.closest("[data-mv]"); if (b){ mVar = b.dataset.mv; grafico(); }
+    const qx = ev.target.closest(".mqui"); if (qx){ M.vec = M.vec.filter(x => x !== qx.dataset.c); M.cmp = M.cmp.filter(x => x !== qx.dataset.c); vecinas(); return; }
     const i = ev.target.closest("tr.inc"); if (i){ const r = document.getElementById("m" + i.dataset.t); if (r){ r.scrollIntoView({block: "center"}); r.classList.add("vis"); setTimeout(() => r.classList.remove("vis"), 2500); } } });
 }
 async function generar(){
@@ -180,27 +195,77 @@ function pintar(){
       <div><span>Total del período</span><b>${d.rr != null ? f1(d.rr) + " mm" : "—"}</b><span>suma de agua caída del minuto</span></div></div>
     <h4 style="margin:14px 0 6px">Inconsistencias en la serie (${M.I.length})</h4>
     ${M.I.length ? `<table><tr><th>Nivel</th><th>Desde (UTC)</th><th>Hasta</th><th>Elemento</th><th>Detalle</th></tr>${M.I.map(i => `<tr class="inc" data-t="${i.t1}" style="cursor:pointer"><td><span class="pb" style="background:${i.nivel === 2 ? "#eb5757" : "#f2c94c"};color:#111">${i.nivel === 2 ? "Erróneo" : "Sospechoso"}</span></td><td>${hhmm(i.t1)}</td><td>${i.t2 !== i.t1 ? hhmm(i.t2) : ""}</td><td>${esc(NOM[i.v] || "General")}</td><td>${esc(i.msg)}</td></tr>`).join("")}</table>` : `<p style="color:#6fcf97">Sin inconsistencias en la serie.</p>`}
-    <h4 style="margin:16px 0 6px">Gráfico</h4><div class="htools">${vars.filter(v => !["rr6", "rr24", "Tn12", "Tx12"].includes(v[0])).map(v => `<button data-mv="${v[0]}" ${v[0] === mVar ? 'style="border-color:var(--oro);color:var(--oro)"' : ""}>${v[1]}</button>`).join("")}</div><div id="mGraf"></div>
+    <h4 style="margin:16px 0 6px">Estaciones cercanas</h4>
+    <div class="htools"><input id="mAgr" list="mLista" placeholder="Agregar otra estación…" style="min-width:260px"><span style="color:var(--mu);font-size:12.5px">Marque hasta 2 para compararlas minuto a minuto con ${esc(M.nombre)}.</span></div>
+    <div id="mVec"><p style="color:var(--mu)">Buscando las más cercanas…</p></div>
+    <h4 style="margin:16px 0 6px">Gráfico</h4><div class="htools">${vars.filter(v => !["rr6", "rr24", "Tn12", "Tx12"].includes(v[0])).map(v => `<button data-mv="${v[0]}" ${v[0] === mVar ? 'style="border-color:var(--oro);color:var(--oro)"' : ""}>${v[1]}</button>`).join("")}</div><div id="mGraf"></div><div id="mCompTab"></div>
     <h4 style="margin:16px 0 6px">Datos minutarios</h4>
     <div style="max-height:60vh;overflow:auto;border:1px solid var(--bd);border-radius:8px"><table class="mtab"><tr><th>UTC</th><th>Local</th>${vars.map(v => `<th>${v[1]}<br><small>${v[2]}</small></th>`).join("")}</tr>
     ${M.F.map(o => `<tr id="m${o.t}"><td>${hhmm(o.t)}</td><td>${loc(o.t)}</td>${vars.map(v => { const n = (mal[o.t] || {})[v[0]]; return `<td${n ? ` style="background:${n === 2 ? "#5a1f1f" : "#4a3f12"}"` : ""}>${o[v[0]] ?? ""}</td>`; }).join("")}</tr>`).join("")}</table></div>`;
+  grafico(); vecinas();
+}
+/* ---------- estaciones cercanas y comparación ---------- */
+const DC = new Map(), COLS = ["#C9A54C", "#56CCF2", "#EB5757"];
+const km = (a, b) => 6371 * Math.hypot((b.lat - a.lat) * Math.PI / 180, (b.lon - a.lon) * Math.PI / 180 * Math.cos(a.lat * Math.PI / 180));
+async function otra(cod){
+  const k = cod + "|" + M.dia + "|" + M.local;
+  if (!DC.has(k)) DC.set(k, cargar(cod, M.dia, M.local).then(D => { const e = EST.find(x => x.codigo === cod) || {}; D.nombre = e.nombre || cod; D.alt = e.alt ?? null; return D; }));
+  return DC.get(k);
+}
+async function vecinas(){
+  const yo = EST.find(e => e.codigo === M.cod);
+  if (!M.vec){ M.vec = yo && yo.lat != null ? EST.filter(e => e.codigo !== M.cod && e.lat != null).map(e => ({c: e.codigo, d: km(yo, e)})).filter(x => x.d <= 60).sort((a, b) => a.d - b.d).slice(0, 5).map(x => x.c) : []; M.cmp = []; }
+  const Ds = await Promise.all(M.vec.map(otra));
+  const fila = (D, yo2) => { const r = R(D), pct = Math.round(100 * D.F.length / Math.max(1, Math.round(Math.min(D.fin, Date.now() - 50 * 60e3) - D.ini) / cadencia(D.F))),
+      cn = r.comp.find(c => c.v === "Tn12"), cx = r.comp.find(c => c.v === "Tx12"), d = yo && yo2 ? km(yo, yo2) : 0, i = M.cmp.indexOf(D.cod);
+    return `<tr${D === M ? ' style="background:#16264a"' : ""}><td>${D === M ? `<span style="color:${COLS[0]}">●</span>` : `<input type="checkbox" class="mcmp" data-c="${D.cod}" ${i >= 0 ? "checked" : ""}> ${i >= 0 ? `<span style="color:${COLS[i + 1]}">●</span>` : ""}`}</td>
+      <td>${esc(D.nombre)} <small style="color:var(--mu)">${D.cod}</small></td><td>${D === M ? "—" : d.toFixed(1) + " km"}</td><td>${D.alt ?? "—"} m</td>
+      <td><b>${r.tn ? f1(r.tn.v) : "—"}</b></td><td>${r.tn ? hhmm(r.tn.t) : ""}</td><td>${cn && cn.inf != null ? f1(cn.inf) : "—"}</td>
+      <td><b>${r.tx ? f1(r.tx.v) : "—"}</b></td><td>${r.tx ? hhmm(r.tx.t) : ""}</td><td>${cx && cx.inf != null ? f1(cx.inf) : "—"}</td>
+      <td>${r.d.rr != null ? f1(r.d.rr) + " mm" : "—"}</td><td>${D.F.length ? Math.min(100, pct) + " %" : "sin datos"}</td>${D === M ? "<td></td>" : `<td><button class="mqui" data-c="${D.cod}" title="Quitar" style="background:none;border:0;color:var(--mu);cursor:pointer">✕</button></td>`}</tr>`; };
+  $("#mVec").innerHTML = `<table><tr><th></th><th>Estación</th><th>Distancia</th><th>Altura</th><th>Mín 00–12 UTC</th><th>Hora UTC</th><th>Tn12 informada</th><th>Máx 12–24 UTC</th><th>Hora UTC</th><th>Tx12 informada</th><th>Agua caída</th><th>Datos</th><th></th></tr>
+    ${fila(M, yo)}${Ds.map(D => fila(D, EST.find(e => e.codigo === D.cod))).join("")}</table>
+    ${M.vec.length ? "" : `<p style="color:var(--mu)">No hay estaciones a menos de 60 km; agregue una arriba.</p>`}`;
   grafico();
 }
 function grafico(){
   if (!M) return;
   document.querySelectorAll("#minu [data-mv]").forEach(b => b.style.cssText = b.dataset.mv === mVar ? "border-color:var(--oro);color:var(--oro)" : "");
-  const v = mVar, P = M.F.filter(o => o[v] != null), W = 1100, H = 230, iz = 46, de = 12, ar = 12, ab = 26;
-  if (!P.length){ $("#mGraf").innerHTML = ""; return; }
-  let acum = 0; const val = o => v === "rr1m" ? (acum += o[v]) : o[v];
-  const pts = P.map(o => [o.t, val(o)]), ys = pts.map(p => p[1]), y0 = Math.min(...ys), y1 = Math.max(...ys), dy = (y1 - y0) || 1;
+  const v = mVar, W = 1100, H = 250, iz = 46, de = 12, ar = 14, ab = 26;
+  const otras = (M.cmp || []).map(c => [...DC.entries()].find(([k]) => k.startsWith(c + "|" + M.dia + "|" + M.local))).filter(Boolean).map(x => x[1]);
+  Promise.all(otras).then(Ds => dibujar([M, ...Ds]));
+  function dibujar(S){
+  const series = S.map(D => { let acum = 0; const L = VAL[v] || [-Infinity, Infinity];
+    return D.F.filter(o => o[v] != null && o[v] >= L[0] && o[v] <= L[1] && !o["_p" + v]).map(o => [o.t, v === "rr1m" ? (acum += o[v]) : o[v], o]); });
+  const ys = series.flat().map(p => p[1]);
+  if (!ys.length){ $("#mGraf").innerHTML = `<p style="color:var(--mu)">Sin datos válidos de ${NOM[v]}.</p>`; $("#mCompTab").innerHTML = ""; return; }
+  const y0 = Math.min(...ys), y1 = Math.max(...ys), dy = (y1 - y0) || 1;
   const X = t => iz + (W - iz - de) * (t - M.ini) / (M.fin - M.ini), Y = y => ar + (H - ar - ab) * (1 - (y - y0 + dy * .05) / (dy * 1.1));
-  let path = "", ant = null; const cad = cadencia(M.F);
-  pts.forEach(p => { path += (ant == null || p[0] - ant > 2 * cad ? "M" : "L") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1); ant = p[0]; });
-  const marcas = P.filter(o => (M.mal[o.t] || {})[v]).map(o => `<circle cx="${X(o.t).toFixed(1)}" cy="${Y(v === "rr1m" ? pts.find(p => p[0] === o.t)[1] : o[v]).toFixed(1)}" r="2.5" fill="${M.mal[o.t][v] === 2 ? "#eb5757" : "#f2c94c"}"/>`).join("");
+  const linea = (pts, D, i) => { let path = "", ant = null; const cad = cadencia(D.F);
+    pts.forEach(p => { path += (ant == null || p[0] - ant > 2 * cad ? "M" : "L") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1); ant = p[0]; });
+    return `<path d="${path}" fill="none" stroke="${COLS[i]}" stroke-width="${i ? 1.2 : 1.5}" opacity="${i ? .9 : 1}"/>`; };
+  const paths = series.map((p, i) => linea(p, S[i], i)).reverse().join("");
+  const marcas = series[0].filter(p => (M.mal[p[0]] || {})[v] || p[2]["_p" + v]).map(p => `<circle cx="${X(p[0]).toFixed(1)}" cy="${Y(p[1]).toFixed(1)}" r="2.5" fill="${(M.mal[p[0]] || {})[v] === 2 || p[2]["_p" + v] ? "#eb5757" : "#f2c94c"}"/>`).join("");
+  const ley = S.length > 1 ? S.map((D, i) => `<tspan fill="${COLS[i]}">● ${esc(D.nombre)}</tspan>`).join("   ") : "";
+
   const ticks = []; for (let h = 0; h <= 24; h += 3) ticks.push(`<line x1="${X(M.ini + h * 3600e3)}" x2="${X(M.ini + h * 3600e3)}" y1="${ar}" y2="${H - ab}" stroke="#ffffff14"/><text x="${X(M.ini + h * 3600e3)}" y="${H - 8}" fill="#9fb0cc" font-size="11" text-anchor="middle">${hhmm(M.ini + h * 3600e3)}</text>`);
   const yt = [y0, (y0 + y1) / 2, y1].map(y => `<text x="${iz - 6}" y="${Y(y) + 4}" fill="#9fb0cc" font-size="11" text-anchor="end">${f1(y)}</text>`).join("");
   $("#mGraf").innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:var(--panel);border:1px solid var(--bd);border-radius:8px">${ticks.join("")}${yt}
-    <path d="${path}" fill="none" stroke="#C9A54C" stroke-width="1.4"/>${marcas}<text x="${iz}" y="${ar}" fill="#9fb0cc" font-size="11">${NOM[v]}${v === "rr1m" ? " acumulada" : ""} (${UNI[v]}) · hora UTC</text></svg>`;
+    ${paths}${marcas}<text x="${iz}" y="${ar - 2}" fill="#9fb0cc" font-size="11">${NOM[v]}${v === "rr1m" ? " acumulada" : ""} (${UNI[v]}) · hora UTC   ${ley}</text></svg>`;
+  tablaComp(S, series);
+  }
+}
+function tablaComp(S, series){
+  if (S.length < 2){ $("#mCompTab").innerHTML = ""; return; }
+  const v = mVar, idx = series.map(p => new Map(p.map(x => [x[0], x[1]])));
+  const tiempos = [...new Set(series.flat().map(p => p[0]))].filter(t => t > M.ini && t <= M.fin).sort((a, b) => a - b);
+  const dif = S.slice(1).map((D, j) => { const d = tiempos.map(t => idx[0].has(t) && idx[j + 1].has(t) ? idx[j + 1].get(t) - idx[0].get(t) : null).filter(x => x != null);
+    return d.length ? {m: d.reduce((a, b) => a + b, 0) / d.length, n: d.length, max: d.reduce((a, b) => Math.abs(b) > Math.abs(a) ? b : a, 0)} : null; });
+  $("#mCompTab").innerHTML = `<div class="hres" style="margin-top:10px">${S.slice(1).map((D, j) => `<div><span style="color:${COLS[j + 1]}">● ${esc(D.nombre)} − ${esc(M.nombre)}</span><b>${dif[j] ? (dif[j].m > 0 ? "+" : "") + f1(dif[j].m) + " " + UNI[v] : "—"}</b><span>${dif[j] ? `diferencia media en ${dif[j].n} min · mayor ${dif[j].max > 0 ? "+" : ""}${f1(dif[j].max)}` : "sin minutos en común"}</span></div>`).join("")}</div>
+    <h4 style="margin:10px 0 6px">Comparación minuto a minuto · ${NOM[v]} (${UNI[v]})</h4>
+    <div style="max-height:45vh;overflow:auto;border:1px solid var(--bd);border-radius:8px"><table class="mtab"><tr><th>UTC</th><th>Local</th>${S.map((D, i) => `<th style="color:${COLS[i]}">${esc(D.nombre)}</th>`).join("")}${S.slice(1).map((D, j) => `<th>Dif. ${j + 2} − 1</th>`).join("")}</tr>
+    ${tiempos.map(t => { const a = idx[0].get(t); return `<tr><td>${hhmm(t)}</td><td>${loc(t)}</td>${idx.map(m => `<td>${m.has(t) ? f1(m.get(t)) : ""}</td>`).join("")}${idx.slice(1).map(m => { const b = m.get(t), d = a != null && b != null ? b - a : null;
+      return `<td${d != null && Math.abs(d) > ({T: 3, Td: 4, HR: 15, P_est: 2, P_mar: 2, P_std: 2}[v] || Infinity) ? ' style="background:#4a3f12"' : ""}>${d == null ? "" : (d > 0 ? "+" : "") + f1(d)}</td>`; }).join("")}</tr>`; }).join("")}</table></div>`;
 }
 function csv(){
   if (!M) return;
