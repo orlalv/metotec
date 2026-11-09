@@ -73,6 +73,13 @@ main[hidden]{display:none}
 .leyenda .ex{display:flex;justify-content:space-between}
 #det .exp{color:var(--mu);font-size:13.5px}#det .exp b{color:var(--tx)}
 #hist{flex:1;overflow:auto;padding:14px 20px}#hist[hidden]{display:none}
+#minu{flex:1;overflow:auto;padding:14px 20px}#minu[hidden]{display:none}
+#minu .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+#minu .htools input,#minu .htools select,#minu .htools button{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font:600 13px inherit}#minu .htools button{cursor:pointer}
+#minu .hres{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}#minu .hres div{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px 14px;min-width:150px}
+#minu .hres b{display:block;font-size:20px}#minu .hres span{display:block;color:var(--mu);font-size:12.5px}
+#minu table{border-collapse:collapse;width:100%;font-size:13px}#minu th,#minu td{border-bottom:1px solid var(--bd);padding:4px 7px;text-align:left}#minu .mtab th{position:sticky;top:0;background:var(--panel)}#minu .mtab td{font-variant-numeric:tabular-nums}
+#minu tr.inc:hover{background:#16264a}#minu tr.vis{outline:2px solid var(--oro)}
 #hist .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
 #hist .htools input,#hist .htools select,#hist .htools button{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font:600 13px inherit}
 #hist .htools button{cursor:pointer}#hist .htools label{color:var(--mu);font-size:13px}
@@ -89,7 +96,7 @@ main[hidden]{display:none}
 <header>
  <a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a>
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
- <div class="modos"><button data-m="ema" class="on">Estaciones automáticas</button><button data-m="obs">Observaciones</button><button data-m="mod">Contraste con modelos</button><button data-m="prio">Prioridades</button><button data-m="hist">Historial</button></div>
+ <div class="modos"><button data-m="ema" class="on">Estaciones automáticas</button><button data-m="obs">Observaciones</button><button data-m="mod">Contraste con modelos</button><button data-m="prio">Prioridades</button><button data-m="hist">Historial</button><button data-m="minu">Datos minutarios</button></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -110,9 +117,11 @@ main[hidden]{display:none}
 </main>
 <section id="hist" hidden></section>
 <section id="prio" hidden></section>
+<section id="minu" hidden></section>
 <footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · satélite GOES-19 · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
 <script src="js/prioridad.js"></script>
+<script src="js/minutarios.js"></script>
 <script>
 const COL = {0: "var(--ok)", 1: "var(--sos)", 2: "var(--err)", 3: "var(--sin)"};
 const HEX = {0: "#3fb67a", 1: "#e7b03b", 2: "#e5534b", 3: "#6b778a"};
@@ -228,10 +237,10 @@ function detalle(c, mover = true){
 document.addEventListener("click", ev => {
   const it = ev.target.closest(".it"); if (it) (modo === "obs" ? detalleObs : modo === "mod" ? detalleMod : detalle)(it.dataset.c);
   const mb = ev.target.closest(".modos button"); if (mb){ modo = mb.dataset.m; sel = null; $("#det").style.display = "none";
-    const h = modo === "hist" || modo === "prio"; document.querySelector("main").hidden = h; $("#hist").hidden = modo !== "hist"; $("#prio").hidden = modo !== "prio"; $("#chips").style.display = h ? "none" : "";
+    const h = modo === "hist" || modo === "prio" || modo === "minu"; document.querySelector("main").hidden = h; $("#hist").hidden = modo !== "hist"; $("#prio").hidden = modo !== "prio"; $("#minu").hidden = modo !== "minu"; $("#chips").style.display = h ? "none" : "";
     $("#mvar").hidden = $("#mref").hidden = modo !== "mod"; leyenda(modo === "mod");
     if (h){ document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-      if (modo === "hist"){ hInit(); if (!HI) hCargar(); } else pintarPrio(); return; }
+      if (modo === "hist"){ hInit(); if (!HI) hCargar(); } else if (modo === "minu") MINU.init(); else pintarPrio(); return; }
     setTimeout(() => mapa.invalidateSize(), 50);
     document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb)); $("#grupo").hidden = modo !== "ema"; $("#vars").hidden = modo !== "ema"; $("#gobs").hidden = modo !== "obs"; R && pintar(); }
   const ch = ev.target.closest(".chip"); if (ch){ const n = +ch.dataset.n; ver[n] = !ver[n]; pintar(); }
@@ -508,7 +517,7 @@ function hCsv(){
 $("#fl").addEventListener("submit", ev => { ev.preventDefault(); const c = $("#clave").value; try { sessionStorage.setItem("qcClave", c); } catch (e) { window._qc = c; } $("#lerr").textContent = ""; cargar(); });
 // metotec.cl/modelo: solo el contraste con modelos (para presentar)
 const VISTA0 = new URLSearchParams(location.search).get("vista");
-if (["obs", "prio", "hist", "mod"].includes(VISTA0)) document.querySelector(`.modos button[data-m="${VISTA0}"]`).click();
+if (["obs", "prio", "hist", "mod", "minu"].includes(VISTA0)) document.querySelector(`.modos button[data-m="${VISTA0}"]`).click();
 if (/^\/modelo/.test(location.pathname) || new URLSearchParams(location.search).get("vista") === "modelo"){
   document.querySelector('.modos button[data-m="mod"]').click(); document.querySelector(".modos").style.display = "none";
   document.querySelector("header h1").firstChild.textContent = "Control de calidad · contraste con modelos"; document.title = "Contraste con modelos · METOTEC";
