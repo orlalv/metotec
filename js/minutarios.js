@@ -86,7 +86,7 @@ function inconsistencias(D, alt){
     cerrar(F.length ? F[F.length - 1].t : 0);
   }
   // 1. completitud y vacíos
-  const hasta = Math.min(D.fin, Math.floor((Date.now() - 20 * 60e3) / cad) * cad), esperados = Math.round((hasta - D.ini) / cad);
+  const hasta = Math.min(D.fin, Math.floor((Date.now() - 50 * 60e3) / cad) * cad), esperados = Math.round((hasta - D.ini) / cad);
   if (F.length < esperados * .95) add(F.length < esperados * .8 ? 2 : 1, D.ini, hasta, "—", `Hay ${F.length} de ${esperados} registros esperados hasta ${hhmm(hasta)} UTC (${Math.round(100 * F.length / esperados)} %)`);
   let prev = D.ini;
   F.filter(o => o.t <= hasta).concat([{t: hasta + cad}]).forEach(o => { if (o.t - prev > 2 * cad) add((o.t - prev) > 3600e3 ? 2 : 1, prev + cad, Math.min(o.t - cad, D.fin), "—", `Faltan datos (${Math.round((o.t - prev - cad) / 60e3)} min)`); prev = o.t; });
