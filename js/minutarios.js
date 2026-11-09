@@ -66,7 +66,8 @@ async function cargar(cod, dia, local){
   let api = null, origen = "archivo METOTEC";
   if (sub.length){ filas.push(...sub); origen = "archivos subidos"; }
   else try {                                        // 2) el servidor de METOTEC: una sola descarga const iso = t => new Date(t).toISOString().slice(0, 13);
-    const r = await fetch(`/api/minutarios?cod=${cod}&desde=${iso(a)}&hasta=${iso(b)}`); if (r.ok) api = await r.json(); } catch (e) {}
+    const ac = new AbortController(), to = setTimeout(() => ac.abort(), 20000);          // si el servidor tarda, se usa el respaldo
+    const r = await fetch(`/api/minutarios?cod=${cod}&desde=${iso(a)}&hasta=${iso(b)}`, {signal: ac.signal}); if (r.ok) api = await r.json(); clearTimeout(to); } catch (e) {}
   if (sub.length){}
   else if (api && api.cab){
     leer(api.cab.split(","), api.filas);
@@ -245,19 +246,14 @@ function init(){
   s.innerHTML = `<div class="htools"><button id="mVolver" style="border-color:var(--oro);color:var(--oro)">← Volver al mapa</button>
     <input id="mEst" list="mLista" placeholder="Estación (nombre o código)" style="min-width:280px"><datalist id="mLista"></datalist>
     <input type="date" id="mDia" value="${ayer}"><select id="mDiaT"><option value="utc">Día UTC (00 a 24 UTC)</option><option value="loc">Día local (00 a 24 hora de Chile)</option></select>
-    <button id="mVer" style="border-color:var(--oro);color:var(--oro)">Generar</button><button id="mCsv">Descargar CSV</button>
-    <label id="mSubir" style="cursor:pointer;background:var(--panel);border:1px dashed var(--oro);color:var(--oro);border-radius:8px;padding:6px 10px;font:600 13px inherit">⬆ Subir archivos de la DMC (ZIP o CSV)<input type="file" id="mArch" multiple accept=".zip,.csv,.txt" hidden></label></div>
-    <div id="mSubInfo" style="margin:-2px 0 8px"></div>
-    <p class="nota" style="margin:0 0 10px">Las extremas descartan valores fuera de rango y picos aislados (minutos que se apartan bruscamente de sus vecinos). Datos minutarios del archivo de METOTEC (guardado cada 30 min desde el 8-11-2026, todas las estaciones automáticas) o de los archivos que suba desde el portal de climatología (Datos históricos EMA: un ZIP por mes y variable; puede subir varios a la vez, de varias estaciones). Extremas sinópticas: mínima de 00 a 12 UTC (se informa a las 12) y máxima de 12 a 24 UTC (se informa a las 00). Cada minuto cuenta para el período que termina en él.</p>
+    <button id="mVer" style="border-color:var(--oro);color:var(--oro)">Generar</button><button id="mCsv">Descargar CSV</button></div>
+    <p class="nota" style="margin:0 0 10px">Las extremas descartan valores fuera de rango y picos aislados (minutos que se apartan bruscamente de sus vecinos). Datos minutarios del archivo de METOTEC (guardado cada 30 min desde el 8-11-2026, todas las estaciones automáticas). Extremas sinópticas: mínima de 00 a 12 UTC (se informa a las 12) y máxima de 12 a 24 UTC (se informa a las 00). Cada minuto cuenta para el período que termina en él.</p>
     <div id="mOut"></div>`;
   estaciones().then(E => { $("#mLista").innerHTML = E.map(e => `<option value="${e.codigo} · ${esc(e.nombre)}">`).join(""); });
   $("#mVolver").addEventListener("click", () => document.querySelector('.modos button[data-m="ema"]').click());
   $("#mVer").addEventListener("click", generar); $("#mEst").addEventListener("change", generar); $("#mDia").addEventListener("change", generar); $("#mDiaT").addEventListener("change", generar);
   $("#mCsv").addEventListener("click", csv);
-  $("#mArch").addEventListener("change", ev => { if (ev.target.files.length) subir([...ev.target.files]); ev.target.value = ""; });
-  s.addEventListener("dragover", ev => { ev.preventDefault(); $("#mSubir").style.background = "#2a2410"; });
-  s.addEventListener("dragleave", () => $("#mSubir").style.background = "");
-  s.addEventListener("drop", ev => { ev.preventDefault(); $("#mSubir").style.background = ""; if (ev.dataTransfer.files.length) subir([...ev.dataTransfer.files]); });
+
   s.addEventListener("toggle", ev => { const d = ev.target; if (d.classList && d.classList.contains("mblo")) d.open ? CERR.delete(d.dataset.k) : CERR.add(d.dataset.k); }, true);
   s.addEventListener("change", ev => { if (ev.target.id === "mSoloDif"){ soloDif = ev.target.checked; grafico(); return; }
     const c = ev.target.closest(".mcmp"); if (c){ const k = c.dataset.c;
@@ -276,7 +272,7 @@ async function generar(){
   M = await cargar(cod, $("#mDia").value, $("#mDiaT").value === "loc");
   const e = EST.find(x => x.codigo === cod) || {};
   M.nombre = e.nombre || cod; M.alt = e.alt ?? null;
-  if (!M.F.length){ $("#mOut").innerHTML = `<p style="color:var(--mu)">No hay datos de ${esc(M.nombre)} para ese día en el archivo de METOTEC (parte el 8-11-2026). Para fechas anteriores, suba los ZIP del portal de climatología (Datos históricos EMA)${M.sinArchivo ? ` (faltan ${M.sinArchivo} de ${M.horas} horas de archivo)` : ""}.</p>`; return; }
+  if (!M.F.length){ $("#mOut").innerHTML = `<p style="color:var(--mu)">No hay datos de ${esc(M.nombre)} para ese día en el archivo de METOTEC (parte el 8-11-2026). Para fechas anteriores use «Completar serie», que acepta los ZIP del portal de climatología${M.sinArchivo ? ` (faltan ${M.sinArchivo} de ${M.horas} horas de archivo)` : ""}.</p>`; return; }
   M.I = inconsistencias(M, M.alt); pintar();
 }
 function tarjeta(t, x, u, sub){ return `<div><span>${t}</span><b>${x ? f1(x.v) + " " + u : "—"}</b>${x ? `<span>${hhmm(x.t)} UTC · ${loc(x.t)} hora local</span>` : ""}${sub ? `<span>${sub}</span>` : ""}</div>`; }
