@@ -393,9 +393,15 @@ def evolucion(t, o, hist):
 SENSOR = (("Ts", "T", 1.5, 3, "°C"), ("Td", "Td", 2.5, 5, "°C"), ("HR", "HR", 12, 25, "%"), ("QFE", "P_est", 0.8, 2, "hPa"), ("QFF", "P_mar", 1.5, 3, "hPa"))
 
 
+VENTANA = 15                       # minutos antes de la hora en que el observador pudo leer los instrumentos
+
+
 def _auto(t, A):
     g = A[(A["momento"] <= t) & (A["momento"] > t - pd.Timedelta(minutes=10))].sort_values("momento")
-    return None if g.empty else g.iloc[-1]
+    if not g.empty:
+        return g.iloc[-1]
+    g = A[(A["momento"] - t).abs() <= pd.Timedelta(minutes=30)]       # respaldo: el dato más cercano a la hora (±30 min)
+    return None if g.empty else g.loc[(g["momento"] - t).abs().idxmin()]
 
 
 def sesgos(obs, A):
@@ -425,19 +431,36 @@ def frente_sensor(t, o, A, sesgo=None):
     if r is None:
         return out
     add = lambda cod, niv, msg: out.append(("sensor", cod, niv, msg))
+    # El observador lee los instrumentos en los minutos previos a la hora (p. ej. a las 12:51 para la de las 13:00) y SACLIM
+    # no guarda la hora de ingreso: se compara con TODO lo que marcó la automática entre HH−15 y HH:00 y solo se alerta si el
+    # valor anotado no calza con ninguno de esos minutos (queda fuera del rango mín–máx más la tolerancia).
+    W = A[(A["momento"] > t - pd.Timedelta(minutes=VENTANA)) & (A["momento"] <= t)]
     for el, col, s1, s2, u in SENSOR:
         x, y = v(o, el), r.get(col)
         if x is None or y is None or pd.isna(y):
             continue
         b = sesgo.get(el, 0.0)
         b = b if abs(b) > s1 / 2 else 0.0                 # solo se descuenta una diferencia constante apreciable
-        d = abs(x - y - b)
+        serie = W[col].dropna() if col in W else pd.Series(dtype=float)
+        # con 2 o más minutos en la ventana se usa el rango; si no hay minutario, se compara con el dato único más cercano (como antes)
+        lo, hi = (float(serie.min()), float(serie.max())) if len(serie) >= 2 else (float(y), float(y))
+        xc = x - b
+        d = 0.0 if lo <= xc <= hi else min(abs(xc - lo), abs(xc - hi))
         if d > s1:
             extra = f"; descontada la diferencia habitual de {b:+.1f}" if b else ""
-            add("S" + el, 2 if d > s2 else 1, f"{el} anotado {x} {u} y la estación automática marca {y:g} {u} (diferencia {x - y:+.1f}{extra})")
-    ff, ffa = v(o, "VTO", "ff"), r.get("ff10")
-    if ff is not None and ffa is not None and pd.notna(ffa) and abs(ff - ffa) > 6:
-        add("Sff", 1, f"viento anotado {ff} kt y la estación automática marca {ffa:.0f} kt")
+            rango_txt = (f"entre {lo:g} y {hi:g} {u} de {(t - pd.Timedelta(minutes=VENTANA)):%H:%M} a {t:%H:%M}" if hi > lo
+                         else f"{lo:g} {u}" + ("" if len(serie) >= 2 else f" (sin minutario en la ventana: dato único de las {r['momento']:%H:%M})"))
+            add("S" + el, 2 if d > s2 else 1, f"{el} anotado {x} {u} y la estación automática marcó {rango_txt} (diferencia {d:.1f}{extra})")
+    ff = v(o, "VTO", "ff")
+    sff = W["ff10"].dropna() if "ff10" in W else pd.Series(dtype=float)
+    if not len(sff) and pd.notna(r.get("ff10")):
+        sff = pd.Series([float(r.get("ff10"))])
+    if ff is not None and len(sff):
+        lo, hi = float(sff.min()), float(sff.max())
+        d = 0 if lo <= ff <= hi else min(abs(ff - lo), abs(ff - hi))
+        if d > 6:
+            add("Sff", 1, f"viento anotado {ff} kt y la estación automática marcó " + (f"entre {lo:.0f} y {hi:.0f} kt en los {VENTANA} min previos" if hi > lo else f"{lo:.0f} kt"))
+    ffa = r.get("ff10")
     dd, dda = v(o, "VTO", "dd"), r.get("dd10")
     if dd and dda is not None and pd.notna(dda) and (ff or 0) >= 6 and (ffa or 0) >= 6:
         dif = abs((dd - dda + 180) % 360 - 180)
@@ -456,7 +479,7 @@ def frente_sensor(t, o, A, sesgo=None):
                     add("SRRR6", 1, f"RRR6 anotado como traza y el pluviómetro automático sumó {suma:.1f} mm en 6 h")
             elif d >= 0.1:
                 add("SRRR6", 2 if d > max(1.0, 0.3 * max(suma, r6)) else 1,
-                    f"RRR6 anotado {r6:g} mm y el pluviómetro automático sumó {suma:.1f} mm en 6 h (diferencia {d:.1f} mm)")
+                    f"RRR6 anotado {r6:g} mm y el pluviómetro automático sumó {suma:.1f} mm en las 6 h cerradas a las {t:%H}:00 (diferencia {d:.1f} mm; la precipitación debe calzar exacta)")
     return out
 
 
