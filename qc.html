@@ -83,6 +83,20 @@ main[hidden]{display:none}
 #minu table.mtab{width:auto}#minu .mtab th,#minu .mtab td{padding:3px 12px;white-space:nowrap}#minu .mtab td:nth-child(n+3){text-align:right}#minu .mtab th{max-width:220px;white-space:normal;text-align:right}#minu .mtab th:nth-child(-n+2){text-align:left}
 #minu details.mblo{margin:12px 0;border:1px solid var(--bd);border-radius:10px;background:#0d1a38}#minu details.mblo>summary{cursor:pointer;padding:8px 12px;font-weight:700;font-size:15px;list-style:none;display:flex;align-items:center;gap:8px}#minu details.mblo>summary::-webkit-details-marker{display:none}#minu details.mblo>summary::before{content:"▸";color:var(--oro);transition:transform .15s}#minu details.mblo[open]>summary::before{transform:rotate(90deg)}#minu details.mblo>summary:hover{color:var(--oro)}#minu .mcont{padding:0 12px 12px}
 #minu tr.inc:hover{background:#16264a}#minu tr.vis{outline:2px solid var(--oro)}
+#bol{flex:1;overflow:auto;padding:14px 20px}#bol[hidden]{display:none}
+#bol .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+#bol .htools input,#bol .htools button,#bol .htools span.tag{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font:600 13px inherit}#bol .htools button{cursor:pointer}
+#bol .hres{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}#bol .hres div{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px 14px;min-width:150px}#bol .hres b{display:block;font-size:20px}#bol .hres span{color:var(--mu);font-size:12.5px}
+#bol .bwrap{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:14px;align-items:start}@media (max-width:1300px){#bol .bwrap{grid-template-columns:1fr}}
+#bol .bcard{background:#fff;color:#212529;border-radius:8px;overflow:auto}#bol .bcab{background:#2D4356;color:#fff;padding:10px 14px}#bol .bcab h3{margin:0;font-size:18px}#bol .bcab h5{margin:2px 0;font-weight:400;font-size:13px}
+#bol table{border-collapse:collapse;width:100%;font-size:12.5px}#bol th,#bol td{border:1px solid #dee2e6;padding:3px 6px}#bol th{background:#84A7A1;color:#000;font-weight:600;text-align:center}
+#bol td.n{text-align:right;white-space:nowrap}#bol td.tn{color:#0a9fbd}#bol td.tx{color:#dc3545}#bol td.nom{white-space:nowrap}#bol td small{display:block;font-size:10.5px;font-weight:600;color:#5b4a00}
+#bol td.err{background:#f8d7da;outline:2px solid #dc3545;outline-offset:-2px}#bol td.err small{color:#a4161a}#bol td.warn{background:#fff3cd}#bol td.info{background:#e7f1ff}#bol td.info small{color:#1d4f91}
+#bol td[title]{cursor:help}#bol td.rv{text-align:center;min-width:92px}#bol .ok{color:#2f9e6a;font-weight:700}#bol .bb{display:inline-block;margin:1px 0;font-size:11px;border-radius:4px;padding:1px 6px;font-weight:700}#bol .bb.err{background:#dc3545;color:#fff}#bol .bb.warn{background:#f2c94c;color:#3a2a00}
+#bol tr.sel td{box-shadow:inset 0 2px 0 #C9A54C,inset 0 -2px 0 #C9A54C}#bol tbody tr{cursor:pointer}
+#bol .lado{background:#0d1a38;border:1px solid var(--bd);border-radius:10px;padding:12px 14px}#bol .lado h4{margin:0 0 8px;font-size:15px}
+#bol .bit{border-left:4px solid #dc3545;background:var(--panel);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-size:13px;cursor:pointer}#bol .bit.warn{border-color:#f2c94c}#bol .bit.info{border-color:#56CCF2}#bol .bit p{margin:3px 0 0;color:#b9c6e0}#bol .bit em{font-style:normal;color:var(--oro);font-weight:700}
+#bol .ley{display:flex;gap:14px;font-size:12px;color:var(--mu);margin:0 0 8px}#bol .ley i{display:inline-block;width:14px;height:12px;vertical-align:middle;margin-right:4px;border-radius:2px}
 #rell{flex:1;overflow:auto;padding:14px 20px}#rell[hidden]{display:none}
 #rell .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
 #rell .htools input,#rell .htools select,#rell .htools button{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font:600 13px inherit}#rell .htools button{cursor:pointer}
@@ -114,7 +128,7 @@ main[hidden]{display:none}
 <header>
  <div class="marca"><a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a><div id="relojUTC" title="Hora UTC (hora local entre paréntesis)">— UTC</div></div>
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
- <div class="modos"><button data-m="ema" class="on">Estaciones automáticas</button><button data-m="obs">Observaciones</button><button data-m="mod">Contraste con modelos</button><button data-m="prio">Prioridades</button><button data-m="hist">Historial</button><button data-m="minu">Datos minutarios</button><button data-m="rell">Completar serie</button></div>
+ <div class="modos"><button data-m="ema" class="on">Estaciones automáticas</button><button data-m="obs">Observaciones</button><button data-m="mod">Contraste con modelos</button><button data-m="prio">Prioridades</button><button data-m="hist">Historial</button><button data-m="minu">Datos minutarios</button><button data-m="rell">Completar serie</button><button data-m="bol">Boletín diario</button></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -137,10 +151,12 @@ main[hidden]{display:none}
 <section id="prio" hidden></section>
 <section id="minu" hidden></section>
 <section id="rell" hidden></section>
+<section id="bol" hidden></section>
 <footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · satélite GOES-19 · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
 <script src="js/prioridad.js?v=202611091443"></script>
 <script src="js/minutarios.js?v=202611091342"></script>
+<script src="js/boletin.js?v=202611091508"></script>
 <script src="js/rellenar.js?v=202611091421"></script>
 <script>
 (function(){ const r = document.getElementById("relojUTC");
@@ -262,10 +278,10 @@ function detalle(c, mover = true){
 document.addEventListener("click", ev => {
   const it = ev.target.closest(".it"); if (it) (modo === "obs" ? detalleObs : modo === "mod" ? detalleMod : detalle)(it.dataset.c);
   const mb = ev.target.closest(".modos button"); if (mb){ modo = mb.dataset.m; sel = null; $("#det").style.display = "none";
-    const h = modo === "hist" || modo === "prio" || modo === "minu" || modo === "rell"; document.querySelector("main").hidden = h; $("#hist").hidden = modo !== "hist"; $("#prio").hidden = modo !== "prio"; $("#minu").hidden = modo !== "minu"; $("#rell").hidden = modo !== "rell"; $("#chips").style.display = h ? "none" : "";
+    const h = modo === "hist" || modo === "prio" || modo === "minu" || modo === "rell" || modo === "bol"; document.querySelector("main").hidden = h; $("#hist").hidden = modo !== "hist"; $("#prio").hidden = modo !== "prio"; $("#minu").hidden = modo !== "minu"; $("#rell").hidden = modo !== "rell"; $("#bol").hidden = modo !== "bol"; $("#chips").style.display = h ? "none" : "";
     $("#mvar").hidden = $("#mref").hidden = modo !== "mod"; leyenda(modo === "mod");
     if (h){ document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-      if (modo === "hist"){ hInit(); if (!HI) hCargar(); } else if (modo === "minu") MINU.init(); else if (modo === "rell") RELL.init(); else pintarPrio(); return; }
+      if (modo === "hist"){ hInit(); if (!HI) hCargar(); } else if (modo === "minu") MINU.init(); else if (modo === "rell") RELL.init(); else if (modo === "bol") BOL.init(clave); else pintarPrio(); return; }
     setTimeout(() => mapa.invalidateSize(), 50);
     document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb)); $("#grupo").hidden = modo !== "ema"; $("#vars").hidden = modo !== "ema"; $("#gobs").hidden = modo !== "obs"; R && pintar(); }
   const ch = ev.target.closest(".chip"); if (ch){ const n = +ch.dataset.n; ver[n] = !ver[n]; pintar(); }
@@ -542,7 +558,7 @@ function hCsv(){
 $("#fl").addEventListener("submit", ev => { ev.preventDefault(); const c = $("#clave").value; try { sessionStorage.setItem("qcClave", c); } catch (e) { window._qc = c; } $("#lerr").textContent = ""; cargar(); });
 // metotec.cl/modelo: solo el contraste con modelos (para presentar)
 const VISTA0 = new URLSearchParams(location.search).get("vista");
-if (["obs", "prio", "hist", "mod", "minu", "rell"].includes(VISTA0)) document.querySelector(`.modos button[data-m="${VISTA0}"]`).click();
+if (["obs", "prio", "hist", "mod", "minu", "rell", "bol"].includes(VISTA0)) document.querySelector(`.modos button[data-m="${VISTA0}"]`).click();
 if (/^\/modelo/.test(location.pathname) || new URLSearchParams(location.search).get("vista") === "modelo"){
   document.querySelector('.modos button[data-m="mod"]').click(); document.querySelector(".modos").style.display = "none";
   document.querySelector("header h1").firstChild.textContent = "Control de calidad · contraste con modelos"; document.title = "Contraste con modelos · METOTEC";

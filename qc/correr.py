@@ -15,7 +15,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
-import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC
+import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC, boletin as BOL
 
 VERSION = "0.1"
 
@@ -139,6 +139,7 @@ def main():
     ap.add_argument("--sin-modelo", action="store_true")
     ap.add_argument("--salida", default="qc_ultimo.json")
     ap.add_argument("--sensorial", choices=["auto", "si", "no"], default="auto")
+    ap.add_argument("--boletin", choices=["auto", "si", "no"], default="auto")
     a = ap.parse_args()
     estado = {"version": VERSION, "inicio": datetime.now(timezone.utc).isoformat(timespec="seconds"), "errores": []}
 
@@ -304,6 +305,11 @@ def main():
         estado["historial"] = {d: subir_kv(f"qc/hist/{d}", t) for d, t in dias.items()}
     except Exception:
         estado["errores"].append(f"historial: {traceback.format_exc(limit=2)}")
+    if a.boletin != "no" and not a.json:   # boletín climatológico diario: entre las 10:00 y las 13:00 hora local (o forzado)
+        try:
+            estado["boletin"] = BOL.correr(a.datos, forzar=a.boletin == "si", subir=subir_kv)
+        except Exception:
+            estado["errores"].append(f"boletin: {traceback.format_exc(limit=2)}")
     txt = json.dumps(res, ensure_ascii=False, default=str)
     Path(a.salida).write_text(txt, encoding="utf-8")
     estado["kv"] = subir_kv("qc/ultimo", txt)
