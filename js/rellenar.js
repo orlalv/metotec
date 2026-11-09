@@ -72,6 +72,7 @@ async function cargar(){
   $("#rOut").innerHTML = `<p style="color:var(--mu)">Cargando la estación y sus vecinas…</p>`;
   if (REV && REV.cod !== cod) revisar(); else if (REV) pintarRev();
   const D = await cargarUna(cod), yo = M().EST.find(e => e.codigo === cod);
+  if (M().SUB.has(cod) && !D.F.some(o => o[vSel] != null) && REV == null && /no traen/.test($("#rRev").textContent)){ $("#rOut").innerHTML = ""; return; }
   if (M().SUB.has(cod) && !D.F.some(o => o[vSel] != null)){
     const hay = VARS_OK.filter(v => D.F.some(o => o[v[0]] != null)).map(v => v[1]);
     $("#rOut").innerHTML = `<p style="color:#f2c94c">Los archivos subidos de esta estación no traen ${NOMV[vSel]} para el ${$("#rDia").value}. ${hay.length ? "Ese día sí traen: " + hay.join(", ") + ". Cámbielo en el selector de variable." : "Esta herramienta completa Ts, Td, HR y presiones: suba los archivos <b>Temperatura</b> o <b>PresionHumedad</b> (el de agua caída no sirve aquí)."}</p>`; return; }
