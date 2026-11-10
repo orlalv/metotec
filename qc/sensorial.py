@@ -222,6 +222,7 @@ FEN_METAR = {1: "DZ", 2: "RA", 9: "BR", 10: "FG", 15: "HZ"}
 FEN_W = {"DZ": 5, "RA": 6, "FG": 4}                     # categoría de tiempo pasado (W) que respalda cada fenómeno
 
 
+CL_CONV = (1, 2, 3, 8, 9)      # CL con cúmulos o cumulonimbos
 NOM_C = {0: "Ci", 1: "Cc", 2: "Cs", 3: "Ac", 4: "As", 5: "Ns", 6: "Sc", 7: "St", 8: "Cu", 9: "Cb", 10: "TCu"}
 PIE = 3.281
 
@@ -320,6 +321,9 @@ def codificacion(o):
             add("C39", 1, f"{NOM_C.get(C_, C_)} con base a {h_:g} m: muy alta para una nube baja. Si el dato viene del cielómetro (en pies) serían {h_ / 3.281:.0f} m")
     if Nh is not None and N is not None and N != 9 and Nh > N:
         add("C20", 2, f"Nh {Nh} mayor que N {N}")
+    # CL con Cu o Cb (1, 2, 3, 8, 9) pero ningún grupo 8NsChshs con C = 8 (Cu) o 9 (Cb)
+    if CL in CL_CONV and (capas or (N or 0) > 0) and not any(c[1] in (8, 9) for c in capas):
+        add("C40", 1, "El CL indica Cu/Cb pero falta su capa en los grupos 8")
     if CL in (3, 9) and capas and not any(c[1] == 9 for c in capas):
         add("C21", 1, f"CL {CL} (cumulonimbo) sin una capa de Cb")
     if any(c[1] == 9 for c in capas) and CL not in (3, 9):
@@ -327,7 +331,7 @@ def codificacion(o):
     # tipo de nube frente al fenómeno (capas: 4 As, 5 Ns, 6 Sc, 7 St, 8 Cu, 9 Cb, 10 TCu)
     tipos = {c[1] for c in capas if c[1] is not None}
     if ww is not None and tipos:
-        if 80 <= ww <= 90 and not tipos & {8, 9, 10}:
+        if 80 <= ww <= 90 and CL not in CL_CONV and not tipos & {8, 9, 10}:
             add("C28", 1, f"chubasco (ww {ww}) sin capa de Cu, TCu o Cb: los chubascos caen de nubes convectivas")
         if (ww >= 95 or ww == 17) and 9 not in tipos:
             add("C29", 1, f"tormenta (ww {ww}) sin capa de Cb")
@@ -406,9 +410,12 @@ def evolucion(t, o, hist):
     if W1 is not None and len(disponibles) >= per - 2:
         cats = [categoria_W(v(h, "WWSINOP", "ww")) for h in disponibles] + [categoria_W(ww)]
         cats += [FEN_W[f] for h in disponibles + [o] for f in fen_metar(h) if f in FEN_W]     # también lo informado en los METAR
-        mx = max([c for c in cats if c is not None], default=None)
+        dist = sorted({c for c in cats if c is not None}, reverse=True)      # categorías distintas, de mayor a menor
+        mx = dist[0] if dist else None
         if mx is not None and W1 < mx:
-            add("E10", 2, f"en el período de {per} h se informó un fenómeno de categoría W {mx}, pero W1 es {W1}")
+            add("E10", 2, f"en el período de {per} h se informó un fenómeno de categoría W {mx}, pero W1 es {W1}: W1 debe ser la categoría más alta")
+        elif W2 is not None and len(dist) >= 2 and W2 < dist[1]:
+            add("E10", 2, f"en el período de {per} h se informaron fenómenos de categoría W {dist[0]} y {dist[1]}, pero W2 es {W2}: W2 debe ser la segunda categoría más alta")
         if W1 >= 5 and (mx is None or mx < 5):
             add("E11", 1, f"W1 {W1} (precipitación o tormenta en el período de {per} h) sin ningún ww ni METAR horario que lo respalde")
     rr6, tz = v(o, "RRR6", "RRR6"), v(o, "RRR6", "Traza")
