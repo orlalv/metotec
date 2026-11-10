@@ -16,6 +16,8 @@ import html, json, math, re, sys, time
 from datetime import date, datetime, timezone
 from pathlib import Path
 import numpy as np, pandas as pd, requests
+NOMBRES = {"950001": "C.M.A. Eduardo Frei Montalva, Antártica", "950002": "Arturo Prat, Base Antártica", "950003": "Bernardo O'Higgins, Base Antártica",
+           "330031": "Juan Fernández, Estación Meteorológica", "380013": "Maquehue, Temuco Ad."}
 
 URL = "https://climatologia.meteochile.gob.cl/application/anual/{p}/{cod}/{a}"
 PAG = {"tx": "temperaturaMaximaAnual", "tn": "temperaturaMinimaAnual"}
@@ -163,8 +165,8 @@ def revisar_estacion(cod, S, vecinas=None, E=None):
             if cl:
                 med, iqr = cl
                 z = (val - med) / iqr
-                if abs(z) > 3:
-                    niv = 2 if abs(z) > 5 else 1
+                if abs(z) > (4 if ant else 3):
+                    niv = 2 if abs(z) > (6 if ant else 5) else 1
                     conf = _vecinas_confirman(f, v_, z, vecinas)
                     txt = (f"{NOMV[v_]} {val:g} °C muy {'alta' if z > 0 else 'baja'} para {MESES[m - 1]} en esta estación "
                            f"(lo normal: {med:.1f} °C ± {iqr:.1f}; se aparta {abs(z):.1f} veces el rango intercuartil)")
@@ -264,7 +266,7 @@ def revisar_todo(raiz, cods, E):
         S = S_[c]
         if S.empty:
             continue
-        e = E.get(c, {})
+        e = E.get(c) or {"nombre": NOMBRES.get(c)}
         vec = {}
         if e.get("lat") is not None:
             cand = sorted(((dist_km(e, E[o]), o) for o in cods if o != c and o in E and E[o].get("lat") is not None

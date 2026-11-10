@@ -12,6 +12,8 @@ import io, json, math, time, zipfile, gzip
 from datetime import datetime, timezone, date
 from pathlib import Path
 import numpy as np, pandas as pd, requests
+NOMBRES = {"950001": "C.M.A. Eduardo Frei Montalva, Antártica", "950002": "Arturo Prat, Base Antártica", "950003": "Bernardo O'Higgins, Base Antártica",
+           "330031": "Juan Fernández, Estación Meteorológica", "380013": "Maquehue, Temuco Ad."}
 
 URL = "https://climatologia.meteochile.gob.cl/application/datos/getDatosSaclim/{cod}_{a}_{v}_"
 VARS = ["Temperatura", "PuntoRocio", "Humedad", "PresionQFE", "PresionQFF", "Viento", "Agua6Horas", "TMaxima", "TMinima"]
@@ -121,10 +123,10 @@ def serie(raiz, cod):
 def _es(T): return 6.112 * np.exp(17.62 * T / (243.12 + T))
 
 
-def _variantes(x):
+def _variantes(x, digitos=True):
     s = f"{abs(x):.1f}"; ent, dec = s.split(".")
     out = {-x, x / 10, x * 10}
-    if len(ent) >= 2:
+    if digitos and len(ent) >= 2:
         out.add(math.copysign(float(ent[:-2] + ent[-1] + ent[-2] + "." + dec), x))
         out.add(math.copysign(float(ent[:-1] + dec + "." + ent[-1]), x))
     return [round(v, 1) for v in out if v != x]
@@ -153,8 +155,9 @@ def revisar_estacion(cod, S, E):
         z = (x - med) / iqr
         ok_cl = nn >= 150
         vec = (x.shift(1) + x.shift(-1)) / 2           # referencia de las horas vecinas (sirve aunque haya pocos años)
+        dig = v in ("Ts", "Td")          # en presión y humedad, invertir dígitos calza por azar: solo signo y decimal
         for t, val in malo.items():
-            prob = [w for w in _variantes(val) if (ok_cl.get(t) and abs(w - med[t]) <= 1.5 * iqr[t]) or (pd.notna(vec.get(t)) and abs(w - vec[t]) <= {"Ts": 2, "Td": 2.5, "HR": 8, "QFE": 1, "QFF": 1, "ff": 5, "RRR6": 2}[v])]
+            prob = [w for w in _variantes(val, dig) if (ok_cl.get(t) and abs(w - med[t]) <= 1.5 * iqr[t]) or (pd.notna(vec.get(t)) and abs(w - vec[t]) <= {"Ts": 2, "Td": 2.5, "HR": 8, "QFE": 1, "QFF": 1, "ff": 5, "RRR6": 2}[v])]
             add(t, v, 2, "RANGO", f"{NOM[v]} {val:g} {UNI[v]} fuera del rango físico ({lo} a {hi})" + (f". Probable: {prob[0]:g} (digitación)" if prob else ""), val, prob[0] if prob else None)
         if v in ("RRR6", "ff"):
             pass
@@ -162,7 +165,7 @@ def revisar_estacion(cod, S, E):
             sel = x[(z.abs() > 4) & ok_cl & ~x.index.isin(malo.index)]
             p, s = x.shift(1), x.shift(-1)
             for t, val in sel.items():
-                prob = [w for w in _variantes(val) if abs(w - med[t]) <= 1.5 * iqr[t]]
+                prob = [w for w in _variantes(val, dig) if abs(w - med[t]) <= 1.5 * iqr[t]]
                 if prob:
                     add(t, v, 2, "DIG", f"{NOM[v]} {val:g} {UNI[v]} muy distinto de lo normal a esa hora ({med[t]:.1f} ± {iqr[t]:.1f}). Probable: {prob[0]:g} (signo, decimal o dígitos)", val, prob[0])
                 else:
@@ -173,7 +176,7 @@ def revisar_estacion(cod, S, E):
             pk = x[(d1.abs() > lim) & (d2.abs() > lim) & (d1 * d2 > 0) & ~x.index.isin(sel.index) & ~x.index.isin(malo.index)
                    & (x.index.to_series().diff().dt.total_seconds().eq(3600)) & (x.index.to_series().diff(-1).dt.total_seconds().eq(-3600))]
             for t, val in pk.items():
-                prob = [w for w in _variantes(val) if abs(w - (p[t] + s[t]) / 2) <= lim / 2]
+                prob = [w for w in _variantes(val, dig) if abs(w - (p[t] + s[t]) / 2) <= lim / 4]
                 grande = min(abs(d1[t]), abs(d2[t])) > 3 * lim
                 add(t, v, 2 if prob or grande else 1, "DIG" if prob else "PICO", f"{NOM[v]} {val:g} {UNI[v]} entre {p[t]:g} y {s[t]:g} en las horas vecinas"
                     + (f". Probable: {prob[0]:g} (signo, decimal o dígitos)" if prob else ""), val, prob[0] if prob else None)
@@ -183,6 +186,8 @@ def revisar_estacion(cod, S, E):
             largo = x.groupby(b).transform("size")
             umbral = {"Ts": 8, "Td": 10, "HR": 12, "QFE": 8, "QFF": 8}[v]
             ini = x[(largo >= umbral) & (b != b.shift())].dropna()
+            if v == "HR":
+                ini = ini[ini < 97]          # 100 % por horas es normal con niebla o lluvia
             for t, val in ini.items():
                 add(t, v, 1, "PEGADO", f"{NOM[v]} {val:g} {UNI[v]} sin cambiar durante {int(largo[t])} horas seguidas", val)
     # coherencia entre variables
@@ -192,9 +197,10 @@ def revisar_estacion(cod, S, E):
             add(t, "Td", 2, "TDTS", f"Td {r.Td:g} °C mayor que Ts {r.Ts:g} °C", r.Td)
         if "HR" in J:
             hc = (100 * _es(J.Td) / _es(J.Ts)).clip(upper=100)
-            mal = J[(J.HR - hc).abs() > 6]
+            tol = np.where(J.Ts < 0, 12, 8)          # bajo 0 °C la HR puede ir referida al hielo
+            mal = J[(J.HR - hc).abs() > tol]
             for t, r in mal.iterrows():
-                add(t, "HR", 2 if abs(r.HR - hc[t]) > 15 else 1, "HRTD", f"HR {r.HR:g} % y con Ts {r.Ts:g} y Td {r.Td:g} corresponde {hc[t]:.0f} %", r.HR, round(float(hc[t])))
+                add(t, "HR", 2 if abs(r.HR - hc[t]) > 20 else 1, "HRTD", f"HR {r.HR:g} % y con Ts {r.Ts:g} y Td {r.Td:g} corresponde {hc[t]:.0f} %", r.HR, round(float(hc[t])))
     for v in ("QFE", "QFF"):
         if v in S:
             x = S[v]; d = x.diff()
@@ -218,6 +224,21 @@ def revisar_estacion(cod, S, E):
                 add(t, str(r["var"]), 2, "EXTH", f"{r['var']} {r.valor:g} °C, pero una Ts horaria del período fue {ref:g} °C (la extrema debe ser al menos igual)", r.valor)
             elif abs(r.valor - ref) > 6:
                 add(t, str(r["var"]), 1, "EXTH", f"{r['var']} {r.valor:g} °C y la Ts horaria más {'alta' if es_max else 'baja'} del período fue {ref:g} °C (diferencia {r.valor - ref:+.1f})", r.valor)
+    # meses con muchas alertas de la misma variable: una sola alerta de período (la serie entera está mal ese mes)
+    grupo = {}
+    for h in out:
+        if h["regla"] in ("PICO", "SALTO", "CLIMA", "DIG", "HRTD"):
+            grupo.setdefault((h["var"], h["fecha"][:7]), []).append(h)
+    quitar = set()
+    for (var, ym), hs in grupo.items():
+        if len(hs) >= 15:
+            quitar |= {id(h) for h in hs}
+            cnt = {}
+            for h in hs: cnt[h["regla"]] = cnt.get(h["regla"], 0) + 1
+            out.append(dict(fecha=hs[0]["fecha"], var=var, nivel=2, regla="PERIODO", valor=None, probable=None,
+                            msg=f"{NOM.get(var, var)} de {MESES[int(ym[5:]) - 1]} {ym[:4]}: {len(hs)} valores anómalos en el mes ("
+                                + ", ".join(f"{n} {k.lower()}" for k, n in cnt.items()) + "). La serie completa de ese período parece mal (instrumento, unidad o referencia); revisar el mes entero"))
+    out = [h for h in out if id(h) not in quitar]
     # completitud por año y variable
     res = {}
     for a, Sa in S.groupby(S.index.year):
@@ -254,7 +275,7 @@ def revisar_todo(raiz, cods, E_):
                 cb = next((x for x in reversed(mis) if x["fecha"].startswith(h["fecha"][:16])), None)
                 corr.append({**h, "antes": cb["antes"] if cb else h.get("valor"), "ahora": cb["ahora"] if cb else None,
                              "corregido": cb["detectado"] if cb else datetime.now(timezone.utc).isoformat(timespec="seconds")})
-        e = E_.get(c, {})
+        e = E_.get(c) or {"nombre": NOMBRES.get(c)}
         R = dict(codigo=c, nombre=e.get("nombre"), desde=str(S.index.min())[:10], hasta=str(S.index.max())[:10], anios=res,
                  hallazgos=hall[-6000:], total=len(hall), corregidos=corr[-300:], cambios=mis[-300:],
                  generado=datetime.now(timezone.utc).isoformat(timespec="seconds"))

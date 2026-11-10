@@ -8,7 +8,7 @@ const NOM = {RANGO: "Fuera de rango físico", TNTX: "Mínima mayor que máxima",
   PICO: "Pico aislado", REPE: "Valor repetido", ENTEROS: "Mes con valores enteros", HUECO: "Mes sin datos"};
 const MES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 let clave = () => "", RES = null, E = null, anio = null, verVar = "tx", filtro = "", soloDud = true, fuente = "dia";
-Object.assign(NOM, {DIG: "Posible error de digitación", PEGADO: "Valor pegado", HRTD: "HR no calza con Ts y Td", TDTS: "Td mayor que Ts", SALTO: "Salto de presión", EXTH: "Extrema y Ts horarias"});
+Object.assign(NOM, {DIG: "Posible error de digitación", PEGADO: "Valor pegado", HRTD: "HR no calza con Ts y Td", TDTS: "Td mayor que Ts", SALTO: "Salto de presión", EXTH: "Extrema y Ts horarias", PERIODO: "Mes completo con problemas"});
 const H = () => ({"x-clave": clave()});
 
 function init(fclave, fu){
