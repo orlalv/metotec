@@ -7,29 +7,31 @@ const NIVT = ["info", "revisar", "dudoso"], NIVC = ["var(--info)", "var(--sos)",
 const NOM = {RANGO: "Fuera de rango físico", TNTX: "Mínima mayor que máxima", IGUAL: "Mínima igual a máxima", CLIMA: "Fuera de lo normal del mes",
   PICO: "Pico aislado", REPE: "Valor repetido", ENTEROS: "Mes con valores enteros", HUECO: "Mes sin datos"};
 const MES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-let clave = () => "", RES = null, E = null, anio = null, verVar = "tx", filtro = "", soloDud = true;
+let clave = () => "", RES = null, E = null, anio = null, verVar = "tx", filtro = "", soloDud = true, fuente = "dia";
+Object.assign(NOM, {DIG: "Posible error de digitación", PEGADO: "Valor pegado", HRTD: "HR no calza con Ts y Td", TDTS: "Td mayor que Ts", SALTO: "Salto de presión", EXTH: "Extrema y Ts horarias"});
 const H = () => ({"x-clave": clave()});
 
 function init(fclave){
   clave = fclave || clave;
   const s = $("#ser"); if (s.dataset.ok) return; s.dataset.ok = 1;
-  s.innerHTML = `<div class="htools"><select id="sEst"><option value="">Resumen de todas las estaciones</option></select><select id="sAnio" hidden></select>
+  s.innerHTML = `<div class="htools"><span id="sFue"><button data-fu="dia" class="rvbtn" style="margin:0">Máx./mín. diarias (anuarios)</button> <button data-fu="hora" style="margin:0">Horarias SACLIM (Ts, Td, HR, QFE, QFF, viento, RRR6, extremas)</button></span><select id="sEst"><option value="">Resumen de todas las estaciones</option></select><select id="sAnio" hidden></select>
     <span id="sVar"></span><label><input type="checkbox" id="sDud" checked> solo dudosos y para revisar</label><span class="tag" id="sTag"></span><button id="sXls">⬇ Excel</button></div><div id="sOut"><p style="color:var(--mu)">Cargando…</p></div>`;
   $("#sEst").addEventListener("change", () => cargar($("#sEst").value));
-  $("#sAnio").addEventListener("change", () => { anio = +$("#sAnio").value; pintarE(); });
-  $("#sDud").addEventListener("change", ev => { soloDud = ev.target.checked; E ? pintarE() : pintarR(); });
+  $("#sAnio").addEventListener("change", () => { anio = +$("#sAnio").value; fuente === "hora" ? pintarH() : pintarE(); });
+  $("#sDud").addEventListener("change", ev => { soloDud = ev.target.checked; E ? (fuente === "hora" ? pintarH() : pintarE()) : pintarR(); });
   $("#sXls").addEventListener("click", excel);
   s.addEventListener("click", ev => {
+    const fu = ev.target.closest("[data-fu]"); if (fu){ fuente = fu.dataset.fu; document.querySelectorAll("#sFue button").forEach(b => b.className = b === fu ? "rvbtn" : ""); E = null; resumen(); return; }
     const c = ev.target.closest("[data-sc]"); if (c){ $("#sEst").value = c.dataset.sc; cargar(c.dataset.sc); return; }
-    const a = ev.target.closest("[data-sa]"); if (a){ anio = +a.dataset.sa; $("#sAnio").value = anio; pintarE(); return; }
+    const a = ev.target.closest("[data-sa]"); if (a){ anio = +a.dataset.sa; $("#sAnio").value = anio; fuente === "hora" ? pintarH() : pintarE(); return; }
     const v = ev.target.closest("[data-sv]"); if (v){ verVar = v.dataset.sv; pintarE(); return; }
-    const f = ev.target.closest("[data-sf]"); if (f){ filtro = filtro === f.dataset.sf ? "" : f.dataset.sf; pintarE(); return; }
+    const f = ev.target.closest("[data-sf]"); if (f){ filtro = filtro === f.dataset.sf ? "" : f.dataset.sf; fuente === "hora" ? pintarH() : pintarE(); return; }
     const h = ev.target.closest("[data-sh]"); if (h){ const [a2, v2] = h.dataset.sh.split("|"); anio = +a2.slice(0, 4); verVar = v2; $("#sAnio").value = anio; pintarE(a2); }
   });
   resumen();
 }
 async function resumen(){
-  try { RES = await (await fetch("/api/series", {headers: H(), cache: "no-store"})).json(); } catch (e){ $("#sOut").innerHTML = "<p>No se pudo cargar.</p>"; return; }
+  try { RES = await (await fetch("/api/series?fuente=" + fuente, {headers: H(), cache: "no-store"})).json(); } catch (e){ $("#sOut").innerHTML = "<p>No se pudo cargar.</p>"; return; }
   $("#sEst").innerHTML = `<option value="">Resumen de todas las estaciones</option>` + (RES.estaciones || []).slice().sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""))
     .map(e => `<option value="${e.codigo}">${esc(e.nombre)} (${e.codigo})</option>`).join("");
   pintarR();
@@ -38,7 +40,7 @@ function pintarR(){
   E = null; $("#sAnio").hidden = true; $("#sVar").innerHTML = "";
   const L = RES.estaciones || [];
   $("#sTag").textContent = RES.generado ? `Revisado ${new Date(RES.generado).toLocaleString("es-CL", {dateStyle: "short", timeStyle: "short"})}` : "Aún sin revisión";
-  if (!L.length){ $("#sOut").innerHTML = `<p style="color:var(--mu)">Todavía no hay series revisadas. El primer barrido (piloto) está en curso.</p>`; return; }
+  if (!L.length){ $("#sOut").innerHTML = `<p style="color:var(--mu)">Todavía no hay series revisadas de esta fuente. El primer barrido (piloto) está en curso.</p>`; return; }
   const tot = k => L.reduce((s, e) => s + (e[k] || 0), 0);
   $("#sOut").innerHTML = `<div class="hres"><div><b>${L.length}</b><span>estaciones</span></div><div><b style="color:var(--err)">${tot("dudosos")}</b><span>datos dudosos</span></div>
       <div><b style="color:var(--sos)">${tot("revisar")}</b><span>para revisar</span></div><div><b style="color:var(--ok)">${tot("corregidos")}</b><span>corregidos desde la revisión anterior</span></div></div>
@@ -52,13 +54,29 @@ function pintarR(){
 async function cargar(cod){
   if (!cod){ pintarR(); return; }
   $("#sOut").innerHTML = `<p style="color:var(--mu)">Cargando…</p>`;
-  E = await (await fetch("/api/series?cod=" + cod, {headers: H(), cache: "no-store"})).json();
+  E = await (await fetch("/api/series?fuente=" + fuente + "&cod=" + cod, {headers: H(), cache: "no-store"})).json();
   if (E.vacio){ $("#sOut").innerHTML = "<p>Sin datos.</p>"; return; }
   const anios = Object.keys(E.anios || {}).map(Number).sort((a, b) => b - a);
   const conH = new Set(E.hallazgos.filter(h => h.nivel > 0).map(h => +h.fecha.slice(0, 4)));
   anio = anios.find(a => conH.has(a)) || anios[0];
   $("#sAnio").innerHTML = anios.map(a => `<option value="${a}">${a}${conH.has(a) ? " •" : ""}</option>`).join(""); $("#sAnio").value = anio; $("#sAnio").hidden = false;
-  filtro = ""; pintarE();
+  filtro = ""; fuente === "hora" ? pintarH() : pintarE();
+}
+function pintarH(){
+  const Hs = E.hallazgos.filter(h => (!soloDud || h.nivel > 0) && (!filtro || h.regla === filtro) && (!anio || +h.fecha.slice(0, 4) === anio));
+  $("#sVar").innerHTML = ""; $("#sTag").textContent = `${E.nombre || E.codigo} · ${E.desde.slice(0, 4)}–${E.hasta.slice(0, 4)} · ${E.total} alertas en total`;
+  const cnt = {}; E.hallazgos.filter(h => (!soloDud || h.nivel > 0) && (!anio || +h.fecha.slice(0, 4) === anio)).forEach(h => cnt[h.regla] = (cnt[h.regla] || 0) + 1);
+  const porAnio = {}; E.hallazgos.filter(h => h.nivel > 0).forEach(h => { const a = h.fecha.slice(0, 4); porAnio[a] = (porAnio[a] || 0) + 1; });
+  const V = ["Ts", "Td", "HR", "QFE", "QFF", "ff"];
+  $("#sOut").innerHTML = `<h4 style="margin:4px 0 6px">Completitud por año (% de horas con dato) y alertas</h4>
+    <table class="sgtab"><tr><th>Año</th>${V.map(v => `<th>${v === "ff" ? "viento" : v}</th>`).join("")}<th>alertas</th></tr>${Object.keys(E.anios).sort().reverse().map(a => { const r = E.anios[a];
+      return `<tr data-sa="${a}" style="cursor:pointer" class="${+a === anio ? "on" : ""}"><td>${a}</td>${V.map(v => { const c = r[v] == null ? null : Math.round(100 * r[v] / r.esperadas);
+        return `<td style="color:${c == null ? "var(--mu)" : c >= 95 ? "var(--ok)" : c >= 70 ? "var(--sos)" : "var(--err)"}">${c == null ? "—" : c + "%"}</td>`; }).join("")}<td style="color:var(--err);font-weight:700">${porAnio[a] || ""}</td></tr>`; }).join("")}</table>
+    <h4 style="margin:12px 0 6px">Por regla ${anio ? "· " + anio : ""}</h4>${Object.entries(cnt).map(([k, n]) => `<button data-sf="${k}" class="${filtro === k ? "rvbtn" : ""}" style="margin:2px">${esc(NOM[k] || k)} ${n}</button>`).join("") || "<p style='color:var(--ok)'>Sin alertas.</p>"}
+    ${(E.corregidos || []).length ? `<h4 style="margin:12px 0 6px">Corregidos</h4><table class="sgtab" style="font-family:inherit">${E.corregidos.slice(-30).reverse().map(c => `<tr><td>${c.fecha}</td><td>${esc(c.var)}</td><td>${c.antes ?? "—"} → ${c.ahora ?? "—"}</td><td style="text-align:left">${esc(NOM[c.regla] || c.regla)}</td></tr>`).join("")}</table>` : ""}
+    <h4 style="margin:14px 0 6px">Alertas ${anio || ""} (${Hs.length})</h4>
+    <table><tr><th>Fecha y hora UTC</th><th>Variable</th><th>Nivel</th><th>Regla</th><th>Detalle</th></tr>${Hs.slice().reverse().slice(0, 800).map(h => `<tr><td style="white-space:nowrap">${h.fecha}</td><td>${esc(h.var)}</td>
+      <td style="color:${NIVC[h.nivel]}">${NIVT[h.nivel]}</td><td>${esc(NOM[h.regla] || h.regla)}</td><td>${esc(h.msg).replace(/(Probable: [^(]+)/, "<b>$1</b>")}</td></tr>`).join("")}</table>`;
 }
 function pintarE(selFecha){
   if (!E) return;
