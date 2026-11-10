@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-10T17:15:47+00:00",
+ "inicio": "2026-11-10T17:45:27+00:00",
  "errores": [],
  "estaciones": 134,
- "con_datos": 124,
- "registros": 4849,
- "desde": "2026-11-10 16:16:00",
- "hasta": "2026-11-10 17:10:00",
+ "con_datos": 119,
+ "registros": 4873,
+ "desde": "2026-11-10 16:46:00",
+ "hasta": "2026-11-10 17:40:00",
  "horas_archivadas": 2,
  "modelo": 6432,
  "wrf": "sin corridas nuevas",
@@ -21,17 +21,17 @@
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 70,
-  "ultima": "2026-11-10T17:00Z"
+  "ultima": "2026-11-10T17:30Z"
  },
  "calibracion": {
   "dias": 3,
   "filas": 3839,
   "activa": false
  },
- "consenso_quitados": 7,
+ "consenso_quitados": 1,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 2259,
+ "ob_filas": 2375,
  "sensorial": {
   "estaciones": 33,
   "observaciones": 394,
@@ -45,12 +45,12 @@
  },
  "boletin": "fuera de horario",
  "kv": "200",
- "alertas": 31,
+ "alertas": 33,
  "resumen": {
-  "bien": 108,
-  "sospechoso": 11,
+  "bien": 105,
+  "sospechoso": 14,
   "erróneo": 8,
   "sin datos": 7
  },
- "fin": "2026-11-10T17:18:01+00:00"
+ "fin": "2026-11-10T17:47:41+00:00"
 }
