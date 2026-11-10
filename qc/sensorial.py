@@ -583,7 +583,20 @@ def evolucion(t, o, hist, A=None):
                  any(f in FEN_W and FEN_W[f] >= 5 for h in [o] + disponibles for f in fen_metar(h))
         # solo se omite en observaciones importadas; si un observador no ingresó tiempo presente/pasado, igual se avisa
         if (rr or 0) > 0 and not hubo and not hubo_w:
-            if not importada(o): add("E13", 1, f"RRR6 {rr} mm sin ninguna hora con precipitación informada en el período")
+            if not importada(o):
+                # con el pluviómetro automático se sabe cuál de los dos está mal
+                w6 = A[(A["momento"] > t - pd.Timedelta(hours=6)) & (A["momento"] <= t)] if A is not None and not A.empty and "rr1m" in A else None
+                suma = round(float(w6["rr1m"].sum()), 1) if w6 is not None and len(w6) >= 300 else None
+                sin_ww = all(v(h, "WWSINOP", "ww") is None for h in [o] + disponibles)
+                if suma is None:
+                    add("E13", 1, f"RRR6 {rr} mm sin ninguna hora con precipitación informada en el período")
+                elif suma == 0:
+                    add("E13", 2, f"RRR6 {rr} mm sin ninguna hora con precipitación informada en el período, y el pluviómetro automático tampoco marcó nada en las 6 h: "
+                        f"el RRR6 está mal. Debería ir: RRR6 0")
+                elif not sin_ww:     # estación que hace SYNOP: llovió y no quedó en ww ni W1W2
+                    add("E13", 1, f"RRR6 {rr} mm y el pluviómetro automático marcó {suma:.1f} mm en las 6 h, pero ninguna hora informó precipitación (ww, W1W2 ni METAR): "
+                        f"faltó informar el tiempo presente o reciente")
+                # estación sin SYNOP (solo METAR): la lluvia que paró antes de la hora no queda en el METAR que entrega SACLIM; el pluviómetro la confirma
     # tendencia barométrica
     a, ppp = v(o, "a", "a"), v(o, "a", "ppp")
     h3 = hist.get(t - pd.Timedelta(hours=3))
@@ -788,7 +801,7 @@ def precipitacion_hora(t, o, A):
     if sp > 0 and not pres:
         add("SPRE", 2, f"el pluviómetro automático marcó {sp:.1f} mm a las {tramo(P)} (en los {VENTANA_PRESENTE} min previos a la observación) y se informó {ww_txt}, {m_txt}: "
             f"llovía al observar. Debería ir: tiempo presente de precipitación (ww 50–69 u 80–82; RA, DZ o SHRA en el METAR)")
-    elif sp == 0 and sr > 0 and not pres and not rec:
+    elif sp == 0 and sr > 0 and ww is not None and not pres and not rec:   # el tiempo reciente solo se ve en el ww (SACLIM no entrega el RE del METAR)
         add("SPRE", 1, f"el pluviómetro automático marcó {sr:.1f} mm a las {tramo(R)} y paró antes de la observación, pero se informó {ww_txt}, {m_txt}. "
             f"Debería ir: tiempo reciente (ww 20 llovizna, 21 lluvia, 25 chubasco; RERA o REDZ en el METAR)")
     elif sp == 0 and sr == 0 and pres and not (ww is not None and (68 <= ww <= 79 or 83 <= ww <= 90)):   # nieve o granizo: el pluviómetro puede no marcar
