@@ -85,6 +85,16 @@ jobs:
               curl -s -X DELETE -H "Authorization: Bearer $CF_TOK" "$KV" >/dev/null
               gh workflow run revisar.yml -R "$GITHUB_REPOSITORY" --ref main -f cods="$cods" || true
             fi
+            KVP="https://api.cloudflare.com/client/v4/accounts/$CF_ACC/storage/kv/namespaces/$KV_ID/values/qc/pedidos_periodo"
+            pp=$(curl -s -f -H "Authorization: Bearer $CF_TOK" "$KVP" || true)
+            if [ -n "$pp" ] && [ "$pp" != "{}" ]; then
+              curl -s -X DELETE -H "Authorization: Bearer $CF_TOK" "$KVP" >/dev/null
+              echo "$pp" | python3 -c "import sys,json
+          for x in json.load(sys.stdin).values(): print(json.dumps(x))" | while read -r ped; do
+                echo "Período: $ped"
+                gh workflow run periodo.yml -R "$GITHUB_REPOSITORY" --ref main -f pedido="$ped" || true
+              done
+            fi
             sleep 30
           done
           n=$(gh run list -R "$GITHUB_REPOSITORY" -w qc.yml --json status -q '[.[] | select(.status=="queued" or .status=="pending" or .status=="waiting")] | length')

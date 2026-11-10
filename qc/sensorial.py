@@ -70,6 +70,8 @@ OBSERVADOR = ("WWSINOP", "W1W2", "Nubes", "N", "CapaNube")
 def importada(o):
     """Observación cargada por un proceso de importación (solo datos de sensor, sin nada que ingrese un observador:
     tiempo presente/pasado ni nubosidad). En esas no se puede exigir coherencia con ww, W1W2 o METAR."""
+    if "_obs" in o:                   # observación armada desde los mensajes (revisión de un período): lo dice el mensaje
+        return not o["_obs"]
     return not any(el in o for el in OBSERVADOR)
 
 
@@ -162,20 +164,20 @@ _COMP = [(r, *_compilar(r["f"])) for r in REGLAS if r.get("vig")]
 
 def reglas_sistema(o):
     """Reglas del sistema que falla la observación grabada. Solo se evalúan si todos sus elementos están en la observación."""
-    claves = {(el.lower(), c.lower()) for el, cs in o.items() if el != "_qa" for c in cs}
-    sinDato = {(el.lower(), c.lower()) for el, cs in o.items() if el != "_qa" for c, x in cs.items() if x == SD}
+    claves = {(el.lower(), c.lower()) for el, cs in o.items() if not el.startswith("_") for c in cs}
+    sinDato = {(el.lower(), c.lower()) for el, cs in o.items() if not el.startswith("_") for c, x in cs.items() if x == SD}
     def G(el, c):
         x = (o.get(el) or {}).get(c)
         if x is None:
             for e2, cs in o.items():
-                if e2 != "_qa" and e2.lower() == el.lower():
+                if not e2.startswith("_") and e2.lower() == el.lower():
                     for c2, val in cs.items():
                         if c2.lower() == c.lower():
                             x = val
         return _V(None if x == SD else x)
     def S(el, c):
         for e2, cs in o.items():
-            if e2 != "_qa" and e2.lower() == el.lower():
+            if not e2.startswith("_") and e2.lower() == el.lower():
                 for c2, val in cs.items():
                     if c2.lower() == c.lower():
                         return val == SD
@@ -793,7 +795,8 @@ def precipitacion_hora(t, o, A):
     P, R = H[H["momento"] > corte], H[H["momento"] <= corte]
     llueve_m = "RA" in fm or "DZ" in fm
     pres = (ww is not None and ww in PRECIP) or llueve_m
-    rec = ww is not None and 20 <= ww <= 27
+    re_m = any(v(o, "reWW", k) is not None for k in ("reWW", "reWW2", "reWW3"))     # tiempo reciente del METAR (RERA, REDZ…)
+    rec = (ww is not None and 20 <= ww <= 27) or re_m
     tramo = lambda X: (lambda Y: f"{Y['momento'].min():%H:%M}" + (f"–{Y['momento'].max():%H:%M}" if len(Y) > 1 else ""))(X[X["rr1m"] > 0])
     ww_txt = f"ww {ww}, " if ww is not None else ""          # sin SYNOP (aeronáutica u hora intermedia): solo el METAR
     m_txt = ("METAR " + " ".join(fm)) if fm else "METAR sin fenómenos"
@@ -807,9 +810,9 @@ def precipitacion_hora(t, o, A):
     elif sp > 0 and not pres:            # un solo pulso de 0.1 mm: puede ser goteo de niebla o rocío en el embudo
         add("SPRE", 1, f"el pluviómetro automático marcó solo {sp:.1f} mm a las {tramo(P)} (en los {VENTANA_PRESENTE} min previos a la observación) y se informó {ww_txt}{m_txt}. "
             + ("Con neblina o niebla puede ser goteo en el embudo y no precipitación; revisar si hubo llovizna" if niebla else f"Revisar si hubo llovizna; si la hubo, debería ir: {debe_p}"))
-    elif sp == 0 and sr >= 0.2 and ww is not None and not pres and not rec:   # el tiempo reciente solo se ve en el ww (SACLIM no entrega el RE del METAR)
-        add("SPRE", 1, f"el pluviómetro automático marcó {sr:.1f} mm a las {tramo(R)} y paró antes de la observación, pero se informó {ww_txt}{m_txt}. "
-            f"Debería ir: tiempo reciente (ww 20 llovizna, 21 lluvia, 25 chubasco; RERA o REDZ en el METAR)")
+    elif sp == 0 and sr >= 0.2 and not pres and not rec and (ww is not None or "reWW" in o):
+        add("SPRE", 1, f"el pluviómetro automático marcó {sr:.1f} mm a las {tramo(R)} y paró antes de la observación, pero se informó {ww_txt}{m_txt} sin tiempo reciente. "
+            + ("Debería ir: tiempo reciente (ww 20 llovizna, 21 lluvia, 25 chubasco; RERA o REDZ en el METAR)" if ww is not None else "Debería ir: RERA o REDZ en el METAR"))
     elif sp == 0 and sr == 0 and pres and not (ww is not None and (68 <= ww <= 79 or 83 <= ww <= 90)):   # nieve o granizo: el pluviómetro puede no marcar
         add("SPRE", 1, f"se informó precipitación ({ww_txt}{m_txt}) y el pluviómetro automático no marcó nada en la última hora "
             f"(una llovizna débil puede no alcanzar 0.2 mm; revisar si de verdad hubo)")
