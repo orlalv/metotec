@@ -392,7 +392,7 @@ LIMITES = {"Ts": (-40, 45, "°C"), "Td": (-50, 35, "°C"), "HR": (1, 100, "%"), 
 SALTO = {"Ts": 6, "Td": 8, "HR": 30, "QFE": 3, "QFF": 3}       # cambio en 1 h que, si se devuelve a la hora siguiente, es un pico aislado
 
 
-def inusuales(t, o, hist):
+def inusuales(t, o, hist, A=None):
     """Valores fuera de lo físicamente posible o picos aislados entre horas. Se aplica a todas las observaciones,
     también a las importadas (ahí no se exige coherencia con ww, pero un valor imposible o un pico sí se avisa)."""
     out = []
@@ -411,15 +411,96 @@ def inusuales(t, o, hist):
         if x is None or xa is None:
             continue
         xs = v(sig, el) if sig else None
-        if abs(x - xa) > lim and (xs is None or (abs(x - xs) > lim and (x - xa) * (x - xs) > 0)):
-            add("E19", 1 if xs is None else 2, f"{el} {x}: pasó de {xa} a {x}" + (f" y volvió a {xs} a la hora siguiente (pico aislado)" if xs is not None else " en una hora"))
+        if abs(x - xa) > lim and xs is None:          # con la hora siguiente disponible, lo revisa digitacion() con toda la secuencia
+            add("E19", 1, f"{el} {x}: pasó de {xa} a {x} en una hora")
+    return out + digitacion(t, o, hist, A)
+
+
+# ======================================================================= errores de digitación (secuencia de ±10 h)
+DIG_EL = {"Ts": ("Ts", None, 3, "°C"), "Td": ("Td", None, 4, "°C"), "HR": ("HR", None, 15, "%"), "QFE": ("QFE", None, 2, "hPa"),
+          "QFF": ("QFF", None, 2, "hPa"), "QNH": ("QNH", None, 2, "hPa"), "ff": ("VTO", "ff", 10, "kt")}
+
+
+def _variantes(x):
+    """Valores que resultan de los errores de tecla típicos sobre lo anotado: un dígito cambiado, dos dígitos vecinos invertidos,
+    coma corrida y signo cambiado."""
+    dec = 0 if float(x).is_integer() and abs(x) >= 100 or (float(x).is_integer() and "." not in repr(x)) else 1
+    txt = f"{abs(x):.{dec}f}"
+    neg = x < 0
+    out = []
+    dig = [i for i, c in enumerate(txt) if c.isdigit()]
+    for i in dig:                                         # un dígito cambiado
+        for d in "0123456789":
+            if d != txt[i]:
+                out.append((txt[:i] + d + txt[i + 1:], "un dígito cambiado"))
+    for a_, b_ in zip(dig, dig[1:]):                       # dígitos vecinos invertidos (saltando la coma)
+        if txt[a_] != txt[b_]:
+            l = list(txt); l[a_], l[b_] = l[b_], l[a_]
+            out.append(("".join(l), "dígitos invertidos"))
+    res = []
+    for t_, tipo in out:
+        try:
+            y = float(t_)
+        except ValueError:
+            continue
+        res.append((-y if neg else y, tipo))
+    res += [(x * 10, "coma corrida"), (x / 10, "coma corrida"), (-x, "signo cambiado")]
+    return res
+
+
+COL_SENSOR = {"Ts": "T", "Td": "Td", "HR": "HR", "QFE": "P_est", "QFF": "P_mar", "QNH": "P_std", "ff": "ff10"}
+
+
+def digitacion(t, o, hist, A=None):
+    out = []
+    W = A[(A["momento"] > t - pd.Timedelta(minutes=20)) & (A["momento"] <= t)] if A is not None and len(A) else None
+    add = lambda cod, niv, msg: out.append(("evolucion", cod, niv, msg))
+    for el, (e1, e2, lim, u) in DIG_EL.items():
+        x = v(o, e1, e2)
+        if x is None:
+            continue
+        pts = [((k - t) / pd.Timedelta(hours=1), v(h, e1, e2)) for k, h in hist.items() if k != t and abs(k - t) <= pd.Timedelta(hours=10)]
+        pts = [(a_, b_) for a_, b_ in pts if b_ is not None]
+        antes, desp = [p for p in pts if p[0] < 0], [p for p in pts if p[0] > 0]
+        if len(pts) < 5 or not antes or not desp:          # hace falta secuencia a los dos lados
+            continue
+        X = np.array([p[0] for p in pts]); Y = np.array([p[1] for p in pts])
+        grado = 2 if len(pts) >= 7 else 1
+        c = np.polyfit(X, Y, grado)
+        res = Y - np.polyval(c, X)
+        sd = float(np.sqrt(np.mean(res ** 2))) if len(res) > grado + 1 else 0.0
+        esp = float(np.polyval(c, 0))
+        # interpolación con las horas más cercanas (más fiel que el ajuste si hay un cambio brusco real)
+        pa, ps = max(antes), min(desp)
+        lin = pa[1] + (ps[1] - pa[1]) * (0 - pa[0]) / (ps[0] - pa[0])
+        dev = min(abs(x - esp), abs(x - lin))
+        umbral = max(lim, 4 * sd)
+        if dev <= umbral:
+            continue
+        col = COL_SENSOR.get(el)
+        if W is not None and col in W and W[col].notna().any():   # si la estación automática marcó ese valor, fue real
+            if (W[col] - x).abs().min() <= lim / 3 or (el in ("QFE", "QFF", "QNH") and abs(x - float(W[col].median())) <= 1.5):
+                continue
+        ref = esp if abs(x - esp) < abs(x - lin) else lin
+        tol = max(lim / 2, 2 * sd)
+        cand = [(abs(y - ref), y, tipo) for y, tipo in _variantes(x) if abs(y - ref) <= tol]
+        orden = {"dígitos invertidos": 0, "signo cambiado": 1, "coma corrida": 2, "un dígito cambiado": 3}
+        fmt = (lambda y: f"{y:.0f}") if el in ("HR", "ff") else (lambda y: f"{y:.1f}")
+        if cand:
+            cand.sort(key=lambda c_: (round(c_[0] / max(tol, 1e-9), 1), orden[c_[2]]))
+            _, y, tipo = cand[0]
+            add("E20", 2, f"{el} {x} {u}: la secuencia de las horas vecinas esperaba ~{fmt(ref)} {u}. Parece {tipo} "
+                f"({fmt(x)} en vez de {fmt(y)}). Debería ir: {fmt(y)} {u}")
+        elif dev > 2 * umbral:
+            add("E20", 1, f"{el} {x} {u}: se sale de la secuencia de las horas vecinas (esperado ~{fmt(ref)} {u}, "
+                f"{len(antes)} horas antes y {len(desp)} después); no lo explica un error de tecla simple")
     return out
 
 
 # ======================================================================= evolución (con las horas anteriores)
-def evolucion(t, o, hist):
+def evolucion(t, o, hist, A=None):
     """hist: {momento: obs} de la misma estación (incluye t)."""
-    out = inusuales(t, o, hist)
+    out = inusuales(t, o, hist, A)
     add = lambda cod, niv, msg: out.append(("evolucion", cod, niv, msg))
     ant = hist.get(t - pd.Timedelta(hours=1))
     ww, N, VV = v(o, "WWSINOP", "ww"), v(o, "N"), v(o, "VVSINOP", "VV")
@@ -796,6 +877,6 @@ def revisar(codigo, obs, A=None, horas=None, sat=None):
                             msg=f"{el} del observador difiere en forma constante {sg[el]:+.1f} {u} de la estación automática (revisar calibración o altura del sensor)"))
     for t in sel:
         o = obs[t]
-        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs) + satelital(t, o, sat):
+        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs) + satelital(t, o, sat):
             out.append(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"))
     return out
