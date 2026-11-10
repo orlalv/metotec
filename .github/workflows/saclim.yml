@@ -1,0 +1,47 @@
+name: Series horarias SACLIM
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "piloto | actual | todo | revisar"
+        default: piloto
+      cods:
+        description: "Códigos separados por coma (vacío: piloto; «obs»: todas las con observador)"
+        default: ""
+      desde:
+        default: "1995"
+      hasta:
+        default: "2026"
+  schedule:
+    - cron: "23 9 * * 2"      # lunes: año en curso y anterior
+    - cron: "47 10 4 * *"     # día 3 de cada mes: todos los años (correcciones antiguas)
+permissions:
+  contents: write
+concurrency:
+  group: saclim
+  cancel-in-progress: false
+jobs:
+  series:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pandas numpy requests
+      - name: Rama de datos
+        run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - name: Descargar y revisar
+        run: |
+          M="${{ inputs.modo }}"
+          if [ -z "$M" ]; then if [ "${{ github.event.schedule }}" = "23 9 * * 2" ]; then M=actual; else M=todo; fi; fi
+          python qc/correr_saclim.py --datos datos --modo "$M" --cods "${{ inputs.cods }}" --desde "${{ inputs.desde || '1995' }}" --hasta "${{ inputs.hasta || '2026' }}"
+      - name: Guardar
+        if: always()
+        run: |
+          cd datos
+          git config user.name "qc-metotec"; git config user.email "contacto.metotec@gmail.com"
+          git add -A saclim
+          git commit -q -m "series horarias $(date -u +%F)" || exit 0
+          for i in 1 2 3; do git pull -q --rebase origin datos && git push -q origin datos && break; sleep 5; done
