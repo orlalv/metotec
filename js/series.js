@@ -11,10 +11,12 @@ let clave = () => "", RES = null, E = null, anio = null, verVar = "tx", filtro =
 Object.assign(NOM, {DIG: "Posible error de digitación", PEGADO: "Valor pegado", HRTD: "HR no calza con Ts y Td", TDTS: "Td mayor que Ts", SALTO: "Salto de presión", EXTH: "Extrema y Ts horarias"});
 const H = () => ({"x-clave": clave()});
 
-function init(fclave){
+function init(fclave, fu){
   clave = fclave || clave;
-  const s = $("#ser"); if (s.dataset.ok) return; s.dataset.ok = 1;
-  s.innerHTML = `<div class="htools"><span id="sFue"><button data-fu="dia" class="rvbtn" style="margin:0">Máx./mín. diarias (anuarios)</button> <button data-fu="hora" style="margin:0">Horarias SACLIM (Ts, Td, HR, QFE, QFF, viento, RRR6, extremas)</button></span><select id="sEst"><option value="">Resumen de todas las estaciones</option></select><select id="sAnio" hidden></select>
+  const s = $("#ser");
+  if (s.dataset.ok){ if (fu && fu !== fuente){ fuente = fu; E = null; anio = null; filtro = ""; $("#sEst").value = ""; resumen(); } return; }
+  s.dataset.ok = 1; fuente = fu || "dia";
+  s.innerHTML = `<div class="htools"><select id="sEst"><option value="">Resumen de todas las estaciones</option></select><select id="sAnio" hidden></select>
     <span id="sVar"></span><label><input type="checkbox" id="sDud" checked> solo dudosos y para revisar</label><span class="tag" id="sTag"></span><button id="sXls">⬇ Excel</button></div><div id="sOut"><p style="color:var(--mu)">Cargando…</p></div>`;
   $("#sEst").addEventListener("change", () => cargar($("#sEst").value));
   $("#sAnio").addEventListener("change", () => { anio = +$("#sAnio").value; fuente === "hora" ? pintarH() : pintarE(); });
