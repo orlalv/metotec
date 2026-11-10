@@ -678,9 +678,9 @@ def extremas(t, o, A, codigo, hist=None):
                 add("SEXH", 1, f"{el} con hora {fh[11:16]} del {fh[8:10]}/{fh[5:7]}: queda fuera del período de la {nom} ({periodo} local). "
                     f"La {nom} real fue {real:.1f} °C cerca de las {horas_real}. Debería ir: {horas_real.split(', ')[0]}")
             continue
-        # ±2 min: la hora de la extrema que muestra la estación (de sus muestras de segundos) puede caer en el minuto siguiente
+        # ±1 min: la hora de la extrema que muestra la estación (de sus muestras de segundos) puede caer en el minuto siguiente
         # o anterior al registro por minuto; esa diferencia no es un error
-        cerca = W[(W["momento"] - tu).abs() <= pd.Timedelta(minutes=2)]
+        cerca = W[(W["momento"] - tu).abs() <= pd.Timedelta(minutes=1)]
         if cerca.empty or not ok:                  # si el valor ya está mal, la alerta de valor trae la hora que corresponde
             continue
         en_hora = float(cerca["T"].iloc[int((cerca["T"] - x).abs().values.argmin())])   # el más parecido de esos minutos
