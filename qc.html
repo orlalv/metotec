@@ -286,7 +286,6 @@ $("#tema").addEventListener("click", () => { const c = document.documentElement.
   try { localStorage.setItem("metotecTema", c ? "claro" : "oscuro"); } catch (e) {} pintarTema(); });
 pintarTema();
 
-window.cargar = (...a) => cargar(...a);
 async function cargar(){
   const r = await fetch("/api/qc", {headers: {"x-clave": clave()}, cache: "no-store"});
   if (r.status === 401){ $("#login").style.display = "flex"; return; }
