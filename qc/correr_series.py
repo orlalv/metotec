@@ -21,6 +21,10 @@ def main():
     ap.add_argument("--hasta", type=int, default=date.today().year)
     a = ap.parse_args()
     cods = [c for c in a.cods.split(",") if c] or PILOTO
+    if a.modo == "revisar" and a.cods == "debug":
+        import requests
+        t = requests.get(SR.URL.format(p=SR.PAG["tx"], cod="180005", a=2025), headers=SR.UA, timeout=60).text
+        i = t.lower().find("enero"); print(len(t), i); print(t[max(0, i - 3000):i + 3000]); return
     hoy = date.today().year
     if a.modo == "piloto":
         print(SR.actualizar(a.datos, cods, a.desde, a.hasta, solo_faltantes=True))
