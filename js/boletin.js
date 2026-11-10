@@ -15,8 +15,7 @@ function init(fclave){
   const s = $("#bol"); if (s.dataset.ok) return; s.dataset.ok = 1;
   const hoy = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
   s.innerHTML = `<div class="htools"><button id="bAnt">◀</button><input type="date" id="bDia" value="${hoy}"><button id="bSig">▶</button>
-    <span class="tag" id="bRev" style="border-color:var(--oro);color:var(--oro)">—</span><button id="bXls">⬇ Excel con marcas</button>
-    <a href="https://climatologia.meteochile.gob.cl/application/diario/boletinClimatologicoDiario" target="_blank" rel="noopener" style="color:var(--mu);font-size:12.5px;margin-left:6px">Ver el boletín en el portal ↗</a></div>
+    <span class="tag" id="bRev" style="border-color:var(--oro);color:var(--oro)">—</span><button id="bXls">⬇ Excel con marcas</button></div>
     <div id="bOut"><p style="color:var(--mu)">Cargando…</p></div>`;
   const mover = k => { const d = new Date($("#bDia").value + "T12:00Z"); d.setUTCDate(d.getUTCDate() + k); $("#bDia").value = d.toISOString().slice(0, 10); cargar(); };
   $("#bAnt").addEventListener("click", () => mover(-1)); $("#bSig").addEventListener("click", () => mover(1));
