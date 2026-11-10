@@ -15,8 +15,8 @@ function init(fclave, fR){
   clave = fclave || clave; getR = fR || getR;
   const s = $("#per"); if (s.dataset.ok){ lista(); return; } s.dataset.ok = 1;
   const ayer = new Date(Date.now() - 864e5).toISOString().slice(0, 10), sem = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
-  s.innerHTML = `<div class="htools"><select id="pEst"></select><label>Desde <input type="date" id="pDes" value="${sem}" max="${ayer}"></label>
-      <label>Hasta <input type="date" id="pHas" value="${ayer}" max="${ayer}"></label><button id="pIr" class="rvbtn" style="margin:0">Revisar período</button>
+  s.innerHTML = `<div class="htools"><select id="pEst"></select><label>Desde <input type="date" id="pDes" value="${sem}" min="2000-01-01" max="${ayer}"></label>
+      <label>Hasta <input type="date" id="pHas" value="${ayer}" min="2000-01-01" max="${ayer}"></label><button id="pIr" class="rvbtn" style="margin:0">Revisar período</button>
       <span class="tag" id="pEstado"></span><button id="pXls" hidden>⬇ Excel</button></div>
     <p class="nota" style="color:var(--mu);font-size:12.5px;margin:4px 0 10px">Revisa los METAR y SYNOP que codificó SACLIM (hasta 31 días). Se aplican las reglas de las observaciones de hoy más la coherencia METAR–SYNOP
       y los mensajes que faltan. No viajan en los mensajes la HR, la hora de las extremas, TxAM/TnPM ni el ww 00–03, así que eso no se revisa. Las reglas frente al sensor solo corren desde el 8-11-2026 (minutario guardado por METOTEC).</p>
@@ -41,8 +41,16 @@ async function lista(){
       `<a data-pid="${esc(x.id)}" style="cursor:pointer;color:var(--oro);margin-right:10px">${esc(x.cod)} · ${x.desde.slice(8, 10)}/${x.desde.slice(5, 7)}–${x.hasta.slice(8, 10)}/${x.hasta.slice(5, 7)}/${x.hasta.slice(0, 4)}</a>`).join("")}</div>` : "";
   } catch (e){}
 }
+// el campo de fecha deja escribir el año con 2 dígitos («24» queda como 0024): se corrige a 2024
+const fecha = el => { let x = el.value; const m = x.match(/^(\d{4})-(\d\d)-(\d\d)$/); if (m && +m[1] < 100){ x = `${2000 + +m[1]}-${m[2]}-${m[3]}`; el.value = x; } return x; };
 async function pedir(){
-  const b = {cod: $("#pEst").value, desde: $("#pDes").value, hasta: $("#pHas").value};
+  const b = {cod: $("#pEst").value, desde: fecha($("#pDes")), hasta: fecha($("#pHas"))};
+  if (!b.desde || !b.hasta){ $("#pEstado").textContent = "Falta una fecha"; return; }
+  if (b.desde < "2000-01-01"){ $("#pEstado").textContent = "Revise el año de la fecha inicial"; return; }
+  const dias = (Date.parse(b.hasta) - Date.parse(b.desde)) / 864e5 + 1;
+  if (dias < 1){ $("#pEstado").textContent = "La fecha final es anterior a la inicial"; return; }
+  if (dias > 31){ $("#pEstado").textContent = `Son ${dias} días: el máximo es 31 por revisión`; return; }
+  $("#pEstado").textContent = "Enviando…";
   const r = await fetch("/api/periodo", {method: "POST", headers: H(), body: JSON.stringify(b)});
   if (!r.ok){ $("#pEstado").textContent = await r.text(); return; }
   const {id} = await r.json(); lista(); abrir(id);
