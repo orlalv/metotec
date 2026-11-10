@@ -24,7 +24,9 @@ def main():
     if a.modo == "revisar" and a.cods == "debug":
         import requests
         t = requests.get(SR.URL.format(p=SR.PAG["tx"], cod="180005", a=2025), headers=SR.UA, timeout=60).text
-        i = t.lower().find("enero"); print(len(t), i); print(t[max(0, i - 3000):i + 3000]); return
+        import re as _r
+        i = t.lower().find("enero"); u = _r.sub(r"\s+", " ", t[i:]); print(len(t), i, "tablas", t.count("<table"), t.count("</table>"), "tr", t.count("<tr"), t.count("</tr>"))
+        print(u[:2500]); print("....", u[-4000:] if len(u) < 60000 else u[40000:44000]); print("parse", len(SR.leer_html(t))); return
     hoy = date.today().year
     if a.modo == "piloto":
         print(SR.actualizar(a.datos, cods, a.desde, a.hasta, solo_faltantes=True))
