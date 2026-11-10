@@ -610,7 +610,7 @@ EXTREMAS = (("TnAM", "mínima", True), ("TxAM", "máxima", False), ("TnPM", "mí
 TOL_EXT = 0.2                     # frente a la extrema de la estación (se ven diferencias de 0,1–0,2 por redondeo de pantalla)
 
 
-def extremas(t, o, A, codigo):
+def extremas(t, o, A, codigo, hist=None):
     out = []
     if A is None or A.empty or "T" not in A:
         return out
@@ -688,6 +688,24 @@ def extremas(t, o, A, codigo):
             add("SEXH", 2 if abs(en_hora - x) > 2 else 1, f"{el} {x} °C a las {fh[11:16]}: a esa hora la estación automática marcaba {en_hora:.1f} °C. "
                 + (f"El valor {x} °C se registró a las {otras}. Debería ir: {otras.split(', ')[0]}" if otras
                    else f"La {nom} real fue {real:.1f} °C cerca de las {horas_real}. Debería ir: {horas_real.split(', ')[0]}"))
+    # 3) extrema fuera del bloque habitual sin ingresar. TxAM y TnPM no son obligatorias: solo corresponden cuando el extremo
+    # del día ocurrió en ese período. Se evalúa con la observación de las 00 UTC, cuando ya están los dos bloques del día local
+    # (mañana 00–12 UTC = 21:00–09:00 y tarde 12–00 UTC = 09:00–21:00 en verano).
+    if t.hour == 0 and hist is not None:
+        Wm = A[(A["momento"] > t - pd.Timedelta(hours=24)) & (A["momento"] <= t - pd.Timedelta(hours=12))].dropna(subset=["T"])
+        cub = lambda w: len(w) > 1 and len(w) * (w["momento"].diff().median() / pd.Timedelta(minutes=1)) >= 0.8 * 720
+        if cub(Wm) and cub(W):
+            o12 = hist.get(t - pd.Timedelta(hours=12)) or {}
+            mx_m, mx_t = float(Wm["T"].max()), float(W["T"].max())
+            if mx_m > mx_t + 0.2 and v(o12, "TxAM") is None:
+                tm = Wm["momento"].iloc[int(Wm["T"].values.argmax())]
+                add("SEXF", 1, f"La máxima del día se dio en la mañana: {mx_m:.1f} °C a las {a_loc(tm):%H:%M}, más alta que la de la tarde ({mx_t:.1f} °C). "
+                    f"Correspondía ingresar la TxAM en la observación de las 12 UTC. Debería ir: TxAM {mx_m:.1f} °C a las {a_loc(tm):%H:%M}")
+            mn_m, mn_t = float(Wm["T"].min()), float(W["T"].min())
+            if mn_t < mn_m - 0.2 and v(o, "TnPM") is None:
+                tn = W["momento"].iloc[int(W["T"].values.argmin())]
+                add("SEXF", 1, f"La mínima del día se dio en la tarde: {mn_t:.1f} °C a las {a_loc(tn):%H:%M}, más baja que la de la mañana ({mn_m:.1f} °C). "
+                    f"Correspondía ingresar la TnPM. Debería ir: TnPM {mn_t:.1f} °C a las {a_loc(tn):%H:%M}")
     return out
 
 
@@ -717,6 +735,6 @@ def revisar(codigo, obs, A=None, horas=None, sat=None):
                             msg=f"{el} del observador difiere en forma constante {sg[el]:+.1f} {u} de la estación automática (revisar calibración o altura del sensor)"))
     for t in sel:
         o = obs[t]
-        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo) + satelital(t, o, sat):
+        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs) + satelital(t, o, sat):
             out.append(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"))
     return out
