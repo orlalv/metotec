@@ -67,6 +67,10 @@ aside{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(
 .it .v{text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--mu)}
 .vlink{font-size:11.5px;font-weight:600;color:var(--oro);text-decoration:none;border:1px solid color-mix(in srgb,var(--oro) 50%,transparent);border-radius:6px;padding:0 6px;white-space:nowrap}.vlink:hover{border-color:var(--oro)}
 .rvbtn{margin-left:10px;vertical-align:middle;background:none;border:1px solid var(--oro);color:var(--oro);border-radius:7px;padding:2px 9px;font:600 12.5px inherit;cursor:pointer}.rvbtn:disabled{opacity:.75;cursor:default}
+#sgPanel{position:fixed;left:0;top:var(--hcab,96px);bottom:0;width:min(52vw,860px);z-index:2000;background:var(--panel);border-right:2px solid var(--oro);box-shadow:12px 0 40px rgba(0,0,0,.45);overflow:auto;padding:14px 16px}#sgPanel[hidden]{display:none}
+#sgPanel .sghead{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}#sgPanel .sghead>div{flex:1}#sgPanel .sghead b{font:600 16px var(--titulo)}#sgPanel .sghead small{color:var(--mu)}#sgPanel .sghead p{margin:6px 0 0;font-size:13px;color:var(--tx)}
+#sgPanel .sgx{background:none;border:1px solid var(--bd);color:var(--tx);border-radius:8px;font-size:16px;padding:2px 10px;cursor:pointer}#sgPanel .sgx:hover{border-color:var(--oro);color:var(--oro)}
+@media (max-width:900px){#sgPanel{width:100vw}}
 .sgbtn{white-space:nowrap;margin-left:6px;background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer}.sgbtn:hover{border-color:var(--oro)}
 .sgraf{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin:4px 0}.sgtop{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:13px}
 .sgtop input{width:64px;background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:3px 6px;font:600 13px var(--mono)}.sgval{font-family:var(--mono);font-size:12.5px}
@@ -262,11 +266,17 @@ document.addEventListener("click", async ev => {
 });
 document.addEventListener("click", ev => {
   const bt = ev.target.closest(".sgbtn"); if (!bt) return;
-  const tr = bt.closest("tr"), sig = tr.nextElementSibling;
-  if (sig && sig.classList.contains("sgfila")){ sig.remove(); bt.textContent = "📈 ver gráfico"; return; }
-  const [hora, regla, cod] = bt.dataset.sg.split("|"), h = DETH.find(x => x.hora === hora && x.regla === regla);
-  const fila = document.createElement("tr"); fila.className = "sgfila"; fila.innerHTML = `<td colspan="${tr.children.length}"></td>`; tr.after(fila); bt.textContent = "✕ cerrar gráfico";
-  SGRAF.abrir(fila.firstChild, cod || $("#det").dataset.cod, hora, regla, bt.dataset.msg || (h ? h.msg : ""));
+  // el gráfico se abre en un panel lateral a la izquierda (sobre el mapa), así la lista y los hallazgos siguen a la vista
+  const [hora, regla, cod0] = bt.dataset.sg.split("|"), h = DETH.find(x => x.hora === hora && x.regla === regla);
+  const cod = cod0 || $("#det").dataset.cod, msg = bt.dataset.msg || (h ? h.msg : "");
+  const fila = bt.closest("tr"), nom = fila && fila.querySelector(".nom b") ? fila.querySelector(".nom b").textContent : ($("#det h2") ? $("#det h2").firstChild.textContent.trim() : cod);
+  let P = $("#sgPanel");
+  if (!P){ P = document.createElement("aside"); P.id = "sgPanel"; document.body.appendChild(P);
+    P.addEventListener("click", e => { if (e.target.closest(".sgx")) P.hidden = true; });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") P.hidden = true; }); }
+  P.hidden = false;
+  P.innerHTML = `<div class="sghead"><div><b>${esc(nom)}</b> <small>${esc(cod)} · ${esc(regla)} · obs. ${esc(hora.slice(8, 10))}/${esc(hora.slice(5, 7))} ${esc(hora.slice(11, 16))} UTC</small><p>${esc(msg)}</p></div><button class="sgx" title="Cerrar (Esc)">✕</button></div><div class="sgcuerpo"></div>`;
+  SGRAF.abrir(P.querySelector(".sgcuerpo"), cod, hora, regla, msg);
 });
 function filtrar(e){ const G = GRUPOS[grupo]; let al = G ? e.alertas.filter(a => G.includes(a.prueba)) : e.alertas; if (VSEL.size < VARGR.length) al = al.filter(a => VSEL.has(VAR2G[a.var])); const nivel = e.nivel === 3 ? 3 : Math.max(0, ...al.map(a => a.nivel)); return {...e, alertas: al, nivel}; }
 const VAR = {T: "Ts (temp. seca)", Td: "Td (punto de rocío)", HR: "HR (humedad)", P_est: "QFE", P_mar: "QFF", P_std: "QNH", Tn12: "Tmín 12 h", Tx12: "Tmáx 12 h", ff10: "ff (viento 10 min)", ff2: "ff (viento 2 min)", dd10: "dd (dirección 10 min)", dd2: "dd (dirección 2 min)", fx10: "fx (racha)", rr1m: "RR (agua caída 1 min)", rr6: "RRR6", rr24: "RRR24", rr3h: "RR 3 h", Rad: "Radiación", registros: "Registros"};
@@ -285,6 +295,7 @@ $("#tema").addEventListener("click", () => { const c = document.documentElement.
   if (c) document.documentElement.dataset.tema = "claro"; else delete document.documentElement.dataset.tema;
   try { localStorage.setItem("metotecTema", c ? "claro" : "oscuro"); } catch (e) {} pintarTema(); });
 pintarTema();
+const _hc = () => document.documentElement.style.setProperty("--hcab", document.querySelector("header").getBoundingClientRect().height + "px"); _hc(); addEventListener("resize", _hc);
 
 async function cargar(){
   const r = await fetch("/api/qc", {headers: {"x-clave": clave()}, cache: "no-store"});
