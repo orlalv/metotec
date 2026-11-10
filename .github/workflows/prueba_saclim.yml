@@ -1,0 +1,11 @@
+name: Prueba descarga getDatosSaclim
+on: workflow_dispatch
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          for v in Temperatura Humedad PresionQFE PuntoRocio Viento Agua6Horas TMaxima TiempoPresente; do
+            curl -s -o x.zip -w "$v %{http_code} %{content_type} %{size_download}\n" -A "METOTEC QC" "https://climatologia.meteochile.gob.cl/application/datos/getDatosSaclim/180005_2025_${v}_"
+            unzip -p x.zip 2>/dev/null | head -3
+          done
