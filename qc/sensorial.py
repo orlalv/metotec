@@ -532,6 +532,19 @@ def frente_sensor(t, o, A, sesgo=None):
         dif = abs((dd - dda + 180) % 360 - 180)
         if dif > 60:
             add("Sdd", 1, f"dirección anotada {dd}° y la estación automática marca {dda:.0f}° (diferencia {dif:.0f}°)")
+    # racha: solo los 10 minutos previos a la observación (HH:50 a HH:00); se informa si supera en 10 kt o más al viento medio
+    W10 = A[(A["momento"] > t - pd.Timedelta(minutes=10)) & (A["momento"] <= t)]
+    if "fx10" in W10 and W10["fx10"].notna().any() and ffa is not None and pd.notna(ffa):
+        i = W10["fx10"].idxmax(); fx, tfx = float(W10.loc[i, "fx10"]), W10.loc[i, "momento"]
+        rach = (o.get("Racha") or {}).get("fmfm")
+        rach = rach if isinstance(rach, (int, float)) else None
+        if fx - float(ffa) >= 10 and rach is None and (ingresado(o, "VTO", "ff") or ff is not None):
+            add("Sracha", 1, f"sin racha informada y la estación automática marcó una racha de {fx:.0f} kt a las {tfx:%H:%M} (viento medio {float(ffa):.0f} kt), "
+                f"en los 10 min previos a la observación: correspondería informar racha {round(fx)} kt")
+        elif rach is not None and fx - float(ffa) < 10 and rach - fx >= 5:
+            add("Sracha", 1, f"racha informada {rach} kt, pero en los 10 min previos la estación automática marcó como máximo {fx:.0f} kt (viento medio {float(ffa):.0f} kt): no alcanza los 10 kt sobre el medio")
+        elif rach is not None and abs(rach - fx) >= 5:
+            add("Sracha", 1, f"racha informada {rach} kt y la estación automática marcó {fx:.0f} kt a las {tfx:%H:%M} en los 10 min previos: correspondería {round(fx)} kt")
     rr = v(o, "RRR6", "RRR6")
     if ingresado(o, "RRR6", "RRR6"):
         w = A[(A["momento"] > t - pd.Timedelta(hours=6)) & (A["momento"] <= t)]
