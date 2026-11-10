@@ -92,6 +92,26 @@ ESTACIONES_OBS = ["180005", "200006", "220002", "230001", "270001", "270008", "2
                   "430009", "450001", "450004", "450005", "510005", "520006", "530005", "550001", "950001"]
 
 
+HORAS = 24          # todas las reglas
+HORAS_EXT = 96      # extremas y precipitación (4 días: fin de semana largo)
+
+
+def obs_archivo(raiz, cod, fin, horas=HORAS_EXT):
+    """Observaciones guardadas en el archivo de METOTEC (sensorial/AAAA/MM/DD.json.gz) de las últimas «horas»."""
+    import gzip
+    out = {}
+    for k in range(horas // 24 + 2):
+        dia = (fin - pd.Timedelta(days=k)).strftime("%Y/%m/%d")
+        f = Path(raiz) / "sensorial" / f"{dia}.json.gz"
+        if not f.exists():
+            continue
+        for hh, o in json.loads(gzip.decompress(f.read_bytes())).get(cod, {}).items():
+            t = pd.Timestamp(dia.replace("/", "-") + f" {hh}:00")
+            if t > fin - pd.Timedelta(hours=horas + 1):
+                out[t] = o
+    return out
+
+
 def control_sensorial(E, raiz, pausa=0.3, SAT=None):
     """Baja las observaciones de las estaciones con observador, las archiva y las revisa. Sube el resultado al KV (qc/sensorial)."""
     import time, gzip
@@ -101,7 +121,8 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
     resultado, n_obs, fallas = [], 0, 0
     archivo, revisadas = {}, {}
     # minutario de las últimas 26 h, leído una sola vez (las extremas necesitan el período de 12 h de cada observación)
-    A_todo = leer_archivo(raiz, pd.Timestamp.utcnow().tz_localize(None), horas=26)
+    ahora = pd.Timestamp.utcnow().tz_localize(None)
+    A_todo = leer_archivo(raiz, ahora, horas=HORAS_EXT + 14)
     for cod in cods:
         try:
             obs = SEN.leer(dmc.descargar(f"getRecientesSaclim/{cod}", timeout=90))
@@ -110,8 +131,9 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
             continue
         n_obs += len(obs)
         A = A_todo[A_todo["codigo"] == cod] if len(A_todo) else A_todo
-        hall = SEN.revisar(cod, obs, A, horas=12, sat=(SAT or {}).get(cod))
-        revisadas[cod] = [str(t) for t in sorted(obs)[-12:]]
+        todas = {**obs_archivo(raiz, cod, ahora), **obs}
+        hall = SEN.revisar(cod, todas, A, horas=HORAS, sat=(SAT or {}).get(cod), horas_ext=HORAS_EXT)
+        revisadas[cod] = [str(t) for t in sorted(obs)[-HORAS:]]
         for t, o in obs.items():
             archivo.setdefault(t.strftime("%Y/%m/%d"), {}).setdefault(cod, {})[t.strftime("%H")] = {k: x for k, x in o.items() if k != "_qa"}
         m = nombres.get(cod, {})

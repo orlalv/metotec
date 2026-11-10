@@ -221,7 +221,7 @@ function obsFiltradas(){
 }
 function pintarObs(){
   const O = R.observaciones || {}, g = O.generado ? new Date(O.generado) : null;
-  $("#hora").textContent = g ? `Observaciones de las últimas 12 horas · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay revisión de observaciones";
+  $("#hora").textContent = g ? `Observaciones de las últimas 24 horas (extremas y precipitación: 4 días) · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay revisión de observaciones";
   const T = ((O.estaciones) || []), res = [0, 0, 0];
   T.forEach(e => { const h = gobs === "todas" ? e.hallazgos : e.hallazgos.filter(x => x.tipo === gobs); res[Math.max(0, ...h.map(x => x.nivel))]++; });
   $("#chips").innerHTML = [0, 1, 2].map(n => `<span class="chip ${ver[n] ? "" : "off"}" data-n="${n}"><i style="background:${COL[n]}"></i>${["Sin hallazgos", "Con avisos", "Con errores"][n]} ${res[n]}</span>`).join("");
@@ -242,8 +242,8 @@ function detalleObs(c, mover = true){
   if (mover && e.lat != null) mapa.setView([e.lat, e.lon], Math.max(mapa.getZoom(), 7));
   const H = [...e.hallazgos].sort((a, b) => b.hora.localeCompare(a.hora) || b.nivel - a.nivel);
   $("#det").style.display = "block"; $("#det").dataset.cod = e.codigo; DETH = H;
-  $("#det").innerHTML = `<h2>${esc(e.nombre)} <button class="rvbtn" data-rv="${e.codigo}">🔄 Revisar ahora</button></h2><div class="sub">${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.horas} observaciones en 12 h · ${H.length} hallazgos</div>
-   ${H.length ? `<table><tr><th>Día y hora UTC</th><th>Tipo</th><th>Regla</th><th>Detalle</th></tr>${H.map(h => `<tr><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td style="color:${HEX[h.nivel]}">${TIPO[h.tipo] || h.tipo}</td><td>${esc(h.regla)}</td><td>${esc(h.msg)}${h.revisado === "si" ? " <small style='color:var(--mu)'>(ya revisado)</small>" : ""}${SGRAF.tiene(h.regla) ? ` <button class="sgbtn" data-sg="${esc(h.hora)}|${esc(h.regla)}">📈 ver gráfico</button>` : ""}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin hallazgos en las últimas 12 horas.</p>`}`;
+  $("#det").innerHTML = `<h2>${esc(e.nombre)} <button class="rvbtn" data-rv="${e.codigo}">🔄 Revisar ahora</button></h2><div class="sub">${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.horas} observaciones en 24 h · ${H.length} hallazgos</div>
+   ${H.length ? `<table><tr><th>Día y hora UTC</th><th>Tipo</th><th>Regla</th><th>Detalle</th></tr>${H.map(h => `<tr><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td style="color:${HEX[h.nivel]}">${TIPO[h.tipo] || h.tipo}</td><td>${esc(h.regla)}</td><td>${esc(h.msg)}${h.revisado === "si" ? " <small style='color:var(--mu)'>(ya revisado)</small>" : ""}${SGRAF.tiene(h.regla) ? ` <button class="sgbtn" data-sg="${esc(h.hora)}|${esc(h.regla)}">📈 ver gráfico</button>` : ""}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin hallazgos en las últimas 24 horas.</p>`}`;
 }
 let DETH = [];
 // «Revisar ahora»: deja un pedido; GitHub lo toma en menos de un minuto y vuelve a revisar esa estación desde SACLIM
@@ -492,7 +492,7 @@ async function firma(cod){
 function pintarPrio(){
   if (!R) return;
   const O = R.observaciones || {}, g = O.generado ? new Date(O.generado) : null;
-  $("#hora").textContent = g ? `Prioridades · observaciones de las últimas 12 horas · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay revisión de observaciones";
+  $("#hora").textContent = g ? `Prioridades · observaciones de las últimas 24 horas · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay revisión de observaciones";
   if (!$("#prio").dataset.ok){
     $("#prio").dataset.ok = 1;
     $("#prio").innerHTML = `<div class="htools"><button id="pVolver" style="border-color:var(--oro);color:var(--oro)">← Volver al mapa</button><select id="pNivel"><option value="0">Todas las prioridades</option><option value="3">Solo alta</option><option value="2">Alta y media</option></select><input id="pBuscar" placeholder="Estación…" style="min-width:180px"></div>

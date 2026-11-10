@@ -29,7 +29,7 @@ function pintar(){
   const cnt = {}; filas.forEach(f => cnt[f.regla] = (cnt[f.regla] || 0) + 1);
   const est = new Set(filas.map(f => f.e.codigo));
   const g = O.generado ? new Date(O.generado) : null;
-  $("#xHora").textContent = g ? `Observaciones revisadas a las ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})} (últimas 12 h)` : "Sin revisión de observaciones";
+  $("#xHora").textContent = g ? `Observaciones revisadas a las ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})} (últimos 4 días)` : "Sin revisión de observaciones";
   $("#xFil").innerHTML = [["", "Todas"], ["ext", "Extremas"], ["pp", "Precipitación"]].map(([k, n]) =>
     `<button data-xf="${k}" class="${filtro === k ? "on" : ""}">${n}</button>`).join(" ");
   const V = filas.filter(f => (!filtro || TIPOS[f.regla][1] === filtro) && (!q || (f.e.nombre || "").toLowerCase().includes(q) || f.e.codigo.includes(q)))
@@ -47,7 +47,7 @@ function pintar(){
       ${V.map(f => `<tr><td class="nom"><b>${esc(f.e.nombre)}</b><br><small>${f.e.codigo}</small><br><a class="vlink" style="display:inline-block;margin-top:4px" href="https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/${encodeURIComponent(f.e.codigo)}" target="_blank" rel="noopener" title="Abrir la estación en línea en el portal de climatología">↗ en línea</a></td><td style="white-space:nowrap">${f.hora.slice(8, 10)}/${f.hora.slice(5, 7)} ${f.hora.slice(11, 16)}</td>
         <td style="color:${NIVC[f.nivel] || "inherit"};font-weight:600">${TIPOS[f.regla][0]}</td><td class="n">${esc(ing(f))}</td><td class="n" style="color:var(--oro)">${esc(deb(f.msg))}</td>
         <td>${esc(f.msg)}</td><td style="white-space:nowrap"><button class="rvbtn" data-rv="${esc(f.e.codigo)}" style="margin:0 0 4px">🔄 Revisar ahora</button><br>${SGRAF.tiene(f.regla) ? `<button class="sgbtn" data-sg="${esc(f.hora)}|${esc(f.regla)}|${esc(f.e.codigo)}" data-msg="${esc(f.msg)}">📈 ver gráfico</button>` : ""}</td></tr>`).join("")}</table></div>`
-      : `<p style="color:var(--ok)">Sin alertas de extremas ni de precipitación en las últimas 12 horas${filtro || q ? " con ese filtro" : ""}.</p>`}
+      : `<p style="color:var(--ok)">Sin alertas de extremas ni de precipitación en los últimos 4 días${filtro || q ? " con ese filtro" : ""}.</p>`}
     <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Extremas: TnAM y TxAM (período 00–12 UTC, 21:00–09:00 hora local en verano) y TnPM y TxPM (12–00 UTC), comparadas con la extrema de la estación automática y su minutario, en valor y hora (la hora del observador es local). Precipitación: el RRR6 debe calzar exacto con la suma del pluviómetro en las 6 h que cierran a las 00, 06, 12 y 18 UTC.</p>`;
 }
 // pide revisar todas las estaciones de la lista (las que tienen alertas visibles) y espera a que terminen

@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd, requests
 sys.path.insert(0, str(Path(__file__).parent))
 import dmc, sensorial as SEN, historial as HIS
-from correr import leer_archivo, subir_kv
+from correr import leer_archivo, subir_kv, obs_archivo, HORAS, HORAS_EXT
 
 
 def kv_get(clave):
@@ -25,17 +25,18 @@ def main():
     cods = [c for c in a.cods.split(",") if c.strip()]
     S = kv_get("qc/sensorial") or {"estaciones": []}
     por = {e["codigo"]: e for e in S.get("estaciones", [])}
-    A_todo = leer_archivo(a.datos, pd.Timestamp.utcnow().tz_localize(None), horas=26)
+    fin = pd.Timestamp.utcnow().tz_localize(None)
+    A_todo = leer_archivo(a.datos, fin, horas=HORAS_EXT + 14)
     ahora = datetime.now(timezone.utc)
     hechos, revisadas, res = {}, {}, []
     for cod in cods:
         obs = SEN.leer(dmc.descargar(f"getRecientesSaclim/{cod}", timeout=90))
         A = A_todo[A_todo["codigo"] == cod] if len(A_todo) else A_todo
-        hall = SEN.revisar(cod, obs, A, horas=12)
+        hall = SEN.revisar(cod, {**obs_archivo(a.datos, cod, fin), **obs}, A, horas=HORAS, horas_ext=HORAS_EXT)
         e = por.get(cod, {"codigo": cod})
         e.update(ultima=str(max(obs)) if obs else None, horas=len(obs), hallazgos=hall, nivel=max([h["nivel"] for h in hall], default=0))
         por[cod] = e; res.append(e)
-        revisadas[cod] = [str(t) for t in sorted(obs)[-12:]]
+        revisadas[cod] = [str(t) for t in sorted(obs)[-HORAS:]]
         hechos[cod] = dict(hora=ahora.isoformat(timespec="seconds"), hallazgos=len(hall))
         print(cod, len(obs), "observaciones,", len(hall), "hallazgos")
     S["estaciones"] = list(por.values())

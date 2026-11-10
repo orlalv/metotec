@@ -933,12 +933,18 @@ def _agrupar(momentos, salto=10):
 
 
 # ======================================================================= ciclo
-def revisar(codigo, obs, A=None, horas=None, sat=None):
-    """Revisa las horas indicadas (por defecto la última) de una estación. Devuelve lista de hallazgos."""
+EXT_PP = {"SEXT", "SEXH", "SEXF", "SRRR6", "SPRE", "E12", "E13", "E17"}     # extremas y precipitación
+
+
+def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None):
+    """Revisa las horas indicadas (por defecto la última) de una estación. Devuelve lista de hallazgos.
+    horas_ext: horas (contadas desde la última) en que se revisan además las extremas y la precipitación, más atrás de «horas»
+    (para no perder lo de un fin de semana largo)."""
     if not obs:
         return []
     ts = sorted(obs)
     sel = ts[-(horas or 1):]
+    ext = [t for t in ts if t not in set(sel) and horas_ext and t > ts[-1] - pd.Timedelta(hours=horas_ext)]
     out = []
     from satelite import sensorial as satelital
     sg = sesgos(obs, A)
@@ -950,4 +956,9 @@ def revisar(codigo, obs, A=None, horas=None, sat=None):
         o = obs[t]
         for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs) + satelital(t, o, sat):
             out.append(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"))
+    for t in ext:
+        o = obs[t]
+        for tipo, cod, niv, msg in evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs):
+            if cod in EXT_PP:
+                out.append(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"))
     return out
