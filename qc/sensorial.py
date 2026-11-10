@@ -350,8 +350,14 @@ def codificacion(o):
     if Nh is not None and N is not None and N != 9 and Nh > N:
         add("C20", 2, f"Nh {Nh} mayor que N {N}")
     # CL con Cu o Cb (1, 2, 3, 8, 9) pero ningún grupo 8NsChshs con C = 8 (Cu) o 9 (Cb)
-    if CL in CL_CONV and (capas or (N or 0) > 0) and not any(c[1] in (8, 9) for c in capas):
-        add("C40", 1, "El CL indica Cu/Cb pero falta su capa en los grupos 8")
+    # CL 8 = Cu y Sc a distinta altura: el Cu puede no ir en los grupos 8 si no es la capa más baja y cubre menos de 3/8
+    # (2.ª capa ≥ 3/8, 3.ª ≥ 5/8; solo el Cb va siempre), así que basta con que esté la capa de Sc
+    if CL in CL_CONV and (capas or (N or 0) > 0) and not any(c[1] in (8, 9, 10) for c in capas):
+        if CL == 8:
+            if not any(c[1] == 6 for c in capas):
+                add("C40", 1, "CL 8 (Cu y Sc a distinta altura) sin capa de Cu ni de Sc en los grupos 8")
+        else:
+            add("C40", 1, f"CL {CL} indica " + ("Cb" if CL in (3, 9) else "Cu") + " pero falta su capa en los grupos 8")
     if CL in (3, 9) and capas and not any(c[1] == 9 for c in capas):
         add("C21", 1, f"CL {CL} (cumulonimbo) sin una capa de Cb")
     if any(c[1] == 9 for c in capas) and CL not in (3, 9):
