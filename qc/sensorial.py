@@ -252,12 +252,19 @@ VIS_SYNOP = set(range(0, 5001, 100)) | set(range(6000, 30001, 1000)) | set(range
 
 
 # ======================================================================= codificación (una hora)
+def _es(T): return 6.112 * math.exp(17.62 * T / (243.12 + T))
+def hr_de(T, Td): return 100 * _es(Td) / _es(T)
+def td_de(T, HR):
+    g = math.log(max(HR, 0.1) / 100) + 17.62 * T / (243.12 + T)
+    return 243.12 * g / (17.62 - g)
+
+
 def codificacion(o):
     out = []
     add = lambda cod, niv, msg: out.append(("codificacion", cod, niv, msg))
     ww, VV, N = v(o, "WWSINOP", "ww"), v(o, "VVSINOP", "VV"), v(o, "N")
     CL, CM, CH, Nh = v(o, "Nubes", "Cl"), v(o, "Nubes", "Cm"), v(o, "Nubes", "Ch"), v(o, "Nubes", "Nh")
-    HR, Ts = v(o, "HR"), v(o, "Ts")
+    HR, Ts, Td = v(o, "HR"), v(o, "Ts"), v(o, "Td")
     if VV is not None and ww is not None:
         if 42 <= ww <= 49 and VV >= 1000:
             add("C01", 2, f"niebla en la estación (ww {ww}) con visibilidad de {VV} m: la niebla exige menos de 1000 m")
@@ -329,6 +336,15 @@ def codificacion(o):
             add("C38", 1, f"St con base a {h_:g} m: el estrato rara vez pasa de 600 m. Si el dato viene del cielómetro (en pies) serían {h_ / 3.281:.0f} m")
         elif C_ in (5, 6, 8, 9, 10) and h_ > 3000:
             add("C39", 1, f"{NOM_C.get(C_, C_)} con base a {h_:g} m: muy alta para una nube baja. Si el dato viene del cielómetro (en pies) serían {h_ / 3.281:.0f} m")
+    # coherencia Ts–Td–HR (fórmula de Magnus, la que usan las estaciones)
+    if Ts is not None and Td is not None:
+        if Td > Ts + 0.05:
+            add("C41", 2, f"Td {Td} °C mayor que Ts {Ts} °C: el punto de rocío no puede superar a la temperatura")
+        elif HR is not None:
+            hc = hr_de(Ts, Td)
+            if abs(hc - HR) > 3:
+                add("C41", 2 if abs(hc - HR) > 10 else 1, f"HR {HR:g} %: con Ts {Ts} °C y Td {Td} °C corresponde {hc:.0f} %. "
+                    f"Si la HR es correcta, el Td sería {td_de(Ts, HR):.1f} °C; si el Td es correcto, debería ir HR {hc:.0f} %")
     if Nh is not None and N is not None and N != 9 and Nh > N:
         add("C20", 2, f"Nh {Nh} mayor que N {N}")
     # CL con Cu o Cb (1, 2, 3, 8, 9) pero ningún grupo 8NsChshs con C = 8 (Cu) o 9 (Cb)
@@ -437,7 +453,9 @@ def evolucion(t, o, hist):
         hubo = any(v(h, "WWSINOP", "ww") in PRECIP or 20 <= (v(h, "WWSINOP", "ww") or 0) <= 27 for h in disponibles) or (ww in PRECIP)
         if hubo and not ((rr or 0) > 0 or traza == 1):
             add("E12", 2, "en las últimas 6 h se informó precipitación y RRR6 es 0 sin traza")
-        if (rr or 0) > 0 and not hubo:
+        hubo_w = any((v(h, "W1W2", "W1") or 0) >= 5 or (v(h, "W1W2", "W2") or 0) >= 5 for h in [o] + disponibles) or \
+                 any(f in FEN_W and FEN_W[f] >= 5 for h in [o] + disponibles for f in fen_metar(h))
+        if (rr or 0) > 0 and not hubo and not hubo_w:
             if not importada(o): add("E13", 1, f"RRR6 {rr} mm sin ninguna hora con precipitación informada en el período")
     # tendencia barométrica
     a, ppp = v(o, "a", "a"), v(o, "a", "ppp")

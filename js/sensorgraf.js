@@ -15,6 +15,7 @@ const VARS = {
 };
 // diferencias constantes observador − automática (SBTs, SBQFE, …): misma serie, sin valor puntual del observador
 VARS.SEXT = VARS.SEXH = {cols: ["T"], nom: "Ts (período de la extrema)", u: "°C", obs: /(?:Tn|Tx)(?:AM|PM) (-?[\d.]+)/, horas: 12};
+VARS.C41 = {cols: ["HR"], nom: "HR", u: "%", obs: /HR (-?[\d.]+) %/};
 VARS.SRRR6 = {cols: ["rr1m"], nom: "Agua caída acumulada (6 h)", u: "mm", obs: /RRR6 anotado (-?[\d.]+)/, horas: 6, acum: true};
 VARS.E12 = VARS.E13 = VARS.E17 = {...VARS.SRRR6, obs: /RRR6 (-?[\d.]+)/};
 [["SBTs", "STs"], ["SBTd", "STd"], ["SBHR", "SHR"], ["SBQFE", "SQFE"], ["SBQFF", "SQFF"]].forEach(([a, b]) => VARS[a] = {...VARS[b], obs: /anotado (-?[\d.]+)/});
@@ -95,5 +96,38 @@ async function abrir(cont, cod, hora, regla, msg){
     const base = t - 3600e3; mostrar(mm === 0 ? t : base + mm * 60e3); });
   mostrar(t);
 }
-window.SGRAF = {abrir, tiene};
+// ---------- calculadora de HR (Magnus) con la secuencia de observaciones (2 antes, 2 después) ----------
+const es = T => 6.112 * Math.exp(17.62 * T / (243.12 + T));
+const hrDe = (T, Td) => 100 * es(Td) / es(T);
+const tdDe = (T, H) => { const g = Math.log(Math.max(H, .1) / 100) + 17.62 * T / (243.12 + T); return 243.12 * g / (17.62 - g); };
+const tsDe = (Td, H) => { let lo = Td, hi = Td + 60; for (let i = 0; i < 60; i++){ const m = (lo + hi) / 2; hrDe(m, Td) > H ? lo = m : hi = m; } return (lo + hi) / 2; };
+async function calculadora(cont, cod, hora){
+  const div = document.createElement("div"); div.className = "hrcalc"; cont.appendChild(div);
+  div.innerHTML = `<h4>Calculadora de humedad (Ts, Td, HR)</h4><p class="sgnota">Escriba dos de los tres valores y se calcula el tercero (fórmula de Magnus).</p>
+    <div class="hrin"><label>Ts °C<input data-c="Ts" type="number" step="0.1"></label><label>Td °C<input data-c="Td" type="number" step="0.1"></label><label>HR %<input data-c="HR" type="number" step="1"></label><button class="hrbt">Calcular</button><span class="hrres"></span></div>
+    <div class="hrseq"><p class="sgnota">Cargando la secuencia de observaciones…</p></div>`;
+  const inp = c => div.querySelector(`input[data-c="${c}"]`), num = c => inp(c).value === "" ? null : +inp(c).value;
+  div.querySelector(".hrbt").addEventListener("click", () => {
+    const T = num("Ts"), D = num("Td"), H = num("HR"), out = div.querySelector(".hrres");
+    if (T != null && D != null && H == null) out.innerHTML = `HR = <b>${hrDe(T, D).toFixed(0)} %</b>`;
+    else if (T != null && H != null && D == null) out.innerHTML = `Td = <b>${tdDe(T, H).toFixed(1)} °C</b>`;
+    else if (D != null && H != null && T == null) out.innerHTML = `Ts = <b>${tsDe(D, H).toFixed(1)} °C</b>`;
+    else if (T != null && D != null && H != null){ const hc = hrDe(T, D); out.innerHTML = `con Ts y Td corresponde HR <b>${hc.toFixed(0)} %</b> (${Math.abs(hc - H) <= 3 ? "calza" : "no calza: diferencia " + (H - hc).toFixed(0) + " %"}) · con Ts y HR, Td <b>${tdDe(T, H).toFixed(1)} °C</b>`; }
+    else out.textContent = "Faltan datos: escriba al menos dos.";
+  });
+  try {
+    const clave = (() => { try { return sessionStorage.getItem("qcClave") || ""; } catch (e) { return window._qc || ""; } })();
+    const r = await (await fetch(`/api/obs?cod=${encodeURIComponent(cod)}&hora=${encodeURIComponent(hora.slice(0, 16))}&antes=2&despues=2`, {headers: {"x-clave": clave}})).json();
+    const f1 = x => x == null ? "—" : x.toFixed(1);
+    div.querySelector(".hrseq").innerHTML = `<table class="sgtab"><tr><th>Hora UTC</th><th>Ts</th><th>Td</th><th>HR anotada</th><th>HR calculada</th><th></th></tr>${r.filas.map(f => {
+      const hc = f.Ts != null && f.Td != null ? hrDe(f.Ts, f.Td) : null, mal = hc != null && f.HR != null && Math.abs(hc - f.HR) > 3, yo = f.hora === hora.slice(0, 16);
+      return `<tr class="${yo ? "on" : ""}" data-hr='${JSON.stringify(f)}' style="cursor:pointer"><td>${f.hora.slice(8, 10)}/${f.hora.slice(5, 7)} ${f.hora.slice(11, 16)}${yo ? " ◀" : ""}</td><td>${f1(f.Ts)}</td><td>${f1(f.Td)}</td><td>${f.HR == null ? "—" : f.HR.toFixed(0)}</td>
+        <td style="${mal ? "color:var(--err);font-weight:700" : ""}">${hc == null ? "—" : hc.toFixed(0)}</td><td>${!f.hay ? "sin observación" : mal ? "no calza" : hc != null ? "calza" : ""}</td></tr>`; }).join("")}</table>
+      <p class="sgnota">Clic en una fila para pasar sus valores a la calculadora.</p>`;
+    div.querySelectorAll("tr[data-hr]").forEach(tr => tr.addEventListener("click", () => { const f = JSON.parse(tr.dataset.hr); ["Ts", "Td", "HR"].forEach(c => inp(c).value = f[c] ?? ""); div.querySelector(".hrbt").click(); }));
+    const yo = r.filas.find(f => f.hora === hora.slice(0, 16)); if (yo) ["Ts", "Td", "HR"].forEach(c => inp(c).value = yo[c] ?? "");
+  } catch (e){ div.querySelector(".hrseq").innerHTML = `<p class="sgnota">No se pudo cargar la secuencia de observaciones.</p>`; }
+}
+const CALC = /^(S|SB)(Ts|Td|HR)$|^C41$/;
+window.SGRAF = {abrir: async (cont, cod, hora, regla, msg) => { await abrir(cont, cod, hora, regla, msg); if (CALC.test(regla)) calculadora(cont, cod, hora); }, tiene};
 })();
