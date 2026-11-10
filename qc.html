@@ -199,7 +199,7 @@ main[hidden]{display:none}
 <script src="js/minutarios.js?v=202611101101"></script>
 <script src="js/extremas.js?v=202611101112"></script>
 <script src="js/boletin.js?v=202611101108"></script>
-<script src="js/series.js?v=202611101530"></script>
+<script src="js/series.js?v=202611101540"></script>
 <script>
 (function(){ const r = document.getElementById("relojUTC");
   const t = () => { const d = new Date(); r.innerHTML = d.toISOString().slice(11, 19) + " UTC <small>(" + d.toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit", hour12: false}) + " local)</small>"; };
@@ -252,7 +252,7 @@ function detalleObs(c, mover = true){
 let DETH = [];
 // «Revisar ahora»: deja un pedido; GitHub lo toma en menos de un minuto y vuelve a revisar esa estación desde SACLIM
 document.addEventListener("click", async ev => {
-  const b = ev.target.closest(".rvbtn"); if (!b || b.disabled) return;
+  const b = ev.target.closest(".rvbtn[data-rv]"); if (!b || b.disabled) return;
   const cod = b.dataset.rv, t0 = new Date().toISOString(); b.disabled = true; b.textContent = "⏳ Pedido enviado…";
   try {
     const r = await fetch("/api/revisar", {method: "POST", headers: {"x-clave": clave(), "content-type": "application/json"}, body: JSON.stringify({cod})});
