@@ -673,7 +673,7 @@ def extremas(t, o, A, codigo):
                     f"La {nom} real fue {real:.1f} °C cerca de las {horas_real}. Debería ir: {horas_real.split(', ')[0]}")
             continue
         cerca = W[(W["momento"] - tu).abs() <= pd.Timedelta(minutes=1)]
-        if cerca.empty:
+        if cerca.empty or not ok:                  # si el valor ya está mal, la alerta de valor trae la hora que corresponde
             continue
         en_hora = float(cerca["T"].iloc[(cerca["momento"] - tu).abs().argmin()])
         if abs(en_hora - x) > 0.5:
