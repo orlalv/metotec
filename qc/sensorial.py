@@ -386,10 +386,40 @@ def codificacion(o):
     return out
 
 
+# ======================================================================= valores inusuales (con o sin observador)
+LIMITES = {"Ts": (-40, 45, "°C"), "Td": (-50, 35, "°C"), "HR": (1, 100, "%"), "QFE": (500, 1080, "hPa"), "QFF": (900, 1080, "hPa"),
+           "QNH": (900, 1080, "hPa")}
+SALTO = {"Ts": 6, "Td": 8, "HR": 30, "QFE": 3, "QFF": 3}       # cambio en 1 h que, si se devuelve a la hora siguiente, es un pico aislado
+
+
+def inusuales(t, o, hist):
+    """Valores fuera de lo físicamente posible o picos aislados entre horas. Se aplica a todas las observaciones,
+    también a las importadas (ahí no se exige coherencia con ww, pero un valor imposible o un pico sí se avisa)."""
+    out = []
+    add = lambda cod, niv, msg: out.append(("evolucion", cod, niv, msg))
+    for el, (lo, hi, u) in LIMITES.items():
+        x = v(o, el)
+        if x is not None and not (lo <= x <= hi):
+            add("E19", 2, f"{el} {x} {u}: fuera de lo posible ({lo} a {hi} {u})")
+    for el in ("RRR6", "RRR1h"):
+        x = v(o, el)
+        if x is not None and (x < 0 or x > (150 if el == "RRR6" else 60)):
+            add("E19", 2, f"{el} {x} mm: valor inusual para {'6 horas' if el == 'RRR6' else 'una hora'}")
+    ant, sig = hist.get(t - pd.Timedelta(hours=1)), hist.get(t + pd.Timedelta(hours=1))
+    for el, lim in SALTO.items():
+        x, xa = v(o, el), v(ant, el) if ant else None
+        if x is None or xa is None:
+            continue
+        xs = v(sig, el) if sig else None
+        if abs(x - xa) > lim and (xs is None or (abs(x - xs) > lim and (x - xa) * (x - xs) > 0)):
+            add("E19", 1 if xs is None else 2, f"{el} {x}: pasó de {xa} a {x}" + (f" y volvió a {xs} a la hora siguiente (pico aislado)" if xs is not None else " en una hora"))
+    return out
+
+
 # ======================================================================= evolución (con las horas anteriores)
 def evolucion(t, o, hist):
     """hist: {momento: obs} de la misma estación (incluye t)."""
-    out = []
+    out = inusuales(t, o, hist)
     add = lambda cod, niv, msg: out.append(("evolucion", cod, niv, msg))
     ant = hist.get(t - pd.Timedelta(hours=1))
     ww, N, VV = v(o, "WWSINOP", "ww"), v(o, "N"), v(o, "VVSINOP", "VV")
