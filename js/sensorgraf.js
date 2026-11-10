@@ -8,6 +8,7 @@ const VARS = {
   SHR: {cols: ["HR"], nom: "HR", u: "%", obs: /HR anotado (-?[\d.]+)/},
   SQFE: {cols: ["P_est"], nom: "QFE", u: "hPa", obs: /QFE anotado (-?[\d.]+)/},
   SQFF: {cols: ["P_mar"], nom: "QFF", u: "hPa", obs: /QFF anotado (-?[\d.]+)/},
+  SQNH: {cols: ["P_std"], nom: "QNH", u: "hPa", obs: /QNH anotado (-?[\d.]+)/},
   Sff: {cols: ["ff10", "fx10"], nom: "Viento medio 10 min", u: "kt", obs: /viento anotado (-?[\d.]+)/},
   Sffkmh: {cols: ["ff10", "fx10"], nom: "Viento medio 10 min", u: "kt", obs: /viento anotado (-?[\d.]+)/},
   Sracha: {cols: ["ff10", "fx10"], nom: "Racha", u: "kt", obs: /racha informada (-?[\d.]+)/, racha: true},
@@ -18,7 +19,7 @@ VARS.SEXT = VARS.SEXH = {cols: ["T"], nom: "Ts (período de la extrema)", u: "°
 VARS.C41 = {cols: ["HR"], nom: "HR", u: "%", obs: /HR (-?[\d.]+) %/};
 VARS.SRRR6 = {cols: ["rr1m"], nom: "Agua caída acumulada (6 h)", u: "mm", obs: /RRR6 anotado (-?[\d.]+)/, horas: 6, acum: true};
 VARS.E12 = VARS.E13 = VARS.E17 = {...VARS.SRRR6, obs: /RRR6 (-?[\d.]+)/};
-[["SBTs", "STs"], ["SBTd", "STd"], ["SBHR", "SHR"], ["SBQFE", "SQFE"], ["SBQFF", "SQFF"]].forEach(([a, b]) => VARS[a] = {...VARS[b], obs: /anotado (-?[\d.]+)/});
+[["SBTs", "STs"], ["SBTd", "STd"], ["SBHR", "SHR"], ["SBQFE", "SQFE"], ["SBQFF", "SQFF"], ["SBQNH", "SQNH"]].forEach(([a, b]) => VARS[a] = {...VARS[b], obs: /anotado (-?[\d.]+)/});
 const COLOR = {rr1m: "#5AA9E6", T: "#F07A5A", Td: "#62B6E8", HR: "#5BBF8A", P_est: "#C9A0F0", P_mar: "#C9A0F0", ff10: "#62B6E8", fx10: "#F07A5A", dd10: "#62B6E8"};
 const NOMCOL = {ff10: "medio 10 min", fx10: "racha"};
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);

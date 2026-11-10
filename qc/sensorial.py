@@ -389,7 +389,7 @@ def codificacion(o):
 # ======================================================================= valores inusuales (con o sin observador)
 LIMITES = {"Ts": (-40, 45, "°C"), "Td": (-50, 35, "°C"), "HR": (1, 100, "%"), "QFE": (500, 1080, "hPa"), "QFF": (900, 1080, "hPa"),
            "QNH": (900, 1080, "hPa")}
-SALTO = {"Ts": 6, "Td": 8, "HR": 30, "QFE": 3, "QFF": 3}       # cambio en 1 h que, si se devuelve a la hora siguiente, es un pico aislado
+SALTO = {"Ts": 6, "Td": 8, "HR": 30, "QFE": 3, "QFF": 3, "QNH": 3}       # cambio en 1 h que, si se devuelve a la hora siguiente, es un pico aislado
 
 
 def inusuales(t, o, hist, A=None):
@@ -607,12 +607,14 @@ def evolucion(t, o, hist, A=None):
 
 
 # ======================================================================= frente a la estación automática
-SENSOR = (("Ts", "T", 1.5, 3, "°C"), ("Td", "Td", 2.5, 5, "°C"), ("HR", "HR", 12, 25, "%"), ("QFE", "P_est", 0.8, 2, "hPa"), ("QFF", "P_mar", 1.5, 3, "hPa"))
+SENSOR = (("Ts", "T", 1.5, 3, "°C"), ("Td", "Td", 2.5, 5, "°C"), ("HR", "HR", 12, 25, "%"), ("QFE", "P_est", 0.8, 2, "hPa"), ("QFF", "P_mar", 1.5, 3, "hPa"), ("QNH", "P_std", 1.5, 3, "hPa"))
+PRES = ("QFE", "QFF", "QNH")
+TOL_SIN_SESGO = 2.0                # presión sin horas suficientes del observador para conocer su diferencia habitual
 
 
 VENTANA_RACHA = 20                 # minutos antes de la hora en que el observador pudo hacer la observación (racha)
 VENTANA = 15                       # minutos antes de la hora en que el observador pudo leer los instrumentos
-TOL_PANTALLA = {"Ts": 0.1, "Td": 0.1, "HR": 1, "QFE": 0.2, "QFF": 0.2}   # solo el redondeo de lo que muestra la estación
+TOL_PANTALLA = {"Ts": 0.1, "Td": 0.1, "HR": 1, "QFE": 0.2, "QFF": 0.2, "QNH": 0.2}   # solo el redondeo de lo que muestra la estación
 
 
 def _auto(t, A):
@@ -667,9 +669,11 @@ def frente_sensor(t, o, A, sesgo=None):
             tol = TOL_PANTALLA[el]
             # presión: el QFE/QFF que muestra la estación puede estar referido a otra altura (umbral de pista) que la presión
             # que guarda el minutario; esa diferencia constante de cada estación se descuenta. En temperatura y humedad no.
-            b = sesgo.get(el, 0.0) if el in ("QFE", "QFF") and abs(sesgo.get(el, 0.0)) >= 0.3 else 0.0
+            b = sesgo.get(el, 0.0) if el in PRES and abs(sesgo.get(el, 0.0)) >= 0.3 else 0.0
             lo, hi = float(serie.min()) + b, float(serie.max()) + b
-            if el in ("QFE", "QFF") and float(x).is_integer():   # presión ingresada en hPa enteros: vale truncada o redondeada
+            if el in PRES and el not in sesgo:   # aún sin diferencia habitual (inicio del turno): se aceptan hasta 2 hPa
+                tol = TOL_SIN_SESGO
+            if el in PRES and float(x).is_integer():   # presión ingresada en hPa enteros: vale truncada o redondeada
                 lo, hi = math.floor(lo), math.ceil(hi)
             d = 0.0 if lo <= x <= hi else min(abs(x - lo), abs(x - hi))
             if d > tol + 1e-9:
@@ -686,7 +690,7 @@ def frente_sensor(t, o, A, sesgo=None):
                         f"ese valor sí aparece antes en la hora, pero no en los minutos en que se observa")
         else:
             # sin minutario en la ventana: se compara con el dato único más cercano, con los umbrales amplios de antes
-            b = sesgo.get(el, 0.0) if el in ("QFE", "QFF") and abs(sesgo.get(el, 0.0)) >= 0.3 else 0.0
+            b = sesgo.get(el, 0.0) if el in PRES and abs(sesgo.get(el, 0.0)) >= 0.3 else 0.0
             d = abs(x - float(y) - b)
             if d > s1:
                 add("S" + el, 2 if d > s2 else 1, f"{el} anotado {x} {u} y la estación automática marcó {float(y):g} {u} "
