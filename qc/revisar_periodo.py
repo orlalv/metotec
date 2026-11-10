@@ -43,7 +43,18 @@ def revisar_archivos(p, datos):
             continue
         t0, t1 = min(obs), max(obs)
         A = minutario(datos, t0.normalize(), t1.normalize(), cod)
-        h = SEN.revisar(cod, obs, A if A is not None else pd.DataFrame(columns=["codigo", "momento"]), horas=len(obs))
+        A0 = A if A is not None else pd.DataFrame(columns=["codigo", "momento"])
+        h = []
+        ts = sorted(obs)
+        # por meses, con 2 días previos de contexto (las reglas miran horas vecinas): así el tiempo crece en forma lineal
+        for m0 in pd.date_range(t0.normalize().replace(day=1), t1, freq="MS"):
+            m1 = m0 + pd.offsets.MonthBegin(1)
+            sub = {t: obs[t] for t in ts if m0 - pd.Timedelta(days=2) <= t < m1 + pd.Timedelta(hours=12)}
+            n_mes = sum(1 for t in sub if m0 <= t < m1)
+            if n_mes:
+                fin_mes = max(t for t in sub if t < m1)
+                sub = {t: o for t, o in sub.items() if t <= fin_mes}
+                h += SEN.revisar(cod, sub, A0, horas=n_mes)
         for x in h:
             x["nombre"] = e["nombre"]
         hall += h

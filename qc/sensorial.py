@@ -467,7 +467,8 @@ def digitacion(t, o, hist, A=None):
         x = v(o, e1, e2)
         if x is None:
             continue
-        pts = [((k - t) / pd.Timedelta(hours=1), v(h, e1, e2)) for k, h in hist.items() if k != t and abs(k - t) <= pd.Timedelta(hours=10)]
+        vec = [(k, hist.get(t + pd.Timedelta(hours=k))) for k in range(-10, 11) if k]    # horas vecinas (sin recorrer todo el historial)
+        pts = [(float(k), v(h, e1, e2)) for k, h in vec if h is not None]
         pts = [(a_, b_) for a_, b_ in pts if b_ is not None]
         antes, desp = [p for p in pts if p[0] < 0], [p for p in pts if p[0] > 0]
         if len(pts) < 5 or not antes or not desp:          # hace falta secuencia a los dos lados
