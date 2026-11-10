@@ -543,17 +543,16 @@ def frente_sensor(t, o, A, sesgo=None):
         vent = []
         for k in range(0, 11):
             fin = t - pd.Timedelta(minutes=k)
-            w = A[(A["momento"] > fin - pd.Timedelta(minutes=10)) & (A["momento"] <= fin)]
-            med = A.loc[A["momento"] == fin, "ff10"]
-            if len(w) >= 8 and w["fx10"].notna().any() and len(med) and pd.notna(med.iloc[0]):
-                i_ = w["fx10"].idxmax()
-                vent.append(dict(fin=fin, fx=float(w.loc[i_, "fx10"]), tfx=w.loc[i_, "momento"], med=float(med.iloc[0])))
+            # fx10 y ff10 de cada minuto ya son la racha máxima (3 s) y el viento medio de los 10 min que terminan en ese minuto
+            fila = A.loc[A["momento"] == fin]
+            if len(fila) and pd.notna(fila["fx10"].iloc[0]) and pd.notna(fila["ff10"].iloc[0]):
+                vent.append(dict(fin=fin, fx=float(fila["fx10"].iloc[0]), tfx=fin, med=float(fila["ff10"].iloc[0])))
         if len(vent) >= 6:
             con = [x for x in vent if x["fx"] - x["med"] >= 10]
             rango = f"{vent[-1]['fin']:%H:%M}–{vent[0]['fin']:%H:%M}"
             if rach is None and len(con) == len(vent):
                 x = max(con, key=lambda q: q["fx"])
-                add("Sracha", 1, f"sin racha informada y la estación automática marcó racha de {x['fx']:.0f} kt a las {x['tfx']:%H:%M} sobre un medio de {x['med']:.0f} kt; "
+                add("Sracha", 1, f"sin racha informada y la estación automática marcó racha de {x['fx']:.0f} kt en los 10 min que terminan a las {x['tfx']:%H:%M}, sobre un medio de {x['med']:.0f} kt; "
                     f"en todas las ventanas de 10 min que terminan entre {rango} la racha superó al medio en 10 kt o más: correspondía informar racha de {_rng(con)} kt")
             elif rach is not None and not con:
                 mx = max(vent, key=lambda q: q["fx"] - q["med"])
