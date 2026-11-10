@@ -64,6 +64,15 @@ def ingresado(o, el, comp=None):
     return (comp or el) in (o.get(el) or {})
 
 
+OBSERVADOR = ("WWSINOP", "W1W2", "Nubes", "N", "CapaNube")
+
+
+def importada(o):
+    """Observación cargada por un proceso de importación (solo datos de sensor, sin nada que ingrese un observador:
+    tiempo presente/pasado ni nubosidad). En esas no se puede exigir coherencia con ww, W1W2 o METAR."""
+    return not any(el in o for el in OBSERVADOR)
+
+
 def es_sd(o, el, comp=None):
     return (o.get(el) or {}).get(comp or el) == SD
 
@@ -420,7 +429,7 @@ def evolucion(t, o, hist):
         if W1 >= 5 and (mx is None or mx < 5):
             add("E11", 1, f"W1 {W1} (precipitación o tormenta en el período de {per} h) sin ningún ww ni METAR horario que lo respalde")
     rr6, tz = v(o, "RRR6", "RRR6"), v(o, "RRR6", "Traza")
-    if t.hour % 6 == 0 and rr6 == 0 and not tz and ((W1 or 0) in (5, 6, 7, 8) or (W2 or 0) in (5, 6, 7, 8) or (ww is not None and 50 <= ww <= 90)):
+    if t.hour % 6 == 0 and rr6 == 0 and not tz and not importada(o) and ((W1 or 0) in (5, 6, 7, 8) or (W2 or 0) in (5, 6, 7, 8) or (ww is not None and 50 <= ww <= 90)):
         add("E17", 1, f"precipitación informada (W1 {W1}, W2 {W2}, ww {ww}) y RRR6 0 sin traza: si llovió o lloviznó debe ir al menos traza")
     # precipitación del período
     rr, traza = v(o, "RRR6", "RRR6"), v(o, "RRR6", "Traza")
@@ -429,7 +438,7 @@ def evolucion(t, o, hist):
         if hubo and not ((rr or 0) > 0 or traza == 1):
             add("E12", 2, "en las últimas 6 h se informó precipitación y RRR6 es 0 sin traza")
         if (rr or 0) > 0 and not hubo:
-            add("E13", 1, f"RRR6 {rr} mm sin ninguna hora con precipitación informada en el período")
+            if not importada(o): add("E13", 1, f"RRR6 {rr} mm sin ninguna hora con precipitación informada en el período")
     # tendencia barométrica
     a, ppp = v(o, "a", "a"), v(o, "a", "ppp")
     h3 = hist.get(t - pd.Timedelta(hours=3))
