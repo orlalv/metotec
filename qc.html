@@ -166,7 +166,8 @@ main[hidden]{display:none}
 <header>
  <div class="marca"><a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a><div style="display:flex;align-items:center;gap:6px"><div id="relojUTC" title="Hora UTC (hora local entre paréntesis)">— UTC</div><button id="tema" title="Cambiar entre tema oscuro y claro">☀</button></div></div>
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
- <div class="modos"><button data-m="ema" class="on">Estaciones automáticas</button><button data-m="obs">Observaciones</button><button data-m="mod">Contraste con modelos</button><button data-m="prio">Prioridades</button><button data-m="hist">Historial</button><button data-m="minu">Datos minutarios</button><button data-m="rell">Completar serie</button><button data-m="ext">Extremas y precipitación</button><button data-m="bol">Boletín diario</button><button data-m="per">Revisar período</button><button data-m="ser">Series históricas</button></div>
+ <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="hist">Histórico</button></div>
+ <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="ext" data-g="real">Extremas y precipitación</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="rell" data-g="hist" hidden>Completar serie</button><button data-m="per" data-g="hist" hidden>Revisar período</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button></div></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -273,6 +274,8 @@ document.addEventListener("click", async ev => {
   setTimeout(ver, 15e3);
 });
 document.addEventListener("click", ev => {
+  const gb = ev.target.closest(".grupos button"); if (gb){ const g = gb.dataset.g; document.querySelectorAll(".grupos button").forEach(x => x.classList.toggle("on", x === gb));
+    document.querySelectorAll(".modos button").forEach(x => x.hidden = x.dataset.g !== g); const act = document.querySelector(`.modos button.on[data-g="${g}"]`) || document.querySelector(`.modos button[data-g="${g}"]`); act && act.click(); return; }
   const bt = ev.target.closest(".sgbtn"); if (!bt) return;
   // el gráfico se abre en un panel lateral a la izquierda (sobre el mapa), así la lista y los hallazgos siguen a la vista
   const [hora, regla, cod0] = bt.dataset.sg.split("|"), h = DETH.find(x => x.hora === hora && x.regla === regla);
