@@ -72,7 +72,15 @@ async function abrir(cont, cod, hora, regla, msg){
   const mostrar = tt => {
     let o = F.reduce((a, b) => Math.abs(b.t - tt) < Math.abs(a.t - tt) ? b : a, F[0]);
     cur.setAttribute("x1", X(o.t)); cur.setAttribute("x2", X(o.t)); cur.setAttribute("opacity", .5);
-    pts.innerHTML = V.cols.map((c, j) => o.v[j] == null ? "" : `<circle cx="${X(o.t)}" cy="${Y(o.v[j])}" r="4" fill="${COLOR[c]}"/>`).join("");
+    // etiqueta junto al punto: hora y valor de ese minuto (a la izquierda si el punto está cerca del borde derecho)
+    pts.innerHTML = V.cols.map((c, j) => {
+      if (o.v[j] == null) return "";
+      const x = X(o.t), y = Y(o.v[j]), txt = `${hm(o.t)}  ${fmt(o.v[j])} ${V.u}`, w = txt.length * 6.6 + 12, izq = x + w + 12 > W - mr;
+      const bx = izq ? x - w - 8 : x + 8, by = Math.max(mt, Math.min(H - mb - 20, y - 24 + j * 24));
+      return `<circle cx="${x}" cy="${y}" r="4.5" fill="${COLOR[c]}" stroke="var(--panel)" stroke-width="1.5"/>
+        <rect x="${bx}" y="${by}" width="${w}" height="20" rx="5" fill="var(--panel)" stroke="${COLOR[c]}" stroke-width="1"/>
+        <text x="${bx + 6}" y="${by + 14}" font-size="12" font-family="var(--mono)" font-weight="600" fill="var(--tx)">${txt}</text>`;
+    }).join("");
     const txt = V.cols.map((c, j) => `${esc(NOMCOL[c] || V.nom)} <b>${fmt(o.v[j])} ${V.u}</b>`).join(" · ");
     const dif = ob != null && o.v[V.racha ? 1 : 0] != null ? ob - o.v[V.racha ? 1 : 0] : null;
     out.innerHTML = `${hm(o.t)} UTC → ${txt}` + (dif != null ? ` · observador ${ob} (${dif >= 0 ? "+" : ""}${fmt(dif)})` + (Math.abs(dif) > (V.u === "°C" || V.u === "hPa" ? .1 : 1) ? ` · <span style="color:var(--oro)">debería ir ${fmt(o.v[V.racha ? 1 : 0])}</span>` : " · calza") : "");
