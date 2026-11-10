@@ -14,6 +14,7 @@ const VARS = {
   Sdd: {cols: ["dd10"], nom: "Dirección 10 min", u: "°", obs: /dirección anotada (-?[\d.]+)/},
 };
 // diferencias constantes observador − automática (SBTs, SBQFE, …): misma serie, sin valor puntual del observador
+VARS.SEXT = VARS.SEXH = {cols: ["T"], nom: "Ts (período de la extrema)", u: "°C", obs: /(?:Tn|Tx)(?:AM|PM) (-?[\d.]+)/, horas: 12};
 [["SBTs", "STs"], ["SBTd", "STd"], ["SBHR", "SHR"], ["SBQFE", "SQFE"], ["SBQFF", "SQFF"]].forEach(([a, b]) => VARS[a] = {...VARS[b], obs: /anotado (-?[\d.]+)/});
 const COLOR = {T: "#F07A5A", Td: "#62B6E8", HR: "#5BBF8A", P_est: "#C9A0F0", P_mar: "#C9A0F0", ff10: "#62B6E8", fx10: "#F07A5A", dd10: "#62B6E8"};
 const NOMCOL = {ff10: "medio 10 min", fx10: "racha"};
@@ -24,7 +25,7 @@ const tiene = regla => !!VARS[regla];
 async function abrir(cont, cod, hora, regla, msg){
   const V = VARS[regla]; if (!V) return;
   cont.innerHTML = `<p style="color:var(--mu);margin:6px 0">Cargando el minutario…</p>`;
-  const t = Date.parse(hora.slice(0, 16) + ":00Z"), ini = t - 60 * 60e3;
+  const t = Date.parse(hora.slice(0, 16) + ":00Z"), HRS = V.horas || 1, ini = t - HRS * 60 * 60e3;
   const h = x => new Date(x).toISOString().slice(0, 13);
   let D;
   try {
@@ -40,11 +41,11 @@ async function abrir(cont, cod, hora, regla, msg){
   if (V.racha) F.forEach(o => o.v[0] != null && vals.push(o.v[0] + 10));
   let lo = Math.min(...vals), hi = Math.max(...vals); const pad = Math.max((hi - lo) * .12, V.u === "°C" ? .3 : V.u === "hPa" ? .3 : 1); lo -= pad; hi += pad;
   const W = 720, H = 250, ml = 46, mr = 14, mt = 14, mb = 28, X = x => ml + (W - ml - mr) * (x - ini) / (t - ini), Y = y => mt + (H - mt - mb) * (1 - (y - lo) / (hi - lo));
-  let svg = `<rect x="${X(t - 15 * 60e3)}" y="${mt}" width="${X(t) - X(t - 15 * 60e3)}" height="${H - mt - mb}" fill="var(--oro)" opacity=".09"/>
+  let svg = HRS > 1 ? "" : `<rect x="${X(t - 15 * 60e3)}" y="${mt}" width="${X(t) - X(t - 15 * 60e3)}" height="${H - mt - mb}" fill="var(--oro)" opacity=".09"/>
     <text x="${X(t - 7.5 * 60e3)}" y="${mt + 12}" text-anchor="middle" font-size="10.5" fill="var(--oro)">minutos de observación</text>`;
   const pasoY = (hi - lo) / 5;
   for (let k = 0; k <= 5; k++){ const y = lo + k * pasoY; svg += `<line x1="${ml}" x2="${W - mr}" y1="${Y(y)}" y2="${Y(y)}" stroke="var(--bd)" stroke-width=".6"/><text x="${ml - 5}" y="${Y(y) + 4}" text-anchor="end" font-size="10.5" fill="var(--mu)">${y.toFixed(V.u === "%" || V.u === "°" ? 0 : 1)}</text>`; }
-  for (let k = 0; k <= 60; k += 10){ const x = ini + k * 60e3; svg += `<text x="${X(x)}" y="${H - 9}" text-anchor="middle" font-size="10.5" fill="var(--mu)">${hm(x)}</text>`; }
+  for (let k = 0; k <= 60 * HRS; k += HRS > 1 ? 120 : 10){ const x = ini + k * 60e3; svg += `<text x="${X(x)}" y="${H - 9}" text-anchor="middle" font-size="10.5" fill="var(--mu)">${hm(x)}</text>`; }
   V.cols.forEach((c, j) => {
     let d = "", pen = false;
     F.forEach(o => { const y = o.v[j]; if (y == null){ pen = false; return; } d += (pen ? "L" : "M") + X(o.t).toFixed(1) + " " + Y(y).toFixed(1); pen = true; });
@@ -58,14 +59,14 @@ async function abrir(cont, cod, hora, regla, msg){
     <rect class="sghit" x="${ml}" y="${mt}" width="${W - ml - mr}" height="${H - mt - mb}" fill="transparent" style="cursor:crosshair"/>`;
   const ley = V.cols.map(c => `<span><i style="background:${COLOR[c]}"></i>${esc(NOMCOL[c] || V.nom)}</span>`).join("") + (V.racha ? `<span><i style="background:${COLOR.ff10};opacity:.6"></i>medio + 10 kt (umbral de racha)</span>` : "")
     + (ob != null ? `<span><i style="background:var(--tx)"></i>lo que anotó el observador</span>` : "");
-  const ult = F.filter(o => o.t > t - 16 * 60e3);
+  const ult = HRS > 1 ? [] : F.filter(o => o.t > t - 16 * 60e3);
   const fmt = y => y == null ? "—" : (V.u === "%" || V.u === "°" ? y.toFixed(0) : y.toFixed(1));
   cont.innerHTML = `<div class="sgraf">
     <div class="sgtop"><b>${esc(V.nom)} · estación automática ${hm(ini)}–${hm(t)} UTC</b>
-      <label>Minuto en que observó: <input type="number" min="0" max="59" placeholder="53" class="sgmin"></label><span class="sgval"></span></div>
+      <label${HRS > 1 ? ' style="display:none"' : ""}>Minuto en que observó: <input type="number" min="0" max="59" placeholder="53" class="sgmin"></label><span class="sgval"></span></div>
     <svg viewBox="0 0 ${W} ${H}" style="width:100%;max-width:${W}px">${svg}</svg>
     <div class="sgley">${ley}</div>
-    <div style="overflow-x:auto"><table class="sgtab"><tr><th>UTC</th>${ult.map(o => `<th data-t="${o.t}">${hm(o.t).slice(3)}</th>`).join("")}</tr>
+    ${HRS > 1 ? `<p class="sgnota">Horas en UTC. Pase el mouse para ver la hora y el valor de cada minuto; la línea blanca es lo que ingresó el observador.</p>` : ""}<div style="overflow-x:auto"${HRS > 1 ? ' hidden' : ""}><table class="sgtab"><tr><th>UTC</th>${ult.map(o => `<th data-t="${o.t}">${hm(o.t).slice(3)}</th>`).join("")}</tr>
       ${V.cols.map((c, j) => `<tr><td>${esc(NOMCOL[c] || V.nom)}</td>${ult.map(o => `<td data-t="${o.t}">${fmt(o.v[j])}</td>`).join("")}</tr>`).join("")}</table></div>
     <p class="sgnota">Mueva el mouse sobre el gráfico o escriba el minuto en que se ingresó la observación (lo que muestra SACLIM) para ver el valor que marcaba la estación en ese momento.${/descontada/.test(msg || "") ? " En presión, la alerta ya descuenta la diferencia fija habitual de la estación; el gráfico muestra el valor tal como lo guarda el minutario." : ""}</p></div>`;
   const S = cont.querySelector("svg"), cur = S.querySelector(".sgcur"), pts = S.querySelector(".sgpts"), out = cont.querySelector(".sgval");

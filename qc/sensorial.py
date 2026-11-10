@@ -599,6 +599,95 @@ def frente_sensor(t, o, A, sesgo=None):
     return out
 
 
+# ======================================================================= extremas del observador frente al minutario
+# TnAM/TxAM (se ingresan con la observación de las 12 UTC: período 00–12 UTC) y TnPM/TxPM (con la de las 00 UTC: 12–00 UTC).
+# Cada una trae su valor y su FechaHora en hora local. Se compara con el minutario de la estación automática, de la que el
+# observador toma el dato: el valor debe ser el mínimo/máximo real del período y, a la hora indicada, la estación debe haber
+# marcado ese valor. Si el valor se repitió en otros momentos, se mencionan todos.
+ZONA_EST = {"270001": "Pacific/Easter", "510005": "America/Punta_Arenas", "520006": "America/Punta_Arenas",
+            "530005": "America/Punta_Arenas", "550001": "America/Punta_Arenas", "950001": "America/Punta_Arenas"}
+EXTREMAS = (("TnAM", "mínima", True), ("TxAM", "máxima", False), ("TnPM", "mínima", True), ("TxPM", "máxima", False))
+TOL_EXT = 0.1
+
+
+def extremas(t, o, A, codigo):
+    out = []
+    if A is None or A.empty or "T" not in A:
+        return out
+    add = lambda cod, niv, msg: out.append(("sensor", cod, niv, msg))
+    from zoneinfo import ZoneInfo
+    Z = ZoneInfo(ZONA_EST.get(str(codigo), "America/Santiago"))
+    a_loc = lambda x: x.tz_localize("UTC").tz_convert(Z).tz_localize(None)
+    a_utc = lambda x: pd.Timestamp(x).tz_localize(Z, ambiguous="NaT", nonexistent="shift_forward").tz_convert("UTC").tz_localize(None)
+    W = A[(A["momento"] > t - pd.Timedelta(hours=12)) & (A["momento"] <= t)].dropna(subset=["T"]).sort_values("momento")
+    if len(W) < 2:
+        return out
+    paso = W["momento"].diff().median() / pd.Timedelta(minutes=1)
+    if len(W) * paso < 0.8 * 720:                 # menos del 80 % del período con datos: no se puede afirmar nada
+        return out
+    # extremas oficiales de la estación (de sus muestras de segundos, pueden quedar unas décimas fuera de los valores por minuto):
+    # Tn12 = mínima desde las 00 UTC (a las 12 UTC es la de 00–12) y Tx12 = máxima desde las 12 UTC (a las 00 UTC es la de 12–00).
+    ult = A[(A["momento"] > t - pd.Timedelta(minutes=5)) & (A["momento"] <= t)].sort_values("momento")
+    oficial = {}
+    if len(ult):
+        if t.hour == 12 and "Tn12" in ult and pd.notna(ult["Tn12"].iloc[-1]):
+            oficial["TnAM"] = float(ult["Tn12"].iloc[-1])
+        if t.hour == 0 and "Tx12" in ult and pd.notna(ult["Tx12"].iloc[-1]):
+            oficial["TxPM"] = float(ult["Tx12"].iloc[-1])
+    for el, nom, minimo in EXTREMAS:
+        x = v(o, el)
+        fh = ((o.get(el) or {}).get("FechaHora"))
+        if x is None:
+            continue
+        ser = float(W["T"].min() if minimo else W["T"].max())
+        real = oficial.get(el, ser)
+        tol = TOL_EXT if el in oficial else 0.3          # sin la extrema oficial, el valor por minuto puede diferir unas décimas
+        cerca_real = W.loc[(W["T"] - real).abs() <= max(0.05, abs(real - ser) + 0.05), "momento"]
+        horas_real = ", ".join(f"{a_loc(m):%H:%M}" for m in _agrupar(cerca_real))
+        periodo = f"{a_loc(t - pd.Timedelta(hours=12)):%H:%M}–{a_loc(t):%H:%M}"
+        fuente = "según la extrema oficial de la estación" if el in oficial else "según el minutario"
+        d = round(x - real, 1)
+        # 1) valor
+        if abs(d) > tol:
+            nunca = (minimo and d < 0) or (not minimo and d > 0)
+            add("SEXT", 2 if nunca or abs(d) > 0.5 else 1,
+                (f"{el} {x} °C: la estación automática nunca {'bajó' if minimo else 'subió'} a ese valor en el período ({periodo} local); " if nunca
+                 else f"{el} {x} °C, pero ") + f"la {nom} real fue {real:.1f} °C ({fuente}), cerca de las {horas_real}. "
+                f"Debería ir: {real:.1f} °C a las {horas_real.split(', ')[0]}")
+        # 2) hora
+        if not isinstance(fh, str) or not re.match(r"\d{4}-\d\d-\d\d \d\d:\d\d", fh):
+            continue
+        tu = a_utc(fh[:16])
+        if pd.isna(tu):
+            continue
+        if not (t - pd.Timedelta(hours=12) <= tu <= t):
+            if str(codigo) != "270001":            # Isla de Pascua: el huso que usa el observador no es seguro
+                add("SEXH", 1, f"{el} con hora {fh[11:16]} del {fh[8:10]}/{fh[5:7]}: queda fuera del período de la {nom} ({periodo} local). "
+                    f"La {nom} real fue {real:.1f} °C cerca de las {horas_real}. Debería ir: {horas_real.split(', ')[0]}")
+            continue
+        cerca = W[(W["momento"] - tu).abs() <= pd.Timedelta(minutes=1)]
+        if cerca.empty:
+            continue
+        en_hora = float(cerca["T"].iloc[(cerca["momento"] - tu).abs().argmin()])
+        if abs(en_hora - x) > 0.5:
+            donde = W.loc[(W["T"] - x).abs() <= 0.15, "momento"]
+            otras = ", ".join(f"{a_loc(m):%H:%M}" for m in _agrupar(donde))
+            add("SEXH", 2 if abs(en_hora - x) > 2 else 1, f"{el} {x} °C a las {fh[11:16]}: a esa hora la estación automática marcaba {en_hora:.1f} °C. "
+                + (f"El valor {x} °C se registró a las {otras}. Debería ir: {otras.split(', ')[0]}" if otras
+                   else f"La {nom} real fue {real:.1f} °C cerca de las {horas_real}. Debería ir: {horas_real.split(', ')[0]}"))
+    return out
+
+
+def _agrupar(momentos, salto=10):
+    """De una lista de minutos en que se repite un valor, deja el primero de cada racha (separadas por más de «salto» min)."""
+    res, ant = [], None
+    for m in sorted(momentos):
+        if ant is None or (m - ant) > pd.Timedelta(minutes=salto):
+            res.append(m)
+        ant = m
+    return res[:4]
+
+
 # ======================================================================= ciclo
 def revisar(codigo, obs, A=None, horas=None, sat=None):
     """Revisa las horas indicadas (por defecto la última) de una estación. Devuelve lista de hallazgos."""
@@ -615,6 +704,6 @@ def revisar(codigo, obs, A=None, horas=None, sat=None):
                             msg=f"{el} del observador difiere en forma constante {sg[el]:+.1f} {u} de la estación automática (revisar calibración o altura del sensor)"))
     for t in sel:
         o = obs[t]
-        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs) + frente_sensor(t, o, A, sg) + satelital(t, o, sat):
+        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo) + satelital(t, o, sat):
             out.append(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"))
     return out

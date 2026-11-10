@@ -100,6 +100,8 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
     nombres = E.set_index("codigo")[["nombre", "oaci", "lat", "lon"]].to_dict("index")
     resultado, n_obs, fallas = [], 0, 0
     archivo, revisadas = {}, {}
+    # minutario de las últimas 26 h, leído una sola vez (las extremas necesitan el período de 12 h de cada observación)
+    A_todo = leer_archivo(raiz, pd.Timestamp.utcnow().tz_localize(None), horas=26)
     for cod in cods:
         try:
             obs = SEN.leer(dmc.descargar(f"getRecientesSaclim/{cod}", timeout=90))
@@ -107,8 +109,7 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
             fallas += 1
             continue
         n_obs += len(obs)
-        A = leer_archivo(raiz, pd.Timestamp.utcnow().tz_localize(None), horas=7)
-        A = A[A["codigo"] == cod] if len(A) else A
+        A = A_todo[A_todo["codigo"] == cod] if len(A_todo) else A_todo
         hall = SEN.revisar(cod, obs, A, horas=12, sat=(SAT or {}).get(cod))
         revisadas[cod] = [str(t) for t in sorted(obs)[-12:]]
         for t, o in obs.items():
