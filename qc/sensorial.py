@@ -630,6 +630,8 @@ def sesgos(obs, A):
         return {}
     dif = {el: [] for el, *_ in SENSOR}
     for t, o in obs.items():
+        if importada(o):              # las horas importadas son copia del sensor: no dicen nada de lo que lee el observador
+            continue
         r = _auto(t, A)
         if r is None:
             continue
@@ -637,7 +639,7 @@ def sesgos(obs, A):
             x, y = v(o, el), r.get(col)
             if x is not None and y is not None and pd.notna(y):
                 dif[el].append(x - y)
-    return {el: float(np.median(d)) for el, d in dif.items() if len(d) >= 4}
+    return {el: float(np.median(d)) for el, d in dif.items() if len(d) >= 3}
 
 
 def frente_sensor(t, o, A, sesgo=None):
