@@ -13,6 +13,8 @@ const VARS = {
   Sracha: {cols: ["ff10", "fx10"], nom: "Racha", u: "kt", obs: /racha informada (-?[\d.]+)/, racha: true},
   Sdd: {cols: ["dd10"], nom: "Dirección 10 min", u: "°", obs: /dirección anotada (-?[\d.]+)/},
 };
+// diferencias constantes observador − automática (SBTs, SBQFE, …): misma serie, sin valor puntual del observador
+[["SBTs", "STs"], ["SBTd", "STd"], ["SBHR", "SHR"], ["SBQFE", "SQFE"], ["SBQFF", "SQFF"]].forEach(([a, b]) => VARS[a] = {...VARS[b], obs: /anotado (-?[\d.]+)/});
 const COLOR = {T: "#F07A5A", Td: "#62B6E8", HR: "#5BBF8A", P_est: "#C9A0F0", P_mar: "#C9A0F0", ff10: "#62B6E8", fx10: "#F07A5A", dd10: "#62B6E8"};
 const NOMCOL = {ff10: "medio 10 min", fx10: "racha"};
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
