@@ -8,6 +8,7 @@ Tres niveles:
 
 No se guarda ni se muestra el identificador del observador.
 """
+import math
 import json, math, re
 from pathlib import Path
 import numpy as np
@@ -456,6 +457,7 @@ SENSOR = (("Ts", "T", 1.5, 3, "°C"), ("Td", "Td", 2.5, 5, "°C"), ("HR", "HR", 
 
 
 VENTANA = 15                       # minutos antes de la hora en que el observador pudo leer los instrumentos
+TOL_PANTALLA = {"Ts": 0.1, "Td": 0.1, "HR": 1, "QFE": 0.2, "QFF": 0.2}   # solo el redondeo de lo que muestra la estación
 
 
 def _auto(t, A):
@@ -493,26 +495,45 @@ def frente_sensor(t, o, A, sesgo=None):
     if r is None:
         return out
     add = lambda cod, niv, msg: out.append(("sensor", cod, niv, msg))
-    # El observador lee los instrumentos en los minutos previos a la hora (p. ej. a las 12:51 para la de las 13:00) y SACLIM
-    # no guarda la hora de ingreso: se compara con TODO lo que marcó la automática entre HH−15 y HH:00 y solo se alerta si el
-    # valor anotado no calza con ninguno de esos minutos (queda fuera del rango mín–máx más la tolerancia).
+    # El observador toma los datos de la propia estación automática (no hay instrumentos convencionales) en los minutos previos a
+    # la hora, y SACLIM no guarda la hora de ingreso. Por eso lo anotado debe estar entre lo que marcó la automática de HH−15 a
+    # HH:00, con una tolerancia que solo cubre el redondeo de la pantalla (sin descontar sesgos). Si además el valor no existió
+    # en toda la hora previa, no salió de la estación (error de digitación, dato copiado o inventado): nivel alto.
     W = A[(A["momento"] > t - pd.Timedelta(minutes=VENTANA)) & (A["momento"] <= t)]
+    WH = A[(A["momento"] > t - pd.Timedelta(minutes=60)) & (A["momento"] <= t)]
     for el, col, s1, s2, u in SENSOR:
         x, y = v(o, el), r.get(col)
         if x is None or y is None or pd.isna(y):
             continue
-        b = sesgo.get(el, 0.0)
-        b = b if abs(b) > s1 / 2 else 0.0                 # solo se descuenta una diferencia constante apreciable
         serie = W[col].dropna() if col in W else pd.Series(dtype=float)
-        # con 2 o más minutos en la ventana se usa el rango; si no hay minutario, se compara con el dato único más cercano (como antes)
-        lo, hi = (float(serie.min()), float(serie.max())) if len(serie) >= 2 else (float(y), float(y))
-        xc = x - b
-        d = 0.0 if lo <= xc <= hi else min(abs(xc - lo), abs(xc - hi))
-        if d > s1:
-            extra = f"; descontada la diferencia habitual de {b:+.1f}" if b else ""
-            rango_txt = (f"entre {lo:g} y {hi:g} {u} de {(t - pd.Timedelta(minutes=VENTANA)):%H:%M} a {t:%H:%M}" if hi > lo
-                         else f"{lo:g} {u}" + ("" if len(serie) >= 2 else f" (sin minutario en la ventana: dato único de las {r['momento']:%H:%M})"))
-            add("S" + el, 2 if d > s2 else 1, f"{el} anotado {x} {u} y la estación automática marcó {rango_txt} (diferencia {d:.1f}{extra})")
+        if len(serie) >= 2:
+            tol = TOL_PANTALLA[el]
+            # presión: el QFE/QFF que muestra la estación puede estar referido a otra altura (umbral de pista) que la presión
+            # que guarda el minutario; esa diferencia constante de cada estación se descuenta. En temperatura y humedad no.
+            b = sesgo.get(el, 0.0) if el in ("QFE", "QFF") and abs(sesgo.get(el, 0.0)) >= 0.3 else 0.0
+            lo, hi = float(serie.min()) + b, float(serie.max()) + b
+            if el in ("QFE", "QFF") and float(x).is_integer():   # presión ingresada en hPa enteros: vale truncada o redondeada
+                lo, hi = math.floor(lo), math.ceil(hi)
+            d = 0.0 if lo <= x <= hi else min(abs(x - lo), abs(x - hi))
+            if d > tol + 1e-9:
+                sh = WH[col].dropna()
+                hlo, hhi = (float(sh.min()) + b, float(sh.max()) + b) if len(sh) else (lo, hi)
+                nunca = not (hlo - tol <= x <= hhi + tol)
+                rango_txt = (f"entre {lo:g} y {hi:g} {u}" if hi > lo else f"{lo:g} {u}") + f" de {(t - pd.Timedelta(minutes=VENTANA)):%H:%M} a {t:%H:%M}"
+                if nunca:
+                    add("S" + el, 2, f"{el} anotado {x} {u}: la estación automática nunca marcó ese valor en toda la hora previa "
+                        f"(estuvo entre {hlo:g} y {hhi:g} {u}; de {(t - pd.Timedelta(minutes=VENTANA)):%H:%M} a {t:%H:%M}, {('entre ' + f'{lo:g} y {hi:g}') if hi > lo else f'{lo:g}'} {u}). "
+                        f"El dato no proviene de la estación (diferencia {d:.1f} {u}" + (f"; descontada la diferencia habitual de la estación, {b:+.1f}" if b else "") + ")")
+                else:
+                    add("S" + el, 1, f"{el} anotado {x} {u} y la estación automática marcó {rango_txt} (diferencia {d:.1f} {u}); "
+                        f"ese valor sí aparece antes en la hora, pero no en los minutos en que se observa")
+        else:
+            # sin minutario en la ventana: se compara con el dato único más cercano, con los umbrales amplios de antes
+            b = sesgo.get(el, 0.0) if el in ("QFE", "QFF") and abs(sesgo.get(el, 0.0)) >= 0.3 else 0.0
+            d = abs(x - float(y) - b)
+            if d > s1:
+                add("S" + el, 2 if d > s2 else 1, f"{el} anotado {x} {u} y la estación automática marcó {float(y):g} {u} "
+                    f"(sin minutario en la ventana: dato único de las {r['momento']:%H:%M}; diferencia {d:.1f})")
     ff = v(o, "VTO", "ff")
     sff = W["ff10"].dropna() if "ff10" in W else pd.Series(dtype=float)
     if not len(sff) and pd.notna(r.get("ff10")):
