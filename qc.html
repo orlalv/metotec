@@ -188,7 +188,7 @@ main[hidden]{display:none}
 <script src="js/sensorgraf.js?v=202611101015"></script>
 <script src="js/prioridad.js?v=202611101031"></script>
 <script src="js/minutarios.js?v=202611101101"></script>
-<script src="js/extremas.js?v=202611101110"></script>
+<script src="js/extremas.js?v=202611101112"></script>
 <script src="js/boletin.js?v=202611101108"></script>
 <script src="js/rellenar.js?v=202611091607"></script>
 <script>
@@ -286,6 +286,7 @@ $("#tema").addEventListener("click", () => { const c = document.documentElement.
   try { localStorage.setItem("metotecTema", c ? "claro" : "oscuro"); } catch (e) {} pintarTema(); });
 pintarTema();
 
+window.cargar = (...a) => cargar(...a);
 async function cargar(){
   const r = await fetch("/api/qc", {headers: {"x-clave": clave()}, cache: "no-store"});
   if (r.status === 401){ $("#login").style.display = "flex"; return; }

@@ -13,8 +13,9 @@ function init(fR){
   const s = $("#ext");
   if (!s.dataset.ok){
     s.dataset.ok = 1;
-    s.innerHTML = `<div class="htools"><input id="xBus" placeholder="Buscar estación…"><span id="xFil"></span><span class="tag" id="xHora"></span></div><div id="xOut"></div>`;
+    s.innerHTML = `<div class="htools"><input id="xBus" placeholder="Buscar estación…"><span id="xFil"></span><button id="xTodas" title="Vuelve a revisar desde SACLIM todas las estaciones con alertas en esta lista">🔄 Revisar todas</button><span class="tag" id="xHora"></span></div><div id="xOut"></div>`;
     $("#xBus").addEventListener("input", ev => { q = ev.target.value.trim().toLowerCase(); pintar(); });
+    $("#xTodas").addEventListener("click", revisarTodas);
     s.addEventListener("click", ev => { const f = ev.target.closest("[data-xf]"); if (f){ filtro = filtro === f.dataset.xf ? "" : f.dataset.xf; pintar(); } });
   }
   pintar();
@@ -48,6 +49,23 @@ function pintar(){
         <td>${esc(f.msg)}</td><td style="white-space:nowrap"><button class="rvbtn" data-rv="${esc(f.e.codigo)}" style="margin:0 0 4px">🔄 Revisar ahora</button><br>${SGRAF.tiene(f.regla) ? `<button class="sgbtn" data-sg="${esc(f.hora)}|${esc(f.regla)}|${esc(f.e.codigo)}" data-msg="${esc(f.msg)}">📈 ver gráfico</button>` : ""}</td></tr>`).join("")}</table></div>`
       : `<p style="color:var(--ok)">Sin alertas de extremas ni de precipitación en las últimas 12 horas${filtro || q ? " con ese filtro" : ""}.</p>`}
     <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Extremas: TnAM y TxAM (período 00–12 UTC, 21:00–09:00 hora local en verano) y TnPM y TxPM (12–00 UTC), comparadas con la extrema de la estación automática y su minutario, en valor y hora (la hora del observador es local). Precipitación: el RRR6 debe calzar exacto con la suma del pluviómetro en las 6 h que cierran a las 00, 06, 12 y 18 UTC.</p>`;
+}
+// pide revisar todas las estaciones de la lista (las que tienen alertas visibles) y espera a que terminen
+async function revisarTodas(){
+  const b = $("#xTodas"), cods = [...new Set([...document.querySelectorAll("#xOut .rvbtn")].map(x => x.dataset.rv))];
+  if (!cods.length || b.disabled) return;
+  b.disabled = true; b.textContent = `⏳ Pidiendo ${cods.length} estaciones…`;
+  const clave = () => { try { return sessionStorage.getItem("qcClave") || ""; } catch (e) { return window._qc || ""; } }, t0 = new Date().toISOString();
+  for (const cod of cods) await fetch("/api/revisar", {method: "POST", headers: {"x-clave": clave(), "content-type": "application/json"}, body: JSON.stringify({cod})}).catch(() => {});
+  const ini = Date.now();
+  const ver = async () => {
+    let listos = 0;
+    for (const cod of cods){ try { const r = await (await fetch("/api/revisar?cod=" + cod, {headers: {"x-clave": clave()}, cache: "no-store"})).json(); if (r.revisado && r.revisado.hora > t0) listos++; } catch (e){} }
+    if (listos === cods.length){ b.textContent = `✓ ${cods.length} estaciones revisadas`; b.disabled = false; if (window.cargar) await window.cargar(); return; }
+    b.textContent = `⏳ Revisando… ${listos} de ${cods.length}`;
+    if (Date.now() - ini < 15 * 60e3) setTimeout(ver, 20e3); else { b.textContent = "🔄 Revisar todas (no respondió; intente de nuevo)"; b.disabled = false; }
+  };
+  setTimeout(ver, 15e3);
 }
 window.EXT = {init, pintar};
 })();
