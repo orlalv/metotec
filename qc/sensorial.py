@@ -455,8 +455,8 @@ def evolucion(t, o, hist):
             add("E12", 2, "en las últimas 6 h se informó precipitación y RRR6 es 0 sin traza")
         hubo_w = any((v(h, "W1W2", "W1") or 0) >= 5 or (v(h, "W1W2", "W2") or 0) >= 5 for h in [o] + disponibles) or \
                  any(f in FEN_W and FEN_W[f] >= 5 for h in [o] + disponibles for f in fen_metar(h))
-        informa_tiempo = any("WWSINOP" in h or "W1W2" in h for h in [o] + disponibles)   # importadas o sin tiempo presente/pasado: no aplica
-        if (rr or 0) > 0 and not hubo and not hubo_w and informa_tiempo:
+        # solo se omite en observaciones importadas; si un observador no ingresó tiempo presente/pasado, igual se avisa
+        if (rr or 0) > 0 and not hubo and not hubo_w:
             if not importada(o): add("E13", 1, f"RRR6 {rr} mm sin ninguna hora con precipitación informada en el período")
     # tendencia barométrica
     a, ppp = v(o, "a", "a"), v(o, "a", "ppp")
