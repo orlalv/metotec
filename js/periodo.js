@@ -17,6 +17,7 @@ function init(fclave, fR){
   const ayer = new Date(Date.now() - 864e5).toISOString().slice(0, 10), sem = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
   s.innerHTML = `<div class="htools"><select id="pEst"></select><label>Desde <input type="date" id="pDes" value="${sem}" min="2000-01-01" max="${ayer}"></label>
       <label>Hasta <input type="date" id="pHas" value="${ayer}" min="2000-01-01" max="${ayer}"></label><button id="pIr" class="rvbtn" style="margin:0">Revisar período</button>
+      <label class="rvbtn" style="margin:0;cursor:pointer" title="Excel de la «Extracción de datos» de SACLIM (puede elegir varios)">⬆ Subir extracción de SACLIM<input type="file" id="pArch" accept=".xlsx" multiple hidden></label>
       <span class="tag" id="pEstado"></span><button id="pXls" hidden>⬇ Excel</button></div>
     <p class="nota" style="color:var(--mu);font-size:12.5px;margin:4px 0 10px">Revisa los METAR y SYNOP que codificó SACLIM (hasta 31 días). Se aplican las reglas de las observaciones de hoy más la coherencia METAR–SYNOP
       y los mensajes que faltan. No viajan en los mensajes la HR, la hora de las extremas, TxAM/TnPM ni el ww 00–03, así que eso no se revisa. Las reglas frente al sensor solo corren desde el 8-11-2026 (minutario guardado por METOTEC).</p>
@@ -24,7 +25,7 @@ function init(fclave, fR){
   const E = ((getR() || {}).observaciones || {}).estaciones || [];
   $("#pEst").innerHTML = E.slice().sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "")).map(e => `<option value="${e.codigo}">${esc(e.nombre)} (${e.codigo})</option>`).join("")
     || `<option value="180005">Chacalluta (180005)</option>`;
-  $("#pIr").addEventListener("click", pedir); $("#pXls").addEventListener("click", excel);
+  $("#pIr").addEventListener("click", pedir); $("#pArch").addEventListener("change", subir); $("#pXls").addEventListener("click", excel);
   s.addEventListener("click", ev => {
     const l = ev.target.closest("[data-pid]"); if (l){ abrir(l.dataset.pid); return; }
     const f = ev.target.closest("[data-pf]"); if (f){ filtro = filtro === f.dataset.pf ? "" : f.dataset.pf; pintar(); return; }
@@ -38,8 +39,23 @@ async function lista(){
   try {
     const L = await (await fetch("/api/periodo", {headers: H(), cache: "no-store"})).json();
     $("#pLista").innerHTML = L.length ? `<div style="font-size:12.5px;color:var(--mu);margin-bottom:8px">Revisiones anteriores: ${L.slice(0, 10).map(x =>
-      `<a data-pid="${esc(x.id)}" style="cursor:pointer;color:var(--oro);margin-right:10px">${esc(x.cod)} · ${x.desde.slice(8, 10)}/${x.desde.slice(5, 7)}–${x.hasta.slice(8, 10)}/${x.hasta.slice(5, 7)}/${x.hasta.slice(0, 4)}</a>`).join("")}</div>` : "";
+      `<a data-pid="${esc(x.id)}" style="cursor:pointer;color:var(--oro);margin-right:10px">${x.tipo === "archivo" ? "archivo " + esc((x.nombres || [])[0] || "") + " · " + new Date(x.pedido).toLocaleString("es-CL", {dateStyle: "short", timeStyle: "short"})
+        : esc(x.cod) + " · " + x.desde.slice(8, 10) + "/" + x.desde.slice(5, 7) + "–" + x.hasta.slice(8, 10) + "/" + x.hasta.slice(5, 7) + "/" + x.hasta.slice(0, 4)}</a>`).join("")}</div>` : "";
   } catch (e){}
+}
+async function subir(ev){
+  const fs = [...ev.target.files]; if (!fs.length) return;
+  const claves = [];
+  for (const [i, f] of fs.entries()){
+    $("#pEstado").textContent = `Subiendo ${f.name} (${i + 1} de ${fs.length}, ${(f.size / 1048576).toFixed(1)} MB)…`;
+    const r = await fetch("/api/subir", {method: "POST", headers: {"x-clave": clave()}, body: f});
+    if (!r.ok){ $("#pEstado").textContent = `${f.name}: ${await r.text()}`; ev.target.value = ""; return; }
+    claves.push((await r.json()).clave);
+  }
+  ev.target.value = "";
+  const r = await fetch("/api/periodo", {method: "POST", headers: H(), body: JSON.stringify({archivos: claves, nombres: fs.map(f => f.name)})});
+  if (!r.ok){ $("#pEstado").textContent = await r.text(); return; }
+  const {id} = await r.json(); lista(); abrir(id);
 }
 // el campo de fecha deja escribir el año con 2 dígitos («24» queda como 0024): se corrige a 2024
 const fecha = el => { let x = el.value; const m = x.match(/^(\d{4})-(\d\d)-(\d\d)$/); if (m && +m[1] < 100){ x = `${2000 + +m[1]}-${m[2]}-${m[3]}`; el.value = x; } return x; };
@@ -76,18 +92,19 @@ function pintar(){
   $("#pEstado").textContent = `${P.nombre || P.codigo} · ${P.desde} a ${P.hasta} · revisado ${new Date(P.generado).toLocaleString("es-CL", {dateStyle: "short", timeStyle: "short"})}`;
   const V = hs.filter(h => !filtro || h.regla === filtro);
   const reglas = Object.entries(cnt).sort((a, b) => b[1] - a[1]);
-  const dias = Object.keys(porDia).sort();
-  $("#pOut").innerHTML = `<div class="hres"><div><b>${P.dias}</b><span>días</span></div><div><b>${P.metar}</b><span>METAR</span></div><div><b>${P.synop}</b><span>SYNOP</span></div>
+  const dias = Object.keys(porDia).sort(), multiA = (P.desde || "").slice(0, 4) !== (P.hasta || "").slice(0, 4), multiE = (P.estaciones || []).length > 1;
+  $("#pOut").innerHTML = `<div class="hres"><div><b>${P.dias}</b><span>días</span></div>${P.origen === "archivo" ? `<div><b>${(P.estaciones || []).reduce((a, e) => a + e.horas, 0)}</b><span>horas (extracción SACLIM)</span></div><div><b>${(P.estaciones || []).length}</b><span>estaciones</span></div>`
+        : `<div><b>${P.metar}</b><span>METAR</span></div><div><b>${P.synop}</b><span>SYNOP</span></div>`}
       <div><b style="color:var(--err)">${n2}</b><span>dudosos</span></div><div><b style="color:var(--sos)">${n1}</b><span>para revisar</span></div>
       <div><b>${P.con_ema ? "sí" : "no"}</b><span>minutario EMA</span></div></div>
     ${(P.fallas || []).length ? `<p style="color:var(--sos);font-size:12.5px">No se pudieron bajar: ${P.fallas.map(esc).join("; ")}</p>` : ""}
     <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin:10px 0">
       <div><h4 style="margin:0 0 6px">Por regla</h4><table class="sgtab">${reglas.map(([k, n]) => `<tr data-pf="${esc(k)}" style="cursor:pointer" class="${filtro === k ? "on" : ""}"><td>${esc(NOM[k] || k)} <small style="color:var(--mu)">${esc(k)}</small></td><td>${n}</td></tr>`).join("") || "<tr><td>Sin hallazgos</td></tr>"}</table>
         ${filtro ? `<a data-pf="${esc(filtro)}" style="cursor:pointer;color:var(--oro);font-size:12px">ver todas</a>` : ""}</div>
-      <div><h4 style="margin:0 0 6px">Por día</h4><table class="sgtab"><tr><th>Día</th><th>dudosos</th><th>revisar</th></tr>${dias.map(d => `<tr><td>${d.slice(8, 10)}/${d.slice(5, 7)}</td><td style="color:var(--err)">${porDia[d][2] || ""}</td><td style="color:var(--sos)">${porDia[d][1] || ""}</td></tr>`).join("")}</table></div></div>
-    ${V.length ? `<table><tr><th>Día y hora UTC</th><th>Nivel</th><th>Regla</th><th>Detalle</th><th></th></tr>${V.map(h => {
+      <div><h4 style="margin:0 0 6px">Por día</h4><table class="sgtab"><tr><th>Día</th><th>dudosos</th><th>revisar</th></tr>${dias.map(d => `<tr><td>${d.slice(8, 10)}/${d.slice(5, 7)}${multiA ? "/" + d.slice(2, 4) : ""}</td><td style="color:var(--err)">${porDia[d][2] || ""}</td><td style="color:var(--sos)">${porDia[d][1] || ""}</td></tr>`).join("")}</table></div></div>
+    ${V.length ? `<table><tr><th>Día y hora UTC</th>${multiE ? "<th>Estación</th>" : ""}<th>Nivel</th><th>Regla</th><th>Detalle</th><th></th></tr>${V.slice(0, 1500).map(h => {
       const m = (P.mensajes || {})[h.hora.slice(0, 19)] || {};
-      return `<tr><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td style="color:${NIVC[h.nivel]}">${NIVT[h.nivel]}</td><td>${esc(NOM[h.regla] || h.regla)}<br><small style="color:var(--mu)">${esc(h.regla)}</small></td><td>${esc(h.msg)}</td>
+      return `<tr><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)}${multiA ? "/" + h.hora.slice(2, 4) : ""} ${h.hora.slice(11, 16)}</td>${multiE ? `<td>${esc(h.nombre || h.codigo)}</td>` : ""}<td style="color:${NIVC[h.nivel]}">${NIVT[h.nivel]}</td><td>${esc(NOM[h.regla] || h.regla)}<br><small style="color:var(--mu)">${esc(h.regla)}</small></td><td>${esc(h.msg)}</td>
         <td>${m.metar || m.synop ? `<button class="sgbtn" data-msj>mensajes</button>` : ""}</td></tr><tr hidden><td colspan="5" style="font:12px var(--mono);color:var(--mu)">${m.metar ? esc(m.metar) + "<br>" : ""}${m.synop ? esc(m.synop) : ""}</td></tr>`; }).join("")}</table>`
       : `<p style="color:var(--ok)">Sin hallazgos en el período.</p>`}`;
 }
