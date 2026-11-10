@@ -302,8 +302,10 @@ def codificacion(o):
     if ww is not None and CL is not None and N not in (9, None):
         if 50 <= ww <= 59 and CL in (1, 2, 3, 9):
             add("C09", 1, f"llovizna (ww {ww}) con nubes bajas cumuliformes (CL {CL}): la llovizna cae de St o Sc")
-        if 80 <= ww <= 90 and CL not in (2, 3, 8, 9):
-            add("C10", 1, f"chubasco (ww {ww}) sin cúmulos de desarrollo ni cumulonimbos (CL {CL})")
+        # chubascos: de Cu, TCu, Cb o Sc (el Sc, sobre todo cumulogenitus o castellanus, también los da)
+        capas_c = {(o.get("CapaNube") or {}).get(k) for k in ("C", "C2", "C3", "C4", "C5", "C6")}
+        if 80 <= ww <= 90 and CL not in (1, 2, 3, 4, 5, 8, 9) and not capas_c & {6, 8, 9, 10}:
+            add("C10", 1, f"chubasco (ww {ww}) sin nubes que lo den: CL {CL} y ninguna capa de Cu, TCu, Cb ni Sc")
         if (ww >= 95 or ww == 17) and CL not in (3, 9):
             add("C11", 1, f"tormenta (ww {ww}) sin cumulonimbo (CL {CL})")
         if ww in (61, 63, 65, 71, 73, 75) and N is not None and N < 7:
@@ -365,8 +367,6 @@ def codificacion(o):
     # tipo de nube frente al fenómeno (capas: 4 As, 5 Ns, 6 Sc, 7 St, 8 Cu, 9 Cb, 10 TCu)
     tipos = {c[1] for c in capas if c[1] is not None}
     if ww is not None and tipos:
-        if 80 <= ww <= 90 and CL not in CL_CONV and not tipos & {8, 9, 10}:
-            add("C28", 1, f"chubasco (ww {ww}) sin capa de Cu, TCu o Cb: los chubascos caen de nubes convectivas")
         if (ww >= 95 or ww == 17) and 9 not in tipos:
             add("C29", 1, f"tormenta (ww {ww}) sin capa de Cb")
         if (60 <= ww <= 69 or 70 <= ww <= 75) and tipos <= {8, 9, 10} and CM in (0, None):
