@@ -167,7 +167,7 @@ main[hidden]{display:none}
  <div class="marca"><a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a><div style="display:flex;align-items:center;gap:6px"><div id="relojUTC" title="Hora UTC (hora local entre paréntesis)">— UTC</div><button id="tema" title="Cambiar entre tema oscuro y claro">☀</button></div></div>
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="hist">Histórico</button></div>
- <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="ext" data-g="real">Extremas y precipitación</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="rell" data-g="hist" hidden>Completar serie</button><button data-m="per" data-g="hist" hidden>Revisar período</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button></div></div>
+ <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="ext" data-g="real">Extremas y precipitación</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series históricas</button></div></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -189,10 +189,8 @@ main[hidden]{display:none}
 <section id="hist" hidden></section>
 <section id="prio" hidden></section>
 <section id="minu" hidden></section>
-<section id="rell" hidden></section>
 <section id="bol" hidden></section>
 <section id="ext" hidden></section>
-<section id="per" hidden></section>
 <section id="ser" hidden></section>
 <footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · satélite GOES-19 · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
@@ -202,8 +200,6 @@ main[hidden]{display:none}
 <script src="js/extremas.js?v=202611101112"></script>
 <script src="js/boletin.js?v=202611101108"></script>
 <script src="js/series.js?v=202611101530"></script>
-<script src="js/periodo.js?v=202611101510"></script>
-<script src="js/rellenar.js?v=202611091607"></script>
 <script>
 (function(){ const r = document.getElementById("relojUTC");
   const t = () => { const d = new Date(); r.innerHTML = d.toISOString().slice(11, 19) + " UTC <small>(" + d.toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit", hour12: false}) + " local)</small>"; };
@@ -369,10 +365,10 @@ function detalle(c, mover = true){
 document.addEventListener("click", ev => {
   const it = ev.target.closest(".it"); if (it) (modo === "obs" ? detalleObs : modo === "mod" ? detalleMod : detalle)(it.dataset.c);
   const mb = ev.target.closest(".modos button"); if (mb){ modo = mb.dataset.m; sel = null; $("#det").style.display = "none";
-    const h = modo === "hist" || modo === "prio" || modo === "minu" || modo === "rell" || modo === "bol" || modo === "ext" || modo === "per" || modo === "ser"; document.querySelector("main").hidden = h; $("#hist").hidden = modo !== "hist"; $("#prio").hidden = modo !== "prio"; $("#minu").hidden = modo !== "minu"; $("#rell").hidden = modo !== "rell"; $("#bol").hidden = modo !== "bol"; $("#ext").hidden = modo !== "ext"; $("#per").hidden = modo !== "per"; $("#ser").hidden = modo !== "ser"; $("#chips").style.display = h ? "none" : "";
+    const h = modo === "hist" || modo === "prio" || modo === "minu" || modo === "rell" || modo === "bol" || modo === "ext" || modo === "per" || modo === "ser"; document.querySelector("main").hidden = h; $("#hist").hidden = modo !== "hist"; $("#prio").hidden = modo !== "prio"; $("#minu").hidden = modo !== "minu"; $("#bol").hidden = modo !== "bol"; $("#ext").hidden = modo !== "ext"; $("#ser").hidden = modo !== "ser"; $("#chips").style.display = h ? "none" : "";
     $("#mvar").hidden = $("#mref").hidden = modo !== "mod"; leyenda(modo === "mod");
     if (h){ document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-      if (modo === "hist"){ hInit(); if (!HI) hCargar(); } else if (modo === "minu") MINU.init(); else if (modo === "rell") RELL.init(); else if (modo === "bol") BOL.init(clave); else if (modo === "ext") EXT.init(() => R); else if (modo === "per") PER.init(clave, () => R); else if (modo === "ser") SER.init(clave); else pintarPrio(); return; }
+      if (modo === "hist"){ hInit(); if (!HI) hCargar(); } else if (modo === "minu") MINU.init(); else if (modo === "bol") BOL.init(clave); else if (modo === "ext") EXT.init(() => R); else if (modo === "ser") SER.init(clave); else pintarPrio(); return; }
     setTimeout(() => mapa.invalidateSize(), 50);
     document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb)); $("#grupo").hidden = modo !== "ema"; $("#vars").hidden = modo !== "ema"; $("#gobs").hidden = modo !== "obs"; R && pintar(); }
   const ch = ev.target.closest(".chip"); if (ch){ const n = +ch.dataset.n; ver[n] = !ver[n]; pintar(); }
