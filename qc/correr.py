@@ -198,7 +198,7 @@ def main():
     for nombre, f in [("rango", lambda: P.rango(A)), ("salto", lambda: P.saltos(A)), ("pegado", lambda: P.pegados(A)),
                       ("coherencia", lambda: P.coherencia(H.groupby("codigo").tail(1), E)), ("vecinas", lambda: P.vecinas(H, E, V)),
                       ("modelo", lambda: P.modelo(H, M, aisladas, cal)), ("wrf", lambda: P.modelo_dmc(H, W, aisladas, cal)), ("lluvia", lambda: P.lluvia(H, M, V)),
-                      ("satelite", lambda: SAT.ema(H, A, E, sat))]:
+                      ("satelite", lambda: SAT.ema(H, A, E, sat)), ("extremas", lambda: P.extremas(leer_archivo(a.datos, fin, horas=48)))]:
         try:
             alertas += f()
         except Exception:

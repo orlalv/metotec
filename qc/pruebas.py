@@ -63,6 +63,47 @@ def rango(D):
     return out
 
 
+# ------------------------------------------------------------------ 1b. extremas de la estación (Tn12 / Tx12)
+LIM_EXT = (-35, 45)
+
+
+def extremas(A):
+    """Tn12/Tx12 que informa la estación: rango físico y coherencia con la temperatura por minuto de las últimas 24 h
+    (la extrema sale de muestras de segundos y puede pasar en ~1 °C al valor por minuto, no más)."""
+    out = []
+    if A is None or A.empty or "Tn12" not in A:
+        return out
+    fin = A["momento"].max()
+    W = A[A["momento"] > fin - pd.Timedelta(hours=24)]
+    T48 = A[A["momento"] > fin - pd.Timedelta(hours=48)].groupby("codigo")["T"]     # una extrema retenida puede venir del día anterior
+    for cod, g in W.groupby("codigo"):
+        g = g.sort_values("momento")
+        try:
+            T = T48.get_group(cod).dropna()
+        except KeyError:
+            continue
+        for var, minimo in (("Tn12", True), ("Tx12", False)):
+            x = g[var].dropna()
+            if x.empty:
+                continue
+            r = g.loc[x.index[-1]]
+            malo = x[(x < LIM_EXT[0]) | (x > LIM_EXT[1])]
+            if len(malo):
+                out.append(alerta(cod, "extremas", var, 2, g.loc[malo.index[-1], "momento"], float(malo.iloc[-1]), None,
+                                  f"{var} {float(malo.iloc[-1]):.1f} °C fuera de rango físico [{LIM_EXT[0]}, {LIM_EXT[1]}] ({len(malo)} registros en 24 h)"))
+                continue
+            if len(T) < 1800:                      # hace falta el período completo (≥ 30 h de datos)
+                continue
+            ref = float(T.min() if minimo else T.max())
+            val = float(x.min() if minimo else x.max())
+            if (minimo and val < ref - 1.5) or (not minimo and val > ref + 1.5):
+                i = x.idxmin() if minimo else x.idxmax()
+                out.append(alerta(cod, "extremas", var, 2, g.loc[i, "momento"], val, ref,
+                                  f"{var} {val:.1f} °C: la temperatura por minuto de las últimas 48 h nunca {'bajó' if minimo else 'subió'} de {ref:.1f} °C "
+                                  f"(diferencia {abs(val - ref):.1f} °C): extrema imposible"))
+    return out
+
+
 # ------------------------------------------------------------------ 2. saltos
 SALTO = {"T": (4, 8), "HR": (25, 45), "P_est": (1.5, 3)}   # máximo cambio en ≤ 10 min (sospechoso, erróneo)
 

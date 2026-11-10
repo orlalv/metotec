@@ -205,12 +205,12 @@ main[hidden]{display:none}
 const COL = {0: "var(--ok)", 1: "var(--sos)", 2: "var(--err)", 3: "var(--sin)"};
 const HEX = {0: "#3fb67a", 1: "#e7b03b", 2: "#e5534b", 3: "#6b778a"};
 const NOM = {0: "Bien", 1: "Sospechoso", 2: "Erróneo", 3: "Sin datos"};
-const PR = {incendio: "Incendio cercano", rango: "Rango", salto: "Salto", pegado: "Valor pegado", coherencia: "Coherencia", vecinas: "Vecinas", modelo: "Open-Meteo", wrf: "WRF-DMC", lluvia: "Lluvia", satelite: "Satélite", completitud: "Completitud"};
-const VARGR = [["T", "Temperatura", ["T", "Tn12", "Tx12"]], ["Td", "Punto de rocío", ["Td"]], ["HR", "Humedad", ["HR"]], ["P", "Presión", ["P_est", "P_mar", "P_std"]],
+const PR = {incendio: "Incendio cercano", rango: "Rango", salto: "Salto", pegado: "Valor pegado", coherencia: "Coherencia", vecinas: "Vecinas", modelo: "Open-Meteo", wrf: "WRF-DMC", lluvia: "Lluvia", satelite: "Satélite", completitud: "Completitud", extremas: "Extremas"};
+const VARGR = [["T", "Temperatura", ["T"]], ["EXT", "Extremas (Tn12, Tx12)", ["Tn12", "Tx12"]], ["Td", "Punto de rocío", ["Td"]], ["HR", "Humedad", ["HR"]], ["P", "Presión", ["P_est", "P_mar", "P_std"]],
   ["V", "Viento", ["ff10", "dd10", "ff2", "dd2", "fx10"]], ["RR", "Precipitación", ["rr1m", "rr1h", "rr3h", "rr6", "rr24"]], ["Rad", "Radiación", ["Rad"]], ["C", "Completitud", ["registros"]]];
 const VAR2G = Object.fromEntries(VARGR.flatMap(([k, , vs]) => vs.map(v => [v, k])));
 let VSEL = new Set(VARGR.map(g => g[0]));
-const GRUPOS = {todas: null, basicas: ["rango", "salto", "pegado", "coherencia", "completitud"], vecinas: ["vecinas"], modelos: ["modelo", "wrf"], lluvia: ["lluvia"], satelite: ["satelite"], incendio: ["incendio"]};
+const GRUPOS = {todas: null, basicas: ["rango", "salto", "pegado", "coherencia", "completitud", "extremas"], vecinas: ["vecinas"], modelos: ["modelo", "wrf"], lluvia: ["lluvia"], satelite: ["satelite"], incendio: ["incendio"]};
 let grupo = "todas", modo = "ema", gobs = "todas";
 const TIPO = {sistema: "Regla del sistema", codificacion: "Codificación", evolucion: "Evolución", sensor: "Frente al sensor", satelite: "Frente al satélite"};
 function obsFiltradas(){
