@@ -657,9 +657,15 @@ def extremas(t, o, A, codigo):
         # 1) valor
         if not ok:
             nunca = (minimo and x < round(ser - 1.0, 1)) or (not minimo and x > round(ser + 1.0, 1))   # ni con muestras de segundos
+            # ¿es la extrema del período anterior (la otra casilla) repetida? p. ej. la TxPM de ayer ingresada también como TxAM
+            Wp = A[(A["momento"] > t - pd.Timedelta(hours=24)) & (A["momento"] <= t - pd.Timedelta(hours=12))].dropna(subset=["T"])
+            otra = {"TnAM": "TnPM", "TxAM": "TxPM", "TnPM": "TnAM", "TxPM": "TxAM"}[el]
+            rep = len(Wp) > 0 and abs(x - float(Wp["T"].min() if minimo else Wp["T"].max())) <= 0.6 and \
+                  (x <= float(Wp["T"].min()) + 0.05 if minimo else x >= float(Wp["T"].max()) - 0.05)
+            nota_rep = (f"Parece la {nom} del período anterior ({otra}) repetida en la {el}. ") if rep else ""
             add("SEXT", 2 if nunca or abs(d) > 0.5 else 1,
                 (f"{el} {x} °C: la estación automática nunca {'bajó' if minimo else 'subió'} a ese valor en el período ({periodo} local); " if nunca
-                 else f"{el} {x} °C, pero ") + f"la {nom} real fue {real:.1f} °C ({fuente}), cerca de las {horas_real}. "
+                 else f"{el} {x} °C, pero ") + f"la {nom} real fue {real:.1f} °C ({fuente}), cerca de las {horas_real}. " + nota_rep +
                 f"Debería ir: {real:.1f} °C a las {horas_real.split(', ')[0]}")
         # 2) hora
         if not isinstance(fh, str) or not re.match(r"\d{4}-\d\d-\d\d \d\d:\d\d", fh):
