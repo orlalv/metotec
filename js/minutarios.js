@@ -228,7 +228,8 @@ function R(D){                     // resumen del día
   if (D._R) return D._R;
   const F = D.T, d0 = Date.UTC(...D.dia.split("-").map((x, i) => i === 1 ? x - 1 : +x)), h = x => d0 + x * 3600e3;
   const noche = en(F, h(0), h(12)), tarde = en(F, h(12), h(24));
-  const tn = ext(noche, "T", false), tx = ext(tarde, "T", true);
+  const tn = ext(noche, "T", false), tx = ext(tarde, "T", true), txAM = ext(noche, "T", true), tnPM = ext(tarde, "T", false);
+  const curso = {am: h(12) > Date.now(), pm: h(24) > Date.now()};
   const per = [0, 6, 12, 18].map(a => { const G = en(F, h(a), h(a + 6)), s = suma(G, "rr1m"), r = fila(F, h(a + 6)); return {a, s, n: G.length, inf: r ? r.rr6 : null, t: h(a + 6)}; });
   const r24 = en(F, h(12) - 864e5, h(12)), comp = [];
   const r12 = fila(F, h(12)), r00 = fila(F, h(24));
@@ -237,7 +238,7 @@ function R(D){                     // resumen del día
   per.forEach(p => { if (p.inf != null || p.s) comp.push({nom: `RRR6 de ${String(p.a).padStart(2, "0")} a ${String(p.a + 6).padStart(2, "0")} UTC`, v: "rr6", inf: p.inf, cal: p.n ? (p.s || 0) : null, tol: .2, u: "mm", t: p.t}); });
   if (r00 && r00.rr24 != null){ const s = suma(en(F, h(0), h(24)), "rr1m"); comp.push({nom: "RRR24 de las 00 UTC", v: "rr24", inf: r00.rr24, cal: s || 0, tol: .3, u: "mm", t: h(24)}); }
   const G = D.F;
-  return D._R = {tn, tx, per, comp, d: {Tmin: ext(G, "T", false), Tmax: ext(G, "T", true), HRmin: ext(G, "HR", false), HRmax: ext(G, "HR", true),
+  return D._R = {tn, tx, txAM, tnPM, curso, per, comp, d: {Tmin: ext(G, "T", false), Tmax: ext(G, "T", true), HRmin: ext(G, "HR", false), HRmax: ext(G, "HR", true),
     Pmin: ext(G, "P_est", false), Pmax: ext(G, "P_est", true), fx: ext(G, "fx10", true), ff: ext(G, "ff10", true), rr: suma(G, "rr1m")}};
 }
 
@@ -285,8 +286,16 @@ function pintar(){
   const cn = r.comp.find(c => c.v === "Tn12"), cx = r.comp.find(c => c.v === "Tx12");
   const vars = VARS.filter(v => M.F.some(o => o[v[0]] != null));
   $("#mOut").innerHTML = `<h3 style="margin:4px 0 10px">${esc(M.nombre)} <small style="color:var(--mu)">${M.cod}${M.alt != null ? " · " + M.alt + " m" : ""} · ${M.dia} ${M.local ? "(día local)" : "(día UTC)"} · ${M.F.length} registros cada ${cadencia(M.F) / 60e3} min · fuente: ${M.origen}</small></h3>
-    <div class="hres">${tarjeta("Mínima 00–12 UTC (Tn12)", r.tn, "°C", cmp(cn))}${tarjeta("Máxima 12–24 UTC (Tx12)", r.tx, "°C", cmp(cx))}
-      ${tarjeta("Mínima del período", d.Tmin, "°C")}${tarjeta("Máxima del período", d.Tmax, "°C")}${tarjeta("Racha máxima", d.fx, "kt")}${tarjeta("Humedad mínima", d.HRmin, "%")}${tarjeta("QFE mínimo", d.Pmin, "hPa")}${tarjeta("QFE máximo", d.Pmax, "hPa")}</div>
+    <div class="hres">${(() => { const lAM = M.local ? "" : " · 21:00–09:00 local", lPM = M.local ? "" : " · 09:00–21:00 local",
+        enc = k => r.curso[k] ? `<b style="color:#f2c94c;display:inline;font-size:inherit">período en curso</b>` : "";
+        const gmin = [r.tn, r.tnPM].filter(Boolean).sort((a, b) => a.v - b.v)[0], gmax = [r.txAM, r.tx].filter(Boolean).sort((a, b) => b.v - a.v)[0];
+        return tarjeta(`Mínima general del día`, gmin, "°C", gmin ? (gmin === r.tn ? "en la mañana (AM)" : "en la tarde (PM)") : "")
+          + tarjeta(`Máxima general del día`, gmax, "°C", gmax ? (gmax === r.tx ? "en la tarde (PM)" : "en la mañana (AM)") : "")
+          + tarjeta(`TnAM · mínima 00–12 UTC${lAM}`, r.tn, "°C", [cmp(cn), enc("am")].filter(Boolean).join(" · "))
+          + tarjeta(`TxAM · máxima 00–12 UTC${lAM}`, r.txAM, "°C", enc("am"))
+          + tarjeta(`TnPM · mínima 12–24 UTC${lPM}`, r.tnPM, "°C", enc("pm"))
+          + tarjeta(`TxPM · máxima 12–24 UTC${lPM}`, r.tx, "°C", [cmp(cx), enc("pm")].filter(Boolean).join(" · ")); })()}</div>
+    <div class="hres">${tarjeta("Racha máxima", d.fx, "kt")}${tarjeta("Humedad mínima", d.HRmin, "%")}${tarjeta("QFE mínimo", d.Pmin, "hPa")}${tarjeta("QFE máximo", d.Pmax, "hPa")}</div>
     <div class="hres">${r.per.map(p => `<div><span>Agua caída ${String(p.a).padStart(2, "0")}–${String(p.a + 6).padStart(2, "0")} UTC</span><b>${p.n ? f1(p.s || 0) + " mm" : "—"}</b><span>${p.inf != null ? "RRR6 informada " + f1(p.inf) : "sin RRR6 informada"}${p.n ? ` · ${p.n} reg.` : ""}</span></div>`).join("")}
       <div><span>Total del período</span><b>${d.rr != null ? f1(d.rr) + " mm" : "—"}</b><span>suma de agua caída del minuto</span></div></div>
     ${bloque("inc", `Inconsistencias en la serie (${M.I.length})`, M.I.length ? `<table><tr><th>Nivel</th><th>Desde (UTC)</th><th>Hasta</th><th>Elemento</th><th>Detalle</th></tr>${M.I.map(i => `<tr class="inc" data-t="${i.t1}" style="cursor:pointer"><td><span class="pb" style="background:${i.nivel === 2 ? "#eb5757" : "#f2c94c"};color:#111">${i.nivel === 2 ? "Erróneo" : "Sospechoso"}</span></td><td>${hhmm(i.t1)}</td><td>${i.t2 !== i.t1 ? hhmm(i.t2) : ""}</td><td>${esc(NOM[i.v] || "General")}</td><td>${esc(i.msg)}</td></tr>`).join("")}</table>` : `<p style="color:#6fcf97">Sin inconsistencias en la serie.</p>`)}
