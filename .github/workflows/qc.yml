@@ -10,7 +10,7 @@ on:
         description: "Revisar observaciones (auto = solo entre los minutos 10 y 29)"
         default: "auto"
       boletin:
-        description: "Revisar el boletín climatológico diario (auto = entre 10:00 y 13:00 hora local)"
+        description: "Revisar el boletín climatológico diario (auto = entre 07:00 y 13:00 hora local)"
         default: "auto"
 permissions:
   contents: write

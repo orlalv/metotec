@@ -248,16 +248,17 @@ def revisar_dia(dia, bol, raiz, ayer=None):
                 marca("normal_f", "warn", f"ayer {pnf:.1f}", f"La normal a la fecha bajó de {pnf:.1f} a {nf:.1f} mm: debería subir o mantenerse.")
         for col in COLS:
             if v[col] in (".", "-") and col not in marcas and col not in ("ant",):
-                marcas[col] = dict(nivel="info", sub="sin dato" if v[col] == "." else "no actualizado", msg=None, real=None)
+                marcas[col] = dict(nivel="info", sub="sin dato" if v[col] == "." else "pendiente", msg=None, real=None)
         filas.append(dict(nombre=nom, ema=ce, obs=co, v=v, marcas=marcas))
     return dict(dia=str(dia), fecha_txt=bol.get("fecha_txt"), filas=filas, items=items)
 
 
 def correr(raiz, ahora=None, forzar=False, subir=None):
-    """Entre las 10:00 y las 13:00 hora local revisa el boletín del día y guarda el resultado (con los cambios entre pasadas)."""
+    """Entre las 07:00 y las 13:00 hora local revisa el boletín del día y guarda el resultado (con los cambios entre pasadas).
+    El portal va llenando el boletín a medida que llegan las extremas: lo que aún no llega queda «pendiente», no como error."""
     ahora = ahora or datetime.now(timezone.utc)
     local = ahora.astimezone(ZoneInfo(CL))
-    if not forzar and not (10 <= local.hour < 13):
+    if not forzar and not (7 <= local.hour < 13):
         return "fuera de horario"
     dia = local.date()
     bol = descargar(dia)
@@ -279,7 +280,7 @@ def correr(raiz, ahora=None, forzar=False, subir=None):
         for x in res["filas"]:
             for c in COLS:
                 a, b = (pv.get(x["nombre"]) or {}).get(c), x["v"][c]
-                if a is not None and a != b:
+                if a is not None and a != b and a not in ("-", ".", ""):     # que llegue un dato que faltaba no es un cambio
                     cambios.append(dict(hora=f"{local:%H:%M}", estacion=x["nombre"], col=c, antes=a, ahora=b))
     res["cambios"] = cambios
     res["pasadas"] = (previo or {}).get("pasadas", []) + [f"{local:%H:%M}"]

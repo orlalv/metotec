@@ -15,8 +15,10 @@ const VARS = {
 };
 // diferencias constantes observador − automática (SBTs, SBQFE, …): misma serie, sin valor puntual del observador
 VARS.SEXT = VARS.SEXH = {cols: ["T"], nom: "Ts (período de la extrema)", u: "°C", obs: /(?:Tn|Tx)(?:AM|PM) (-?[\d.]+)/, horas: 12};
+VARS.SRRR6 = {cols: ["rr1m"], nom: "Agua caída acumulada (6 h)", u: "mm", obs: /RRR6 anotado (-?[\d.]+)/, horas: 6, acum: true};
+VARS.E12 = VARS.E13 = VARS.E17 = {...VARS.SRRR6, obs: /RRR6 (-?[\d.]+)/};
 [["SBTs", "STs"], ["SBTd", "STd"], ["SBHR", "SHR"], ["SBQFE", "SQFE"], ["SBQFF", "SQFF"]].forEach(([a, b]) => VARS[a] = {...VARS[b], obs: /anotado (-?[\d.]+)/});
-const COLOR = {T: "#F07A5A", Td: "#62B6E8", HR: "#5BBF8A", P_est: "#C9A0F0", P_mar: "#C9A0F0", ff10: "#62B6E8", fx10: "#F07A5A", dd10: "#62B6E8"};
+const COLOR = {rr1m: "#5AA9E6", T: "#F07A5A", Td: "#62B6E8", HR: "#5BBF8A", P_est: "#C9A0F0", P_mar: "#C9A0F0", ff10: "#62B6E8", fx10: "#F07A5A", dd10: "#62B6E8"};
 const NOMCOL = {ff10: "medio 10 min", fx10: "racha"};
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
 const hm = t => new Date(t).toISOString().slice(11, 16);
@@ -35,6 +37,7 @@ async function abrir(cont, cod, hora, regla, msg){
   const cab = D.cab.split(","), im = cab.indexOf("momento"), ix = V.cols.map(c => cab.indexOf(c));
   const F = D.filas.map(l => l.split(",")).map(c => ({t: Date.parse(c[im].replace(" ", "T") + "Z"), v: ix.map(i => c[i] === "" || c[i] == null ? null : +c[i])}))
     .filter(o => o.t > ini && o.t <= t).sort((a, b) => a.t - b.t);
+  if (V.acum){ let s_ = 0; F.forEach(o => { s_ += o.v[0] || 0; o.v[0] = Math.round(s_ * 10) / 10; }); }
   if (!F.length){ cont.innerHTML = `<p style="color:var(--mu);margin:6px 0">No hay minutario para esa hora.</p>`; return; }
   const m = (msg || "").match(V.obs), ob = m ? +m[1] : null;
   const vals = F.flatMap(o => o.v).filter(x => x != null).concat(ob != null ? [ob] : []);

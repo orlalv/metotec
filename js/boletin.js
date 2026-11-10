@@ -43,7 +43,7 @@ function marcasFila(f){ return Object.entries(f.marcas || {}).filter(([, m]) => 
 function pintar(){
   if (!B || B.vacio){
     $("#bRev").textContent = "sin revisión";
-    $("#bOut").innerHTML = `<p style="color:var(--mu)">No hay revisión del boletín para el ${esc(B ? B.dia : $("#bDia").value)}. El boletín sale a las 10:00 hora local y se revisa desde la pasada de las 10:15; las revisiones se guardan desde el 9 de noviembre de 2026.</p>`; return;
+    $("#bOut").innerHTML = `<p style="color:var(--mu)">No hay revisión del boletín para el ${esc(B ? B.dia : $("#bDia").value)}. El boletín se revisa desde las 07:00 hora local, cada 30 minutos, a medida que el portal lo va llenando; las revisiones se guardan desde el 9 de noviembre de 2026.</p>`; return;
   }
   const ps = B.pasadas || [];
   $("#bRev").textContent = `Revisado ${ps.length ? ps[ps.length - 1] : ""} hora local` + (ps.length > 1 ? ` · ${ps.length} pasadas (${ps[0]}–${ps[ps.length - 1]})` : "");

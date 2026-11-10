@@ -65,7 +65,7 @@ aside{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(
 .it .al{font-size:13px;color:#d6dde8;margin-top:3px}
 .it .al span{display:inline-block;background:rgba(255,255,255,.06);border-radius:5px;padding:1px 6px;margin:2px 4px 0 0}
 .it .v{text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--mu)}
-.sgbtn{margin-left:6px;background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer}.sgbtn:hover{border-color:var(--oro)}
+.sgbtn{white-space:nowrap;margin-left:6px;background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer}.sgbtn:hover{border-color:var(--oro)}
 .sgraf{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin:4px 0}.sgtop{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:13px}
 .sgtop input{width:64px;background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:3px 6px;font:600 13px var(--mono)}.sgval{font-family:var(--mono);font-size:12.5px}
 .sgley{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mu);margin:4px 0 6px}.sgley i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
@@ -107,7 +107,10 @@ main[hidden]{display:none}
 #minu table.mtab{width:auto}#minu .mtab th,#minu .mtab td{padding:3px 12px;white-space:nowrap}#minu .mtab td:nth-child(n+3){text-align:right}#minu .mtab th{max-width:220px;white-space:normal;text-align:right}#minu .mtab th:nth-child(-n+2){text-align:left}
 #minu details.mblo{margin:12px 0;border:1px solid var(--bd);border-radius:12px;background:var(--panel2);box-shadow:var(--sombra)}#minu details.mblo>summary{cursor:pointer;padding:8px 12px;font-weight:700;font-size:15px;list-style:none;display:flex;align-items:center;gap:8px}#minu details.mblo>summary::-webkit-details-marker{display:none}#minu details.mblo>summary::before{content:"▸";color:var(--oro);transition:transform .15s}#minu details.mblo[open]>summary::before{transform:rotate(90deg)}#minu details.mblo>summary:hover{color:var(--oro)}#minu .mcont{padding:0 12px 12px}
 #minu tr.inc:hover{background:var(--hover)}#minu tr.vis{outline:2px solid var(--oro)}
-#bol{flex:1;overflow:auto;padding:14px 20px}#bol[hidden]{display:none}
+#bol,#ext{flex:1;overflow:auto;padding:14px 20px}#bol[hidden],#ext[hidden]{display:none}
+#ext .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}#ext .htools input,#ext .htools button,#ext .htools .tag{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font:600 13px inherit}#ext .htools button{cursor:pointer}#ext .htools button.on{border-color:var(--oro);color:var(--oro)}#ext .htools .tag{color:var(--mu);font-weight:500}
+#ext .hres{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}#ext .hres div{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px 14px;min-width:170px;box-shadow:var(--sombra)}#ext .hres b{display:block;font:600 22px var(--titulo)}#ext .hres span{color:var(--mu);font-size:12.5px}
+#ext .bcard{background:var(--panel);border:1px solid var(--bd);border-radius:14px;overflow:auto;box-shadow:var(--sombra)}.xtab{border-collapse:collapse;width:100%;font-size:13px}.xtab th{background:var(--hover);color:var(--oro2);font-size:11px;letter-spacing:.5px;text-transform:uppercase;padding:7px 8px;text-align:left}.xtab td{padding:6px 8px;border-bottom:1px solid var(--bd);vertical-align:top}.xtab td.n{font-family:var(--mono);font-size:12px;white-space:nowrap}.xtab small{color:var(--mu)}
 #bol .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
 #bol .htools input,#bol .htools button,#bol .htools span.tag{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;font:600 13px inherit}#bol .htools button{cursor:pointer}
 #bol .hres{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}#bol .hres div{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px 14px;min-width:150px}#bol .hres b{display:block;font-size:20px}#bol .hres span{color:var(--mu);font-size:12.5px}
@@ -152,7 +155,7 @@ main[hidden]{display:none}
 <header>
  <div class="marca"><a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a><div style="display:flex;align-items:center;gap:6px"><div id="relojUTC" title="Hora UTC (hora local entre paréntesis)">— UTC</div><button id="tema" title="Cambiar entre tema oscuro y claro">☀</button></div></div>
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
- <div class="modos"><button data-m="ema" class="on">Estaciones automáticas</button><button data-m="obs">Observaciones</button><button data-m="mod">Contraste con modelos</button><button data-m="prio">Prioridades</button><button data-m="hist">Historial</button><button data-m="minu">Datos minutarios</button><button data-m="rell">Completar serie</button><button data-m="bol">Boletín diario</button></div>
+ <div class="modos"><button data-m="ema" class="on">Estaciones automáticas</button><button data-m="obs">Observaciones</button><button data-m="mod">Contraste con modelos</button><button data-m="prio">Prioridades</button><button data-m="hist">Historial</button><button data-m="minu">Datos minutarios</button><button data-m="rell">Completar serie</button><button data-m="ext">Extremas y precipitación</button><button data-m="bol">Boletín diario</button></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -176,12 +179,14 @@ main[hidden]{display:none}
 <section id="minu" hidden></section>
 <section id="rell" hidden></section>
 <section id="bol" hidden></section>
+<section id="ext" hidden></section>
 <footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · satélite GOES-19 · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
-<script src="js/sensorgraf.js?v=202611100951"></script>
+<script src="js/sensorgraf.js?v=202611101015"></script>
 <script src="js/prioridad.js?v=202611100951"></script>
 <script src="js/minutarios.js?v=202611091607"></script>
-<script src="js/boletin.js?v=202611091607"></script>
+<script src="js/extremas.js?v=202611101015"></script>
+<script src="js/boletin.js?v=202611101015"></script>
 <script src="js/rellenar.js?v=202611091607"></script>
 <script>
 (function(){ const r = document.getElementById("relojUTC");
@@ -273,6 +278,7 @@ function visibles(){
 }
 function pintar(){
   if (modo === "hist") return;
+  if (modo === "ext") return EXT.init(() => R);
   if (modo === "prio") return pintarPrio();
   if (modo === "mod") return pintarMod();
   if (modo === "obs") return pintarObs();
@@ -318,10 +324,10 @@ function detalle(c, mover = true){
 document.addEventListener("click", ev => {
   const it = ev.target.closest(".it"); if (it) (modo === "obs" ? detalleObs : modo === "mod" ? detalleMod : detalle)(it.dataset.c);
   const mb = ev.target.closest(".modos button"); if (mb){ modo = mb.dataset.m; sel = null; $("#det").style.display = "none";
-    const h = modo === "hist" || modo === "prio" || modo === "minu" || modo === "rell" || modo === "bol"; document.querySelector("main").hidden = h; $("#hist").hidden = modo !== "hist"; $("#prio").hidden = modo !== "prio"; $("#minu").hidden = modo !== "minu"; $("#rell").hidden = modo !== "rell"; $("#bol").hidden = modo !== "bol"; $("#chips").style.display = h ? "none" : "";
+    const h = modo === "hist" || modo === "prio" || modo === "minu" || modo === "rell" || modo === "bol" || modo === "ext"; document.querySelector("main").hidden = h; $("#hist").hidden = modo !== "hist"; $("#prio").hidden = modo !== "prio"; $("#minu").hidden = modo !== "minu"; $("#rell").hidden = modo !== "rell"; $("#bol").hidden = modo !== "bol"; $("#ext").hidden = modo !== "ext"; $("#chips").style.display = h ? "none" : "";
     $("#mvar").hidden = $("#mref").hidden = modo !== "mod"; leyenda(modo === "mod");
     if (h){ document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-      if (modo === "hist"){ hInit(); if (!HI) hCargar(); } else if (modo === "minu") MINU.init(); else if (modo === "rell") RELL.init(); else if (modo === "bol") BOL.init(clave); else pintarPrio(); return; }
+      if (modo === "hist"){ hInit(); if (!HI) hCargar(); } else if (modo === "minu") MINU.init(); else if (modo === "rell") RELL.init(); else if (modo === "bol") BOL.init(clave); else if (modo === "ext") EXT.init(() => R); else pintarPrio(); return; }
     setTimeout(() => mapa.invalidateSize(), 50);
     document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb)); $("#grupo").hidden = modo !== "ema"; $("#vars").hidden = modo !== "ema"; $("#gobs").hidden = modo !== "obs"; R && pintar(); }
   const ch = ev.target.closest(".chip"); if (ch){ const n = +ch.dataset.n; ver[n] = !ver[n]; pintar(); }
@@ -598,7 +604,7 @@ function hCsv(){
 $("#fl").addEventListener("submit", ev => { ev.preventDefault(); const c = $("#clave").value; try { sessionStorage.setItem("qcClave", c); } catch (e) { window._qc = c; } $("#lerr").textContent = ""; cargar(); });
 // metotec.cl/modelo: solo el contraste con modelos (para presentar)
 const VISTA0 = new URLSearchParams(location.search).get("vista");
-if (["obs", "prio", "hist", "mod", "minu", "rell", "bol"].includes(VISTA0)) document.querySelector(`.modos button[data-m="${VISTA0}"]`).click();
+if (["obs", "prio", "hist", "mod", "minu", "rell", "bol", "ext"].includes(VISTA0)) document.querySelector(`.modos button[data-m="${VISTA0}"]`).click();
 if (/^\/modelo/.test(location.pathname) || new URLSearchParams(location.search).get("vista") === "modelo"){
   document.querySelector('.modos button[data-m="mod"]').click(); document.querySelector(".modos").style.display = "none";
   document.querySelector("header h1").firstChild.textContent = "Control de calidad · contraste con modelos"; document.title = "Contraste con modelos · METOTEC";
