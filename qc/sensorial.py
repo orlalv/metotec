@@ -465,7 +465,7 @@ def evolucion(t, o, hist):
 SENSOR = (("Ts", "T", 1.5, 3, "°C"), ("Td", "Td", 2.5, 5, "°C"), ("HR", "HR", 12, 25, "%"), ("QFE", "P_est", 0.8, 2, "hPa"), ("QFF", "P_mar", 1.5, 3, "hPa"))
 
 
-VENTANA_RACHA = 40                 # minutos antes de la hora en que el observador pudo hacer la observación (racha)
+VENTANA_RACHA = 20                 # minutos antes de la hora en que el observador pudo hacer la observación (racha)
 VENTANA = 15                       # minutos antes de la hora en que el observador pudo leer los instrumentos
 TOL_PANTALLA = {"Ts": 0.1, "Td": 0.1, "HR": 1, "QFE": 0.2, "QFF": 0.2}   # solo el redondeo de lo que muestra la estación
 
@@ -578,7 +578,7 @@ def frente_sensor(t, o, A, sesgo=None):
             fila = A.loc[A["momento"] == fin]
             if len(fila) and pd.notna(fila["fx10"].iloc[0]) and pd.notna(fila["ff10"].iloc[0]):
                 vent.append(dict(fin=fin, fx=float(fila["fx10"].iloc[0]), tfx=fin, med=float(fila["ff10"].iloc[0])))
-        if len(vent) >= 20:
+        if len(vent) >= 10:
             con = [x for x in vent if x["fx"] - x["med"] >= 10]
             rango = f"{vent[-1]['fin']:%H:%M}–{vent[0]['fin']:%H:%M}"
             if rach is None and len(con) == len(vent):
