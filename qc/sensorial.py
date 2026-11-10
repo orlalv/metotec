@@ -757,6 +757,43 @@ def frente_sensor(t, o, A, sesgo=None):
             elif d >= 0.1:
                 add("SRRR6", 2 if d > max(1.0, 0.3 * max(suma, r6)) else 1,
                     f"RRR6 anotado {r6:g} mm y el pluviómetro automático sumó {suma:.1f} mm en las 6 h cerradas a las {t:%H}:00 (diferencia {d:.1f} mm; la precipitación debe calzar exacta)")
+    out += precipitacion_hora(t, o, A)
+    return out
+
+
+VENTANA_PRESENTE = 20              # minutos antes de la hora: la lluvia en ese lapso es tiempo presente; antes, en la hora, tiempo reciente
+
+
+def precipitacion_hora(t, o, A):
+    """Lluvia del pluviómetro automático en la última hora frente al tiempo presente (ww y METAR) que informó el observador."""
+    out = []
+    if importada(o) or "rr1m" not in A:
+        return out
+    ww, fm = v(o, "WWSINOP", "ww"), fen_metar(o)
+    if ww is None and not ingresado(o, "WWMETAR", "FEN1"):
+        return out                                 # la hora no trae tiempo presente que revisar
+    H = A[(A["momento"] > t - pd.Timedelta(minutes=60)) & (A["momento"] <= t)].dropna(subset=["rr1m"])
+    if len(H) < 45:
+        return out
+    add = lambda cod, niv, msg: out.append(("sensor", cod, niv, msg))
+    corte = t - pd.Timedelta(minutes=VENTANA_PRESENTE)
+    P, R = H[H["momento"] > corte], H[H["momento"] <= corte]
+    llueve_m = "RA" in fm or "DZ" in fm
+    pres = (ww is not None and ww in PRECIP) or llueve_m
+    rec = ww is not None and 20 <= ww <= 27
+    tramo = lambda X: (lambda Y: f"{Y['momento'].min():%H:%M}" + (f"–{Y['momento'].max():%H:%M}" if len(Y) > 1 else ""))(X[X["rr1m"] > 0])
+    ww_txt = f"ww {ww}" if ww is not None else "sin ww"
+    m_txt = ("METAR " + " ".join(fm)) if fm else "METAR sin fenómenos"
+    sp, sr = round(float(P["rr1m"].sum()), 1), round(float(R["rr1m"].sum()), 1)
+    if sp > 0 and not pres:
+        add("SPRE", 2, f"el pluviómetro automático marcó {sp:.1f} mm a las {tramo(P)} (en los {VENTANA_PRESENTE} min previos a la observación) y se informó {ww_txt}, {m_txt}: "
+            f"llovía al observar. Debería ir: tiempo presente de precipitación (ww 50–69 u 80–82; RA, DZ o SHRA en el METAR)")
+    elif sp == 0 and sr > 0 and not pres and not rec:
+        add("SPRE", 1, f"el pluviómetro automático marcó {sr:.1f} mm a las {tramo(R)} y paró antes de la observación, pero se informó {ww_txt}, {m_txt}. "
+            f"Debería ir: tiempo reciente (ww 20 llovizna, 21 lluvia, 25 chubasco; RERA o REDZ en el METAR)")
+    elif sp == 0 and sr == 0 and pres and not (ww is not None and (68 <= ww <= 79 or 83 <= ww <= 90)):   # nieve o granizo: el pluviómetro puede no marcar
+        add("SPRE", 1, f"se informó precipitación ({ww_txt}, {m_txt}) y el pluviómetro automático no marcó nada en la última hora "
+            f"(una llovizna débil puede no alcanzar 0.2 mm; revisar si de verdad hubo)")
     return out
 
 

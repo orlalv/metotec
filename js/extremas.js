@@ -4,7 +4,7 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
 const TIPOS = {SEXT: ["Extrema: valor", "ext"], SEXH: ["Extrema: hora", "ext"], SEXF: ["Extrema fuera de bloque sin ingresar", "ext"], SRRR6: ["RRR6 frente al pluviómetro", "pp"],
-  E12: ["Precipitación con RRR6 0", "pp"], E13: ["RRR6 sin precipitación", "pp"], E17: ["Precipitación sin traza", "pp"]};
+  E12: ["Precipitación con RRR6 0", "pp"], E13: ["RRR6 sin precipitación", "pp"], E17: ["Precipitación sin traza", "pp"], SPRE: ["Lluvia del pluviómetro y tiempo presente", "pp"]};
 const NIVC = ["var(--ok)", "var(--sos)", "var(--err)"];
 let getR = () => null, filtro = "", q = "";
 
