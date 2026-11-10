@@ -607,7 +607,7 @@ def frente_sensor(t, o, A, sesgo=None):
 ZONA_EST = {"270001": "Pacific/Easter", "510005": "America/Punta_Arenas", "520006": "America/Punta_Arenas",
             "530005": "America/Punta_Arenas", "550001": "America/Punta_Arenas", "950001": "America/Punta_Arenas"}
 EXTREMAS = (("TnAM", "mínima", True), ("TxAM", "máxima", False), ("TnPM", "mínima", True), ("TxPM", "máxima", False))
-TOL_EXT = 0.1
+TOL_EXT = 0.2                     # frente a la extrema de la estación (se ven diferencias de 0,1–0,2 por redondeo de pantalla)
 
 
 def extremas(t, o, A, codigo):
@@ -625,31 +625,38 @@ def extremas(t, o, A, codigo):
     paso = W["momento"].diff().median() / pd.Timedelta(minutes=1)
     if len(W) * paso < 0.8 * 720:                 # menos del 80 % del período con datos: no se puede afirmar nada
         return out
-    # extremas oficiales de la estación (de sus muestras de segundos, pueden quedar unas décimas fuera de los valores por minuto):
-    # Tn12 = mínima desde las 00 UTC (a las 12 UTC es la de 00–12) y Tx12 = máxima desde las 12 UTC (a las 00 UTC es la de 12–00).
-    ult = A[(A["momento"] > t - pd.Timedelta(minutes=5)) & (A["momento"] <= t)].sort_values("momento")
-    oficial = {}
-    if len(ult):
-        if t.hour == 12 and "Tn12" in ult and pd.notna(ult["Tn12"].iloc[-1]):
-            oficial["TnAM"] = float(ult["Tn12"].iloc[-1])
-        if t.hour == 0 and "Tx12" in ult and pd.notna(ult["Tx12"].iloc[-1]):
-            oficial["TxPM"] = float(ult["Tx12"].iloc[-1])
+    # La estación calcula sus extremas con muestras de segundos, por eso pueden quedar hasta ~1 °C más allá del mínimo/máximo de
+    # los valores por minuto (es lo que ve el observador en pantalla). Tn12/Tx12 del minutario se usan solo si son plausibles
+    # (más extremos que el valor por minuto, a menos de 1 °C): según la estación cambian a las 10 o a las 12 UTC y en la fila de
+    # las 12:00 pueden traer todavía la extrema de ayer, así que se buscan en las 2 h previas y los 20 min siguientes.
+    cerca_t = A[(A["momento"] > t - pd.Timedelta(hours=2)) & (A["momento"] <= t + pd.Timedelta(minutes=20))]
     for el, nom, minimo in EXTREMAS:
         x = v(o, el)
         fh = ((o.get(el) or {}).get("FechaHora"))
         if x is None:
             continue
         ser = float(W["T"].min() if minimo else W["T"].max())
-        real = oficial.get(el, ser)
-        tol = TOL_EXT if el in oficial else 0.3          # sin la extrema oficial, el valor por minuto puede diferir unas décimas
+        col = "Tn12" if minimo else "Tx12"
+        ofi = None
+        if (el, t.hour) in (("TnAM", 12), ("TxPM", 0)) and col in cerca_t:
+            cand = [float(c) for c in cerca_t[col].dropna().unique() if (ser - 1.0 <= c <= ser + 0.05) if minimo] if minimo else \
+                   [float(c) for c in cerca_t[col].dropna().unique() if ser - 0.05 <= c <= ser + 1.0]
+            if cand:
+                ofi = min(cand, key=lambda c: abs(c - x))   # la que calza mejor con lo anotado (si hay varias plausibles)
+        real = ofi if ofi is not None else ser
+        # tolerancia: exacta frente a la extrema oficial; sin ella, unas décimas hacia afuera por las muestras de segundos
+        if ofi is not None:
+            ok = abs(round(x - real, 1)) <= TOL_EXT
+        else:
+            ok = (round(ser - 0.6, 1) <= x <= round(ser + 0.3, 1)) if minimo else (round(ser - 0.3, 1) <= x <= round(ser + 0.6, 1))
+        fuente = "según la extrema de la estación" if ofi is not None else "según el minutario"
         cerca_real = W.loc[(W["T"] - real).abs() <= max(0.05, abs(real - ser) + 0.05), "momento"]
         horas_real = ", ".join(f"{a_loc(m):%H:%M}" for m in _agrupar(cerca_real))
         periodo = f"{a_loc(t - pd.Timedelta(hours=12)):%H:%M}–{a_loc(t):%H:%M}"
-        fuente = "según la extrema oficial de la estación" if el in oficial else "según el minutario"
         d = round(x - real, 1)
         # 1) valor
-        if abs(d) > tol:
-            nunca = (minimo and d < 0) or (not minimo and d > 0)
+        if not ok:
+            nunca = (minimo and x < round(ser - 1.0, 1)) or (not minimo and x > round(ser + 1.0, 1))   # ni con muestras de segundos
             add("SEXT", 2 if nunca or abs(d) > 0.5 else 1,
                 (f"{el} {x} °C: la estación automática nunca {'bajó' if minimo else 'subió'} a ese valor en el período ({periodo} local); " if nunca
                  else f"{el} {x} °C, pero ") + f"la {nom} real fue {real:.1f} °C ({fuente}), cerca de las {horas_real}. "
