@@ -62,16 +62,31 @@ jobs:
     permissions:
       actions: write
     steps:
-      - name: Esperar y lanzar la próxima
+      - name: Esperar y lanzar la próxima (atendiendo los pedidos de «Revisar ahora»)
         env:
           GH_TOKEN: ${{ github.token }}
+          CF_TOK: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACC: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          KV_ID: 0d6aa4b37a834b5983ac9c7f638e2dbb
         run: |
           ahora=$(date +%s)
           objetivo=$(( (ahora / 1800 + 1) * 1800 + 900 ))
           if [ $(( objetivo - ahora )) -gt 1800 ]; then objetivo=$(( objetivo - 1800 )); fi
           if [ $(( objetivo - ahora )) -lt 120 ]; then objetivo=$(( objetivo + 1800 )); fi
-          espera=$(( objetivo - ahora ))
-          echo "Esperando $espera s"; sleep $espera
+          KV="https://api.cloudflare.com/client/v4/accounts/$CF_ACC/storage/kv/namespaces/$KV_ID/values/qc/pedidos"
+          echo "Esperando hasta $(date -u -d @$objetivo +%H:%M) UTC"
+          while [ $(date +%s) -lt $objetivo ]; do
+            p=$(curl -s -f -H "Authorization: Bearer $CF_TOK" "$KV" || true)
+            cods=$(echo "$p" | python3 -c "import sys,json
+          try: print(','.join(json.load(sys.stdin).keys()))
+          except Exception: pass")
+            if [ -n "$cods" ]; then
+              echo "Pedido: $cods"
+              curl -s -X DELETE -H "Authorization: Bearer $CF_TOK" "$KV" >/dev/null
+              gh workflow run revisar.yml -R "$GITHUB_REPOSITORY" --ref main -f cods="$cods" || true
+            fi
+            sleep 30
+          done
           n=$(gh run list -R "$GITHUB_REPOSITORY" -w qc.yml --json status -q '[.[] | select(.status=="queued" or .status=="pending" or .status=="waiting")] | length')
           if [ "$n" != "0" ]; then echo "Ya hay una en cola."; exit 0; fi
           gh workflow run qc.yml -R "$GITHUB_REPOSITORY" --ref main

@@ -65,6 +65,7 @@ aside{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(
 .it .al{font-size:13px;color:#d6dde8;margin-top:3px}
 .it .al span{display:inline-block;background:rgba(255,255,255,.06);border-radius:5px;padding:1px 6px;margin:2px 4px 0 0}
 .it .v{text-align:right;font-variant-numeric:tabular-nums;font-size:13px;color:var(--mu)}
+.rvbtn{margin-left:10px;vertical-align:middle;background:none;border:1px solid var(--oro);color:var(--oro);border-radius:7px;padding:2px 9px;font:600 12.5px inherit;cursor:pointer}.rvbtn:disabled{opacity:.75;cursor:default}
 .sgbtn{white-space:nowrap;margin-left:6px;background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer}.sgbtn:hover{border-color:var(--oro)}
 .sgraf{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin:4px 0}.sgtop{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:13px}
 .sgtop input{width:64px;background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:3px 6px;font:600 13px var(--mono)}.sgval{font-family:var(--mono);font-size:12.5px}
@@ -186,7 +187,7 @@ main[hidden]{display:none}
 <script src="js/sensorgraf.js?v=202611101015"></script>
 <script src="js/prioridad.js?v=202611101031"></script>
 <script src="js/minutarios.js?v=202611101101"></script>
-<script src="js/extremas.js?v=202611101031"></script>
+<script src="js/extremas.js?v=202611101105"></script>
 <script src="js/boletin.js?v=202611101015"></script>
 <script src="js/rellenar.js?v=202611091607"></script>
 <script>
@@ -235,10 +236,29 @@ function detalleObs(c, mover = true){
   if (mover && e.lat != null) mapa.setView([e.lat, e.lon], Math.max(mapa.getZoom(), 7));
   const H = [...e.hallazgos].sort((a, b) => b.hora.localeCompare(a.hora) || b.nivel - a.nivel);
   $("#det").style.display = "block"; $("#det").dataset.cod = e.codigo; DETH = H;
-  $("#det").innerHTML = `<h2>${esc(e.nombre)}</h2><div class="sub">${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.horas} observaciones en 12 h · ${H.length} hallazgos</div>
+  $("#det").innerHTML = `<h2>${esc(e.nombre)} <button class="rvbtn" data-rv="${e.codigo}">🔄 Revisar ahora</button></h2><div class="sub">${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.horas} observaciones en 12 h · ${H.length} hallazgos</div>
    ${H.length ? `<table><tr><th>Día y hora UTC</th><th>Tipo</th><th>Regla</th><th>Detalle</th></tr>${H.map(h => `<tr><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td style="color:${HEX[h.nivel]}">${TIPO[h.tipo] || h.tipo}</td><td>${esc(h.regla)}</td><td>${esc(h.msg)}${h.revisado === "si" ? " <small style='color:var(--mu)'>(ya revisado)</small>" : ""}${SGRAF.tiene(h.regla) ? ` <button class="sgbtn" data-sg="${esc(h.hora)}|${esc(h.regla)}">📈 ver gráfico</button>` : ""}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin hallazgos en las últimas 12 horas.</p>`}`;
 }
 let DETH = [];
+// «Revisar ahora»: deja un pedido; GitHub lo toma en menos de un minuto y vuelve a revisar esa estación desde SACLIM
+document.addEventListener("click", async ev => {
+  const b = ev.target.closest(".rvbtn"); if (!b || b.disabled) return;
+  const cod = b.dataset.rv, t0 = new Date().toISOString(); b.disabled = true; b.textContent = "⏳ Pedido enviado…";
+  try {
+    const r = await fetch("/api/revisar", {method: "POST", headers: {"x-clave": clave(), "content-type": "application/json"}, body: JSON.stringify({cod})});
+    if (!r.ok) throw new Error(r.status);
+  } catch (e){ b.textContent = "No se pudo pedir (" + e.message + ")"; b.disabled = false; return; }
+  const ini = Date.now();
+  const ver = async () => {
+    try {
+      const r = await (await fetch("/api/revisar?cod=" + cod, {headers: {"x-clave": clave()}, cache: "no-store"})).json();
+      if (r.revisado && r.revisado.hora > t0){ b.textContent = `✓ Revisado ${new Date(r.revisado.hora).toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})} · ${r.revisado.hallazgos} alertas`; b.disabled = false; await cargar(); return; }
+      b.textContent = r.pendiente ? "⏳ En cola…" : `⏳ Revisando… (${Math.round((Date.now() - ini) / 60e3)} min)`;
+    } catch (e){}
+    if (Date.now() - ini < 12 * 60e3) setTimeout(ver, 20e3); else { b.textContent = "🔄 Revisar ahora (no respondió; intente de nuevo)"; b.disabled = false; }
+  };
+  setTimeout(ver, 15e3);
+});
 document.addEventListener("click", ev => {
   const bt = ev.target.closest(".sgbtn"); if (!bt) return;
   const tr = bt.closest("tr"), sig = tr.nextElementSibling;

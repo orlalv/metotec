@@ -1,0 +1,39 @@
+name: Revisar estación ahora
+on:
+  workflow_dispatch:
+    inputs:
+      cods:
+        description: "Códigos separados por coma"
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: revisar
+  cancel-in-progress: false
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
+      DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      KV_ID: 0d6aa4b37a834b5983ac9c7f638e2dbb
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pandas numpy requests
+      - name: Rama de datos
+        run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - name: Revisar
+        run: python qc/revisar_estacion.py --cods "${{ inputs.cods }}" --datos datos
+      - name: Guardar historial
+        run: |
+          cd datos
+          git config user.name "qc-metotec"; git config user.email "contacto.metotec@gmail.com"
+          git add -A hallazgos 2>/dev/null || true
+          git commit -q -m "revisión pedida $(date -u +%H:%MZ)" || exit 0
+          for i in 1 2 3; do git pull -q --rebase origin datos && git push -q origin datos && break; sleep 5; done
