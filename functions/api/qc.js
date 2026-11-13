@@ -4,10 +4,11 @@ export async function onRequestGet({ request, env }){
   if (!env.CLAVE_DOCENTE) return new Response("Falta configurar CLAVE_DOCENTE", { status: 500 });
   if (request.headers.get("x-clave") !== env.CLAVE_DOCENTE) return new Response("Clave incorrecta", { status: 401 });
   const dias = [0, 1, 2, 3, 4].map(i => new Date(Date.now() - i * 864e5).toISOString().slice(0, 10));
-  const [a, s, inf, rap, svw, ...revs] = await Promise.all([env.DATOS.get("qc/ultimo", "json"), env.DATOS.get("qc/sensorial", "json"), env.DATOS.get("qc/informados", "json"), env.DATOS.get("qc/ema_rapido", "json"), env.DATOS.get("qc/servicios_worker", "json"),
+  const [a, s, sup, inf, rap, svw, ...revs] = await Promise.all([env.DATOS.get("qc/ultimo", "json"), env.DATOS.get("qc/sensorial", "json"), env.DATOS.get("qc/super", "json"), env.DATOS.get("qc/informados", "json"), env.DATOS.get("qc/ema_rapido", "json"), env.DATOS.get("qc/servicios_worker", "json"),
     ...dias.map(d => env.DATOS.get("qc/rev/" + d, "json"))]);
   const r = a || { estaciones: [], resumen: {}, generado: null };
   r.observaciones = s || { estaciones: [], generado: null };
+  r.super = sup || { estaciones: [], generado: null };
   r.marcas = {}; dias.forEach((d, i) => Object.entries(revs[i] || {}).forEach(([id, m]) => r.marcas[id] = { ...m, dia: d }));
   r.informados = inf || {};
   r.servicios_worker = svw || null;   // estado del último ciclo del Worker (DMC respondió o no)

@@ -15,7 +15,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
-import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC, boletin as BOL, productos as PRO
+import dmc, pruebas as P, superauto as SUP, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC, boletin as BOL, productos as PRO
 
 VERSION = "0.1"
 
@@ -471,6 +471,14 @@ def main():
             estado["sensorial"], sen_res, sen_rev = control_sensorial(E, a.datos, SAT=SAT.series(sat))
         except Exception:
             estado["errores"].append(f"sensorial: {traceback.format_exc(limit=2)}")
+    try:   # Super automático: control estricto de las estaciones sin observador
+        sj = Path(a.datos) / "sensoriales.json"
+        cods_obs = [x["codigo"] for x in json.loads(sj.read_text())["estaciones"] if x["horas"] > 0] if sj.exists() else ESTACIONES_OBS
+        sup = SUP.correr(a.datos, E, set(cods_obs) | set(ESTACIONES_OBS), leer_archivo)
+        estado["super"] = dict(estaciones=len(sup["estaciones"]), hallazgos=sum(len(e["hallazgos"]) for e in sup["estaciones"]),
+                               kv=subir_kv("qc/super", json.dumps(sup, ensure_ascii=False)))
+    except Exception:
+        estado["errores"].append(f"super: {traceback.format_exc(limit=2)}")
     for f_ in FALLAS_RESUMEN:      # extrema imposible del resumen diario: falla aparte, en estaciones automáticas
         alertas.append(f_)
         for e_ in est:

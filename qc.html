@@ -204,8 +204,8 @@ main[hidden]{display:none}
  <button id="gear" title="Gestión: equipo y mis alertas">⚙<b id="gearN" class="cnt"></b></button>
  <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
  <div class="salto"></div>
- <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
- <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
+ <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="super">Super automático</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
+ <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="sup" data-g="super" hidden>Estaciones</button><button data-m="sup_pp" data-g="super" hidden>Precipitación</button><button data-m="sup_ext" data-g="super" hidden>Extremas</button><button data-m="sup_pre" data-g="super" hidden>Presiones</button><button data-m="sup_tem" data-g="super" hidden>Temperaturas</button><button data-m="sup_vie" data-g="super" hidden>Viento</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -236,15 +236,17 @@ main[hidden]{display:none}
 <section id="equ" hidden></section>
 <section id="mis" hidden></section>
 <section id="comp" hidden></section>
+<section id="sup" hidden></section>
 <footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · satélite GOES-19 · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
 <script src="js/casillas.js?v=202611131930"></script>
 <script src="js/sensorgraf.js?v=202611131700"></script>
 <script src="js/minutarios.js?v=202611132010"></script>
+<script src="js/superauto.js?v=202611131520"></script>
 <script src="js/extremas.js?v=202611131710"></script>
 <script src="js/boletin.js?v=202611131940"></script>
 <script src="js/series.js?v=202611101600"></script>
-<script src="js/reglas.js?v=202611132000"></script>
+<script src="js/reglas.js?v=202611131530"></script>
 <script src="js/fallas.js?v=202611131300"></script>
 <script src="js/equipo.js?v=202611131400"></script>
 <script src="js/servicios.js?v=202611131500"></script>
@@ -316,7 +318,7 @@ const MARCA = window.MARCA = {
     if (m.v === "omitir") return "oculta";                                  // omitida: no vuelve nunca (estación/hora/regla), aunque el dato siga igual
     if (m.msg && m.msg !== h.msg) return null;                              // el dato cambió: es otra alerta
     if (m.v === "falsa") return "oculta";
-    const gen = ((R.observaciones || {}).generado || "").slice(0, 19);
+    const gen = (h.gen || (R.observaciones || {}).generado || "").slice(0, 19);
     return gen > m.t ? "sigue" : "oculta";
   },
   botones: (cod, h) => `<button class="mk" data-mk="resuelto" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Resuelto: ya se corrigió; se quita de la lista y pasa al Historial" aria-label="Resuelto">✓</button><button class="mk" data-mk="falsa" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Falsa alarma: la alerta no corresponde (sirve para ajustar las reglas)" aria-label="Falsa alarma">✗</button><button class="mk" data-mk="omitir" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Omitir: archivar; queda en el Historial como omitida y no vuelve a salir para esta estación, hora y regla, aunque el dato siga igual" aria-label="Omitir">⊘</button>`,
@@ -417,6 +419,7 @@ function pintar(){
   if (modo === "hist" || modo === "reg" || modo === "minu" || modo === "bol") return;
   if (modo === "equ" || modo === "mis" || modo === "comp") return EQ.pagina(modo);
   if (modo === "ext" || modo === "pp" || modo === "tem") return EXT.init(() => R, modo);
+  if (SUPER.modos.has(modo)) return SUPER.init(() => R, modo);
   if (modo === "inf") return pintarInf();
   if (modo === "per" || modo === "ser" || modo === "serh") return;
   if (modo === "mod") return pintarMod();
@@ -528,9 +531,9 @@ function cambiarModo(m){
   if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
   modo = m; $("#det").style.display = "none";
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", equ: "equ", mis: "mis", comp: "comp"}[m];
+  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", equ: "equ", mis: "mis", comp: "comp", sup: "sup", sup_pp: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup"}[m];
   document.querySelector("main").hidden = h;
-  ["hist", "minu", "bol", "ext", "ser", "inf", "reg", "equ", "mis", "comp"].forEach(i => $("#" + i).hidden = i !== sec);
+  ["hist", "minu", "bol", "ext", "ser", "inf", "reg", "equ", "mis", "comp", "sup"].forEach(i => $("#" + i).hidden = i !== sec);
   $("#chips").style.display = h ? "none" : "";
   $("#mvar").hidden = $("#mref").hidden = m !== "mod"; leyenda(m === "mod");
   $("#sub").hidden = $("#grupo").hidden = $("#vars").hidden = m !== "ema"; $("#gobs").hidden = m !== "obs";
@@ -540,6 +543,7 @@ function cambiarModo(m){
     if (m === "hist"){ hInit(); if (!HI) hCargar(); } else if (m === "minu") MINU.init(); else if (m === "bol") BOL.init(clave);
     else if (sec === "ext") EXT.init(() => R, m); else if (sec === "ser") SER.init(clave, m === "ser" ? "dia" : "hora");
     else if (sec === "equ" || sec === "mis" || sec === "comp") EQ.pagina(m);
+    else if (sec === "sup") SUPER.init(() => R, m);
     else if (m === "inf") R && pintarInf(); else if (m === "reg") REGLAS.pagina($("#reg"), esc);;
     return;
   }
