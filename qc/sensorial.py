@@ -233,8 +233,13 @@ def categoria_W(ww):
 
 
 # fenómenos METAR en SACLIM (WWMETAR FEN1..FEN3x): código → sigla (vistos en el servicio)
-FEN_METAR = {1: "DZ", 2: "RA", 9: "BR", 10: "FG", 15: "HZ"}
-FEN_W = {"DZ": 5, "RA": 6, "FG": 4}                     # categoría de tiempo pasado (W) que respalda cada fenómeno
+# orden de la tabla METAR (visto: 1 DZ, 2 RA, 3 SN, 9 BR, 10 FG, 15 HZ); descriptores: 4 DR?, 5 SH (confirmado con un METAR SHSN)
+FEN_METAR = {1: "DZ", 2: "RA", 3: "SN", 4: "SG", 5: "IC", 6: "PL", 7: "GR", 8: "GS", 9: "BR", 10: "FG", 11: "FU", 12: "VA", 13: "DU", 14: "SA", 15: "HZ",
+             16: "PO", 17: "SQ", 18: "FC", 19: "SS", 20: "DS"}
+DESC_METAR = {1: "MI", 2: "BC", 3: "PR", 4: "DR", 5: "SH", 6: "TS", 7: "FZ"}
+INT_METAR = {1: "-", 2: "", 3: "+"}
+FEN_W = {"DZ": 5, "RA": 6, "SN": 7, "SG": 7, "FG": 4}   # categoría de tiempo pasado (W) que respalda cada fenómeno
+FEN_PRECIP = {"DZ", "RA", "SN", "SG", "PL", "GR", "GS"}
 
 
 CL_CONV = (1, 2, 3, 8, 9)      # CL con cúmulos o cumulonimbos
@@ -249,6 +254,33 @@ def fen_metar(o):
         x = v(o, "WWMETAR", k)
         if x is not None:
             out.append(FEN_METAR.get(int(x), f"código {int(x)}"))
+    return out
+
+
+def metar_grupos(o):
+    """Grupos de tiempo presente del METAR como texto (intensidad + descriptor + fenómenos), p. ej. ['-SHSN', 'BR']."""
+    out = []
+    for ii, dd, ff in (("IntProx", "DESC", ("FEN1", "FEN2", "FEN3")), ("IntProx2", "DESC2", ("FEN12", "FEN22", "FEN32")), ("IntProx3", "DESC3", ("FEN13", "FEN23", "FEN33"))):
+        fen = [FEN_METAR.get(int(x), f"?{int(x)}") for x in (v(o, "WWMETAR", k) for k in ff) if x is not None]
+        if not fen:
+            continue
+        d = v(o, "WWMETAR", dd); i = v(o, "WWMETAR", ii)
+        out.append((INT_METAR.get(int(i), "") if i is not None else "") + (DESC_METAR.get(int(d), "") if d is not None else "") + "".join(fen))
+    return out
+
+
+def fen_w(o):
+    """[(categoría W, texto)] que respalda el METAR de esa hora: SH con precipitación = chubascos (8), TS = tormenta (9), SN = nieve (7), RA 6, DZ 5, FG 4."""
+    out = []
+    for g in metar_grupos(o):
+        fen = [g[i:i + 2] for i in range(len(g) - 1) if g[i:i + 2] in FEN_W or g[i:i + 2] in FEN_PRECIP]
+        c_ = [FEN_W[f] for f in fen if f in FEN_W]
+        if "TS" in g:
+            out.append((9, g))
+        elif "SH" in g and any(f in FEN_PRECIP for f in fen):
+            out.append((8, g))
+        elif c_:
+            out.append((max(c_), g))
     return out
 
 
@@ -295,7 +327,7 @@ def codificacion(o):
         elif VVm > VV_FEN:
             add("C02", 1, f"el METAR informa BR (neblina) con visibilidad de {VVm} m: la neblina se informa hasta 5000 m")
     if ww is not None and fm:
-        if ("DZ" in fm or "RA" in fm) and not (ww in PRECIP or 20 <= ww <= 29 or 13 <= ww <= 16):
+        if ("DZ" in fm or "RA" in fm or "SN" in fm) and not (ww in PRECIP or 20 <= ww <= 29 or 13 <= ww <= 16):
             add("C34", 2, f"el METAR informa {'/'.join(f for f in fm if f in ('DZ', 'RA'))} y el SYNOP ww {ww:02d} no tiene precipitación")
         if "BR" in fm and ww not in (10,) and ww < 10:
             add("C35", 1, f"el METAR informa BR (neblina) y el SYNOP ww {ww:02d}: correspondería ww 10 si no hay otro fenómeno más importante")
@@ -617,9 +649,8 @@ def evolucion(t, o, hist, A=None):
             wk = v(hk, "WWSINOP", "ww"); ck = categoria_W(wk)
             if ck is not None:
                 fuentes.append((ck, f"ww {wk:02d} a las {tk:%H} UTC"))
-            for f in fen_metar(hk):
-                if f in FEN_W:
-                    fuentes.append((FEN_W[f], f"{f} en el METAR de las {tk:%H} UTC"))
+            for c_m, txt in fen_w(hk):
+                fuentes.append((c_m, f"{txt} en el METAR de las {tk:%H} UTC"))
         cats = [c_ for c_, _ in fuentes]
         dist = sorted(set(cats), reverse=True)      # categorías distintas, de mayor a menor
         mx = dist[0] if dist else None
@@ -632,7 +663,7 @@ def evolucion(t, o, hist, A=None):
             add("E10", 2, f"tiempo pasado: en el período de {per} h hubo {NOMW.get(dist[0], dist[0])} ({de(dist[0])}) y {NOMW.get(dist[1], dist[1])} ({de(dist[1])}), "
                 f"pero W2 es {W2}. W2 debe ser la segunda categoría más alta. Debería ir: W1 {dist[0]}, W2 {dist[1]}")
         # W1 con precipitación o tormenta: también la respalda el tiempo presente de la observación (puede haber empezado en el período)
-        cat_hoy = [categoria_W(v(o, "WWSINOP", "ww"))] + [FEN_W[f] for f in fen_metar(o) if f in FEN_W]
+        cat_hoy = [categoria_W(v(o, "WWSINOP", "ww"))] + [c_m for c_m, _ in fen_w(o)]
         if W1 >= 5 and (mx is None or mx < 5) and not any(c_ is not None and c_ >= 5 for c_ in cat_hoy):
             add("E11", 1, f"W1 {W1} (precipitación o tormenta en el período de {per} h) sin ningún ww ni METAR horario que lo respalde")
     rr6, tz = v(o, "RRR6", "RRR6"), v(o, "RRR6", "Traza")

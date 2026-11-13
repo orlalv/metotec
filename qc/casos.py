@@ -371,6 +371,18 @@ def prueba_neblina_metar_visibilidad():
         FALLAS.append("neblina METAR: debía avisar con 9000 m y con 800 m")
 
 
+def prueba_metar_nieve_respalda_w1():
+    """METAR con chubascos de nieve (DESC 5 SH + FEN 3 SN) respalda W1 8; SN solo respalda 7; RA 6; TS 9."""
+    import sensorial as SEN
+    def obs(d, f, i=2):
+        W = {k: "SD" for k in ("FEN1", "FEN12", "FEN13", "FEN2", "FEN22", "FEN23", "FEN3", "FEN32", "FEN33", "DESC", "DESC2", "DESC3", "IntProx", "IntProx2", "IntProx3")}
+        W.update({"FEN1": f, "DESC": d, "IntProx": i}); return {"WWMETAR": W}
+    if SEN.metar_grupos(obs(5, 3)) != ["SHSN"] or SEN.fen_w(obs(5, 3)) != [(8, "SHSN")]:
+        FALLAS.append(f"METAR SHSN: {SEN.metar_grupos(obs(5, 3))} {SEN.fen_w(obs(5, 3))}")
+    if SEN.fen_w(obs("SD", 3)) != [(7, "SN")] or SEN.fen_w(obs("SD", 2)) != [(6, "RA")] or SEN.fen_w(obs(6, 2)) != [(9, "TSRA")]:
+        FALLAS.append("METAR: SN→7, RA→6, TSRA→9")
+
+
 if __name__ == "__main__":
     pruebas = [f for k, f in sorted(globals().items()) if k.startswith("prueba_")]
     for f in pruebas:

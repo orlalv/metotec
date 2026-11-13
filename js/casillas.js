@@ -17,7 +17,13 @@ const CL = {0: "Sin nubes bajas", 1: "Cu de buen tiempo (poco desarrollo)", 2: "
 const CM = {0: "Sin nubes medias", 1: "As delgado", 2: "As grueso o Ns", 3: "Ac delgado, un nivel", 4: "Ac en bancos lenticulares", 5: "Ac en bandas que invaden el cielo", 6: "Ac por extensión de Cu", 7: "Ac doble o con As/Ns", 8: "Ac con torres o flóculos", 9: "Ac de cielo caótico"};
 const CH = {0: "Sin nubes altas", 1: "Ci en filamentos", 2: "Ci densos en copos", 3: "Ci densos de Cb", 4: "Ci en ganchos, extendiéndose", 5: "Ci o Cs que invaden el cielo, < 45° de altura", 6: "Ci o Cs que invaden el cielo, > 45° de altura", 7: "Cs que cubre todo el cielo", 8: "Cs que no invade el cielo", 9: "Cc solo o con Ci/Cs"};
 const GEN = {0: "Ci (cirros)", 1: "Cc (cirrocúmulos)", 2: "Cs (cirroestratos)", 3: "Ac (altocúmulos)", 4: "As (altoestratos)", 5: "Ns (nimboestratos)", 6: "Sc (estratocúmulos)", 7: "St (estratos)", 8: "Cu (cúmulos)", 9: "Cb (cumulonimbos)", 10: "TCu (cúmulos congestus)"};
-const FEN = {1: "DZ llovizna", 2: "RA lluvia", 9: "BR neblina", 10: "FG niebla", 15: "HZ calima"};
+const FEN = {1: "DZ llovizna", 2: "RA lluvia", 3: "SN nieve", 4: "SG gránulos de nieve", 5: "IC cristales de hielo", 6: "PL hielo granulado", 7: "GR granizo", 8: "GS granizo pequeño", 9: "BR neblina", 10: "FG niebla", 11: "FU humo", 12: "VA ceniza volcánica", 13: "DU polvo", 14: "SA arena", 15: "HZ calima"};
+const FSIG = {1: "DZ", 2: "RA", 3: "SN", 4: "SG", 5: "IC", 6: "PL", 7: "GR", 8: "GS", 9: "BR", 10: "FG", 11: "FU", 12: "VA", 13: "DU", 14: "SA", 15: "HZ", 16: "PO", 17: "SQ", 18: "FC", 19: "SS", 20: "DS"}, DSIG = {1: "MI", 2: "BC", 3: "PR", 4: "DR", 5: "SH", 6: "TS", 7: "FZ"}, ISIG = {1: "-", 2: "", 3: "+"};
+// tiempo presente METAR como texto (p. ej. "-SHSN BR") a partir de las casillas FEN/DESC/IntProx
+const metarTxt = W => { if (!W) return ""; const n = x => (x == null || x === "SD" || x === "" ? null : +x);
+  return [["IntProx", "DESC", ["FEN1", "FEN2", "FEN3"]], ["IntProx2", "DESC2", ["FEN12", "FEN22", "FEN32"]], ["IntProx3", "DESC3", ["FEN13", "FEN23", "FEN33"]]].map(([i, d, f]) => {
+    const fe = f.map(k => n(W[k])).filter(x => x != null).map(x => FSIG[x] || "?" + x).join(""); if (!fe) return "";
+    return (n(W[i]) != null ? ISIG[n(W[i])] || "" : "") + (n(W[d]) != null ? DSIG[n(W[d])] || "" : "") + fe; }).filter(Boolean).join(" "); };
 const comp = c => /^FEN/.test(c) ? "FEN" : /^C$|^C\d$/.test(c) ? "C" : /^Ns\d?$/.test(c) ? "Ns" : /^hshshs\d?$/.test(c) ? "hshshs" : c;
 const SIG = {
   ww: n => WW[n] != null ? `ww ${n}: ${WW[n]}` : null, W1: n => WP[n] != null ? `W1 ${n}: ${WP[n]}` : null, W2: n => WP[n] != null ? `W2 ${n}: ${WP[n]}` : null,
@@ -62,14 +68,14 @@ function tabla(cas, hora, msg, regla){
   const OFF = {E14: [-3], E15: [-3], E16: [-3], E20: [-1, 1]}, offs = /^E(0[1-9]|1[4-6]|18|19|20)$/.test(regla || "") ? (OFF[regla] || [-1]) : [];
   const cmp = new Set(offs.map(o => new Date(Date.parse(clave.replace(" ", "T") + ":00Z") + o * 3600e3).toISOString().slice(0, 16).replace("T", " ")));
   const algunaMal = cols.some(([el, c]) => mal.has(c) && ((cas[clave] || {})[el] || {})[c] != null);
-  const filas = ts.map(t => `<tr${t === clave ? ' class="sgalerta"' : ""}><td style="white-space:nowrap"><b>${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}</b></td>${cols.map(([el, c]) => {
+  const filas = ts.map(t => `<tr${t === clave ? ' class="sgalerta"' : ""}><td style="white-space:nowrap"><b>${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}</b></td><td style="white-space:nowrap;font-weight:700">${esc(metarTxt((cas[t] || {}).WWMETAR)) || "—"}</td>${cols.map(([el, c]) => {
     const x = ((cas[t] || {})[el] || {})[c], k = comp(c), f = SIG[k];
     const tt = x == null ? "" : typeof x === "number" && f ? (f(x) || "") : "";
     const comp_ = cmp.has(t) && mal.has(c) && x != null;
     const falla = t === clave && x != null && (mal.has(c) || (!algunaMal && el !== "Ts" && el !== "Td" && el !== "HR" && el !== "QFE" && el !== "QFF" && el !== "QNH")), est = (tt ? "cursor:help;text-decoration:underline dotted;" : "") + (falla ? "background:var(--err);color:#fff;font-weight:800;outline:2px solid var(--err);" : "") + (comp_ ? "outline:2px dashed var(--oro);background:color-mix(in srgb,var(--oro) 28%,transparent);font-weight:800;" : "");
     return `<td${comp_ ? ` title="${esc((tt ? tt + " · " : "") + "Casilla con la que se compara")}"` : tt ? ` title="${esc(tt)}"` : ""}${est ? ` style="${est}"` : ""}>${x == null ? "—" : esc(x)}</td>`; }).join("")}</tr>`).join("");
   return `<div class="sgcas"><h4 style="margin:10px 0 4px">Casillas ingresadas por el observador · ${ts.length} observaciones alrededor de la alerta</h4>
-    <div style="overflow-x:auto"><table class="sgtab"><tr><th>Hora UTC</th>${cols.map(([el, c]) => `<th title="${esc(el)} · ${esc(c)}"${usado(el, c) || mal.has(c) ? ' style="color:var(--oro)"' : ""}>${esc(rot(el, c))}</th>`).join("")}</tr>${filas}</table></div>
+    <div style="overflow-x:auto"><table class="sgtab"><tr><th>Hora UTC</th><th title="Tiempo presente del METAR, armado con IntProx, DESC y FEN" style="color:var(--oro)">METAR</th>${cols.map(([el, c]) => `<th title="${esc(el)} · ${esc(c)}"${usado(el, c) || mal.has(c) ? ' style="color:var(--oro)"' : ""}>${esc(rot(el, c))}</th>`).join("")}</tr>${filas}</table></div>
     <p class="sgnota">La fila de la alerta va resaltada y las casillas cuestionadas en rojo; con borde dorado, la casilla con la que se compara (hora anterior o tres horas antes, según la regla); si la regla no apunta a una casilla concreta, se marcan todas las de codificación de esa hora. Se ocultan las casillas vacías. Pase el mouse sobre un número subrayado para ver qué significa.</p></div>`;
 }
 const f2 = t => t ? `${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}` : "";
