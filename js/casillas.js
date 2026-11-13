@@ -46,6 +46,15 @@ function tabla(cas, hora, msg, regla){
   if (i < 0 || todos[i] > clave && false) return `<p class="sgnota">La observación de ${clave.slice(8, 10)}/${clave.slice(5, 7)} ${clave.slice(11, 16)} ya no está en las casillas guardadas (se guardan las últimas ${todos.length} observaciones).</p>`;
   const exacta = todos[i] === clave, ts = todos.slice(Math.max(0, i - 8), i + 4), mal = involucradas(regla || "", msg);
   const cols = []; ORDEN.forEach(el => { const s = new Set(); ts.forEach(t => Object.keys((cas[t] || {})[el] || {}).forEach(c => s.add(c))); [...s].sort().forEach(c => cols.push([el, c])); });
+  // capas, fenómenos METAR, descripciones e intensidades: solo las que traen dato; si ninguna lo trae se deja una sola columna del grupo
+  const vacio = x => x == null || x === "SD" || x === "";
+  const tiene_ = (el, c) => ts.some(t => !vacio(((cas[t] || {})[el] || {})[c]));
+  const fam = (el, c) => el === "CapaNube" && /^(C|Ns|hshshs)\d?$/.test(c) ? "Capa " + c.replace(/\d$/, "") : /^FEN\d+$/.test(c) ? "FEN" : /^(DESC|IntProx)\d?$/.test(c) ? c.replace(/\d$/, "") : null;
+  const visto = new Set(), cols2 = [];
+  cols.forEach(([el, c]) => { const f = fam(el, c);
+    if (f){ if (tiene_(el, c) || !visto.has(f)){ if (!tiene_(el, c) && cols.some(([e2, c2]) => fam(e2, c2) === f && tiene_(e2, c2))) return; cols2.push([el, c]); visto.add(f); } }
+    else if (tiene_(el, c)) cols2.push([el, c]); });
+  cols.length = 0; cols2.forEach(x => cols.push(x));
   if (!cols.length) return "";
   const rot = (el, c) => (NOMBRE[el] ? NOMBRE[el] + (/^(ww|VV|N)$/.test(c) ? "" : " ") : "") + (/^(ww|VV|N)$/.test(c) && NOMBRE[el] === c ? "" : c);
   const usado = (el, c) => (c.length > 2 && (msg || "").includes(c)) || (el === "WWSINOP" && /\bww\b/.test(msg || ""));
