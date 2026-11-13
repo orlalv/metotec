@@ -115,6 +115,15 @@ main[hidden]{display:none}
 #minu table.mtab{width:auto}#minu .mtab th,#minu .mtab td{padding:3px 12px;white-space:nowrap}#minu .mtab td:nth-child(n+3){text-align:right}#minu .mtab th{max-width:220px;white-space:normal;text-align:right}#minu .mtab th:nth-child(-n+2){text-align:left}
 #minu details.mblo{margin:12px 0;border:1px solid var(--bd);border-radius:12px;background:var(--panel2);box-shadow:var(--sombra)}#minu details.mblo>summary{cursor:pointer;padding:8px 12px;font-weight:700;font-size:15px;list-style:none;display:flex;align-items:center;gap:8px}#minu details.mblo>summary::-webkit-details-marker{display:none}#minu details.mblo>summary::before{content:"▸";color:var(--oro);transition:transform .15s}#minu details.mblo[open]>summary::before{transform:rotate(90deg)}#minu details.mblo>summary:hover{color:var(--oro)}#minu .mcont{padding:0 12px 12px}
 #minu tr.inc:hover{background:var(--hover)}#minu tr.vis{outline:2px solid var(--oro)}
+#equ,#mis,#comp{flex:1;overflow:auto;padding:14px 20px}#equ[hidden],#mis[hidden],#comp[hidden]{display:none}
+.perfil{display:flex;align-items:center;gap:4px;font-size:13px}.perfil select{background:rgba(255,255,255,.06);color:#ECEFF1;border:1px solid var(--bd);border-radius:8px;padding:4px 8px;font:600 13px inherit}.perfil option{color:#111}
+.cnt{display:inline-block;margin-left:5px;background:var(--err);color:#fff;border-radius:20px;padding:0 6px;font-size:11px}.cnt:empty{display:none}
+.eqcols{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:20px;align-items:start}@media (max-width:1000px){.eqcols{grid-template-columns:1fr}}
+#equ h4,#mis h4{font:600 15px var(--titulo);margin:6px 0 8px}#equ .htools,#comp .htools{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+#equ input:not([type=checkbox]),#equ select,#mis input:not([type=checkbox]),#mis select,#comp input{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:5px 9px;font:600 13px inherit}
+.mform{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}.mform label{font-size:12.5px;color:var(--mu);display:flex;gap:5px;align-items:center}
+.cgrid{border-collapse:collapse;font:12px var(--mono)}.cgrid th,.cgrid td{border:1px solid var(--bd);padding:2px 4px;text-align:center;min-width:24px}.cgrid td:first-child{text-align:left;font-family:Inter,sans-serif;white-space:nowrap;position:sticky;left:0;background:var(--panel)}.cgrid th{color:var(--mu);position:sticky;top:0;background:var(--panel)}
+.cgrid td.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}.cgrid td.no{color:var(--err);background:color-mix(in srgb,var(--err) 18%,transparent);font-weight:700}.cgrid td.np{background:color-mix(in srgb,var(--mu) 10%,transparent)}.cgrid td.fx{color:var(--info)}.cgrid td.fu{color:var(--mu)}
 #bol,#ext,#per,#ser,#inf,#reg{flex:1;overflow:auto;padding:14px 20px}#bol[hidden],#ext[hidden],#per[hidden],#ser[hidden],#inf[hidden],#reg[hidden]{display:none}
 .sub2{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden;margin-right:6px}.tools .sub2 button{border:0;border-radius:0}.tools .sub2 button.on{background:var(--oro);color:var(--on)}.sub2 b{font-size:11px;margin-left:4px}
 .mk{background:none;border:1px solid var(--bd);color:var(--mu);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer;margin:1px 2px 1px 0;white-space:nowrap}.mk:hover{border-color:var(--oro);color:var(--oro)}.mk.ok{border-color:var(--ok);color:var(--ok)}
@@ -173,8 +182,9 @@ main[hidden]{display:none}
 <header>
  <div class="marca"><a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a><div style="display:flex;align-items:center;gap:6px"><div id="relojUTC" title="Hora UTC (hora local entre paréntesis)">— UTC</div><button id="tema" title="Cambiar entre tema oscuro y claro">☀</button></div></div>
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
+ <label class="perfil" title="Su nombre: filtra sus estaciones y las marcas quedan con este nombre">👤 <select id="persona"><option value="">Todos</option></select></label>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
- <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
+ <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="real">Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="real">Equipo</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -188,6 +198,7 @@ main[hidden]{display:none}
    <select id="gobs" title="Tipo de revisión" hidden><option value="todas">Todas las revisiones</option><option value="sistema">Reglas del sistema</option><option value="codificacion">Codificación</option><option value="evolucion">Evolución</option><option value="sensor">Frente al sensor</option><option value="satelite">Frente al satélite</option></select>
    <select id="mvar" title="Variable" hidden><option value="T">Temperatura</option><option value="Td">Punto de rocío</option><option value="HR">Humedad</option><option value="P_mar">QFF</option><option value="ff10">Viento</option></select>
    <select id="mref" title="Modelo" hidden><option value="w">WRF-DMC</option><option value="om">Open-Meteo</option><option value="prom">Promedio de ambos</option></select>
+   <button id="soloMias" hidden title="Mostrar solo las estaciones del perfil elegido">★ Mis estaciones</button>
    <input id="buscar" placeholder="Buscar estación…">
   </div>
   <div id="lista"></div>
@@ -202,6 +213,9 @@ main[hidden]{display:none}
 <section id="ser" hidden></section>
 <section id="inf" hidden></section>
 <section id="reg" hidden></section>
+<section id="equ" hidden></section>
+<section id="mis" hidden></section>
+<section id="comp" hidden></section>
 <footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · satélite GOES-19 · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
 <script src="js/sensorgraf.js?v=202611101143"></script>
@@ -212,6 +226,7 @@ main[hidden]{display:none}
 <script src="js/series.js?v=202611101600"></script>
 <script src="js/reglas.js?v=202611131000"></script>
 <script src="js/fallas.js?v=202611131000"></script>
+<script src="js/equipo.js?v=202611131200"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script>
 (function(){ const r = document.getElementById("relojUTC");
@@ -235,7 +250,7 @@ function obsFiltradas(){
   const L = ((R.observaciones || {}).estaciones || []).map(e => { const h = hObs(e).filter(x => gobs === "todas" || x.tipo === gobs);
     return {...e, hallazgos: h, nivel: Math.max(0, ...h.map(x => x.nivel))}; });
   const q = $("#buscar").value.trim().toLowerCase();
-  return L.filter(e => e.lat != null && enZona(e) && ver[e.nivel] && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
+  return L.filter(e => e.lat != null && enZona(e) && ver[e.nivel] && EQ.filtra(e.codigo) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
 function pintarObs(){
   const O = R.observaciones || {}, g = O.generado ? new Date(O.generado) : null;
@@ -343,16 +358,17 @@ async function cargar(){
   const r = await fetch("/api/qc", {headers: {"x-clave": clave()}, cache: "no-store"});
   if (r.status === 401){ $("#login").style.display = "flex"; return; }
   if (!r.ok){ $("#hora").textContent = "Error " + r.status; return; }
-  const primera = !R; R = await r.json(); $("#login").style.display = "none"; cerrarInformados(); FALSAS.clear(); Object.entries(R.marcas || {}).forEach(([k, m]) => m.v === "falsa" && k.startsWith("a|") && FALSAS.add(k)); pintar();
+  const primera = !R; R = await r.json(); $("#login").style.display = "none"; cerrarInformados(); FALSAS.clear(); Object.entries(R.marcas || {}).forEach(([k, m]) => m.v === "falsa" && k.startsWith("a|") && FALSAS.add(k)); pintar(); EQ.contador();
   if (primera){ const V = visibles().filter(e => e.lat != null); if (V.length) mapa.fitBounds(V.map(e => [e.lat, e.lon]), {padding: [20, 20]}); }
 }
 function enZona(e){ const [lo, hi] = ZONAS[zona]; return e.lat != null && e.lat >= lo && e.lat < hi; }
 function visibles(){
   const q = $("#buscar").value.trim().toLowerCase();
-  return R.estaciones.map(filtrar).filter(e => enZona(e) && ver[e.nivel] && (sub === "pend" || e.alertas.length) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
+  return R.estaciones.map(filtrar).filter(e => enZona(e) && ver[e.nivel] && EQ.filtra(e.codigo) && (sub === "pend" || e.alertas.length) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
 function pintar(){
   if (modo === "hist" || modo === "reg" || modo === "minu" || modo === "bol") return;
+  if (modo === "equ" || modo === "mis" || modo === "comp") return EQ.pagina(modo);
   if (modo === "ext" || modo === "pp" || modo === "tem") return EXT.init(() => R, modo);
   if (modo === "inf") return pintarInf();
   if (modo === "per" || modo === "ser" || modo === "serh") return;
@@ -465,9 +481,9 @@ function cambiarModo(m){
   if (modo !== m) sel = null;
   modo = m; $("#det").style.display = "none";
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", prio: "prio", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg"}[m];
+  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", prio: "prio", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", equ: "equ", mis: "mis", comp: "comp"}[m];
   document.querySelector("main").hidden = h;
-  ["hist", "prio", "minu", "bol", "ext", "ser", "inf", "reg"].forEach(i => $("#" + i).hidden = i !== sec);
+  ["hist", "prio", "minu", "bol", "ext", "ser", "inf", "reg", "equ", "mis", "comp"].forEach(i => $("#" + i).hidden = i !== sec);
   $("#chips").style.display = h ? "none" : "";
   $("#mvar").hidden = $("#mref").hidden = m !== "mod"; leyenda(m === "mod");
   $("#sub").hidden = $("#grupo").hidden = $("#vars").hidden = m !== "ema"; $("#gobs").hidden = m !== "obs";
@@ -475,6 +491,7 @@ function cambiarModo(m){
   if (h){
     if (m === "hist"){ hInit(); if (!HI) hCargar(); } else if (m === "minu") MINU.init(); else if (m === "bol") BOL.init(clave);
     else if (sec === "ext") EXT.init(() => R, m); else if (sec === "ser") SER.init(clave, m === "ser" ? "dia" : "hora");
+    else if (sec === "equ" || sec === "mis" || sec === "comp") EQ.pagina(m);
     else if (m === "inf") R && pintarInf(); else if (m === "reg") REGLAS.pagina($("#reg"), esc); else pintarPrio();
     return;
   }
@@ -715,7 +732,7 @@ async function hCargar(){
 function hFilas(){
   const f = $("#hFuente").value, L = [], RV = HI.revisiones || {};
   if (f === "inf") return Object.entries(HI.informados || {}).map(([k, r]) => ({...r, _id: k, hora: r.inicio, estado: r.fin ? "resuelto" : "abierto"}));
-  Object.entries(HI.dias).forEach(([dia, d]) => Object.entries(d[f] || {}).forEach(([id, x]) => L.push({...x, _id: id, _dia: dia, _rev: ((RV[dia] || {})[id] || {}).v})));
+  Object.entries(HI.dias).forEach(([dia, d]) => Object.entries(d[f] || {}).forEach(([id, x]) => L.push({...x, _id: id, _dia: dia, _rev: ((RV[dia] || {})[id] || {}).v, _quien: ((RV[dia] || {})[id] || {}).quien})));
   return L;
 }
 async function revisar(dia, id, v){
@@ -765,7 +782,7 @@ function hPintar(){
     + T.slice(0, MAX).map(x => `<tr><td style="white-space:nowrap">${(x.hora || x.momento).slice(8, 10)}/${(x.hora || x.momento).slice(5, 7)} ${(x.hora || x.momento).slice(11, 16)}</td><td>${esc(x.nombre || x.codigo)}</td>
       <td style="color:${HEX[x.nivel] || "inherit"}">${obs ? TIPO[x.tipo] || x.tipo : PR[x.prueba] || x.prueba}</td><td>${obs ? x.regla : VAR[x.var] || x.var}</td><td>${esc(x.msg)}${obs && SGRAF.tiene(x.regla) ? ` <button class="sgbtn" data-sg="${esc(x.hora)}|${esc(x.regla)}|${esc(x.codigo)}" data-msg="${esc(x.msg)}">📈 ver gráfico</button>` : ""}</td>
       <td style="white-space:nowrap">${obs && x._rev === "resuelto" && x.estado !== "corregido" ? `<span class="co" title="Marcado a mano como resuelto">resuelto (a mano)</span>` : ""}${obs ? (x.estado === "corregido" ? `<span class="co" title="Marcado por el sistema: en una revisión posterior la observación se volvió a leer desde SACLIM y ya no falla (el dato se modificó, llegó el minutario que faltaba o cambió la regla)">corregido</span><br><small style="color:var(--mu)">${x.corregido.slice(8, 10)}/${x.corregido.slice(5, 7)} ${x.corregido.slice(11, 16)} UTC</small>` : `<span class="ab">abierto</span>`) : (x.n + (x.n === 1 ? " pasada" : " pasadas"))}</td>
-      <td style="white-space:nowrap"><button class="rv ${x._rev === "real" ? "on r" : ""}" data-d="${x._dia}" data-i="${esc(x._id)}" data-v="real" title="Era un error real">✓ real</button> <button class="rv ${x._rev === "falsa" ? "on f" : ""}" data-d="${x._dia}" data-i="${esc(x._id)}" data-v="falsa" title="Falsa alarma">✗ falsa</button></td></tr>`).join("") + `</table>`
+      <td style="white-space:nowrap"><button class="rv ${x._rev === "real" ? "on r" : ""}" data-d="${x._dia}" data-i="${esc(x._id)}" data-v="real" title="Era un error real">✓ real</button>${x._quien ? ` <small style="color:var(--mu)">${esc(x._quien)}</small>` : ""} <button class="rv ${x._rev === "falsa" ? "on f" : ""}" data-d="${x._dia}" data-i="${esc(x._id)}" data-v="falsa" title="Falsa alarma">✗ falsa</button></td></tr>`).join("") + `</table>`
     + (T.length > MAX ? `<p style="color:var(--mu)">Se muestran ${MAX} de ${T.length}; descargue el CSV para verlos todos.</p>` : "")
     : `<p style="color:var(--mu)">Sin hallazgos guardados con ese filtro. El historial se empezó a guardar el 8 de noviembre de 2026.</p>`;
 }
@@ -820,6 +837,7 @@ if (/^\/modelo/.test(location.pathname) || new URLSearchParams(location.search).
   document.querySelector('.modos button[data-m="mod"]').click(); document.querySelector(".modos").style.display = "none";
   document.querySelector("header h1").firstChild.textContent = "Control de calidad · contraste con modelos"; document.title = "Contraste con modelos · METOTEC";
 }
+EQ.alCambiar = () => R && pintar(); EQ.init(() => R, clave);
 cargar(); setInterval(cargar, 5 * 60 * 1000);
 </script>
 </body>

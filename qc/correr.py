@@ -15,6 +15,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
+import mis_alertas as MIS
 import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC, boletin as BOL
 
 VERSION = "0.1"
@@ -87,6 +88,56 @@ def subir_kv(clave, texto):
     return f"{r.status_code}"
 
 
+def leer_kv(clave):
+    """Lee una clave del KV (None si no hay credenciales o no existe)."""
+    acc, tok, ns = os.environ.get("CLOUDFLARE_ACCOUNT_ID"), os.environ.get("CLOUDFLARE_API_TOKEN"), os.environ.get("KV_ID")
+    if not (acc and tok and ns):
+        return None
+    r = requests.get(f"https://api.cloudflare.com/client/v4/accounts/{acc}/storage/kv/namespaces/{ns}/values/{clave}",
+                     headers={"Authorization": f"Bearer {tok}"}, timeout=30)
+    return r.json() if r.ok else None
+
+
+def ultimos_valores(obs, n=6):
+    """Valores principales de las últimas n observaciones (para «Mis alertas»)."""
+    out = []
+    for t in sorted(obs)[-n:]:
+        o = obs[t]
+        d = dict(h=t.strftime("%Y-%m-%d %H:%M"), Ts=SEN.v(o, "Ts"), Td=SEN.v(o, "Td"), HR=SEN.v(o, "HR"), ff=SEN.v(o, "VTO", "ff"),
+                 dd=SEN.v(o, "VTO", "dd"), VV=SEN.v(o, "VVSINOP", "VV"), ww=SEN.v(o, "WWSINOP", "ww"), RRR6=SEN.v(o, "RRR6", "RRR6"), QFE=SEN.v(o, "QFE"))
+        out.append({k: x for k, x in d.items() if x is not None})
+    return out
+
+
+def completitud_obs(raiz, cods, nombres, dias=40, base=14):
+    """Etapa 3 · completitud de observaciones: horas con mensaje por estación y día (últimos «dias» días, UTC)
+    y programa de cada estación (horas cubiertas al menos la mitad de los últimos «base» días). Sube qc/completitud."""
+    import gzip
+    hoy = datetime.now(timezone.utc).date()
+    H = {c: {} for c in cods}
+    for k in range(dias):
+        d = hoy - pd.Timedelta(days=k)
+        f = Path(raiz) / "sensorial" / f"{d:%Y/%m/%d}.json.gz"
+        if not f.exists():
+            continue
+        try:
+            js = json.loads(gzip.decompress(f.read_bytes()))
+        except Exception:
+            continue
+        for c in cods:
+            hs = set((js.get(c) or {}).keys())
+            H[c][str(d)] = "".join("1" if f"{h:02d}" in hs else "0" for h in range(24))
+    est = []
+    for c in cods:
+        D = H[c]
+        ult = [D[x] for x in sorted(D)[-base - 1:-1]] or list(D.values())     # sin contar hoy (día incompleto)
+        prog = [h for h in range(24) if ult and sum(s[h] == "1" for s in ult) >= max(1, len(ult) / 2)]
+        m = nombres.get(c, {})
+        est.append(dict(codigo=c, nombre=m.get("nombre"), lat=m.get("lat"), programa=prog, dias=D))
+    txt = json.dumps(dict(generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), estaciones=est), ensure_ascii=False, default=str)
+    return subir_kv("qc/completitud", txt)
+
+
 ESTACIONES_OBS = ["180005", "200006", "220002", "230001", "270001", "270008", "290004", "320041", "330007", "330019", "330020", "330021",
                   "330030", "330031", "330163", "340031", "360011", "360019", "370033", "380029", "390006", "410005", "430001", "430002",
                   "430009", "450001", "450004", "450005", "510005", "520006", "530005", "550001", "950001"]
@@ -148,7 +199,7 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
             archivo.setdefault(t.strftime("%Y/%m/%d"), {}).setdefault(cod, {})[t.strftime("%H")] = {k: x for k, x in o.items() if k != "_qa"}
         m = nombres.get(cod, {})
         resultado.append(dict(codigo=cod, nombre=m.get("nombre"), oaci=m.get("oaci"), lat=m.get("lat"), lon=m.get("lon"),
-                              ultima=str(max(obs)) if obs else None, horas=len(obs), hallazgos=hall,
+                              ultima=str(max(obs)) if obs else None, horas=len(obs), hallazgos=hall, ult=ultimos_valores(obs),
                               nivel=max([h["nivel"] for h in hall], default=0)))
         time.sleep(pausa)
     # archivo de observaciones (sin identificador del observador)
@@ -159,10 +210,14 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
         for cod, hs in d.items():
             previo.setdefault(cod, {}).update(hs)
         f.write_bytes(gzip.compress(json.dumps(previo, ensure_ascii=False, sort_keys=True).encode("utf-8"), mtime=0))
+    try:
+        comp = completitud_obs(raiz, cods, nombres)
+    except Exception:
+        comp = f"error: {traceback.format_exc(limit=1)}"
     txt = json.dumps(dict(generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), estaciones=resultado), ensure_ascii=False, default=str)
     Path("qc_sensorial.json").write_text(txt, encoding="utf-8")
     return {"estaciones": len(resultado), "observaciones": n_obs, "fallas": fallas, "hallazgos": sum(len(r["hallazgos"]) for r in resultado),
-            "kv": subir_kv("qc/sensorial", txt)}, resultado, revisadas
+            "kv": subir_kv("qc/sensorial", txt), "completitud": comp}, resultado, revisadas
 
 
 def main():
@@ -355,6 +410,12 @@ def main():
     Path(a.salida).write_text(txt, encoding="utf-8")
     estado["kv"] = subir_kv("qc/ultimo", txt)
     estado["alertas"] = len(alertas)
+    if not a.json:   # Etapa 3 · «Mis alertas»: reglas de cada persona y aviso por Telegram / correo
+        try:
+            obs_ult = json.loads(Path("qc_sensorial.json").read_text(encoding="utf-8")) if Path("qc_sensorial.json").exists() else leer_kv("qc/sensorial")
+            estado["mis_alertas"] = MIS.avisar(leer_kv("qc/equipo"), res, obs_ult, a.datos)
+        except Exception:
+            estado["errores"].append(f"mis_alertas: {traceback.format_exc(limit=2)}")
     estado["resumen"] = res["resumen"]
     estado["fin"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     (Path(a.datos) / "estado.json").write_text(json.dumps(estado, ensure_ascii=False, indent=1), encoding="utf-8")
