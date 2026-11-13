@@ -94,14 +94,6 @@ footer{color:var(--mu);font-size:12.5px;padding:6px 20px;border-top:1px solid va
 .leaflet-container{font:inherit}html:not([data-tema="claro"]) .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.5)}
 .leaflet-popup-content{font-size:13px}
 main[hidden]{display:none}
-#prio{flex:1;overflow:auto;padding:14px 20px}#prio[hidden]{display:none}
-#prio .pcols{display:grid;grid-template-columns:minmax(260px,330px) 1fr;gap:18px;align-items:start}
-#prio .pb{display:inline-block;border-radius:5px;padding:1px 8px;font-weight:800;font-size:12px;color:#0b1424}
-#prio tr.ps{cursor:pointer}#prio tr.ps:hover,#prio tr.ps.on{background:#16264a}
-#prio .lk{background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:2px 8px;font:600 12px inherit;cursor:pointer}
-#prio .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-#prio .htools input,#prio .htools select,#prio .htools button{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;font:600 13px inherit}
-#prio .nota{color:var(--mu);font-size:13px;margin:0 0 12px}
 .leyenda{background:rgba(10,20,40,.88);color:var(--tx);padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.3}
 .leyenda .bar{width:180px;height:10px;border-radius:4px;background:linear-gradient(90deg,#3b82f6,#8a94a6,#ef4444);margin:4px 0}
 .leyenda .ex{display:flex;justify-content:space-between}
@@ -193,8 +185,8 @@ main[hidden]{display:none}
  #mapa{height:42vh;min-height:260px}main{display:block}aside{display:block;border-top:1px solid var(--bd)}#lista{overflow:visible}
  .tools{padding:8px 10px}.tools input{min-width:100px}.tools button,.tools select,.vsel summary{padding:8px 10px}
  .it{padding:10px}#det{max-height:none}
- #hist,#prio,#minu,#bol,#ext,#per,#ser,#inf,#reg,#equ,#mis,#comp,#rell{padding:10px 10px}
- #hist .hcols,#prio .pcols,.eqcols,#bol .bwrap,#rell .rcols{grid-template-columns:1fr}
+ #hist,#minu,#bol,#ext,#per,#ser,#inf,#reg,#equ,#mis,#comp,#rell{padding:10px 10px}
+ #hist .hcols,.eqcols,#bol .bwrap,#rell .rcols{grid-template-columns:1fr}
  #inf pre{font-size:12px;padding:10px;overflow-x:auto;white-space:pre}
  section table,.bcard,.cgrid{display:block;overflow-x:auto;max-width:100%}
  #sgPanel{width:100vw;top:0;z-index:2500}
@@ -212,7 +204,7 @@ main[hidden]{display:none}
  <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
  <div class="salto"></div>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
- <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="real">Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="real">Equipo</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
+ <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="real">Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="real">Equipo</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -234,7 +226,6 @@ main[hidden]{display:none}
  </aside>
 </main>
 <section id="hist" hidden></section>
-<section id="prio" hidden></section>
 <section id="minu" hidden></section>
 <section id="bol" hidden></section>
 <section id="ext" hidden></section>
@@ -248,7 +239,6 @@ main[hidden]{display:none}
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
 <script src="js/casillas.js?v=202611131930"></script>
 <script src="js/sensorgraf.js?v=202611131700"></script>
-<script src="js/prioridad.js?v=202611101031"></script>
 <script src="js/minutarios.js?v=202611131955"></script>
 <script src="js/extremas.js?v=202611131710"></script>
 <script src="js/boletin.js?v=202611131940"></script>
@@ -422,7 +412,6 @@ function pintar(){
   if (modo === "ext" || modo === "pp" || modo === "tem") return EXT.init(() => R, modo);
   if (modo === "inf") return pintarInf();
   if (modo === "per" || modo === "ser" || modo === "serh") return;
-  if (modo === "prio") return pintarPrio();
   if (modo === "mod") return pintarMod();
   if (modo === "obs") return pintarObs();
   const g = R.generado ? new Date(R.generado) : null;
@@ -531,9 +520,9 @@ function cambiarModo(m){
   if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
   modo = m; $("#det").style.display = "none";
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", prio: "prio", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", equ: "equ", mis: "mis", comp: "comp"}[m];
+  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", equ: "equ", mis: "mis", comp: "comp"}[m];
   document.querySelector("main").hidden = h;
-  ["hist", "prio", "minu", "bol", "ext", "ser", "inf", "reg", "equ", "mis", "comp"].forEach(i => $("#" + i).hidden = i !== sec);
+  ["hist", "minu", "bol", "ext", "ser", "inf", "reg", "equ", "mis", "comp"].forEach(i => $("#" + i).hidden = i !== sec);
   $("#chips").style.display = h ? "none" : "";
   $("#mvar").hidden = $("#mref").hidden = m !== "mod"; leyenda(m === "mod");
   $("#sub").hidden = $("#grupo").hidden = $("#vars").hidden = m !== "ema"; $("#gobs").hidden = m !== "obs";
@@ -543,7 +532,7 @@ function cambiarModo(m){
     if (m === "hist"){ hInit(); if (!HI) hCargar(); } else if (m === "minu") MINU.init(); else if (m === "bol") BOL.init(clave);
     else if (sec === "ext") EXT.init(() => R, m); else if (sec === "ser") SER.init(clave, m === "ser" ? "dia" : "hora");
     else if (sec === "equ" || sec === "mis" || sec === "comp") EQ.pagina(m);
-    else if (m === "inf") R && pintarInf(); else if (m === "reg") REGLAS.pagina($("#reg"), esc); else pintarPrio();
+    else if (m === "inf") R && pintarInf(); else if (m === "reg") REGLAS.pagina($("#reg"), esc);;
     return;
   }
   setTimeout(() => mapa.invalidateSize(), 50); R && pintar();
@@ -721,43 +710,6 @@ function pintarInf(){
     hoja("Incompletos", inc.map(e => ({Zona: e.zona, "Estación": e.nombre, "Código": e.codigo, "Completitud %": e.completitud})));
     XLSX.writeFile(wb, `informe_red_ema_${hoy}.xlsx`);
   };
-}
-
-/* ---------- prioridades ---------- */
-let pEst = "";
-async function firma(cod){
-  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(clave() + "|" + cod));
-  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("").slice(0, 16);
-}
-function pintarPrio(){
-  if (!R) return;
-  const O = R.observaciones || {}, g = O.generado ? new Date(O.generado) : null;
-  $("#hora").textContent = g ? `Prioridades · observaciones de las últimas 24 horas · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay revisión de observaciones";
-  if (!$("#prio").dataset.ok){
-    $("#prio").dataset.ok = 1;
-    $("#prio").innerHTML = `<div class="htools"><button id="pVolver" style="border-color:var(--oro);color:var(--oro)">← Volver al mapa</button><select id="pNivel"><option value="0">Todas las prioridades</option><option value="3">Solo alta</option><option value="2">Alta y media</option></select><input id="pBuscar" placeholder="Estación…" style="min-width:180px"></div>
-      <p class="nota">Orden: primero los errores de lo que se transmite en SYNOP/METAR (presión, viento, visibilidad, tiempo presente), luego el resto; dentro de cada nivel, lo más reciente. Con <b>Copiar enlace</b> el observador ve solo los pendientes de su estación, en este mismo orden, sin clave.</p>
-      <div class="pcols"><div id="pEst"></div><div id="pTab"></div></div>`;
-    $("#pVolver").addEventListener("click", () => document.querySelector('.modos button[data-m="ema"]').click());
-    $("#pNivel").addEventListener("change", pintarPrio); $("#pBuscar").addEventListener("input", pintarPrio);
-    $("#prio").addEventListener("click", async ev => {
-      const b = ev.target.closest(".lk");
-      if (b){ ev.stopPropagation(); const url = `${location.origin}/pendientes.html?e=${b.dataset.c}&k=${await firma(b.dataset.c)}`;
-        try { await navigator.clipboard.writeText(url); b.textContent = "¡Copiado!"; } catch (e) { prompt("Enlace para el observador:", url); } setTimeout(() => b.textContent = "Copiar enlace", 1800); return; }
-      const t = ev.target.closest("tr.ps"); if (t){ pEst = pEst === t.dataset.c ? "" : t.dataset.c; pintarPrio(); }
-    });
-  }
-  const min = +$("#pNivel").value, q = $("#pBuscar").value.trim().toLowerCase();
-  const E = (O.estaciones || []).filter(e => !q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q));
-  const todos = E.flatMap(e => ordenar(e.hallazgos).map(h => ({...h, nombre: e.nombre}))).filter(h => h.prio >= min);
-  const L2 = todos.sort((a, b) => b.puntos - a.puntos || b.hora.localeCompare(a.hora));
-  const por = E.map(e => { const H = ordenar(e.hallazgos).filter(h => h.prio >= min); return {c: e.codigo, n: e.nombre, t: H.length, a: H.filter(h => h.prio === 3).length}; })
-    .sort((a, b) => b.a - a.a || b.t - a.t);
-  $("#pEst").innerHTML = `<table><tr><th>Estación</th><th>Alta</th><th>Total</th><th></th></tr>${por.map(p => `<tr class="ps ${pEst === p.c ? "on" : ""}" data-c="${p.c}"><td>${esc(p.n)}</td><td style="color:${p.a ? PRIO_COL[3] : "inherit"};font-weight:700">${p.a}</td><td>${p.t}</td><td><button class="lk" data-c="${p.c}">Copiar enlace</button></td></tr>`).join("")}</table>`;
-  const T = L2.filter(h => !pEst || h.codigo === pEst);
-  $("#pTab").innerHTML = T.length ? `<table><tr><th>#</th><th>Prioridad</th><th>Día y hora UTC</th><th>Estación</th><th>Elemento</th><th>Regla</th><th>Detalle</th></tr>${T.map((h, i) => `<tr><td>${i + 1}</td><td><span class="pb" style="background:${PRIO_COL[h.prio]}">${h.prioNom}</span></td>
-    <td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td>${esc(h.nombre)}</td><td>${esc(h.elem)}</td><td>${esc(h.regla)}</td><td>${esc(h.msg)}</td></tr>`).join("")}</table>`
-    : `<p style="color:var(--mu)">Sin pendientes con ese filtro.</p>`;
 }
 
 /* ---------- historial ---------- */
