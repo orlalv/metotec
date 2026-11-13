@@ -25,7 +25,8 @@ const COLOR = {rr1m: "#5AA9E6", T: "#F07A5A", Td: "#62B6E8", HR: "#5BBF8A", P_es
 const NOMCOL = {ff10: "medio 10 min", fx10: "racha"};
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
 const hm = t => new Date(t).toISOString().slice(11, 16);
-const tiene = regla => !!VARS[regla];
+const tiene = regla => !!regla;
+const etiqueta = regla => VARS[regla] ? "📈 gráfico y casillas" : "📋 ver casillas";
 
 async function abrir(cont, cod, hora, regla, msg){
   const V = VARS[regla]; if (!V) return;
@@ -131,5 +132,8 @@ async function calculadora(cont, cod, hora){
   } catch (e){ div.querySelector(".hrseq").innerHTML = `<p class="sgnota">No se pudo cargar la secuencia de observaciones.</p>`; }
 }
 const CALC = /^(S|SB)(Ts|Td|HR)$|^C41H?$/;
-window.SGRAF = {abrir: async (cont, cod, hora, regla, msg) => { await abrir(cont, cod, hora, regla, msg); if (CALC.test(regla)) calculadora(cont, cod, hora); }, tiene};
+window.SGRAF = {abrir: async (cont, cod, hora, regla, msg) => {
+  if (VARS[regla]) await abrir(cont, cod, hora, regla, msg); else cont.innerHTML = "";
+  if (window.CAS){ const e = (typeof R !== "undefined" && R && R.observaciones && R.observaciones.estaciones || []).find(x => x.codigo === cod); CAS.abrir(cont, e, hora, msg); }
+  if (CALC.test(regla)) calculadora(cont, cod, hora); }, tiene, etiqueta};
 })();

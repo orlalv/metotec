@@ -1,0 +1,51 @@
+/* Tabla de las casillas que ingresó el observador en las horas anteriores a una alerta (hasta 12 observaciones), con la hora
+   de la alerta resaltada. Al pasar el mouse sobre un número se muestra qué significa (ww, W1/W2, nubes, N, fenómenos METAR…). */
+(function(){
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
+const WW = {0: "Sin evolución de las nubes observada", 1: "Nubes disolviéndose o menos desarrolladas", 2: "Estado del cielo sin cambio", 3: "Nubes formándose o desarrollándose", 4: "Visibilidad reducida por humo", 5: "Calima", 6: "Polvo en suspensión", 7: "Polvo o arena levantados por el viento", 8: "Torbellinos de polvo o arena", 9: "Tormenta de polvo o arena a la vista",
+  10: "Neblina (bruma)", 11: "Bancos de niebla poco profundos", 12: "Niebla poco profunda continua", 13: "Relámpagos sin trueno", 14: "Precipitación a la vista, no llega al suelo", 15: "Precipitación a la vista, lejana (más de 5 km)", 16: "Precipitación a la vista, cercana (menos de 5 km)", 17: "Tormenta sin precipitación", 18: "Turbonada", 19: "Tromba marina o embudo",
+  20: "Llovizna reciente (no al momento)", 21: "Lluvia reciente", 22: "Nieve reciente", 23: "Lluvia y nieve reciente", 24: "Llovizna o lluvia engelante reciente", 25: "Chubasco de lluvia reciente", 26: "Chubasco de nieve reciente", 27: "Chubasco de granizo reciente", 28: "Niebla reciente", 29: "Tormenta reciente",
+  30: "Tormenta de polvo/arena débil o moderada, disminuyendo", 31: "Tormenta de polvo/arena sin cambio", 32: "Tormenta de polvo/arena, comenzando", 33: "Tormenta de polvo/arena fuerte, disminuyendo", 34: "Tormenta de polvo/arena fuerte, sin cambio", 35: "Tormenta de polvo/arena fuerte, aumentando", 36: "Ventisca baja débil", 37: "Ventisca baja fuerte", 38: "Ventisca alta débil", 39: "Ventisca alta fuerte",
+  40: "Niebla a distancia", 41: "Niebla en bancos", 42: "Niebla, cielo visible, se adelgaza", 43: "Niebla, cielo invisible, se adelgaza", 44: "Niebla, cielo visible, sin cambio", 45: "Niebla, cielo invisible, sin cambio", 46: "Niebla, cielo visible, se espesa", 47: "Niebla, cielo invisible, se espesa", 48: "Niebla con escarcha, cielo visible", 49: "Niebla con escarcha, cielo invisible",
+  50: "Llovizna débil intermitente", 51: "Llovizna débil continua", 52: "Llovizna moderada intermitente", 53: "Llovizna moderada continua", 54: "Llovizna fuerte intermitente", 55: "Llovizna fuerte continua", 56: "Llovizna engelante débil", 57: "Llovizna engelante moderada o fuerte", 58: "Llovizna y lluvia débiles", 59: "Llovizna y lluvia moderadas o fuertes",
+  60: "Lluvia débil intermitente", 61: "Lluvia débil continua", 62: "Lluvia moderada intermitente", 63: "Lluvia moderada continua", 64: "Lluvia fuerte intermitente", 65: "Lluvia fuerte continua", 66: "Lluvia engelante débil", 67: "Lluvia engelante moderada o fuerte", 68: "Lluvia y nieve débiles", 69: "Lluvia y nieve moderadas o fuertes",
+  70: "Nevada débil intermitente", 71: "Nevada débil continua", 72: "Nevada moderada intermitente", 73: "Nevada moderada continua", 74: "Nevada fuerte intermitente", 75: "Nevada fuerte continua", 76: "Cristales de hielo", 77: "Granos de nieve", 78: "Cristales de nieve aislados", 79: "Gránulos de hielo",
+  80: "Chubascos de lluvia débiles", 81: "Chubascos de lluvia moderados o fuertes", 82: "Chubascos de lluvia violentos", 83: "Chubascos de lluvia y nieve débiles", 84: "Chubascos de lluvia y nieve moderados o fuertes", 85: "Chubascos de nieve débiles", 86: "Chubascos de nieve moderados o fuertes", 87: "Chubascos de granizo menudo débiles", 88: "Chubascos de granizo menudo moderados o fuertes", 89: "Chubascos de granizo débiles",
+  90: "Chubascos de granizo moderados o fuertes", 91: "Lluvia débil, tormenta en la hora anterior", 92: "Lluvia moderada o fuerte, tormenta en la hora anterior", 93: "Nieve o granizo débil, tormenta en la hora anterior", 94: "Nieve o granizo moderado o fuerte, tormenta en la hora anterior", 95: "Tormenta débil o moderada, con lluvia o nieve", 96: "Tormenta débil o moderada, con granizo", 97: "Tormenta fuerte, con lluvia o nieve", 98: "Tormenta con tormenta de polvo o arena", 99: "Tormenta fuerte con granizo"};
+const WP = {0: "Nubosidad ≤ 1/2 todo el período", 1: "Nubosidad > 1/2 parte del período y ≤ 1/2 el resto", 2: "Nubosidad > 1/2 todo el período", 3: "Tormenta de arena, polvo o ventisca", 4: "Niebla o bruma", 5: "Llovizna", 6: "Lluvia", 7: "Nieve, o lluvia y nieve", 8: "Chubasco(s)", 9: "Tormenta (con o sin precipitación)"};
+const CL = {0: "Sin nubes bajas", 1: "Cu de buen tiempo (poco desarrollo)", 2: "Cu de desarrollo moderado o fuerte", 3: "Cb sin yunque", 4: "Sc formado por extensión de Cu", 5: "Sc no formado por Cu", 6: "St o Fs (mal tiempo no)", 7: "Fs o Fc de mal tiempo", 8: "Cu y Sc a distinto nivel", 9: "Cb con yunque"};
+const CM = {0: "Sin nubes medias", 1: "As delgado", 2: "As grueso o Ns", 3: "Ac delgado, un nivel", 4: "Ac en bancos lenticulares", 5: "Ac en bandas que invaden el cielo", 6: "Ac por extensión de Cu", 7: "Ac doble o con As/Ns", 8: "Ac con torres o flóculos", 9: "Ac de cielo caótico"};
+const CH = {0: "Sin nubes altas", 1: "Ci en filamentos", 2: "Ci densos en copos", 3: "Ci densos de Cb", 4: "Ci en ganchos, extendiéndose", 5: "Ci o Cs que invaden el cielo, < 45° de altura", 6: "Ci o Cs que invaden el cielo, > 45° de altura", 7: "Cs que cubre todo el cielo", 8: "Cs que no invade el cielo", 9: "Cc solo o con Ci/Cs"};
+const GEN = {0: "Ci (cirros)", 1: "Cc (cirrocúmulos)", 2: "Cs (cirroestratos)", 3: "Ac (altocúmulos)", 4: "As (altoestratos)", 5: "Ns (nimboestratos)", 6: "Sc (estratocúmulos)", 7: "St (estratos)", 8: "Cu (cúmulos)", 9: "Cb (cumulonimbos)", 10: "TCu (cúmulos congestus)"};
+const FEN = {1: "DZ llovizna", 2: "RA lluvia", 9: "BR neblina", 10: "FG niebla", 15: "HZ calima"};
+const comp = c => /^FEN/.test(c) ? "FEN" : /^C$|^C\d$/.test(c) ? "C" : /^Ns\d?$/.test(c) ? "Ns" : /^hshshs\d?$/.test(c) ? "hshshs" : c;
+const SIG = {
+  ww: n => WW[n] != null ? `ww ${n}: ${WW[n]}` : null, W1: n => WP[n] != null ? `W1 ${n}: ${WP[n]}` : null, W2: n => WP[n] != null ? `W2 ${n}: ${WP[n]}` : null,
+  Cl: n => CL[n] != null ? `CL ${n}: ${CL[n]}` : null, Cm: n => CM[n] != null ? `CM ${n}: ${CM[n]}` : null, Ch: n => CH[n] != null ? `CH ${n}: ${CH[n]}` : null,
+  C: n => GEN[n] != null ? `Tipo de nube: ${GEN[n]}` : null, N: n => n === 9 ? "N 9: cielo oscurecido" : `N ${n}: ${n} octas de cielo cubierto`, Ns: n => `Ns ${n}: ${n} octas en esta capa`,
+  hshshs: n => `Base de la capa: ${n} (altura en pies, según SACLIM)`, VV: n => `Visibilidad: ${n} m`, FEN: n => FEN[n] ? `Fenómeno METAR: ${FEN[n]}` : `Fenómeno METAR código ${n}`,
+};
+const NOMBRE = {WWSINOP: "ww", W1W2: "", VVSINOP: "VV", WWMETAR: "", N: "N", Nubes: "", CapaNube: "Capa"};
+const ORDEN = ["WWSINOP", "W1W2", "N", "Nubes", "CapaNube", "VVSINOP", "WWMETAR", "Ts", "Td", "HR", "QFE", "QFF", "QNH", "VTO", "RRR6", "TxAM", "TnAM", "TxPM", "TnPM"];
+const tiene = (e, hora) => !!(e && e.cas && Object.keys(e.cas).length);
+function tabla(cas, hora, msg){
+  const clave = hora.slice(0, 16).replace("T", " "), ts = Object.keys(cas).sort();
+  const cols = []; ORDEN.forEach(el => { const s = new Set(); ts.forEach(t => Object.keys((cas[t] || {})[el] || {}).forEach(c => s.add(c))); [...s].sort().forEach(c => cols.push([el, c])); });
+  if (!cols.length) return "";
+  const rot = (el, c) => (NOMBRE[el] ? NOMBRE[el] + (/^(ww|VV|N)$/.test(c) ? "" : " ") : "") + (/^(ww|VV|N)$/.test(c) && NOMBRE[el] === c ? "" : c);
+  const usado = (el, c) => (msg || "").includes(c) || (el === "WWSINOP" && /\bww\b/.test(msg || ""));
+  const filas = ts.map(t => `<tr${t === clave ? ' class="sgalerta"' : ""}><td style="white-space:nowrap"><b>${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}</b>${t === clave ? " ◀" : ""}</td>${cols.map(([el, c]) => {
+    const x = ((cas[t] || {})[el] || {})[c], k = comp(c), f = SIG[k];
+    const tt = x == null ? "" : typeof x === "number" && f ? (f(x) || "") : "";
+    return `<td${tt ? ` title="${esc(tt)}" style="cursor:help;text-decoration:underline dotted"` : ""}>${x == null ? "—" : esc(x)}</td>`; }).join("")}</tr>`).join("");
+  return `<div class="sgcas"><h4 style="margin:10px 0 4px">Casillas ingresadas por el observador (últimas ${ts.length} observaciones)</h4>
+    <div style="overflow-x:auto"><table class="sgtab"><tr><th>Hora UTC</th>${cols.map(([el, c]) => `<th title="${esc(el)} · ${esc(c)}"${usado(el, c) ? ' style="color:var(--oro)"' : ""}>${esc(rot(el, c))}</th>`).join("")}</tr>${filas}</table></div>
+    <p class="sgnota">La fila de la alerta va resaltada. Pase el mouse sobre un número subrayado para ver qué significa.</p></div>`;
+}
+function abrir(cont, e, hora, msg){
+  const d = document.createElement("div"); d.innerHTML = e && e.cas ? tabla(e.cas, hora, msg) : "";
+  if (!d.innerHTML) d.innerHTML = `<p class="sgnota">No hay casillas guardadas para esta estación (se llenan en la próxima pasada del control).</p>`;
+  cont.appendChild(d);
+}
+window.CAS = {abrir, tiene, SIG, comp};
+})();
