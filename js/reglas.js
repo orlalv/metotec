@@ -34,6 +34,20 @@ const PESTANA = {SEXT: "ext", SEXH: "ext", SEXF: "ext",
   STs: "tem", STd: "tem", SHR: "tem", SBTs: "tem", SBTd: "tem", SBHR: "tem", C41: "tem"};
 const pestana = c => PESTANA[c] || "obs";
 
+/* Registro de cambios de reglas. Al cambiar una regla o umbral en qc/, agregar una fila ARRIBA: [fecha AAAA-MM-DD, códigos, qué cambió, por qué].
+   Lo que se vea aquí debe coincidir con lo que dicen las pruebas fijas (qc/casos.py). */
+const CAMBIOS = [
+  ["2026-11-13", "Todas", "Se agrega este registro de cambios a la página «Reglas».", "Saber desde cuándo rige cada umbral al revisar un aviso viejo en el Historial."],
+  ["2026-11-13", "E20 y S*", "Serie del observador como alerta principal (Ts, Td, HR, presiones, viento y dirección); si el sensor marcó el valor en la hora previa, no se alerta. «Frente al sensor» solo con diferencias grandes: presión > 2 hPa, Ts > 1,5 °C, Td > 2,5 °C, HR > 12 %, viento > 10 kt.", "Menos ruido: los avisos por diferencias chicas eran casi todos falsas alarmas."],
+  ["2026-11-13", "Sffkmh", "Solo si la diferencia con el sensor es ≥ 3 kt y el valor en km/h calza mejor.", "Evitar avisos cuando la diferencia es pequeña."],
+  ["2026-11-13", "SBQFE, SBQFF, SBQNH", "Una vez por estación y día (hora 00:00), nivel informativo, solo si la diferencia es ≥ 0,5 hPa.", "Eran avisos repetidos cada hora por la misma diferencia constante."],
+  ["2026-11-13", "EMA: rango, salto, pegado", "Fallas de sensor agrupadas por episodio (un aviso por estación y sensor, con inicio, duración y si sigue). HR pegada desde 10 h. Rangos por zona (latitud y altura).", "Un solo aviso por falla en vez de decenas."],
+  ["2026-11-13", "C02, C03, C40", "Humo, calima, polvo y neblina solo con VV > 8000 m. C40 solo si no hay ninguna capa baja.", "Reducir falsos avisos de codificación."],
+  ["2026-11-13", "SRRR6, C42, E21", "Traza: con pluviómetro ≥ 0,2 mm → dudoso; traza con RRR6 ≠ 0 → dudoso; traza sin fenómenos y pluviómetro 0 → informativo.", "La traza se codificaba de forma inconsistente."],
+  ["2026-11-13", "Modelos / WRF", "Sin QFF sobre 1500 m; tolerancia ×1,5 en estaciones aisladas sobre 2000 m.", "Los modelos no representan bien la altura."],
+  ["2026-11-13", "SEXT, SEXH", "Las extremas oficiales (getEmaResumenDiario) mandan sobre el minutario.", "Usar el valor y la hora oficiales de la estación."]
+];
+
 const UMBRALES = [
   ["Frente al sensor (observaciones)", [
     "Presión (QFE, QFF, QNH): se alerta sobre 2 hPa, descontada la diferencia propia de la estación; en aeródromos se acepta el sensor de pista.",
@@ -60,6 +74,8 @@ function pagina(cont, esc){
   const filas = Object.keys(N).sort().map(c => `<tr><td style="font-family:var(--mono)">${esc(c)}</td><td>${esc(N[c])}</td><td>${({ext: "Extremas", pp: "Precipitación", tem: "Temperaturas", obs: "Observaciones"})[pestana(c)]}</td></tr>`).join("");
   cont.innerHTML = `<h2 style="font:600 18px var(--titulo);margin:0 0 10px">Reglas y umbrales</h2>
     ${UMBRALES.map(([t, L]) => `<h4 style="margin:14px 0 4px;font:600 14px var(--titulo)">${esc(t)}</h4><ul style="margin:0;padding-left:20px">${L.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`).join("")}
+    <h4 style="margin:18px 0 6px;font:600 14px var(--titulo)">Registro de cambios</h4>
+    <table style="width:auto"><tr><th>Fecha</th><th>Reglas</th><th>Cambio</th><th>Por qué</th></tr>${CAMBIOS.map(c => `<tr><td style="white-space:nowrap">${esc(c[0].split("-").reverse().join("-"))}</td><td style="font-family:var(--mono)">${esc(c[1])}</td><td>${esc(c[2])}</td><td>${esc(c[3])}</td></tr>`).join("")}</table>
     <h4 style="margin:18px 0 6px;font:600 14px var(--titulo)">Reglas de las observaciones</h4>
     <table style="width:auto"><tr><th>Código</th><th>Nombre</th><th>Pestaña</th></tr>${filas}</table>`;
 }

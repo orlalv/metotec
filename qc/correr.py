@@ -387,6 +387,10 @@ def main():
                fuentes={"estaciones": "DMC, red automática", "modelo": " + ".join(x for x in ["WRF-DMC" if W is not None and len(W) else "", "Open-Meteo" if M is not None else ""] if x) or None, "satelite": "GOES-19 (NOAA)" if sat else None},
                resumen={k: sum(1 for e in est if e["estado"] == k) for k in ("bien", "sospechoso", "erróneo", "sin datos")},
                estaciones=est)
+    # estado de las fuentes de esta pasada (lo muestra el indicador «Servicios» de la página)
+    falla = lambda k: any(str(x).startswith(k) for x in estado["errores"])
+    res["servicios"] = {"dmc": True, "modelo": M is not None and not falla("modelo"), "wrf": W is not None and len(W) > 0 and not falla("wrf"), "satelite": bool(sat) and not falla("satelite"),
+                        "errores": [str(x).split(":")[0] for x in estado["errores"]][:8]}
     hacer = a.sensorial == "si" or (a.sensorial == "auto" and not a.json)      # en cada pasada (:15 y :45)
     sen_res = sen_rev = None
     if hacer:

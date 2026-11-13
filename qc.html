@@ -176,6 +176,30 @@ main[hidden]{display:none}
 #hist .rv.on.r{background:#1f5a3a;border-color:#6fcf97;color:#fff}#hist .rv.on.f{background:#5a1f1f;border-color:#eb5757;color:#fff}
 #hist tr.hs{cursor:pointer}#hist tr.hs:hover,#hist tr.hs.on{background:#16264a}
 @media (max-width:900px){main{grid-template-columns:1fr}#mapa{height:55vh}aside{border-left:0}}
+.svcw{position:relative}#svc{background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:999px;padding:5px 12px;font:700 13px inherit;color:var(--tx);cursor:pointer;white-space:nowrap}#svc{--c:var(--sin)}#svc i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;background:var(--c)}
+#svcP{position:absolute;z-index:3000;left:0;top:calc(100% + 8px);width:min(420px,92vw);background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;box-shadow:var(--sombra)}#svcP[hidden]{display:none}
+#svcP h4{margin:0 0 8px;font:600 15px var(--titulo)}#svcP .svr{display:flex;gap:9px;padding:6px 0;border-top:1px solid var(--bd);font-size:13.5px}#svcP .svr i{flex:none;width:10px;height:10px;border-radius:50%;margin-top:5px}#svcP small{color:var(--mu);font-size:12.5px}
+/* vista para celular */
+@media (max-width:700px){
+ html,body{height:auto}body{display:block;font-size:14px}
+ .marca{flex-direction:row;flex-wrap:wrap;gap:4px 10px;max-width:100%}#relojUTC{font-size:12.5px}
+ html,body{max-width:100vw;overflow-x:hidden}header{max-width:100vw}
+ .chips{flex-wrap:nowrap;overflow-x:auto;width:100%}.chip{padding:4px 10px;font-size:13px;white-space:nowrap}
+ header{padding:8px 12px;gap:8px 10px}header img{height:26px}header h1{font-size:15px}
+ .bloques{width:100%;order:5}.grupos{overflow-x:auto}.modos{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}.modos button{white-space:nowrap;padding:7px 11px}
+ .chips{margin-left:0;order:4}.perfil{order:3}.svcw{order:3}
+ header{position:sticky;top:0;z-index:1500}#svcP{position:fixed;left:8px;right:8px;top:var(--hcab,96px);width:auto}
+ #mapa{height:42vh;min-height:260px}main{display:block}aside{display:block;border-top:1px solid var(--bd)}#lista{overflow:visible}
+ .tools{padding:8px 10px}.tools input{min-width:100px}.tools button,.tools select,.vsel summary{padding:8px 10px}
+ .it{padding:10px}#det{max-height:none}
+ #hist,#prio,#minu,#bol,#ext,#per,#ser,#inf,#reg,#equ,#mis,#comp,#rell{padding:10px 10px}
+ #hist .hcols,#prio .pcols,.eqcols,#bol .bwrap,#rell .rcols{grid-template-columns:1fr}
+ #inf pre{font-size:12px;padding:10px;overflow-x:auto;white-space:pre}
+ section table,.bcard,.cgrid{display:block;overflow-x:auto;max-width:100%}
+ #sgPanel{width:100vw;top:0;z-index:2500}
+ footer{padding:6px 12px}
+ .mk,.rvbtn,.sgbtn{padding:5px 9px}
+}
 </style>
 </head>
 <body>
@@ -183,6 +207,7 @@ main[hidden]{display:none}
  <div class="marca"><a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a><div style="display:flex;align-items:center;gap:6px"><div id="relojUTC" title="Hora UTC (hora local entre paréntesis)">— UTC</div><button id="tema" title="Cambiar entre tema oscuro y claro">☀</button></div></div>
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
  <label class="perfil" title="Su nombre: filtra sus estaciones y las marcas quedan con este nombre">👤 <select id="persona"><option value="">Todos</option></select></label>
+ <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
  <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="real">Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="real">Equipo</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
  <div class="chips" id="chips"></div>
@@ -224,9 +249,10 @@ main[hidden]{display:none}
 <script src="js/extremas.js?v=202611131000"></script>
 <script src="js/boletin.js?v=202611101108"></script>
 <script src="js/series.js?v=202611101600"></script>
-<script src="js/reglas.js?v=202611131000"></script>
+<script src="js/reglas.js?v=202611131500"></script>
 <script src="js/fallas.js?v=202611131300"></script>
 <script src="js/equipo.js?v=202611131400"></script>
+<script src="js/servicios.js?v=202611131500"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script>
 (function(){ const r = document.getElementById("relojUTC");
@@ -351,14 +377,14 @@ function pintarTema(){ const c = document.documentElement.dataset.tema === "clar
 $("#tema").addEventListener("click", () => { const c = document.documentElement.dataset.tema !== "claro";
   if (c) document.documentElement.dataset.tema = "claro"; else delete document.documentElement.dataset.tema;
   try { localStorage.setItem("metotecTema", c ? "claro" : "oscuro"); } catch (e) {} pintarTema(); });
-pintarTema();
+pintarTema(); SERV.iniciar(() => R);
 const _hc = () => document.documentElement.style.setProperty("--hcab", document.querySelector("header").getBoundingClientRect().height + "px"); _hc(); addEventListener("resize", _hc);
 
 async function cargar(){
   const r = await fetch("/api/qc", {headers: {"x-clave": clave()}, cache: "no-store"});
   if (r.status === 401){ $("#login").style.display = "flex"; return; }
   if (!r.ok){ $("#hora").textContent = "Error " + r.status; return; }
-  const primera = !R; R = await r.json(); $("#login").style.display = "none"; cerrarInformados(); FALSAS.clear(); Object.entries(R.marcas || {}).forEach(([k, m]) => m.v === "falsa" && k.startsWith("a|") && FALSAS.add(k)); pintar(); EQ.contador();
+  const primera = !R; R = await r.json(); $("#login").style.display = "none"; cerrarInformados(); FALSAS.clear(); Object.entries(R.marcas || {}).forEach(([k, m]) => m.v === "falsa" && k.startsWith("a|") && FALSAS.add(k)); pintar(); EQ.contador(); SERV.pintar(R);
   if (primera){ const V = visibles().filter(e => e.lat != null); if (V.length) mapa.fitBounds(V.map(e => [e.lat, e.lon]), {padding: [20, 20]}); }
 }
 function enZona(e){ const [lo, hi] = ZONAS[zona]; return e.lat != null && e.lat >= lo && e.lat < hi; }
@@ -626,13 +652,14 @@ function datosInf(){
   const sin = E.filter(e => e.nivel === 3), inc = E.filter(e => e.nivel !== 3 && e.completitud != null && e.completitud < 90);
   return {E, act, res, sin, inc, hoy};
 }
+let turnoH = 8;
 function pintarInf(){
   if (!R) return;
   const {E, act, res, sin, inc, hoy} = datosInf(), cnt = R.resumen || {};
   const porZona = (L, f) => { const g = {}; L.forEach(x => (g[x.zona || "—"] ||= []).push(f(x))); const O = ["Norte", "Centro", "Sur", "Austral", "Insular"]; return Object.entries(g).sort((a, b) => (O.indexOf(a[0]) + 99) % 99 - (O.indexOf(b[0]) + 99) % 99).map(([z, l]) => `  ${z}:\n` + l.map(t => "   - " + t).join("\n")).join("\n") || "  (ninguna)"; };
   const mn = r => (Date.parse(r.fin.replace(" ", "T") + ":00Z") - Date.parse(r.inicio.replace(" ", "T") + ":00Z")) / 60e3 + 1;
   const zonaCod = c => (E.find(e => e.codigo === c) || {}).zona;
-  const txt = [
+  const txt = SERV.turno(R, turnoH, {act, sin, E}) + "\n\n" + [
     `INFORME GENERAL DE LA RED DE ESTACIONES AUTOMÁTICAS`,
     `${hoy.split("-").reverse().join("-")} · datos hasta ${(R.datos_hasta || "").slice(0, 16).replace("T", " ")} UTC`,
     ``,
@@ -652,7 +679,8 @@ function pintarInf(){
     `DATOS INCOMPLETOS (menos de 90 % en la última hora)`,
     porZona(inc, e => `${e.nombre} (${e.codigo}): ${e.completitud} %`),
   ].join("\n");
-  $("#inf").innerHTML = `<div class="htools"><button id="iCopiar">📋 Copiar texto</button><button id="iXlsx">⬇ Excel</button><span style="color:var(--mu);font-size:13px;align-self:center">Regiones de norte a sur. Las fallas resueltas hoy son las informadas que ya terminaron.</span></div><pre>${esc(txt)}</pre>`;
+  $("#inf").innerHTML = `<div class="htools"><button id="iCopiar">📋 Copiar texto</button><button id="iXlsx">⬇ Excel</button><label style="font-size:13px;color:var(--mu)">Resumen de turno: <select id="iTurno">${[4, 8, 12, 24].map(h => `<option value="${h}"${h === turnoH ? " selected" : ""}>últimas ${h} h</option>`).join("")}</select></label><span style="color:var(--mu);font-size:13px;align-self:center">Regiones de norte a sur. Las fallas resueltas hoy son las informadas que ya terminaron.</span></div><pre>${esc(txt)}</pre>`;
+  $("#iTurno").onchange = ev => { turnoH = +ev.target.value; pintarInf(); };
   $("#iCopiar").onclick = async () => { try { await navigator.clipboard.writeText(txt); $("#iCopiar").textContent = "¡Copiado!"; } catch (e){ prompt("Copie el informe:", txt); } };
   $("#iXlsx").onclick = () => {
     if (!window.XLSX) return alert("No se pudo cargar la librería de Excel; revise la conexión.");

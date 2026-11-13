@@ -37,6 +37,12 @@ export async function correr(env, ahora = Date.now()){
   }
   const nuevoEstado = JSON.stringify(plan.estado);
   if (nuevoEstado !== JSON.stringify(previo || {})) await env.DATOS.put("qc/avisos_enviados", nuevoEstado);
+  // estado del servicio de la DMC y del propio Worker (lo muestra el indicador «Servicios» de la página)
+  try {
+    const ant = await env.DATOS.get("qc/servicios_worker", "json");
+    const ok = !!ema, desde = ok ? res.inicio : (ant && ant.dmc_ultimo_ok) || null;
+    await env.DATOS.put("qc/servicios_worker", JSON.stringify({t: res.inicio, dmc_ok: ok, dmc_ultimo_ok: desde, error: res.errores.slice(0, 3), estaciones: res.estaciones ?? null, datos_hasta: res.datos_hasta ?? null, envios: res.envios}));
+  } catch (e) { res.errores.push("estado: " + e.message); }
   return res;
 }
 
