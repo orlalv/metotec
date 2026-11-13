@@ -25,12 +25,38 @@ def _cargar(raiz, dia, cache):
     return cache[dia]
 
 
+# reglas corregidas: los avisos guardados por versiones anteriores se borran una sola vez del historial (no eran errores del observador)
+REGLAS_V = {"E10": "2", "E11": "2"}
+
+
+def _purgar(raiz, cache, tocados):
+    f = Path(raiz) / "hallazgos" / "purgas.json"
+    try:
+        hecho = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+    except Exception:
+        hecho = {}
+    nuevas = {r: v for r, v in REGLAS_V.items() if hecho.get(r) != v}
+    if not nuevas:
+        return
+    for p in sorted((Path(raiz) / "hallazgos").glob("*/*/*.json")):
+        dia = f"{p.parts[-3]}-{p.parts[-2]}-{p.stem}"
+        D = _cargar(raiz, dia, cache)
+        antes = len(D["obs"])
+        D["obs"] = {k: r for k, r in D["obs"].items() if r.get("regla") not in nuevas or r.get("ver") == nuevas[r["regla"]]}
+        if len(D["obs"]) != antes:
+            tocados.add(dia)
+    hecho.update(nuevas)
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(hecho, sort_keys=True), encoding="utf-8")
+
+
 def actualizar(raiz, ahora, sensorial=None, revisadas=None, alertas=None, nombres=None):
     """sensorial: lista de estaciones con 'hallazgos' (de control_sensorial); revisadas: {código: [horas revisadas]};
     alertas: lista de alertas de las estaciones automáticas. Devuelve {día: texto json} de los días modificados."""
     ahora = ahora.strftime("%Y-%m-%d %H:%M")
     nombres = nombres or {}
     cache, tocados = {}, set()
+    _purgar(raiz, cache, tocados)
 
     if sensorial is not None:
         vistos = set()
@@ -43,6 +69,8 @@ def actualizar(raiz, ahora, sensorial=None, revisadas=None, alertas=None, nombre
                 if r is None:
                     r = D["obs"][k] = dict(codigo=h["codigo"], nombre=est.get("nombre"), hora=h["hora"][:16], tipo=h["tipo"], regla=h["regla"], primera=ahora)
                 r.update(nivel=h["nivel"], msg=h["msg"], ultima=ahora, estado="abierto", revisado=h.get("revisado"))
+                if h["regla"] in REGLAS_V:
+                    r["ver"] = REGLAS_V[h["regla"]]
                 r.pop("corregido", None)
                 vistos.add(k); tocados.add(dia)
         for cod, horas in (revisadas or {}).items():

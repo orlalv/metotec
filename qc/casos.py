@@ -227,6 +227,27 @@ def prueba_columnas_ingresado_y_c41():
         FALLAS.append(f"C41: Td 11.5 con Ts 10 y sensor Td 8.0 debía dar «Td 8.0» → {r}")
 
 
+def prueba_tiempo_pasado_sin_hora_propia():
+    """E10: el ww y el METAR de la propia hora son tiempo presente: no cuentan para W1 W2. Intermedias 3 h, principales 6 h."""
+    t = pd.Timestamp("2026-11-13 09:00")
+    previas = {t - pd.Timedelta(hours=k): obs(ww=0, W=(2, 0)) for k in (1, 2, 3)}
+    solo_hoy = {**previas, t: obs(ww=50, metar=(1,), W=(2, 0))}
+    h = [(x["hora"], x["regla"], x["nivel"]) for x in S.revisar("330020", solo_hoy, None, horas=1)]
+    no_alerta(h, "E10", "llovizna solo en la hora de la observación (tiempo presente)")
+    con_previa = {**previas, t - pd.Timedelta(hours=2): obs(ww=50, W=(2, 0)), t: obs(ww=0, W=(2, 0))}
+    h = [(x["hora"], x["regla"], x["nivel"]) for x in S.revisar("330020", con_previa, None, horas=1)]
+    si_alerta(h, "E10", "llovizna a las 07 y W1 2 en la observación de las 09")
+    t6 = pd.Timestamp("2026-11-13 12:00")
+    seis = {t6 - pd.Timedelta(hours=k): obs(ww=0, W=(2, 0)) for k in range(1, 7)}
+    seis[t6 - pd.Timedelta(hours=5)] = obs(ww=61, W=(2, 0))
+    seis[t6] = obs(ww=0, W=(2, 0))
+    h = [(x["hora"], x["regla"], x["nivel"]) for x in S.revisar("330020", seis, None, horas=1)]
+    si_alerta(h, "E10", "lluvia 5 h antes en una principal (período de 6 h)")
+    seis3 = dict(seis); seis3[t6 - pd.Timedelta(hours=5)] = obs(ww=0, W=(2, 0)); seis3[t6 - pd.Timedelta(hours=7)] = obs(ww=61, W=(2, 0))
+    h = [(x["hora"], x["regla"], x["nivel"]) for x in S.revisar("330020", seis3, None, horas=1)]
+    no_alerta(h, "E10", "lluvia 7 h antes: fuera del período de 6 h")
+
+
 def prueba_reglas_saclim_activas():
     """Los Controles Definidos de SACLIM (reglas_sistema.json) siguen cargados y siguen avisando dentro de revisar()."""
     if len(S._COMP) < 300:

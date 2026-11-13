@@ -595,11 +595,14 @@ def evolucion(t, o, hist, A=None):
     horas = [hist.get(t - pd.Timedelta(hours=k)) for k in range(1, per)]
     disponibles = [h for h in horas if h]
     W1, W2 = v(o, "W1W2", "W1"), v(o, "W1W2", "W2")
-    if W1 is not None and len(disponibles) >= per - 2:
+    # el tiempo pasado (W1 W2) es lo ocurrido ANTES de la observación: principales (00, 06, 12, 18) 6 h; intermedias 3 h.
+    # El ww y el METAR de la propia hora son tiempo presente y no cuentan.
+    previas = [hist.get(t - pd.Timedelta(hours=k)) for k in range(1, per + 1)]
+    if W1 is not None and len([h for h in previas if h]) >= per - 2:
         # categorías W de lo informado en el período, con su origen (ww de cada hora o fenómeno de los METAR)
         fuentes = []
-        for k in range(0, per):
-            tk = t - pd.Timedelta(hours=k); hk = o if k == 0 else hist.get(tk)
+        for k in range(1, per + 1):
+            tk = t - pd.Timedelta(hours=k); hk = hist.get(tk)
             if not hk:
                 continue
             wk = v(hk, "WWSINOP", "ww"); ck = categoria_W(wk)
@@ -614,12 +617,14 @@ def evolucion(t, o, hist, A=None):
         NOMW = {3: "ventisca/tempestad de polvo", 4: "niebla", 5: "llovizna", 6: "lluvia", 7: "nieve o lluvia y nieve", 8: "chubascos", 9: "tormenta"}
         de = lambda c_: ", ".join(sorted({d_ for cc, d_ in fuentes if cc == c_})[:3])
         if mx is not None and W1 < mx:
-            add("E10", 2, f"tiempo pasado: en el período de {per} h hubo {NOMW.get(mx, mx)} ({de(mx)}), que corresponde a W {mx}, pero W1 es {W1}. "
-                f"W1 debe ser la categoría más alta del período. Debería ir: W1 {mx}" + (f", W2 {W1}" if W1 > (W2 or 0) and W1 in dist else ""))
+            add("E10", 2, f"tiempo pasado: en las {per} h anteriores hubo {NOMW.get(mx, mx)} ({de(mx)}), que corresponde a W {mx}, pero W1 es {W1}. "
+                f"W1 debe ser la categoría más alta del período (sin contar la hora de la observación). Debería ir: W1 {mx}" + (f", W2 {dist[1]}" if len(dist) > 1 else (f", W2 {W1}" if W1 in (0, 1, 2) else "")))
         elif W2 is not None and len(dist) >= 2 and W2 < dist[1] and W1 != dist[1]:
             add("E10", 2, f"tiempo pasado: en el período de {per} h hubo {NOMW.get(dist[0], dist[0])} ({de(dist[0])}) y {NOMW.get(dist[1], dist[1])} ({de(dist[1])}), "
                 f"pero W2 es {W2}. W2 debe ser la segunda categoría más alta. Debería ir: W1 {dist[0]}, W2 {dist[1]}")
-        if W1 >= 5 and (mx is None or mx < 5):
+        # W1 con precipitación o tormenta: también la respalda el tiempo presente de la observación (puede haber empezado en el período)
+        cat_hoy = [categoria_W(v(o, "WWSINOP", "ww"))] + [FEN_W[f] for f in fen_metar(o) if f in FEN_W]
+        if W1 >= 5 and (mx is None or mx < 5) and not any(c_ is not None and c_ >= 5 for c_ in cat_hoy):
             add("E11", 1, f"W1 {W1} (precipitación o tormenta en el período de {per} h) sin ningún ww ni METAR horario que lo respalde")
     rr6, tz = v(o, "RRR6", "RRR6"), v(o, "RRR6", "Traza")
     if t.hour % 6 == 0 and rr6 == 0 and not tz and not importada(o) and ((W1 or 0) in (5, 6, 7, 8) or (W2 or 0) in (5, 6, 7, 8) or (ww is not None and 50 <= ww <= 90)):
