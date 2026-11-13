@@ -121,6 +121,45 @@ def casillas(obs, n=12):
     return out
 
 
+def _norm(o):
+    return {el: {c: x for c, x in d.items() if not isinstance(x, (set, list))} for el, d in (o or {}).items() if el != "_qa" and isinstance(d, dict)}
+
+
+def detectar_cambios(previo, obs, ahora):
+    """Casillas que el observador (o el sistema) cambió en SACLIM desde la pasada anterior: [{hora, el, c, antes, despues, visto}]."""
+    out = []
+    for t, o in obs.items():
+        p = previo.get(t)
+        if not p:
+            continue
+        a, b = _norm(p), _norm(o)
+        for el in sorted(set(a) | set(b)):
+            for c in sorted(set(a.get(el, {})) | set(b.get(el, {}))):
+                x, y = a.get(el, {}).get(c), b.get(el, {}).get(c)
+                if x != y:
+                    out.append(dict(hora=t.strftime("%Y-%m-%d %H:%M"), el=el, c=c, antes=x, despues=y, visto=ahora.strftime("%Y-%m-%d %H:%M")))
+    return out
+
+
+def registrar_cambios(raiz, nuevos_por_cod, ahora, dias=7):
+    """Acumula los cambios detectados (sensorial/cambios.json, últimos «dias» días) y devuelve el registro por estación."""
+    f = Path(raiz) / "sensorial" / "cambios.json"
+    try:
+        reg = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+    except Exception:
+        reg = {}
+    corte = (ahora - pd.Timedelta(days=dias)).strftime("%Y-%m-%d %H:%M")
+    for cod, L in nuevos_por_cod.items():
+        reg.setdefault(cod, []).extend(L)
+    for cod in list(reg):
+        reg[cod] = [x for x in reg[cod] if x["visto"] >= corte][-300:]
+        if not reg[cod]:
+            del reg[cod]
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(reg, ensure_ascii=False, sort_keys=True), encoding="utf-8")
+    return reg
+
+
 def completitud_obs(raiz, cods, nombres, dias=40, base=14):
     """Etapa 3 · completitud de observaciones: horas con mensaje por estación y día (últimos «dias» días, UTC)
     y programa de cada estación (horas cubiertas al menos la mitad de los últimos «base» días). Sube qc/completitud."""
@@ -185,7 +224,7 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
     cods = [x["codigo"] for x in json.loads(p.read_text())["estaciones"] if x["horas"] > 0] if p.exists() else ESTACIONES_OBS
     nombres = E.set_index("codigo")[["nombre", "oaci", "lat", "lon"]].to_dict("index")
     resultado, n_obs, fallas = [], 0, 0
-    archivo, revisadas = {}, {}
+    archivo, revisadas, cambios_nuevos = {}, {}, {}
     # minutario de las últimas 26 h, leído una sola vez (las extremas necesitan el período de 12 h de cada observación)
     ahora = pd.Timestamp.utcnow().tz_localize(None)
     A_todo = leer_archivo(raiz, ahora, horas=HORAS_EXT + 14)
@@ -197,7 +236,9 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
             continue
         n_obs += len(obs)
         A = A_todo[A_todo["codigo"] == cod] if len(A_todo) else A_todo
-        todas = {**obs_archivo(raiz, cod, ahora), **obs}
+        previo = obs_archivo(raiz, cod, ahora)
+        nuevos = detectar_cambios(previo, obs, ahora)
+        todas = {**previo, **obs}
         oficial = None
         try:   # extremas oficiales (valor con todos los decimales y hora) del resumen diario de la estación
             js_r = dmc.descargar(f"getEmaResumenDiario/{cod}", timeout=60)
@@ -215,13 +256,20 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
             pass
         hall = SEN.revisar(cod, todas, A, horas=HORAS, sat=(SAT or {}).get(cod), horas_ext=HORAS_EXT, oficial=oficial)
         revisadas[cod] = [str(t) for t in sorted(obs)[-HORAS:]]
+        cambios_nuevos[cod] = nuevos
         for t, o in obs.items():
             archivo.setdefault(t.strftime("%Y/%m/%d"), {}).setdefault(cod, {})[t.strftime("%H")] = {k: x for k, x in o.items() if k != "_qa"}
         m = nombres.get(cod, {})
         resultado.append(dict(codigo=cod, nombre=m.get("nombre"), oaci=m.get("oaci"), lat=m.get("lat"), lon=m.get("lon"),
-                              ultima=str(max(obs)) if obs else None, horas=len(obs), hallazgos=hall, ult=ultimos_valores(obs), cas=casillas(todas),
+                              ultima=str(max(obs)) if obs else None, horas=len(obs), hallazgos=hall, ult=ultimos_valores(obs), cas=casillas(todas), cambios=[],
                               nivel=max([h["nivel"] for h in hall], default=0)))
         time.sleep(pausa)
+    try:
+        reg = registrar_cambios(raiz, {c: L for c, L in cambios_nuevos.items() if L}, ahora)
+        for r_ in resultado:
+            r_["cambios"] = reg.get(r_["codigo"], [])[-60:]
+    except Exception:
+        pass
     # archivo de observaciones (sin identificador del observador)
     for dia, d in archivo.items():
         f = Path(raiz) / "sensorial" / f"{dia}.json.gz"

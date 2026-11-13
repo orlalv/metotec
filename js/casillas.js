@@ -42,9 +42,17 @@ function tabla(cas, hora, msg){
     <div style="overflow-x:auto"><table class="sgtab"><tr><th>Hora UTC</th>${cols.map(([el, c]) => `<th title="${esc(el)} · ${esc(c)}"${usado(el, c) ? ' style="color:var(--oro)"' : ""}>${esc(rot(el, c))}</th>`).join("")}</tr>${filas}</table></div>
     <p class="sgnota">La fila de la alerta va resaltada. Pase el mouse sobre un número subrayado para ver qué significa.</p></div>`;
 }
+const f2 = t => t ? `${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}` : "";
+function cambios(e, hora){
+  const clave = hora.slice(0, 16).replace("T", " "), L = (e && e.cambios || []).slice(-40).reverse();
+  if (!L.length) return `<p class="sgnota">Cambios en SACLIM: ninguno detectado desde que se empezó a registrar (el sistema compara cada pasada con la anterior).</p>`;
+  return `<h4 style="margin:10px 0 4px">Cambios detectados en SACLIM</h4><table class="sgtab"><tr><th>Detectado (UTC)</th><th>Observación</th><th>Casilla</th><th>Antes</th><th>Ahora</th></tr>${L.map(x =>
+    `<tr${x.hora === clave ? ' class="sgalerta"' : ""}><td>${f2(x.visto)}</td><td>${f2(x.hora)}</td><td>${esc(x.el)} · ${esc(x.c)}</td><td>${x.antes == null ? "—" : esc(x.antes)}</td><td>${x.despues == null ? "(borrado)" : esc(x.despues)}</td></tr>`).join("")}</table>
+    <p class="sgnota">Si la alerta es de una observación que aparece aquí, la corrección ya se leyó; la alerta se recalcula en la misma pasada.</p>`;
+}
 function abrir(cont, e, hora, msg){
-  const d = document.createElement("div"); d.innerHTML = e && e.cas ? tabla(e.cas, hora, msg) : "";
-  if (!d.innerHTML) d.innerHTML = `<p class="sgnota">No hay casillas guardadas para esta estación (se llenan en la próxima pasada del control).</p>`;
+  const d = document.createElement("div"); d.innerHTML = (e && e.cas ? tabla(e.cas, hora, msg) : "") + (e ? cambios(e, hora) : "");
+  if (!e || !e.cas) d.innerHTML = `<p class="sgnota">No hay casillas guardadas para esta estación (se llenan en la próxima pasada del control).</p>`;
   cont.appendChild(d);
 }
 window.CAS = {abrir, tiene, SIG, comp};
