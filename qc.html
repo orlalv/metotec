@@ -298,6 +298,43 @@ function pintarObs(){
     ${e.hallazgos.length ? `<div class="al">${cuenta(e.hallazgos).map(([t, n]) => `<span>${TIPO[t] || t} ${n}</span>`).join("")}</div>` : ""}</div><div class="v">${e.hallazgos.length}</div></div>`).join("") || `<p style="padding:14px;color:var(--mu)">Sin estaciones con ese filtro.</p>`;
   if (sel) detalleObs(sel, false);
 }
+// Super automático · «Estaciones»: mapa, lista y estado de cada estación sin observador (mismo diseño que Observaciones)
+const SUPC = [["pp", "Precip."], ["ext", "Extremas"], ["pre", "Presión"], ["tem", "Temp."], ["vie", "Viento"]];
+function supFiltradas(){
+  const S = R.super || {}, q = $("#buscar").value.trim().toLowerCase();
+  const L = (S.estaciones || []).map(e => { const h = (e.hallazgos || []).map(x => ({...x, gen: S.generado})).filter(x => MARCA.estado(e.codigo, x) !== "oculta");
+    return {...e, hallazgos: h, nivel: e.nivel === 3 ? 3 : Math.max(0, ...h.map(x => x.nivel))}; });
+  return L.filter(e => e.lat != null && enZona(e) && ver[e.nivel] && EQ.filtra(e.codigo) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
+}
+const supAtraso = (S, e) => { if (!e.ultima || !S.generado) return null; return Math.round((Date.parse(S.generado + "Z") - Date.parse(e.ultima + ":00Z")) / 60000); };
+function pintarSup(){
+  const S = R.super || {}, g = S.generado ? new Date(S.generado + "Z") : null;
+  $("#hora").textContent = g ? `Super automático · estaciones sin observador · últimas 24 h · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay revisión del Super automático";
+  const T = (S.estaciones || []).map(e => ({...e, hallazgos: (e.hallazgos || []).map(x => ({...x, gen: S.generado})).filter(x => MARCA.estado(e.codigo, x) !== "oculta")})), res = [0, 0, 0, 0];
+  T.forEach(e => res[e.nivel === 3 ? 3 : Math.max(0, ...e.hallazgos.map(x => x.nivel))]++);
+  $("#chips").innerHTML = [0, 1, 2, 3].map(n => `<span class="chip ${ver[n] ? "" : "off"}" data-n="${n}"><i style="background:${COL[n]}"></i>${["Sin hallazgos", "Sospechosas", "Con errores", "Sin datos"][n]} ${res[n]}</span>`).join("");
+  $("#fuentes").textContent = "Fuente: estaciones automáticas sin observador (DMC) · minutario archivado · umbrales más estrictos que la pasada normal";
+  const V = supFiltradas();
+  Object.values(marcas).forEach(m => m.remove()); marcas = {};
+  V.forEach(e => { const m = L.circleMarker([e.lat, e.lon], {radius: 7, color: "#fff", weight: 1, fillColor: HEX[e.nivel], fillOpacity: .95}).addTo(mapa);
+    m.bindTooltip(`${esc(e.nombre)} · ${e.hallazgos.length} hallazgos`); m.on("click", () => detalleSup(e.codigo)); marcas[e.codigo] = m; });
+  const cnt = e => SUPC.map(([k, n]) => [n, e.hallazgos.filter(h => h.tipo === k).length]).filter(x => x[1]);
+  $("#lista").innerHTML = [...V].sort((a, b) => (b.nivel === 3 ? -1 : b.nivel) - (a.nivel === 3 ? -1 : a.nivel) || b.hallazgos.length - a.hallazgos.length || (a.nombre || "").localeCompare(b.nombre || "")).map(e => `<div class="it ${sel === e.codigo ? "sel" : ""}" data-c="${e.codigo}"><span class="p" style="background:${COL[e.nivel]}"></span>
+    <div><b>${esc(e.nombre)}</b><small>${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · último dato ${e.ultima ? e.ultima.slice(11, 16) + " UTC" : "—"}</small>
+    ${e.hallazgos.length ? `<div class="al">${cnt(e).map(([n, k]) => `<span>${n} ${k}</span>`).join("")}</div>` : ""}</div><div class="v">${e.nivel === 3 ? "—" : e.hallazgos.length}</div></div>`).join("") || `<p style="padding:14px;color:var(--mu)">Sin estaciones con ese filtro.</p>`;
+  if (sel) detalleSup(sel, false);
+}
+function detalleSup(c, mover = true){
+  const S = R.super || {}, e = supFiltradas().find(x => x.codigo === c); if (!e) return; sel = c; guardarVista();
+  document.querySelectorAll(".it").forEach(x => x.classList.toggle("sel", x.dataset.c === c));
+  if (mover && e.lat != null) mapa.setView([e.lat, e.lon], Math.max(mapa.getZoom(), 7));
+  const H = [...e.hallazgos].sort((a, b) => b.nivel - a.nivel || b.hora.localeCompare(a.hora)), at = supAtraso(S, e);
+  const estado = e.nivel === 3 ? "Sin datos en las últimas 24 h" : at == null ? "—" : at <= 20 ? "Al día" : at <= 60 ? `Atrasada ${at} min` : `Caída: ${at >= 120 ? Math.round(at / 60) + " h" : at + " min"} sin datos`;
+  $("#det").style.display = "block"; $("#det").dataset.cod = e.codigo;
+  $("#det").innerHTML = `<h2>${esc(e.nombre)}</h2><div class="sub">${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.alt != null ? e.alt + " m · " : ""}<span style="color:${COL[e.nivel]}">${NOM[e.nivel]}</span> · estación sin observador · <a class="vlink" href="https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/${encodeURIComponent(e.codigo)}" target="_blank" rel="noopener">↗ en línea</a></div>
+   <div class="hres" style="margin:8px 0"><div><b>${e.ultima ? e.ultima.slice(11, 16) : "—"}</b><span>último dato UTC${e.ultima ? " · " + e.ultima.slice(8, 10) + "/" + e.ultima.slice(5, 7) : ""}</span></div><div><b style="color:${at != null && at > 60 ? "var(--err)" : at != null && at > 20 ? "var(--sos)" : "var(--ok)"}">${esc(estado)}</b><span>estado del dato (respecto de la revisión)</span></div><div><b>${H.length}</b><span>hallazgos</span></div></div>
+   ${H.length ? `<table><tr><th>Dato UTC</th><th>Variable</th><th>Regla</th><th>Detalle</th><th></th></tr>${H.map(h => `<tr><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td>${esc((SUPC.find(x => x[0] === h.tipo) || [0, h.tipo])[1])}</td><td style="color:${HEX[h.nivel]}">${REGLAS.html(h.regla, esc)}</td><td>${esc(h.msg)}${MARCA.estado(e.codigo, h) === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${MARCA.botones(e.codigo, h)}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin hallazgos en las últimas 24 horas.</p>`}`;
+}
 function detalleObs(c, mover = true){
   const e = obsFiltradas().find(x => x.codigo === c); if (!e) return; sel = c; guardarVista();
   document.querySelectorAll(".it").forEach(x => x.classList.toggle("sel", x.dataset.c === c));
@@ -419,6 +456,7 @@ function pintar(){
   if (modo === "hist" || modo === "reg" || modo === "minu" || modo === "bol") return;
   if (modo === "equ" || modo === "mis" || modo === "comp") return EQ.pagina(modo);
   if (modo === "ext" || modo === "pp" || modo === "tem") return EXT.init(() => R, modo);
+  if (modo === "sup") return pintarSup();
   if (SUPER.modos.has(modo)) return SUPER.init(() => R, modo);
   if (modo === "inf") return pintarInf();
   if (modo === "per" || modo === "ser" || modo === "serh") return;
@@ -516,14 +554,14 @@ async function cerrarInformados(){
   }
 }
 document.addEventListener("click", ev => {
-  const it = ev.target.closest(".it"); if (it) (modo === "obs" ? detalleObs : modo === "mod" ? detalleMod : detalle)(it.dataset.c);
+  const it = ev.target.closest(".it"); if (it) (modo === "obs" ? detalleObs : modo === "sup" ? detalleSup : modo === "mod" ? detalleMod : detalle)(it.dataset.c);
   const mb = ev.target.closest(".modos button"); if (mb) return cambiarModo(mb.dataset.m);
   const sb = ev.target.closest("#sub button"); if (sb){ sub = sb.dataset.s; sel = null; $("#det").style.display = "none"; guardarVista(); return pintar(); }
   const ch = ev.target.closest(".chip"); if (ch){ const n = +ch.dataset.n; ver[n] = !ver[n]; pintar(); }
   const b = ev.target.closest(".tools button[data-z]"); if (b){ zona = b.dataset.z; document.querySelectorAll(".tools button[data-z]").forEach(x => x.classList.toggle("on", x === b)); guardarVista(); pintar();
     const V = visibles(); if (V.length) mapa.fitBounds(V.map(e => [e.lat, e.lon]), {padding: [20, 20], maxZoom: 8}); }
 });
-const MAPA_MODOS = new Set(["ema", "obs", "mod"]);
+const MAPA_MODOS = new Set(["ema", "obs", "mod", "sup"]);
 function cambiarModo(m){
   const mb = document.querySelector(`.modos button[data-m="${m}"]`); if (!mb) return;
   $("#gear").classList.toggle("on", mb.dataset.g === "gestion");
@@ -531,7 +569,7 @@ function cambiarModo(m){
   if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
   modo = m; $("#det").style.display = "none";
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", equ: "equ", mis: "mis", comp: "comp", sup: "sup", sup_pp: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup"}[m];
+  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", equ: "equ", mis: "mis", comp: "comp", sup_pp: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup"}[m];
   document.querySelector("main").hidden = h;
   ["hist", "minu", "bol", "ext", "ser", "inf", "reg", "equ", "mis", "comp", "sup"].forEach(i => $("#" + i).hidden = i !== sec);
   $("#chips").style.display = h ? "none" : "";
