@@ -63,7 +63,7 @@ function pintar(){
   const celda = (f, c) => {
     const m = (f.marcas || {})[c], val = f.v[c], cls = ["n"]; if (c === "tn") cls.push("tn"); if (c === "tx") cls.push("tx");
     if (m) cls.push(m.nivel);
-    return `<td class="${cls.join(" ")}"${m && m.msg ? ` title="${esc(m.msg)}"` : ""}>${esc(val)}${m && m.sub ? `<small>${esc(m.sub)}</small>` : ""}</td>`;
+    return `<td class="${cls.join(" ")}"${m && m.msg ? ` title="${esc(m.msg)}"` : ""}>${esc(val)}${m && m.sub ? `<small>${esc(m.sub)}</small>` : ""}${m && (m.nivel === "err" || m.nivel === "warn") ? `<button class="bx" data-bm="omitir" data-est="${esc(f.nombre)}" data-col="${esc(c)}" data-msg="${esc(m.msg || "")}" title="Quitar esta marca: el dato no es un error (queda registrado en «Quitadas a mano»)">✕</button>` : ""}</td>`;
   };
   const filas = B.filas.map(f => {
     const m = marcasFila(f), e = m.filter(x => x[1].nivel === "err").length, w = m.filter(x => x[1].nivel === "warn").length;

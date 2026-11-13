@@ -35,7 +35,9 @@ const POR_REGLA = [[/^S?B?Ts$|^STs/, ["Ts"]], [/^S?B?Td$/, ["Td"]], [/^S?B?HR$/,
 function involucradas(regla, msg){
   const r = POR_REGLA.find(([re]) => re.test(regla)), s = new Set(r ? r[1] : []);
   if (/^SEX/.test(regla)){ const m = (msg || "").match(/T(min|max) (AM|PM)/); if (m) s.add((m[1] === "min" ? "Tn" : "Tx") + m[2]); else ["TxAM", "TnAM", "TxPM", "TnPM"].forEach(x => s.add(x)); }
-  [["ww", /\bww\b/], ["W1", /\bW1\b/], ["W2", /\bW2\b/], ["Cl", /\bCL\b/], ["Cm", /\bCM\b/], ["Ch", /\bCH\b/], ["N", /\bN\b/], ["VV", /visibilidad/i], ["RRR6", /RRR6/]].forEach(([c, re]) => { if (re.test(msg || "")) s.add(c); });
+  [["ww", /\bww\b/], ["W1", /\bW1\b/], ["W2", /\bW2\b/], ["Cl", /\bCL\b/], ["Cm", /\bCM\b/], ["Ch", /\bCH\b/], ["N", /\bN\b/], ["VV", /visibilidad|\bVV\b/i], ["RRR6", /RRR6|agua ca[ií]da/i], ["Traza", /traza/i], ["QFE", /QFE/], ["QFF", /QFF/], ["QNH", /QNH/], ["Ts", /\bTs\b|temperatura/i], ["Td", /\bTd\b|rocío/i], ["HR", /\bHR\b|humedad/i],
+    ["dd", /direcci[oó]n|\bdd\b/i], ["ff", /viento|racha|\bff\b/i], ["Cl", /\bCl\b|nubes bajas/i], ["Cm", /nubes medias/i], ["Ch", /nubes altas/i], ["C", /capa|TCu|\bCb\b|\bCu\b|\bSc\b|\bSt\b|\bAc\b|\bAs\b|\bNs\b|\bCi\b|\bCs\b|\bCc\b/], ["Ns", /octas|capa/i], ["hshshs", /altura|base|hshshs/i],
+    ["FEN1", /METAR|\bBR\b|\bFG\b|\bDZ\b|\bRA\b|\bHZ\b/], ["FEN12", /METAR/], ["FEN13", /METAR/]].forEach(([c, re]) => { if (re.test(msg || "")) s.add(c); });
   return s;
 }
 function tabla(cas, hora, msg, regla){
@@ -47,14 +49,15 @@ function tabla(cas, hora, msg, regla){
   if (!cols.length) return "";
   const rot = (el, c) => (NOMBRE[el] ? NOMBRE[el] + (/^(ww|VV|N)$/.test(c) ? "" : " ") : "") + (/^(ww|VV|N)$/.test(c) && NOMBRE[el] === c ? "" : c);
   const usado = (el, c) => (c.length > 2 && (msg || "").includes(c)) || (el === "WWSINOP" && /\bww\b/.test(msg || ""));
+  const algunaMal = cols.some(([el, c]) => mal.has(c) && ((cas[clave] || {})[el] || {})[c] != null);
   const filas = ts.map(t => `<tr${t === clave ? ' class="sgalerta"' : ""}><td style="white-space:nowrap"><b>${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}</b>${t === clave ? " ◀" : ""}</td>${cols.map(([el, c]) => {
     const x = ((cas[t] || {})[el] || {})[c], k = comp(c), f = SIG[k];
     const tt = x == null ? "" : typeof x === "number" && f ? (f(x) || "") : "";
-    const falla = t === clave && mal.has(c), est = (tt ? "cursor:help;text-decoration:underline dotted;" : "") + (falla ? "background:var(--err);color:#fff;font-weight:800;outline:2px solid var(--err);" : "");
+    const falla = t === clave && x != null && (mal.has(c) || (!algunaMal && el !== "Ts" && el !== "Td" && el !== "HR" && el !== "QFE" && el !== "QFF" && el !== "QNH")), est = (tt ? "cursor:help;text-decoration:underline dotted;" : "") + (falla ? "background:var(--err);color:#fff;font-weight:800;outline:2px solid var(--err);" : "");
     return `<td${tt ? ` title="${esc(tt)}"` : ""}${est ? ` style="${est}"` : ""}>${x == null ? "—" : esc(x)}${falla ? " ◀" : ""}</td>`; }).join("")}</tr>`).join("");
   return `<div class="sgcas"><h4 style="margin:10px 0 4px">Casillas ingresadas por el observador · ${ts.length} observaciones alrededor de la alerta</h4>
     <div style="overflow-x:auto"><table class="sgtab"><tr><th>Hora UTC</th>${cols.map(([el, c]) => `<th title="${esc(el)} · ${esc(c)}"${usado(el, c) || mal.has(c) ? ' style="color:var(--oro)"' : ""}>${esc(rot(el, c))}</th>`).join("")}</tr>${filas}</table></div>
-    <p class="sgnota">La fila de la alerta va resaltada y la casilla con el problema en rojo (◀). Se ocultan las casillas vacías. Pase el mouse sobre un número subrayado para ver qué significa.</p></div>`;
+    <p class="sgnota">La fila de la alerta va resaltada y las casillas cuestionadas en rojo (◀); si la regla no apunta a una casilla concreta, se marcan todas las de codificación de esa hora. Se ocultan las casillas vacías. Pase el mouse sobre un número subrayado para ver qué significa.</p></div>`;
 }
 const f2 = t => t ? `${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}` : "";
 function cambios(e, hora){
