@@ -159,7 +159,10 @@ def _compilar(f):
         return None, refs, conhash
 
 
-_COMP = [(r, *_compilar(r["f"])) for r in REGLAS if r.get("vig")]
+# Controles de SACLIM que el equipo indicó que en SACLIM no existen como tal: neblina (BR / ww 10) con visibilidad entre 1000 y 5000 m.
+# La visibilidad se ingresa tal cual; solo se avisa por neblina con más de 8000 m (VV_FEN, regla C02/C03 de codificación).
+IGNORAR_SISTEMA = {"2972", "3102"}
+_COMP = [(r, *_compilar(r["f"])) for r in REGLAS if r.get("vig") and str(r["id"]) not in IGNORAR_SISTEMA]
 
 
 def reglas_sistema(o):
@@ -285,6 +288,12 @@ def codificacion(o):
         sug = "neblina (10)" if (HR or 0) >= 80 else "bruma o calima (05)"
         add("C33", 2, f"visibilidad de {VV} m con ww {ww:02d} (sin fenómeno): con menos de 5000 m debe informarse lo que la reduce, p. ej. {sug} o precipitación")
     fm = fen_metar(o)
+    VVm = v(o, "VVMETAR", "Reinante")
+    if "BR" in fm and VVm is not None:       # la visibilidad se ingresa tal cual: solo se avisa fuera de lo posible para neblina
+        if VVm < 1000:
+            add("C02", 2, f"el METAR informa BR (neblina) con visibilidad de {VVm} m: con menos de 1000 m es niebla")
+        elif VVm > VV_FEN:
+            add("C02", 1, f"el METAR informa BR (neblina) con visibilidad de {VVm} m: la neblina se informa hasta 5000 m")
     if ww is not None and fm:
         if ("DZ" in fm or "RA" in fm) and not (ww in PRECIP or 20 <= ww <= 29 or 13 <= ww <= 16):
             add("C34", 2, f"el METAR informa {'/'.join(f for f in fm if f in ('DZ', 'RA'))} y el SYNOP ww {ww:02d} no tiene precipitación")

@@ -26,7 +26,7 @@ def _cargar(raiz, dia, cache):
 
 
 # reglas corregidas: los avisos guardados por versiones anteriores se borran una sola vez del historial (no eran errores del observador)
-REGLAS_V = {"E10": "2", "E11": "2"}
+REGLAS_V = {"E10": "2", "E11": "2", "2972": "2", "3102": "2"}
 
 
 def _purgar(raiz, cache, tocados):

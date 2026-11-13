@@ -242,8 +242,8 @@ main[hidden]{display:none}
 <script src="js/casillas.js?v=202611131930"></script>
 <script src="js/sensorgraf.js?v=202611131700"></script>
 <script src="js/minutarios.js?v=202611132010"></script>
-<script src="js/supgraf.js?v=202611131740"></script>
-<script src="js/superauto.js?v=202611131740"></script>
+<script src="js/supgraf.js?v=202611131815"></script>
+<script src="js/superauto.js?v=202611131815"></script>
 <script src="js/extremas.js?v=202611131540"></script>
 <script src="js/boletin.js?v=202611131940"></script>
 <script src="js/series.js?v=202611101600"></script>
@@ -343,6 +343,8 @@ let supPre = "";
 window.supIr = (c, tipo) => { cambiarModo("sup"); supPre = SG.GR[tipo] ? tipo : ""; detalleSup(c); };
 window.supEst = c => supFiltradas().find(x => x.codigo === c) || ((R.super || {}).estaciones || []).find(x => x.codigo === c);
 window.supGen = () => (R.super || {}).generado;
+window.supVec = c => { const E = R.estaciones || [], me = E.find(x => x.codigo === c), obs = new Set(((R.observaciones || {}).estaciones || []).map(x => x.codigo));
+  return ((me && me.vecinas) || []).map(k => ({codigo: k, nombre: (E.find(x => x.codigo === k) || {}).nombre || k, obs: obs.has(k)})); };
 function supDatos(e, H){
   const box = $("#supDat"); if (!box) return;
   const g = supPre || (H[0] && SG.GR[H[0].tipo] ? H[0].tipo : "tem"); supPre = "";

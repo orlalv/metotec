@@ -358,6 +358,19 @@ def prueba_completar_huecos():
         FALLAS.append("completar: sin dato antes del hueco no se completa")
 
 
+def prueba_neblina_metar_visibilidad():
+    """Neblina (BR) con 6000 m: en SACLIM no hay regla de 5000 m, la visibilidad se ingresa tal cual (no avisa); sí avisa sobre 8000 m y bajo 1000 m."""
+    import sensorial as SEN
+    def obs(vv):
+        return {"WWMETAR": {"FEN1": 9, "FEN12": "SD", "FEN13": "SD", "FEN2": "SD", "FEN22": "SD", "FEN23": "SD", "FEN3": "SD", "FEN32": "SD", "FEN33": "SD", "DESC": "SD", "DESC2": "SD", "DESC3": "SD", "IntProx": 2, "IntProx2": "SD", "IntProx3": "SD"},
+                "VVMETAR": {"Dv": "SD", "Minima": "SD", "Reinante": vv}}
+    mal = lambda vv: [x for x in SEN.reglas_sistema(obs(vv)) if str(x[1]) in ("2972", "3102")] + [x for x in SEN.codificacion(obs(vv)) if x[1] == "C02"]
+    if mal(6000):
+        FALLAS.append(f"neblina METAR: con 6000 m no debía avisar → {mal(6000)}")
+    if not any(x[1] == "C02" for x in mal(9000)) or not any(x[1] == "C02" for x in mal(800)):
+        FALLAS.append("neblina METAR: debía avisar con 9000 m y con 800 m")
+
+
 if __name__ == "__main__":
     pruebas = [f for k, f in sorted(globals().items()) if k.startswith("prueba_")]
     for f in pruebas:

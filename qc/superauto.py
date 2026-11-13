@@ -31,8 +31,8 @@ def _f(m):
     return pd.Timestamp(m).strftime("%Y-%m-%dT%H:%M")
 
 
-def _h(cod, regla, nivel, tipo, momento, msg):
-    return dict(hora=_f(momento), regla=regla, nivel=int(nivel), tipo=tipo, msg=msg)
+def _h(cod, regla, nivel, tipo, momento, msg, **extra):
+    return dict(hora=_f(momento), regla=regla, nivel=int(nivel), tipo=tipo, msg=msg, **extra)
 
 
 def _salto(g, v, umbral, regla, tipo, nombre, un):
@@ -181,15 +181,6 @@ def _estacion(g, m):
             k = runs["count"].idxmax()
             idx = g24.index[grp == k]
             out.append(_h(None, "ZR04", 2, "pp", g24.at[idx[-1], "momento"], f"{int(runs.at[k, 'count'])} minutos seguidos con {runs.at[k, 'first']:.1f} mm: pluviómetro pegado"))
-        if "rr6" in g24:   # el acumulado de 6 h no puede ser menor que lo sumado por minuto dentro de ese período
-            Hh = g24[g24["momento"].dt.minute == 0].dropna(subset=["rr6"])
-            for _, r in Hh.iterrows():
-                t = r["momento"]
-                suma = g[(g["momento"] > t - pd.Timedelta(hours=6)) & (g["momento"] <= t)]["rr1m"].sum()
-                n = g[(g["momento"] > t - pd.Timedelta(hours=6)) & (g["momento"] <= t)]["rr1m"].notna().sum()
-                if n >= 330 and abs(r["rr6"] - suma) > 0.3 + 0.1 * suma:
-                    out.append(_h(None, "ZR05", 1, "pp", t, f"Agua caída 6 h {r['rr6']:.1f} mm y la suma de los minutos da {suma:.1f} mm"))
-                    break
 
     # ---------------- extremas del sensor (Tn12, Tx12) frente a la temperatura por minuto de las 24 h previas
     if "Tn12" in g and (g["momento"].max() - g["momento"].min()) >= pd.Timedelta(hours=24):
@@ -209,10 +200,46 @@ def _estacion(g, m):
                 nom = "mínima" if mn else "máxima"
                 out.append(_h(None, "ZE01", 2 if dif > TOL_EXT[1] else 1, "ext", t,
                               f"La estación informa una temperatura {nom} de 12 h ({var}) de {val:.1f} °C, pero en las últimas 24 h ningún minuto {'bajó' if mn else 'subió'} de {ref:.1f} °C. "
-                              f"Diferencia: {dif:.1f} °C (hasta ~1 °C es normal, porque la extrema sale de muestras más finas que el minuto)."))
+                              f"Diferencia: {dif:.1f} °C (hasta ~1 °C es normal, porque la extrema sale de muestras más finas que el minuto).",
+                              ingresado=f"{var} {val:.1f} °C", deberia=(f"{ref - TOL_EXT[0]:.1f} °C o más" if mn else f"{ref + TOL_EXT[0]:.1f} °C o menos")))
         a, b = g["Tn12"].dropna(), g["Tx12"].dropna()
         if len(a) and len(b) and a.iloc[-1] > b.iloc[-1] + 0.05:
             out.append(_h(None, "ZE03", 2, "ext", g["momento"].max(), f"La temperatura mínima de 12 h (Tn12 {a.iloc[-1]:.1f} °C) es mayor que la máxima de 12 h (Tx12 {b.iloc[-1]:.1f} °C)"))
+    return out
+
+
+def _bloques6(g):
+    """Bloques de 6 h que cierran a las 00, 06, 12 y 18 UTC dentro de los datos: RRR6 que informa la estación y suma de los minutos."""
+    out = []
+    if "rr1m" not in g or g.empty:
+        return out
+    fin, ini = g["momento"].max(), g["momento"].min()
+    t = fin.floor("6h")
+    for _ in range(5):
+        a = t - pd.Timedelta(hours=6)
+        if a >= ini - pd.Timedelta(minutes=5) and t <= fin:
+            W = g[(g["momento"] > a) & (g["momento"] <= t)]
+            n = int(W["rr1m"].notna().sum())
+            near = g[(g["momento"] <= t) & (g["momento"] > t - pd.Timedelta(minutes=15))]
+            inf = near["rr6"].dropna().iloc[-1] if "rr6" in near and near["rr6"].notna().any() else None
+            suma = float(W["rr1m"].sum()) if n >= 330 else None
+            if (inf is not None and inf > 0) or (suma is not None and suma > 0):
+                out.append([_f(t), None if inf is None else round(float(inf), 1), None if suma is None else round(suma, 1), n])
+        t -= pd.Timedelta(hours=6)
+    return out
+
+
+def _zr05(bl, tol=(0.3, 0.1)):
+    """RRR6 de la estación frente a la suma del agua caída por minuto en las mismas 6 h."""
+    out = []
+    for hora, inf, suma, n in bl:
+        if inf is None or suma is None:
+            continue
+        if abs(inf - suma) > tol[0] + tol[1] * suma:
+            x = dict(hora=hora, regla="ZR05", nivel=1 if abs(inf - suma) < 1.0 + 0.3 * suma else 2, tipo="pp",
+                     msg=f"La estación informa RRR6 de {inf:.1f} mm para las 6 h hasta las {hora[11:16]} UTC, pero la suma del agua caída por minuto da {suma:.1f} mm.",
+                     ingresado=f"RRR6 {inf:.1f} mm", deberia=f"{suma:.1f} mm")
+            out.append(x)
     return out
 
 
@@ -230,6 +257,7 @@ def _resumen(g):
     if "rr1m" in g24 and g24["rr1m"].notna().sum() >= 600:
         out["rr_24h"] = r(g24["rr1m"].sum()); out["rr_1h"] = r(g24[g24["momento"] > fin - pd.Timedelta(hours=1)]["rr1m"].sum())
         out["rr_min"] = r(g24["rr1m"].max())
+        out["rr_hoy"] = r(g[g["momento"] >= fin.normalize()]["rr1m"].sum())
         for h in (3, 6, 12):
             out[f"rr_{h}h"] = r(g24[g24["momento"] > fin - pd.Timedelta(hours=h)]["rr1m"].sum())
     if "P_est" in g24 and g24["P_est"].notna().sum() > 200:
@@ -284,7 +312,9 @@ def comparar(H, E, V, M=None, aisladas=()):
             r = _sostenida((Ha[v][cod] - ref).loc[lambda x: x.index.isin(horas)], t1, t2)
             if r:
                 t, d, niv = r
-                out.append(_hc(cod, REGLA_V[v][0], niv, REGLA_V[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que la mediana de sus {len(vs)} estaciones vecinas (diferencia sostenida en las últimas horas; revisar el sensor)"))
+                val = float(Ha[v][cod].get(t))
+                out.append(_hc(cod, REGLA_V[v][0], niv, REGLA_V[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que la mediana de sus {len(vs)} estaciones vecinas (diferencia sostenida en las últimas horas; revisar el sensor)",
+                               ingresado=f"{nom} {val:.1f} {un}", deberia=f"≈ {val - d:.1f} {un} (vecinas)"))
         if M is not None and not M.empty:
             Mc = M[M["codigo"] == cod].set_index("momento")
             for v, (t1, t2, nom, un) in MOD_S.items():
@@ -295,12 +325,14 @@ def comparar(H, E, V, M=None, aisladas=()):
                 r = _sostenida(dif[dif.index.isin(horas)], t1 * f, t2 * f)
                 if r:
                     t, d, niv = r
-                    out.append(_hc(cod, REGLA_M[v][0], niv, REGLA_M[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que el modelo (diferencia sostenida en las últimas horas; revisar el sensor)"))
+                    val = float(Ha[v][cod].get(t))
+                    out.append(_hc(cod, REGLA_M[v][0], niv, REGLA_M[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que el modelo (diferencia sostenida en las últimas horas; revisar el sensor)",
+                                   ingresado=f"{nom} {val:.1f} {un}", deberia=f"≈ {val - d:.1f} {un} (modelo)"))
     return out
 
 
 # ------------------------------------------------------------------ resumen diario (para las vistas Mes y Año de la pestaña «Estación»)
-CAMPOS_DIA = ["tmin", "tmax", "tmed", "hrmed", "pest", "pmar", "ffmax", "fxmax", "rr", "n"]
+CAMPOS_DIA = ["tmin", "tmax", "tmed", "hrmed", "pest", "pmar", "ffmax", "fxmax", "rr", "n", "rr_b0", "rr_b1", "rr_b2", "rr_b3", "rrmax"]
 
 
 def _dia(raiz, dia):
@@ -320,6 +352,11 @@ def _dia(raiz, dia):
         rr = g["rr1m"].sum() if "rr1m" in g and g["rr1m"].notna().sum() >= 600 else None
         out[cod] = [r(g["T"].min()), r(g["T"].max()), r(g["T"].mean()), r(g["HR"].mean(), 0), r(g["P_est"].mean()), r(g["P_mar"].mean()),
                     r(g["ff10"].max()), r(g["fx10"].max()), r(rr), int(len(g))]
+        if rr is not None:
+            b = g.groupby(g["momento"].dt.hour // 6)["rr1m"].sum()
+            out[cod] += [r(b.get(k, 0.0)) for k in range(4)] + [r(g["rr1m"].max())]
+        else:
+            out[cod] += [None] * 5
     return out
 
 
@@ -340,6 +377,8 @@ def diario(raiz, ahora=None, subir=None):
         t = pd.Timestamp(dia)
         mes = Path(raiz) / "diario" / t.strftime("%Y") / t.strftime("%m.json")
         M = json.loads(mes.read_text(encoding="utf-8")) if mes.exists() else {"campos": CAMPOS_DIA, "dias": {}}
+        if M.get("campos") != CAMPOS_DIA:      # cambió el formato: se recalcula todo el mes
+            M = {"campos": CAMPOS_DIA, "dias": {}}
         if dia in M["dias"] and t < hoy - pd.Timedelta(days=1):
             continue
         M["dias"][dia] = _dia(raiz, t)
@@ -375,11 +414,13 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
             fila["ultima"] = _f(g["momento"].max())
             try:
                 fila["res"] = _resumen(g)
+                bl = _bloques6(g)
+                fila["res"]["blq6"] = bl
             except Exception:
                 fila["res"] = {}
             try:
                 fila["hallazgos"] = _estacion(g, m)
-                fila["hallazgos"] += cmp_al.get(cod, [])
+                fila["hallazgos"] += cmp_al.get(cod, []) + _zr05(bl)
             except Exception as e:      # una estación mala no tumba a las demás
                 fila["hallazgos"] = [dict(hora=fila["ultima"], regla="ZERR", nivel=0, tipo="tem", msg=f"No se pudo revisar: {e}")][:0]
             fila["nivel"] = max([h["nivel"] for h in fila["hallazgos"]], default=0)
