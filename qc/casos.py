@@ -248,6 +248,20 @@ def prueba_tiempo_pasado_sin_hora_propia():
     no_alerta(h, "E10", "lluvia 7 h antes: fuera del período de 6 h")
 
 
+def prueba_extremas_empate_sin_aviso_de_hora():
+    """Si la mínima real se repite en dos horas del minutario y no hay hora oficial, no se avisa por la hora (SEXH); si no hay empate, sí."""
+    t = pd.Timestamp("2026-11-13 12:00")
+    def caso(minutos_min):
+        A = minutario(t, horas=12, T=5.0)
+        for m in minutos_min:
+            A.loc[A["momento"] == m, "T"] = 0.0
+        o = obs(TnAM=None)
+        o["TnAM"] = {"TnAM": 0.0, "FechaHora": "2026-11-13 04:00:00"}      # hora local 04:00 = 07:00 UTC: en ese minuto la estación marcaba 5.0
+        return [(x["hora"], x["regla"], x["nivel"]) for x in S.revisar("330019", {t: o}, A, horas=1)]
+    no_alerta(caso([pd.Timestamp("2026-11-13 09:02"), pd.Timestamp("2026-11-13 09:41")]), "SEXH", "mínima empatada en 09:02 y 09:41")
+    si_alerta(caso([pd.Timestamp("2026-11-13 09:02")]), "SEXH", "mínima en un solo minuto y hora anotada distinta")
+
+
 def prueba_reglas_saclim_activas():
     """Los Controles Definidos de SACLIM (reglas_sistema.json) siguen cargados y siguen avisando dentro de revisar()."""
     if len(S._COMP) < 300:

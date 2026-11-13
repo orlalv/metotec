@@ -950,7 +950,7 @@ def _extremas(t, o, A, codigo, hist=None, oficial=None):
             add("SEXT", 2 if nunca or abs(d) > 0.5 else 1,
                 (f"{el} {x} °C: la estación automática nunca {'bajó' if minimo else 'subió'} a ese valor en el período ({periodo} local); " if nunca
                  else f"{el} {x} °C, pero ") + f"la {nom} real fue {real:.1f} °C ({fuente}), cerca de las {horas_real}. " + nota_rep +
-                f"Debería ir: {real:.1f} °C a las {horas_real.replace(', ', ' o ')}" + (" (el minutario empata en esas horas, con un solo decimal; la hora que vale es la de la extrema del portal)" if ", " in horas_real and hora_ofi is None else ""))
+                f"Debería ir: {real:.1f} °C a las {horas_real.replace(', ', ' o ')}" + (" (el minutario empata en esas horas)" if ", " in horas_real and hora_ofi is None else ""))
         # 2) hora
         if not isinstance(fh, str) or not re.match(r"\d{4}-\d\d-\d\d \d\d:\d\d", fh):
             continue
@@ -961,6 +961,10 @@ def _extremas(t, o, A, codigo, hist=None, oficial=None):
             if str(codigo) != "270001":            # Isla de Pascua: el huso que usa el observador no es seguro
                 add("SEXH", 1, f"{el} con hora {fh[11:16]} del {fh[8:10]}/{fh[5:7]}: queda fuera del período de la {nom} ({periodo} local). "
                     f"La {nom} real fue {real:.1f} °C cerca de las {horas_real}. Debería ir: {horas_real.replace(', ', ' o ')}")
+            continue
+        # si el valor real de la extrema se repite en varias horas del minutario (un solo decimal) y no hay hora oficial, no se puede saber
+        # cuál es la que da el portal: no se avisa por la hora
+        if hora_ofi is None and len(list(_agrupar(cerca_real))) > 1:
             continue
         # ±1 min: la hora de la extrema que muestra la estación (de sus muestras de segundos) puede caer en el minuto siguiente
         # o anterior al registro por minuto; esa diferencia no es un error
