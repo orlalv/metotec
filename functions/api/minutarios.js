@@ -10,10 +10,11 @@ export async function onRequestGet({ request }){
     const r = await fetch("https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json", { cf: { cacheTtl: 3600, cacheEverything: true } });
     return new Response(r.ok ? await r.text() : "[]", { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=3600" } });
   }
+  const paso = Math.min(12, Math.max(1, parseInt(u.searchParams.get("paso")) || 1));   // 1 = todas las horas; n = una hora de cada n (gráficos de 30 días)
   const desde = Date.parse((u.searchParams.get("desde") || "") + ":00:00Z"), hasta = Date.parse((u.searchParams.get("hasta") || "") + ":00:00Z");
-  if (!/^\d{4,7}$/.test(cod) || !desde || !hasta || hasta < desde || hasta - desde > 49 * 3600e3)
-    return new Response(JSON.stringify({ error: "parámetros: cod, desde y hasta (AAAA-MM-DDTHH, máx. 49 h)" }), { status: 400, headers: { "content-type": "application/json" } });
-  const horas = []; for (let t = desde; t <= hasta && t <= Date.now(); t += 3600e3) horas.push(new Date(t).toISOString().slice(0, 13));
+  if (!/^\d{4,7}$/.test(cod) || !desde || !hasta || hasta < desde || hasta - desde > 49 * 3600e3 * paso)
+    return new Response(JSON.stringify({ error: "parámetros: cod, desde y hasta (AAAA-MM-DDTHH, máx. 49 h; con paso=n, 49·n h)" }), { status: 400, headers: { "content-type": "application/json" } });
+  const horas = []; for (let t = desde; t <= hasta && t <= Date.now(); t += 3600e3 * paso) horas.push(new Date(t).toISOString().slice(0, 13));
   let cab = null; const faltan = [], filas = [];
   await Promise.all(horas.map(async k => {
     try {
