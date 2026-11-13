@@ -383,6 +383,26 @@ def prueba_metar_nieve_respalda_w1():
         FALLAS.append("METAR: SN→7, RA→6, TSRA→9")
 
 
+def prueba_super_vecinas_viento_lluvia():
+    """Super automático: Ts, viento y lluvia contra las vecinas (≥ 3). Cubre el fallo que dejó sin alertas de comparación (_hc sin ingresado/deberia)."""
+    import pandas as pd, superauto as SUP
+    cods = ["A", "B", "C", "D", "E"]
+    E = pd.DataFrame({"codigo": cods, "nombre": cods, "oaci": "", "lat": 0.0, "lon": 0.0, "alt": 100.0})
+    V = {c: [x for x in cods if x != c] for c in cods}
+    filas = []
+    for h in pd.date_range("2026-11-13 18:00", periods=5, freq="h"):
+        for c in cods:
+            mala = c == "A"
+            filas.append(dict(codigo=c, momento=h, T=25.0 if mala else 15.0, Td=8.0, HR=50.0, P_mar=1010.0, ff10=35.0 if mala else 5.0,
+                              rr1h=0.0 if mala else 1.5, n=60))
+    out = SUP.comparar(pd.DataFrame(filas), E, V, None, ())
+    reglas = {x["regla"] for x in out if x["_cod"] == "A"}
+    if not {"ZC01", "ZC05", "ZC06"} <= reglas:
+        FALLAS.append(f"vecinas: debían salir ZC01, ZC05 y ZC06 y salió {sorted(reglas)}")
+    if {x["regla"] for x in out if x["_cod"] == "B"}:
+        FALLAS.append("vecinas: la estación sana no debía tener alertas")
+
+
 if __name__ == "__main__":
     pruebas = [f for k, f in sorted(globals().items()) if k.startswith("prueba_")]
     for f in pruebas:

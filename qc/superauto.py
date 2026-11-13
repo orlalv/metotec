@@ -273,10 +273,13 @@ MOD_S = {"T": (5, 9, "Ts", "°C"), "Td": (6, 11, "Td", "°C"), "HR": (25, 40, "H
 REGLA_V = {"T": ("ZC01", "tem"), "Td": ("ZC02", "tem"), "HR": ("ZC03", "tem"), "P_mar": ("ZC04", "pre")}
 REGLA_M = {"T": ("ZM01", "tem"), "Td": ("ZM02", "tem"), "HR": ("ZM03", "tem"), "P_mar": ("ZM04", "pre"), "ff10": ("ZM05", "vie")}
 ALT_PMAR = 1500
+VIENTO_V = (12, 20)       # kt: diferencia del viento medio contra la mediana de las vecinas (sospechoso, erróneo); se exige en 3 de las últimas 4 horas
+LLUVIA_SIN = 2.0          # mm en 3 h: la mediana de las vecinas acumuló esto y la estación 0
+LLUVIA_SOLA = 5.0         # mm en 3 h: la estación acumuló esto y ninguna vecina pasó de 0,2
 
 
-def _hc(cod, *a):
-    x = _h(None, *a); x["_cod"] = cod
+def _hc(cod, *a, **k):
+    x = _h(None, *a, **k); x["_cod"] = cod
     return x
 
 
@@ -315,6 +318,30 @@ def comparar(H, E, V, M=None, aisladas=()):
                 val = float(Ha[v][cod].get(t))
                 out.append(_hc(cod, REGLA_V[v][0], niv, REGLA_V[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que la mediana de sus {len(vs)} estaciones vecinas (diferencia sostenida en las últimas horas; revisar el sensor)",
                                ingresado=f"{nom} {val:.1f} {un}", deberia=f"≈ {val - d:.1f} {un} (vecinas)"))
+        # viento medio y lluvia contra las vecinas (≥ 3); estaciones muy altas o aisladas se omiten: el viento cambia mucho de un lugar a otro
+        if len(vs) >= 3 and not (cod in aisladas or (a or 0) >= 2000):
+            if "ff10" in Ha and cod in Ha["ff10"].columns:
+                refv = pd.DataFrame({c: Ha["ff10"][c] for c in vs if c in Ha["ff10"].columns})
+                refv = refv[refv.notna().sum(axis=1) >= 3].median(axis=1)
+                r = _sostenida((Ha["ff10"][cod] - refv).loc[lambda x: x.index.isin(horas)], VIENTO_V[0], VIENTO_V[1], horas=4, minimo=3)
+                if r:
+                    t, d, niv = r
+                    val = float(Ha["ff10"][cod].get(t))
+                    out.append(_hc(cod, "ZC05", niv, "vie", t, f"Viento medio {'mayor' if d > 0 else 'menor'} en {abs(d):.0f} kt que la mediana de sus {len(vs)} estaciones vecinas (diferencia sostenida en 3 de las últimas 4 horas; revisar el anemómetro)",
+                                   ingresado=f"Viento medio {val:.0f} kt", deberia=f"≈ {val - d:.0f} kt (vecinas)"))
+            if "rr1h" in Ha and cod in Ha["rr1h"].columns and "n" in Ha:
+                u = [h for h in horas[-3:] if (Ha["n"][cod].get(h) or 0) >= 50]
+                if len(u) == 3:
+                    mia = float(sum(Ha["rr1h"][cod].get(h) or 0 for h in u))
+                    ve = [float(sum(Ha["rr1h"][c].get(h) or 0 for h in u)) for c in vs if c in Ha["rr1h"].columns and all((Ha["n"][c].get(h) or 0) >= 50 for h in u)]
+                    if len(ve) >= 3:
+                        med = float(pd.Series(ve).median())
+                        if mia == 0 and med >= LLUVIA_SIN and sum(1 for x in ve if x >= 0.5) >= 3:
+                            out.append(_hc(cod, "ZC06", 1, "pp", u[-1], f"El pluviómetro no marcó lluvia en 3 h y la mediana de sus {len(ve)} estaciones vecinas acumuló {med:.1f} mm (pluviómetro tapado o sin medir)",
+                                           ingresado="0.0 mm en 3 h", deberia=f"≈ {med:.1f} mm (vecinas)"))
+                        elif mia >= LLUVIA_SOLA and max(ve) <= 0.2:
+                            out.append(_hc(cod, "ZC06", 1, "pp", u[-1], f"El pluviómetro acumuló {mia:.1f} mm en 3 h y ninguna de sus {len(ve)} estaciones vecinas pasó de 0,2 mm (puede ser una tormenta local; revisar el pluviómetro)",
+                                           ingresado=f"{mia:.1f} mm en 3 h", deberia="≈ 0 mm (vecinas)"))
         if M is not None and not M.empty:
             Mc = M[M["codigo"] == cod].set_index("momento")
             for v, (t1, t2, nom, un) in MOD_S.items():

@@ -27,7 +27,7 @@ const N = {
   ZP01: "Salto brusco de QFE", ZP02: "QFE sin cambio (sensor pegado)", ZP03: "QFE lejos de lo esperado por la altura", ZP04: "QFE cambia demasiado en 3 h", ZP05: "QFF no calza con el QFE",
   ZV01: "Cambio fuerte del viento en 10 min", ZV02: "Viento sin cambio (sensor pegado)", ZV03: "Dirección sin cambio (sensor pegado)", ZV05: "Dirección fuera de 0–360", ZV06: "Racha menor que el viento medio",
   ZR01: "Lluvia con aire seco", ZR02: "Lluvia con Ts − Td muy alta", ZR03: "Demasiada lluvia en un minuto", ZR04: "Pluviómetro pegado (mismo valor repetido)", ZR05: "Lluvia de 6 h no calza con los minutos",
-  ZC01: "Ts muy distinta de sus vecinas", ZC02: "Td muy distinto de sus vecinas", ZC03: "HR muy distinta de sus vecinas", ZC04: "QFF muy distinto de sus vecinas",
+  ZC01: "Ts muy distinta de sus vecinas", ZC02: "Td muy distinto de sus vecinas", ZC03: "HR muy distinta de sus vecinas", ZC04: "QFF muy distinto de sus vecinas", ZC05: "Viento medio muy distinto de sus vecinas", ZC06: "Lluvia muy distinta de sus vecinas",
   ZM01: "Ts muy distinta del modelo", ZM02: "Td muy distinto del modelo", ZM03: "HR muy distinta del modelo", ZM04: "QFF muy distinto del modelo", ZM05: "Viento muy distinto del modelo",
   ZE01: "Mínima o máxima de 12 h no coincide con la temperatura por minuto", ZE03: "Mínima de 12 h mayor que la máxima de 12 h",
   SEXT: "Extrema: valor", SEXH: "Extrema: hora", SEXF: "Extrema fuera de bloque sin ingresar", SRRR6: "RRR6 frente al pluviómetro",
