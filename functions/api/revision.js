@@ -1,5 +1,5 @@
 // POST /api/revision  {dia:"AAAA-MM-DD", id:"<id del hallazgo>", v:"real"|"falsa"|"resuelto"|"omitir"|"", msg?, quien?}  (con x-clave)
-// Marca manual de un aviso: «resuelto» (quitado de la lista; vuelve si en la pasada siguiente el dato sigue igual),
+// Marca manual de un aviso: «resuelto» (quitado de la lista; no vuelve mientras el dato sea el mismo),
 // «omitir» (archivada: no vuelve a salir nunca para esa estación/hora/regla, aunque el dato siga igual),
 // «falsa» (falsa alarma: mide y ajusta reglas) o «real». Se guarda por día en qc/rev/AAAA-MM-DD y se ve en el Historial.
 import { json } from "./_kv.js";

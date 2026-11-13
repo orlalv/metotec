@@ -47,7 +47,7 @@ function pintar(){
       : `<p style="color:var(--ok)">Sin alertas de ${TIT[tipo]}${q ? " con ese filtro" : ""}.</p>`}
     <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">${tipo === "ext" ? "Extremas: Tmin AM y Tmax AM (00–12 UTC) y Tmin PM y Tmax PM (12–00 UTC), comparadas con la extrema oficial de la estación automática, en valor y hora (la hora del observador es local)."
       : tipo === "pp" ? "Precipitación: el RRR6 debe calzar exacto con la suma del pluviómetro en las 6 h que cierran a las 00, 06, 12 y 18 UTC."
-      : "Ts, Td y HR del observador frente al sensor de la estación automática, y las diferencias constantes."} «Resuelto» quita la alerta y la manda al Historial; si en la pasada siguiente el dato sigue igual, vuelve marcada.</p>`;
+      : "Ts, Td y HR del observador frente al sensor de la estación automática, y las diferencias constantes."} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
 }
 window.EXT = {init, pintar};
 })();

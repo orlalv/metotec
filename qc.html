@@ -242,11 +242,11 @@ main[hidden]{display:none}
 <script src="js/casillas.js?v=202611131930"></script>
 <script src="js/sensorgraf.js?v=202611131700"></script>
 <script src="js/minutarios.js?v=202611132010"></script>
-<script src="js/superauto.js?v=202611131520"></script>
-<script src="js/extremas.js?v=202611131710"></script>
+<script src="js/superauto.js?v=202611131540"></script>
+<script src="js/extremas.js?v=202611131540"></script>
 <script src="js/boletin.js?v=202611131940"></script>
 <script src="js/series.js?v=202611101600"></script>
-<script src="js/reglas.js?v=202611131530"></script>
+<script src="js/reglas.js?v=202611131540"></script>
 <script src="js/fallas.js?v=202611131300"></script>
 <script src="js/equipo.js?v=202611131400"></script>
 <script src="js/servicios.js?v=202611131500"></script>
@@ -346,7 +346,7 @@ function detalleObs(c, mover = true){
 }
 let DETH = [];
 const hObs = e => (e.hallazgos || []).filter(h => REGLAS.pestana(h.regla) === "obs" && MARCA.estado(e.codigo, h) !== "oculta");
-// Marcas manuales: «Resuelto» (sale de la lista y va al Historial; si en la pasada siguiente el dato sigue igual, vuelve marcado)
+// Marcas manuales: «Resuelto» (sale de la lista y va al Historial; no vuelve mientras el dato sea el mismo)
 // y «Falsa alarma» (para medir y ajustar las reglas). Se guardan en qc/rev/<día> y llegan en /api/qc como R.marcas.
 const MARCA = window.MARCA = {
   id: (cod, h) => `o|${cod}|${String(h.hora).slice(0, 16)}|${h.regla}`,
@@ -355,10 +355,9 @@ const MARCA = window.MARCA = {
     if (m.v === "omitir") return "oculta";                                  // omitida: no vuelve nunca (estación/hora/regla), aunque el dato siga igual
     if (m.msg && m.msg !== h.msg) return null;                              // el dato cambió: es otra alerta
     if (m.v === "falsa") return "oculta";
-    const gen = (h.gen || (R.observaciones || {}).generado || "").slice(0, 19);
-    return gen > m.t ? "sigue" : "oculta";
+    return "oculta";                                                        // resuelto: no vuelve mientras el dato (mensaje) sea el mismo; SACLIM no refleja la corrección en el servicio
   },
-  botones: (cod, h) => `<button class="mk" data-mk="resuelto" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Resuelto: ya se corrigió; se quita de la lista y pasa al Historial" aria-label="Resuelto">✓</button><button class="mk" data-mk="falsa" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Falsa alarma: la alerta no corresponde (sirve para ajustar las reglas)" aria-label="Falsa alarma">✗</button><button class="mk" data-mk="omitir" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Omitir: archivar; queda en el Historial como omitida y no vuelve a salir para esta estación, hora y regla, aunque el dato siga igual" aria-label="Omitir">⊘</button>`,
+  botones: (cod, h) => `<button class="mk" data-mk="resuelto" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Resuelto: ya se corrigió; se quita de la lista y pasa al Historial (no vuelve mientras el dato sea el mismo)" aria-label="Resuelto">✓</button><button class="mk" data-mk="falsa" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Falsa alarma: la alerta no corresponde (sirve para ajustar las reglas)" aria-label="Falsa alarma">✗</button><button class="mk" data-mk="omitir" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Omitir: descartar; queda en el Historial como omitida y no vuelve a salir para esta estación, hora y regla, aunque el dato cambie" aria-label="Omitir">⊘</button>`,
   aviso: `<span class="sigue" title="Se marcó como resuelta, pero en la revisión siguiente el dato sigue igual en SACLIM">resuelta, pero el dato sigue igual</span>`
 };
 new MutationObserver(() => { const P = $("#sgPanel"); if (P && !P._obs){ P._obs = 1; new MutationObserver(() => { if (P.hidden) document.querySelectorAll("tr.sgsel").forEach(x => x.classList.remove("sgsel")); }).observe(P, {attributes: true, attributeFilter: ["hidden"]}); } }).observe(document.body, {childList: true});
@@ -408,7 +407,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&
 // «Falsa alarma» en avisos de estaciones automáticas (en observaciones va junto a «Resuelto», ver MARCA)
 const FALSAS = new Set();
 const botonFalsa = (dia, id) => ` <button class="fa mk${FALSAS.has(id) ? " on" : ""}" data-d="${esc(dia)}" data-i="${esc(id)}" title="Marcar como falsa alarma (para ajustar la regla)" style="${FALSAS.has(id) ? "background:#eb5757;color:#fff" : ""}">${FALSAS.has(id) ? "✗ falsa alarma" : "✗ Falsa alarma"}</button>`;
-const botonOmitir = (dia, id) => ` <button class="om mk" data-d="${esc(dia)}" data-i="${esc(id)}" title="Omitir: archivar; queda en el Historial como omitida y no vuelve a salir para esta estación, hora y regla, aunque el dato siga igual" aria-label="Omitir">⊘</button>`;
+const botonOmitir = (dia, id) => ` <button class="om mk" data-d="${esc(dia)}" data-i="${esc(id)}" title="Omitir: descartar; queda en el Historial como omitida y no vuelve a salir para esta estación, hora y regla, aunque el dato cambie" aria-label="Omitir">⊘</button>`;
 const idEma = a => a.episodio ? `a|${a.codigo}|${a.episodio.inicio}|episodio|${a.episodio.sensor}` : `a|${a.codigo}|${String(a.momento).slice(0, 16)}|${a.prueba}|${a.var}`;
 document.addEventListener("click", async ev => {
   const b = ev.target.closest("button.fa"); if (!b) return;

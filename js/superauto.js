@@ -74,7 +74,7 @@ function pintar(){
         <td style="color:${NIVC[f.nivel] || "inherit"};font-weight:600">${REGLAS.html(f.regla, esc)}</td>
         <td>${esc(f.msg)}${f.st === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${MARCA.botones(f.e.codigo, f)}</td></tr>`).join("")}</table></div>`
       : `<p style="color:var(--ok)">Sin alertas de ${nom}${q ? " con ese filtro" : ""}.</p>`}
-    <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">${NOTA[tipo]} «Resuelto» quita la alerta y la manda al Historial; si en la pasada siguiente el dato sigue igual, vuelve marcada.</p>`;
+    <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">${NOTA[tipo]} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
 }
 document.addEventListener("click", ev => { const a = ev.target.closest("a[data-sup]"); if (!a) return; ev.preventDefault(); q = ""; window.cambiarModo(a.dataset.sup); });
 window.SUPER = {init, pintar, modos: new Set(["sup", ...Object.keys(TABS)])};
