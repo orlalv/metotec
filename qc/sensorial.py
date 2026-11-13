@@ -147,7 +147,7 @@ def _compilar(f):
         return f'_S("{m.group(2)}","{m.group(3)}")' if m.group(1) else f'_G("{m.group(2)}","{m.group(3)}")'
     s = _REF.sub(rep, f)
     s = re.sub(r"(\S+|\([^()]*\))\s+[Ii]n\s*\(([^)]*)\)", lambda m: f"_EN({m.group(1)},({m.group(2).replace(';', ',')},))", s)
-    s = s.replace("<>", "!=").replace("^", "**")
+    s = s.replace("<>", "!=").replace("^", "**").replace("=<", "<=").replace("=>", ">=")   # SACLIM acepta =< y =>
     s = re.sub(r"(?<![<>!=])=(?!=)", "==", s)
     s = re.sub(r"\bROUND\(|\bRound\(", "_R(", s)
     s = re.sub(r"\bABS\(|\bAbs\(", "_A(", s)
