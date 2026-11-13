@@ -44,6 +44,8 @@ async function diarios(cod, a, b){             // valores diarios (resumen del c
 // ---------------------------------------------------------------- dibujo
 (function(){ const st = document.createElement("style"); st.textContent = `.supgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(470px,1fr));gap:12px;margin-bottom:10px}
 .supch{position:relative;background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px 10px 4px}.supch h5{margin:0 0 2px;font:700 13px var(--titulo,inherit);display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline}
+.supch .sgb{position:absolute;top:6px;right:8px;display:flex;gap:4px}.supch .sgb button{background:transparent;border:1px solid var(--bd);color:var(--mu);border-radius:6px;padding:1px 7px;font-size:13px;cursor:pointer}.supch .sgb button:hover{color:var(--tx);border-color:var(--mu)}
+.sgmodal{position:fixed;inset:0;background:#000b;z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px}.sgmodal .supch{width:min(1200px,96vw);padding:14px 16px 8px}.sgmodal .supch .sgb .ab{display:none}
 .supch h5 small{font:500 11.5px inherit;color:var(--mu)}.supch h5 i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}.supch svg{display:block;width:100%;height:auto;cursor:crosshair}
 .sgtip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--oro);border-radius:8px;padding:5px 9px;font-size:12px;line-height:1.45;white-space:nowrap;z-index:6;box-shadow:0 4px 14px rgba(0,0,0,.35)}.sgtip b{display:block;color:var(--oro);margin-bottom:1px}
 .supkpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:6px 0 12px}.supkpi div{background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:8px 12px}.supkpi b{display:block;font:700 19px var(--titulo,inherit)}.supkpi span{font-size:12px;color:var(--mu)}`; document.head.appendChild(st); })();
@@ -78,9 +80,26 @@ function linea(F, vs, o = {}){
   const mk = (o.marcas || []).filter(t => t >= t0 && t <= t1).map(t => `<line x1="${x(t).toFixed(1)}" x2="${x(t).toFixed(1)}" y1="${mt}" y2="${Ht - mb}" stroke="#e5534b" stroke-width="1.4" stroke-dasharray="4 3"/>`).join("") + (o.sel && o.sel >= t0 && o.sel <= t1 ? `<line x1="${x(o.sel).toFixed(1)}" x2="${x(o.sel).toFixed(1)}" y1="${mt}" y2="${Ht - mb}" stroke="var(--oro)" stroke-width="2.4"/>` : "");
   const id = "c" + (++CHN); CH.set(id, {otros, F, vs, W, mi, md, t0, t1, mt, Ht, mb, y, x, lo, hi, dia: o.dia});
   if (CH.size > 80) CH.delete(CH.keys().next().value);
-  return `<div class="supch" data-id="${id}"><h5>${vs.map(v => `<span><i style="background:${V[v][2]}"></i>${esc(V[v][0])} <small>(${V[v][1]})</small></span>`).join("")}${otros.map(q => `<span><i style="background:${q.color}"></i>${esc(q.nom)} <small>(${esc(V[vs[0]][0])}, punteado)</small></span>`).join("")}${(o.marcas || []).length ? '<small style="color:#e5534b">┆ alerta</small>' : ""}</h5>
+  return `<div class="supch" data-id="${id}"><div class="sgb"><button class="ab" data-sgz title="Ampliar">⤢</button><button data-sgd title="Descargar imagen (PNG)">⬇</button></div><h5 style="padding-right:70px">${vs.map(v => `<span><i style="background:${V[v][2]}"></i>${esc(V[v][0])} <small>(${V[v][1]})</small></span>`).join("")}${otros.map(q => `<span><i style="background:${q.color}"></i>${esc(q.nom)} <small>(${esc(V[vs[0]][0])}, punteado)</small></span>`).join("")}${(o.marcas || []).length ? '<small style="color:#e5534b">┆ alerta</small>' : ""}</h5>
     <svg viewBox="0 0 ${W} ${Ht}">${ejes}${eje}${dib}${dibO}${ext}${mk}<line class="xh" y1="${mt}" y2="${Ht - mb}" stroke="var(--tx)" stroke-width="1" opacity="0" stroke-dasharray="3 3"/><g class="dots"></g></svg><div class="sgtip" hidden></div></div>`;
 }
+// ampliar / descargar un gráfico
+function descargar(box){
+  const svg = box.querySelector("svg"), cs = getComputedStyle(box), rs = n => cs.getPropertyValue(n).trim() || "#999";
+  const leyenda = [...box.querySelectorAll("h5 span")].map(x => x.textContent.trim()).join("   ");
+  let src = new XMLSerializer().serializeToString(svg).replace(/var\((--[\w-]+)\)/g, (_, n) => rs(n)).replace(/<g class="dots">.*?<\/g>/, "");
+  const W = 1280, k = W / 640, H = 240 * k + 40, img = new Image();
+  img.onload = () => { const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+    g.fillStyle = rs("--panel"); g.fillRect(0, 0, W, H); g.fillStyle = rs("--tx"); g.font = "600 17px sans-serif"; g.fillText(leyenda, 14, 26); g.drawImage(img, 0, 40, W, 240 * k);
+    const a = document.createElement("a"); a.download = "grafico_" + (leyenda.split(" ")[0] || "metotec").replace(/[^\w-]/g, "") + ".png"; a.href = c.toDataURL("image/png"); a.click(); };
+  img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(src.replace("<svg ", `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${240 * k}" `));
+}
+function ampliar(box){
+  const m = document.createElement("div"); m.className = "sgmodal"; m.innerHTML = box.outerHTML; m.querySelector(".sgtip").hidden = true;
+  m.addEventListener("click", ev => { if (ev.target === m) m.remove(); }); document.body.appendChild(m);
+  document.addEventListener("keydown", function f(e){ if (e.key === "Escape"){ m.remove(); document.removeEventListener("keydown", f); } });
+}
+document.addEventListener("click", ev => { const z = ev.target.closest("[data-sgz]"), d = ev.target.closest("[data-sgd]"); if (!z && !d) return; ev.stopPropagation(); const box = (z || d).closest(".supch"); z ? ampliar(box) : descargar(box); }, true);
 const cercano = (F, t) => { let a = 0, b = F.length - 1; if (!F.length) return null; while (b - a > 1){ const m = (a + b) >> 1; (F[m].t < t ? a = m : b = m); } const r = Math.abs(F[a].t - t) <= Math.abs(F[b].t - t) ? F[a] : F[b]; return Math.abs(r.t - t) <= 36 * 3600e3 / 24 ? r : null; };
 const COLV = ["#8bd17c", "#c792ea", "#ff9f6b", "#59d0c9"];
 const grid = L => `<div class="supgrid">${L.join("")}</div>`;
