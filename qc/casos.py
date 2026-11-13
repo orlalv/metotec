@@ -414,7 +414,7 @@ def prueba_metar_forma():
             W["DESC" + suf] = d if d is not None else "SD"
             for k, x in zip((["FEN1", "FEN2", "FEN3"], ["FEN12", "FEN22", "FEN32"], ["FEN13", "FEN23", "FEN33"])[n], f):
                 W[k] = x
-        return {"WWMETAR": W, "Ts": {"Ts": ts}, "HR": {"HR": hr}, "VTO": {"ff": ff}}
+        return {"WWMETAR": W, "Ts": {"Ts": ts}, "HR": {"HR": hr}, "VTO": {"ff": ff}, "WWSINOP": {"ww": "SD"}}      # WWSINOP: lo ingresa un observador (no es importada)
     regs = lambda *g, **k: sorted({c for c, _, _ in SEN.metar_forma(obs(*g, **k), k.get("hr", 95.0), k.get("ts", 2.0), k.get("ff", 20.0))})
     for nombre, g in {"SN BLSN": [(2, None, [3]), (2, 4, [3])], "VCSH": [(4, 5, [])], "VCTS": [(4, 6, [])], "VCFG": [(4, None, [10])], "-FZRA": [(1, 7, [2])], "FZFG": [(2, 7, [10])], "BCFG": [(2, 2, [10])], "TSRA": [(2, 6, [2])], "+TSRA": [(3, 6, [2])], "SN BR": [(2, None, [3]), (2, None, [9])], "-RA BR": [(1, None, [2]), (2, None, [9])],
                       "-SHRA": [(1, 5, [2])], "+RA": [(3, None, [2])], "-RASN": [(1, None, [2, 3])]}.items():
@@ -425,6 +425,15 @@ def prueba_metar_forma():
                            ("-RA SN separados", [(1, None, [2]), (1, None, [3])], "C52"), ("BR HZ", [(2, None, [9]), (2, None, [15])], "C49")):
         if esp not in regs(*g):
             FALLAS.append(f"METAR {nombre}: debía salir {esp} y salió {regs(*g)}")
+    # tiempo reciente: no puede repetir el tiempo presente del METAR ni el ww del SYNOP
+    ob = obs((2, None, [2])); ob["reWW"] = {"reWW": 4, "reWW2": "SD", "reWW3": "SD"}
+    if "C58" not in {c for c, _, _ in SEN.metar_forma(ob, 95.0, 2.0, 20.0)}:
+        FALLAS.append("METAR RERA con RA en el tiempo presente: debía salir C58")
+    ob = obs((2, None, [9])); ob["reWW"] = {"reWW": 4, "reWW2": "SD", "reWW3": "SD"}
+    if {c for c, _, _ in SEN.metar_forma(ob, 95.0, 2.0, 20.0, None, 61)} != {"C59"}:
+        FALLAS.append("METAR RERA con ww 61: debía salir solo C59 (RERA con BR es válido)")
+    if {c for c, _, _ in SEN.metar_forma(ob, 95.0, 2.0, 20.0, None, 10)}:
+        FALLAS.append("METAR -RA BR con RERA y ww 10: no debía avisar")
     if "C50" not in regs((2, None, [10]), ts=-3.0) or "C51" not in regs((2, None, [10]), hr=70.0) or "C48" not in regs((2, 4, [3]), ff=5.0) or "C48" not in regs((2, 3, [3]), ff=5.0):
         FALLAS.append("METAR: FG bajo 0 °C, FG con HR baja y DRSN con poco viento debían avisar")
 

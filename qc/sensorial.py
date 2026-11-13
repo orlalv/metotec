@@ -290,14 +290,35 @@ FZ_OK = {10, 1, 2}                             # con FZ solo FG DZ RA
 D_MI, D_BC, D_DR, D_BL, D_SH, D_TS, D_FZ, D_PR = 1, 2, 3, 4, 5, 6, 7, 8
 
 
-def metar_forma(o, hr=None, ts=None, ff=None, vv=None):
+# tiempo reciente de SACLIM (reWW): código → (nombre, descriptor y fenómeno que seguirían en el tiempo presente si no hubiera terminado)
+RE_METAR = {1: ("REFZDZ", D_FZ, 1), 2: ("REFZRA", D_FZ, 2), 3: ("REDZ", None, 1), 4: ("RERA", None, 2), 5: ("RESN", None, 3), 6: ("RESG", None, 4), 7: ("REPL", None, 6),
+            8: ("RESHRA", D_SH, 2), 9: ("RESHSN", D_SH, 3), 10: ("RESHGR", D_SH, 7), 11: ("RESHGS", D_SH, 8), 12: ("REBLSN", D_BL, 3), 13: ("REDS", None, None),
+            14: ("RESS", None, None), 15: ("RETS", D_TS, None), 16: ("REFC", None, None), 17: ("REVA", None, None)}
+
+
+# ww de SYNOP que equivale a cada tiempo reciente del METAR
+RE_WW = {1: {56, 57}, 2: {66, 67}, 3: {50, 51, 52, 53, 54, 55}, 4: {60, 61, 62, 63, 64, 65}, 5: {70, 71, 72, 73, 74, 75}, 6: {77}, 7: {79}, 8: {80, 81, 82},
+         9: {85, 86}, 10: {89, 90}, 11: {87, 88}, 12: {36, 37, 38, 39}, 15: {17, 95, 96, 97, 98, 99}}
+
+
+def re_codigos(o):
+    if importada(o):                  # los METAR importados traen reWW=1 solo como bandera de «hubo tiempo reciente», no como código
+        return []
+    return [int(x) for x in (v(o, "reWW", k) for k in ("reWW", "reWW2", "reWW3")) if x is not None]
+
+
+def metar_forma(o, hr=None, ts=None, ff=None, vv=None, ww=None):
     """Errores de cifrado del tiempo presente del METAR (guía de tiempo presente): combinaciones imposibles o sin intensidad válida. [(regla, nivel, mensaje)]."""
     G = metar_raw(o)
+    out = []
+    for c_ in re_codigos(o):                      # lo reciente no puede ser lo mismo que el ww del SYNOP de la misma hora
+        if ww is not None and int(ww) in RE_WW.get(c_, ()):
+            out.append(("C59", 2, f"el METAR informa {RE_METAR[c_][0]} (tiempo reciente) pero el SYNOP tiene ww {int(ww):02d}, que es ese mismo fenómeno en el tiempo presente: lo reciente ya terminó. "
+                        f"Debería ir: o el ww de tiempo presente, o el {RE_METAR[c_][0]}, pero no los dos"))
     if not G:
-        return []
+        return out
     txt = lambda g: (INT_METAR.get(g[0], "") if g[0] in (1, 3, 4) else "") + (DESC_METAR.get(g[1], "") if g[1] is not None else "") + "".join(FEN_METAR.get(f, f"?{f}") for f in g[2])
     todos = [f for g in G if g[0] != 4 for f in g[2]]
-    out = []
     if 9 in todos and 10 in todos:
         out.append(("C43", 2, "el METAR informa BR (neblina) y FG (niebla) a la vez: se excluyen por la visibilidad (FG bajo 1000 m, BR de 1000 a 5000 m). Debería ir uno de los dos"))
     if 9 in todos and 15 in todos:
@@ -345,6 +366,16 @@ def metar_forma(o, hr=None, ts=None, ff=None, vv=None):
         out.append(("C50", 1, f"el METAR informa FG con temperatura de {ts:g} °C: bajo 0 °C la niebla se cifra FZFG"))
     if fg_sin_fz and hr is not None and hr < 90:
         out.append(("C51", 1, f"el METAR informa FG con humedad relativa de {hr:g} %: la niebla exige aire casi saturado (90 % o más); revisar si es HZ o FU"))
+    for c_ in re_codigos(o):                      # lo reciente ya terminó: no puede seguir en el tiempo presente
+        nom, dd, ff_ = RE_METAR.get(c_, (None, None, None))
+        if not nom or (dd is None and ff_ is None):
+            continue
+        for g in G:
+            if g[0] == 4 or g[1] != dd:
+                continue
+            if (ff_ is None and dd == D_TS) or (ff_ is not None and ff_ in g[2]):
+                out.append(("C58", 2, f"el METAR informa {nom} (tiempo reciente) y además {txt(g)} en el tiempo presente: lo reciente ya terminó; si sigue ocurriendo va solo en el tiempo presente. Debería ir: {txt(g)} sin {nom}, o {nom} sin {txt(g)} si ya terminó"))
+                break
     prec = [g for g in G if g[0] != 4 and g[2] and all(f in PRECIP_F for f in g[2]) and g[1] is None]
     if len(prec) >= 2 and len({f for g in prec for f in g[2]}) >= 2:
         out.append(("C52", 1, f"el METAR informa precipitaciones mezcladas en grupos separados ({', '.join(txt(g) for g in prec)}): van en un solo grupo, con la dominante primero (p. ej. -RASN)"))
@@ -387,7 +418,7 @@ def codificacion(o):
     ww, VV, N = v(o, "WWSINOP", "ww"), v(o, "VVSINOP", "VV"), v(o, "N")
     CL, CM, CH, Nh = v(o, "Nubes", "Cl"), v(o, "Nubes", "Cm"), v(o, "Nubes", "Ch"), v(o, "Nubes", "Nh")
     HR, Ts, Td = v(o, "HR"), v(o, "Ts"), v(o, "Td")
-    for c_, n_, m_ in metar_forma(o, HR, Ts, v(o, "VTO", "ff"), v(o, "VVMETAR", "Reinante")):
+    for c_, n_, m_ in metar_forma(o, HR, Ts, v(o, "VTO", "ff"), v(o, "VVMETAR", "Reinante"), ww):
         add(c_, n_, m_)
     if VV is not None and ww is not None:
         if 42 <= ww <= 49 and VV >= 1000:

@@ -20,30 +20,33 @@ const GEN = {0: "Ci (cirros)", 1: "Cc (cirrocúmulos)", 2: "Cs (cirroestratos)",
 const FEN = {1: "DZ llovizna", 2: "RA lluvia", 3: "SN nieve", 4: "SG gránulos de nieve", 5: "IC cristales de hielo", 6: "PL hielo granulado", 7: "GR granizo", 8: "GS granizo pequeño", 9: "BR neblina", 10: "FG niebla", 11: "FU humo", 12: "VA ceniza volcánica", 13: "DU polvo", 14: "SA arena", 15: "HZ calima"};
 const FSIG = {1: "DZ", 2: "RA", 3: "SN", 4: "SG", 5: "IC", 6: "PL", 7: "GR", 8: "GS", 9: "BR", 10: "FG", 11: "FU", 12: "VA", 13: "DU", 14: "SA", 15: "HZ", 16: "PO", 17: "SQ", 18: "FC", 19: "SS", 20: "DS"}, DSIG = {1: "MI", 2: "BC", 3: "DR", 4: "BL", 5: "SH", 6: "TS", 7: "FZ", 8: "PR"}, ISIG = {1: "-", 2: "", 3: "+", 4: "VC"};
 const DTXT = {1: "MI baja", 2: "BC bancos", 3: "DR transportado por el viento a poca altura (< 2 m)", 4: "BL transportado por el viento a cierta altura (> 2 m)", 5: "SH chubasco(s)", 6: "TS tormenta", 7: "FZ engelante (superenfriado)", 8: "PR parcial (cubre una parte del aeródromo)"}, ITXT = {1: "débil (−)", 2: "moderada o sin intensidad", 3: "fuerte (+)", 4: "VC en la vecindad (8 a 16 km)"};
+const RE_T = {1: "REFZDZ llovizna engelante", 2: "REFZRA lluvia engelante", 3: "REDZ llovizna moderada", 4: "RERA lluvia moderada", 5: "RESN nieve moderada", 6: "RESG granos de nieve (cinarra)", 7: "REPL hielo granulado", 8: "RESHRA chubasco de lluvia", 9: "RESHSN chubasco de nieve", 10: "RESHGR chubasco de granizo", 11: "RESHGS chubasco de granizo pequeño y/o nieve granulada", 12: "REBLSN ventisca alta", 13: "REDS tempestad de polvo", 14: "RESS tempestad de arena", 15: "RETS tormenta", 16: "REFC nubes de embudo (tornado o tromba marina)", 17: "REVA cenizas volcánicas"};
 const FTXT = n => FEN[n] || (FSIG[n] ? FSIG[n] : "código " + n);
 // texto claro del tiempo presente METAR de una observación (para el recuadro al pasar el mouse)
-const metarClaro = W => { if (!W) return ""; const n = x => (x == null || x === "SD" || x === "" ? null : +x);
+const metarClaro = (W, R) => { const rc = reClaro(R); if (!W) return rc; const n = x => (x == null || x === "SD" || x === "" ? null : +x);
   return [["IntProx", "DESC", ["FEN1", "FEN2", "FEN3"]], ["IntProx2", "DESC2", ["FEN12", "FEN22", "FEN32"]], ["IntProx3", "DESC3", ["FEN13", "FEN23", "FEN33"]]].map(([i, d, f]) => {
     const fe = f.map(k => n(W[k])).filter(x => x != null); if (!fe.length && n(W[d]) == null) return "";
-    return [n(i) != null ? "intensidad " + (ITXT[n(i)] || n(i)) : "", n(d) != null ? "descriptor " + (DTXT[n(d)] || n(d)) : "", ...fe.map(FTXT)].filter(Boolean).join(" · "); }).filter(Boolean).join("\n"); };
+    return [n(i) != null ? "intensidad " + (ITXT[n(i)] || n(i)) : "", n(d) != null ? "descriptor " + (DTXT[n(d)] || n(d)) : "", ...fe.map(FTXT)].filter(Boolean).join(" · "); }).filter(Boolean).concat(rc ? [rc] : []).join("\n"); };
 // tiempo presente METAR como texto (p. ej. "-SHSN BR") a partir de las casillas FEN/DESC/IntProx
-const metarTxt = W => { if (!W) return ""; const n = x => (x == null || x === "SD" || x === "" ? null : +x);
+const reTxt = R => ["reWW", "reWW2", "reWW3"].map(k => R && R[k] != null && R[k] !== "SD" && R[k] !== "" ? (RE_T[+R[k]] || "RE?" + R[k]).split(" ")[0] : "").filter(Boolean).join(" ");
+const reClaro = R => ["reWW", "reWW2", "reWW3"].map(k => R && R[k] != null && R[k] !== "SD" && R[k] !== "" ? "tiempo reciente " + (RE_T[+R[k]] || "código " + R[k]) : "").filter(Boolean).join("\n");
+const metarTxt = (W, R) => { const re = reTxt(R); if (!W) return re; const n = x => (x == null || x === "SD" || x === "" ? null : +x);
   return [["IntProx", "DESC", ["FEN1", "FEN2", "FEN3"]], ["IntProx2", "DESC2", ["FEN12", "FEN22", "FEN32"]], ["IntProx3", "DESC3", ["FEN13", "FEN23", "FEN33"]]].map(([i, d, f]) => {
     const fe = f.map(k => n(W[k])).filter(x => x != null).map(x => FSIG[x] || "?" + x).join(""); if (!fe && n(W[d]) == null) return "";
-    return (n(W[i]) != null ? ISIG[n(W[i])] || "" : "") + (n(W[d]) != null ? DSIG[n(W[d])] || "" : "") + fe; }).filter(Boolean).join(" "); };
-const comp = c => /^FEN/.test(c) ? "FEN" : /^DESC\d?$/.test(c) ? "DESC" : /^IntProx\d?$/.test(c) ? "IntProx" : /^C$|^C\d$/.test(c) ? "C" : /^Ns\d?$/.test(c) ? "Ns" : /^hshshs\d?$/.test(c) ? "hshshs" : c;
+    return (n(W[i]) != null ? ISIG[n(W[i])] || "" : "") + (n(W[d]) != null ? DSIG[n(W[d])] || "" : "") + fe; }).filter(Boolean).concat(re ? [re] : []).join(" "); };
+const comp = c => /^FEN/.test(c) ? "FEN" : /^reWW\d?$/.test(c) ? "reWW" : /^DESC\d?$/.test(c) ? "DESC" : /^IntProx\d?$/.test(c) ? "IntProx" : /^C$|^C\d$/.test(c) ? "C" : /^Ns\d?$/.test(c) ? "Ns" : /^hshshs\d?$/.test(c) ? "hshshs" : c;
 const SIG = {
   ww: n => WW[n] != null ? `ww ${n}: ${WW[n]}` : null, W1: n => WP[n] != null ? `W1 ${n}: ${WP[n]}` : null, W2: n => WP[n] != null ? `W2 ${n}: ${WP[n]}` : null,
   Cl: n => CL[n] != null ? `CL ${n}: ${CL[n]}` : null, Cm: n => CM[n] != null ? `CM ${n}: ${CM[n]}` : null, Ch: n => CH[n] != null ? `CH ${n}: ${CH[n]}` : null,
   C: n => GEN[n] != null ? `Tipo de nube: ${GEN[n]}` : null, N: n => n === 9 ? "N 9: cielo oscurecido" : `N ${n}: ${n} octas de cielo cubierto`, Ns: n => `Ns ${n}: ${n} octas en esta capa`,
-  hshshs: n => `Base de la capa: ${n} (altura en pies, según SACLIM)`, VV: n => `Visibilidad: ${n} m`, DESC: n => `Descriptor METAR: ${DTXT[n] || "código " + n}`, IntProx: n => `Intensidad / proximidad METAR: ${ITXT[n] || "código " + n}`, FEN: n => FEN[n] ? `Fenómeno METAR: ${FEN[n]}` : `Fenómeno METAR código ${n}`,
+  hshshs: n => `Base de la capa: ${n} (altura en pies, según SACLIM)`, VV: n => `Visibilidad: ${n} m`, DESC: n => `Descriptor METAR: ${DTXT[n] || "código " + n}`, IntProx: n => `Intensidad / proximidad METAR: ${ITXT[n] || "código " + n}`, reWW: n => RE_T[n] ? `Tiempo reciente METAR: ${RE_T[n]}` : `Tiempo reciente METAR código ${n}`, FEN: n => FEN[n] ? `Fenómeno METAR: ${FEN[n]}` : `Fenómeno METAR código ${n}`,
 };
 const NOMBRE = {WWSINOP: "ww", W1W2: "", VVSINOP: "VV", WWMETAR: "", N: "N", Nubes: "", CapaNube: "Capa"};
 const ORDEN = ["WWSINOP", "W1W2", "a", "N", "Nubes", "CapaNube", "VVSINOP", "WWMETAR", "Ts", "Td", "HR", "QFE", "QFF", "QNH", "VTO", "RRR6", "TxAM", "TnAM", "TxPM", "TnPM"];
 const tiene = (e, hora) => !!(e && e.cas && Object.keys(e.cas).length);
 // casillas que intervienen en cada regla (columnas que se señalan); si no está en la lista se buscan nombres de casilla en el mensaje
 const POR_REGLA = [[/^E14$/, ["ppp", "QFE"]], [/^E1[56]$/, ["a", "QFE"]], [/^E0[346]$/, ["ww", "Cl", "VV"]], [/^E0[78]$/, ["ww", "N"]], [/^E18$/, ["C", "hshshs"]], [/^S?B?Ts$|^STs/, ["Ts"]], [/^S?B?Td$/, ["Td"]], [/^S?B?HR$/, ["HR"]], [/QFE/, ["QFE"]], [/QFF/, ["QFF"]], [/QNH/, ["QNH"]], [/^Sff|^Sracha/, ["ff"]], [/^Sdd/, ["dd", "ff"]],
-  [/^C41/, ["Ts", "Td", "HR"]], [/^SRRR6$|^E1[237]$/, ["RRR6", "Traza", "ww"]], [/^SPRE$/, ["ww"]], [/^C4[3-9]$|^C5[0-7]$/, ["FEN1", "FEN12", "FEN13", "DESC", "DESC2", "DESC3", "IntProx", "IntProx2", "IntProx3", "Ts", "HR"]], [/^C0[147]$|^C35$/, ["ww", "VV", "FEN1", "FEN12", "FEN13"]], [/^C11$/, ["ww", "Cl"]], [/^C15$|^C19$/, ["N", "Ns", "Ns2", "Ns3", "Ns4"]],
+  [/^C41/, ["Ts", "Td", "HR"]], [/^SRRR6$|^E1[237]$/, ["RRR6", "Traza", "ww"]], [/^SPRE$/, ["ww"]], [/^C4[3-9]$|^C5[0-9]$/, ["FEN1", "reWW", "reWW2", "reWW3", "ww", "FEN12", "FEN13", "DESC", "DESC2", "DESC3", "IntProx", "IntProx2", "IntProx3", "Ts", "HR"]], [/^C0[147]$|^C35$/, ["ww", "VV", "FEN1", "FEN12", "FEN13"]], [/^C11$/, ["ww", "Cl"]], [/^C15$|^C19$/, ["N", "Ns", "Ns2", "Ns3", "Ns4"]],
   [/^C27$/, ["W1", "W2"]], [/^C32$|^C40$/, ["Cl", "C", "C2", "C3"]], [/^E01$|^E05$/, ["ww", "VV"]], [/^E09$/, ["QFE"]]];
 function involucradas(regla, msg){
   const r = POR_REGLA.find(([re]) => re.test(regla)), s = new Set(r ? r[1] : []);
@@ -79,7 +82,7 @@ function tabla(cas, hora, msg, regla){
   const cmp = new Set(offs.map(o => new Date(Date.parse(clave.replace(" ", "T") + ":00Z") + o * 3600e3).toISOString().slice(0, 16).replace("T", " ")));
   const sep = ix => nInv ? (ix === nInv ? "border-left:3px solid var(--oro);" : "") + (ix >= nInv ? "opacity:.55;" : "") : "";
   const algunaMal = cols.some(([el, c]) => mal.has(c) && ((cas[clave] || {})[el] || {})[c] != null);
-  const filas = ts.map(t => `<tr${t === clave ? ' class="sgalerta"' : ""}><td style="white-space:nowrap"><b>${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}</b></td><td style="white-space:nowrap;font-weight:700;cursor:help;text-decoration:underline dotted" title="${esc(metarClaro((cas[t] || {}).WWMETAR))}">${esc(metarTxt((cas[t] || {}).WWMETAR)) || "—"}</td>${cols.map(([el, c], ix) => {
+  const filas = ts.map(t => `<tr${t === clave ? ' class="sgalerta"' : ""}><td style="white-space:nowrap"><b>${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}</b></td><td style="white-space:nowrap;font-weight:700;cursor:help;text-decoration:underline dotted" title="${esc(metarClaro((cas[t] || {}).WWMETAR, (cas[t] || {}).reWW))}">${esc(metarTxt((cas[t] || {}).WWMETAR, (cas[t] || {}).reWW)) || "—"}</td>${cols.map(([el, c], ix) => {
     const x = ((cas[t] || {})[el] || {})[c], k = comp(c), f = SIG[k];
     const tt = x == null ? "" : typeof x === "number" && f ? (f(x) || "") : "";
     const comp_ = cmp.has(t) && mal.has(c) && x != null;
