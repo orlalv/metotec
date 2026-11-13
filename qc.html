@@ -249,7 +249,7 @@ function detalleObs(c, mover = true){
   const H = [...e.hallazgos].sort((a, b) => b.hora.localeCompare(a.hora) || b.nivel - a.nivel);
   $("#det").style.display = "block"; $("#det").dataset.cod = e.codigo; DETH = H;
   $("#det").innerHTML = `<h2>${esc(e.nombre)} <button class="rvbtn" data-rv="${e.codigo}">🔄 Revisar ahora</button></h2><div class="sub">${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.horas} observaciones en 24 h · ${H.length} hallazgos</div>
-   ${H.length ? `<table><tr><th>Día y hora UTC</th><th>Tipo</th><th>Regla</th><th>Detalle</th></tr>${H.map(h => `<tr><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td style="color:${HEX[h.nivel]}">${TIPO[h.tipo] || h.tipo}</td><td>${esc(h.regla)}</td><td>${esc(h.msg)}${h.revisado === "si" ? " <small style='color:var(--mu)'>(ya revisado)</small>" : ""}${SGRAF.tiene(h.regla) ? ` <button class="sgbtn" data-sg="${esc(h.hora)}|${esc(h.regla)}">📈 ver gráfico</button>` : ""}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin hallazgos en las últimas 24 horas.</p>`}`;
+   ${H.length ? `<table><tr><th>Día y hora UTC</th><th>Tipo</th><th>Regla</th><th>Detalle</th></tr>${H.map(h => `<tr><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td style="color:${HEX[h.nivel]}">${TIPO[h.tipo] || h.tipo}</td><td>${esc(h.regla)}</td><td>${esc(h.msg)}${h.revisado === "si" ? " <small style='color:var(--mu)'>(ya revisado)</small>" : ""}${SGRAF.tiene(h.regla) ? ` <button class="sgbtn" data-sg="${esc(h.hora)}|${esc(h.regla)}">📈 ver gráfico</button>` : ""}${botonFalsa(h.hora.slice(0, 10), `o|${h.codigo}|${h.hora.slice(0, 16)}|${h.regla}`)}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin hallazgos en las últimas 24 horas.</p>`}`;
 }
 let DETH = [];
 // «Revisar ahora»: deja un pedido; GitHub lo toma en menos de un minuto y vuelve a revisar esa estación desde SACLIM
@@ -293,6 +293,17 @@ const ZONAS = {todo: [-90, 0], norte: [-27.5, 0], centro: [-38, -27.5], sur: [-4
 let R = null, zona = "todo", ver = {0: true, 1: true, 2: true, 3: true}, sel = null, marcas = {};
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+// «Falsa alarma»: marca el aviso para medir y ajustar las reglas (queda en /api/revision, se ve en Historial → desempeño)
+const FALSAS = new Set();
+const botonFalsa = (dia, id) => ` <button class="fa${FALSAS.has(id) ? " on" : ""}" data-d="${esc(dia)}" data-i="${esc(id)}" title="Marcar como falsa alarma (para ajustar la regla)" style="font-size:11px;padding:1px 6px;${FALSAS.has(id) ? "background:#eb5757;color:#fff" : ""}">${FALSAS.has(id) ? "✗ falsa alarma" : "Falsa alarma"}</button>`;
+document.addEventListener("click", async ev => {
+  const b = ev.target.closest("button.fa"); if (!b) return;
+  const id = b.dataset.i, v = FALSAS.has(id) ? "" : "falsa";
+  const r = await fetch("/api/revision", {method: "POST", headers: {"x-clave": clave(), "content-type": "application/json"}, body: JSON.stringify({dia: b.dataset.d, id, v})});
+  if (!r.ok){ b.textContent = "no se pudo guardar"; return; }
+  v ? FALSAS.add(id) : FALSAS.delete(id);
+  b.outerHTML = botonFalsa(b.dataset.d, id);
+});
 const clave = () => { try { return sessionStorage.getItem("qcClave") || ""; } catch (e) { return window._qc || ""; } };
 
 const mapa = L.map("mapa", {zoomControl: true, preferCanvas: true}).setView([-33.5, -71], 5);
@@ -361,7 +372,7 @@ function detalle(c, mover = true){
    <table><tr><th>Variable</th><th>Estación</th><th>WRF-DMC${m.n_wrf ? " (" + m.n_wrf + " corridas)" : ""}</th><th>Open-Meteo</th></tr>${fila("Temperatura", "T", "°C")}${fila("Punto de rocío", "Td", "°C")}${fila("Humedad", "HR", "%")}${fila("QFF", "P_mar", "hPa")}
    <tr><td>Viento 10 min</td><td>${v.dd10 ?? "—"}° ${v.ff10 ?? "—"} kt</td><td>${c3(m.ff10_wrf, "kt")}</td><td></td></tr><tr><td>Lluvia última hora</td><td>${c3(v.rr1h, "mm")}</td><td></td><td></td></tr></table>
    <h3 style="font-size:14px;margin:14px 0 6px">Alertas</h3>
-   ${e.alertas.length ? `<table><tr><th>Prueba</th><th>Variable</th><th>Valor</th><th>Referencia</th><th>Detalle</th></tr>${e.alertas.map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba}</td><td>${nomVar(a.var)}</td><td>${a.valor ?? "—"}</td><td>${a.ref ?? "—"}</td><td>${esc(a.msg)}${a.detalle && a.detalle.length ? `<details><summary style="cursor:pointer;color:var(--mu)">detalle técnico</summary><small>${a.detalle.map(esc).join("<br>")}</small></details>` : ""}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin alertas.</p>`}
+   ${e.alertas.length ? `<table><tr><th>Prueba</th><th>Variable</th><th>Valor</th><th>Referencia</th><th>Detalle</th></tr>${e.alertas.map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba}</td><td>${nomVar(a.var)}</td><td>${a.valor ?? "—"}</td><td>${a.ref ?? "—"}</td><td>${esc(a.msg)}${a.detalle && a.detalle.length ? `<details><summary style="cursor:pointer;color:var(--mu)">detalle técnico</summary><small>${a.detalle.map(esc).join("<br>")}</small></details>` : ""}${botonFalsa(String(a.momento).slice(0, 10), a.episodio ? `a|${a.codigo}|${a.episodio.inicio}|episodio|${a.episodio.sensor}` : `a|${a.codigo}|${String(a.momento).slice(0, 16)}|${a.prueba}|${a.var}`)}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin alertas.</p>`}
    <p style="color:var(--mu);font-size:12.5px;margin-top:10px">${e.aislada ? "Estación aislada: tiene menos de 3 vecinas comparables; la principal referencia es el modelo." : "Vecinas: " + esc(vec)}</p>`;
 }
 document.addEventListener("click", ev => {
