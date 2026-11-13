@@ -91,7 +91,7 @@ footer{color:var(--mu);font-size:12.5px;padding:6px 20px;border-top:1px solid va
 #login input{width:100%;margin:12px 0;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--fondo);color:var(--tx);font:inherit}
 #login button{background:var(--oro);color:var(--noche);border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;width:100%}
 #login p{color:var(--mu);font-size:13px;margin:0}
-.leaflet-container{font:inherit}
+.leaflet-container{font:inherit}html:not([data-tema="claro"]) .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.5)}
 .leaflet-popup-content{font-size:13px}
 main[hidden]{display:none}
 #prio{flex:1;overflow:auto;padding:14px 20px}#prio[hidden]{display:none}
@@ -389,11 +389,11 @@ document.addEventListener("click", async ev => {
 const clave = () => { try { return sessionStorage.getItem("qcClave") || ""; } catch (e) { return window._qc || ""; } };
 
 const mapa = L.map("mapa", {zoomControl: true, preferCanvas: true}).setView([-33.5, -71], 5);
-// Mapa base de CARTO (sin clave): fondo sin rótulos + capa de rótulos encima. El de Esri empezó a pedir «API key».
-const capaMapa = t => "https://{s}.basemaps.cartocdn.com/" + (document.documentElement.dataset.tema === "claro" ? "light" : "dark") + (t === "Base" ? "_nolabels" : "_only_labels") + "/{z}/{x}/{y}{r}.png";
-const MB = L.tileLayer(capaMapa("Base"), {maxZoom: 13, subdomains: "abcd", attribution: "© OpenStreetMap · © CARTO"}).addTo(mapa);
-const MR = L.tileLayer(capaMapa("Reference"), {maxZoom: 13, subdomains: "abcd", pane: "overlayPane", opacity: .8}).addTo(mapa);
-function pintarTema(){ const c = document.documentElement.dataset.tema === "claro"; $("#tema").textContent = c ? "☾" : "☀"; $("#tema").title = c ? "Pasar al tema oscuro" : "Pasar al tema claro"; MB.setUrl(capaMapa("Base")); MR.setUrl(capaMapa("Reference")); }
+// Mapa base: OpenStreetMap (sin clave). CARTO y Esri empezaron a pedir «API key». El tema oscuro se logra con un filtro CSS sobre las teselas.
+const capaMapa = () => "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+const MB = L.tileLayer(capaMapa(), {maxZoom: 13, attribution: "© OpenStreetMap"}).addTo(mapa);
+const MR = {setUrl(){}};      // ya no hay capa de rótulos aparte (vienen en el mapa base)
+function pintarTema(){ const c = document.documentElement.dataset.tema === "claro"; $("#tema").textContent = c ? "☾" : "☀"; $("#tema").title = c ? "Pasar al tema oscuro" : "Pasar al tema claro";  }
 $("#tema").addEventListener("click", () => { const c = document.documentElement.dataset.tema !== "claro";
   if (c) document.documentElement.dataset.tema = "claro"; else delete document.documentElement.dataset.tema;
   try { localStorage.setItem("metotecTema", c ? "claro" : "oscuro"); } catch (e) {} pintarTema(); });

@@ -160,7 +160,7 @@ function ordenar(){
 
 (async function(){
   map = L.map("mapa", {zoomControl: true, minZoom: 3}).setView([-35.5, -71.5], 5);
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {maxZoom: 12, attribution: "© OpenStreetMap · © CARTO"}).addTo(map);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 12, attribution: "© OpenStreetMap"}).addTo(map);
   try {
     const [c, d] = await Promise.all([fetch("/api/minutarios?estaciones").then(r => r.json()), fetch("/api/mapa").then(r => { if (!r.ok) throw 0; return r.json(); })]);
     c.forEach(e => cat[e.codigo] = e); datos = d; for (const k in d.estaciones) d.estaciones[k] = limpiar(d.estaciones[k]);
