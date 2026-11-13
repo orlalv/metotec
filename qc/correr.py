@@ -475,6 +475,7 @@ def main():
         sj = Path(a.datos) / "sensoriales.json"
         cods_obs = [x["codigo"] for x in json.loads(sj.read_text())["estaciones"] if x["horas"] > 0] if sj.exists() else ESTACIONES_OBS
         sup = SUP.correr(a.datos, E, set(cods_obs) | set(ESTACIONES_OBS), leer_archivo, V=V, M=M, aisladas=aisladas)
+        estado["diario"] = SUP.diario(a.datos)
         estado["super"] = dict(estaciones=len(sup["estaciones"]), hallazgos=sum(len(e["hallazgos"]) for e in sup["estaciones"]),
                                kv=subir_kv("qc/super", json.dumps(sup, ensure_ascii=False)))
     except Exception:

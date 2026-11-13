@@ -230,6 +230,8 @@ def _resumen(g):
     if "rr1m" in g24 and g24["rr1m"].notna().sum() >= 600:
         out["rr_24h"] = r(g24["rr1m"].sum()); out["rr_1h"] = r(g24[g24["momento"] > fin - pd.Timedelta(hours=1)]["rr1m"].sum())
         out["rr_min"] = r(g24["rr1m"].max())
+        for h in (3, 6, 12):
+            out[f"rr_{h}h"] = r(g24[g24["momento"] > fin - pd.Timedelta(hours=h)]["rr1m"].sum())
     if "P_est" in g24 and g24["P_est"].notna().sum() > 200:
         h = g24.set_index("momento")["P_est"].dropna()
         a = h[h.index <= fin - pd.Timedelta(hours=3)]
@@ -295,6 +297,57 @@ def comparar(H, E, V, M=None, aisladas=()):
                     t, d, niv = r
                     out.append(_hc(cod, REGLA_M[v][0], niv, REGLA_M[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que el modelo (diferencia sostenida en las últimas horas; revisar el sensor)"))
     return out
+
+
+# ------------------------------------------------------------------ resumen diario (para las vistas Mes y Año de la pestaña «Estación»)
+CAMPOS_DIA = ["tmin", "tmax", "tmed", "hrmed", "pest", "pmar", "ffmax", "fxmax", "rr", "n"]
+
+
+def _dia(raiz, dia):
+    """Resumen de un día UTC de todas las estaciones, leído de sus 24 archivos horarios. Devuelve {código: [valores en CAMPOS_DIA]}."""
+    from pathlib import Path
+    partes = []
+    for h in range(24):
+        f = Path(raiz) / "ema" / dia.strftime("%Y/%m/%d") / f"{h:02d}.csv.gz"
+        if f.exists():
+            partes.append(pd.read_csv(f, parse_dates=["momento"], dtype={"codigo": str}))
+    if not partes:
+        return {}
+    D = pd.concat(partes, ignore_index=True).drop_duplicates(["codigo", "momento"])
+    r = lambda x, n=1: None if pd.isna(x) else round(float(x), n)
+    out = {}
+    for cod, g in D.groupby("codigo"):
+        rr = g["rr1m"].sum() if "rr1m" in g and g["rr1m"].notna().sum() >= 600 else None
+        out[cod] = [r(g["T"].min()), r(g["T"].max()), r(g["T"].mean()), r(g["HR"].mean(), 0), r(g["P_est"].mean()), r(g["P_mar"].mean()),
+                    r(g["ff10"].max()), r(g["fx10"].max()), r(rr), int(len(g))]
+    return out
+
+
+def diario(raiz, ahora=None, subir=None):
+    """Mantiene datos/diario/AAAA/MM.json: {campos, dias: {AAAA-MM-DD: {código: [...]}}}. Calcula los días que faltan y recalcula hoy y ayer."""
+    import json
+    from pathlib import Path
+    ahora = pd.Timestamp.now("UTC").tz_localize(None) if ahora is None else ahora
+    hoy = ahora.normalize()
+    ema = Path(raiz) / "ema"
+    dias = {}
+    for mm in ((hoy - pd.Timedelta(days=40)).strftime("%Y/%m"), (hoy - pd.Timedelta(days=20)).strftime("%Y/%m"), hoy.strftime("%Y/%m")):
+        for d in sorted((ema / mm).glob("*")) if (ema / mm).exists() else []:
+            if d.is_dir():
+                dias[f"{mm.replace('/', '-')}-{d.name}"] = d
+    tocados = set()
+    for dia in sorted(dias):
+        t = pd.Timestamp(dia)
+        mes = Path(raiz) / "diario" / t.strftime("%Y") / t.strftime("%m.json")
+        M = json.loads(mes.read_text(encoding="utf-8")) if mes.exists() else {"campos": CAMPOS_DIA, "dias": {}}
+        if dia in M["dias"] and t < hoy - pd.Timedelta(days=1):
+            continue
+        M["dias"][dia] = _dia(raiz, t)
+        M["campos"] = CAMPOS_DIA
+        mes.parent.mkdir(parents=True, exist_ok=True)
+        mes.write_text(json.dumps(M, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        tocados.add(dia)
+    return sorted(tocados)
 
 
 def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=()):
