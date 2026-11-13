@@ -77,3 +77,41 @@ if __name__ == "__main__":
     E, D = leer(json.load(open(sys.argv[1], encoding="utf-8")))
     print(len(E), "estaciones;", len(D), "registros;", D["momento"].min(), "→", D["momento"].max())
     print(D.describe().T[["count", "min", "max"]])
+
+
+# ======================================================================= resumen diario (extremas oficiales)
+def extremas_oficiales(js):
+    """Extremas oficiales de temperatura desde getEmaResumenDiario/{cod} (decimales completos y hora).
+    El lector es tolerante: recorre el JSON y toma cada objeto con un «momento» y un valor de mínima o máxima
+    (temperaturaExtremas por día, maxima06, extremas6Horas…). Devuelve [dict(tipo='min'|'max', valor, momento, fuente)].
+    getDatosRecientesRedEma trae 1 decimal y sin hora de Tn12/Tx12; por eso se prefiere esto."""
+    out = []
+
+    def tipo_de(k):
+        k = k.lower()
+        if "min" in k:
+            return "min"
+        if "max" in k:
+            return "max"
+        return None
+
+    def recorrer(n, ruta):
+        if isinstance(n, dict):
+            mom = next((n[k] for k in n if k.lower() in ("momento", "fechahora", "hora", "momentoutc")), None)
+            for k, x in n.items():
+                t = tipo_de(k) or (tipo_de(ruta[-1]) if ruta else None)
+                if mom and t and not isinstance(x, (dict, list)) and k.lower() not in ("momento", "fechahora", "hora", "momentoutc"):
+                    val = numero(x)
+                    if val is not None:
+                        try:
+                            out.append(dict(tipo=t, valor=val, momento=pd.Timestamp(str(mom)[:19]), fuente=".".join(ruta + [k])))
+                        except ValueError:
+                            pass
+                recorrer(x, ruta + [k])
+        elif isinstance(n, list):
+            for x in n:
+                recorrer(x, ruta)
+
+    recorrer(js, [])
+    # solo temperatura (el resumen trae también otras variables)
+    return [x for x in out if "temp" in x["fuente"].lower() or "maxima06" in x["fuente"].lower() or "extremas" in x["fuente"].lower()]

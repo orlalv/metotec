@@ -879,7 +879,8 @@ EXTREMAS = (("TnAM", "mínima", True), ("TxAM", "máxima", False), ("TnPM", "mí
 TOL_EXT = 0.2                     # frente a la extrema de la estación (se ven diferencias de 0,1–0,2 por redondeo de pantalla)
 
 
-def extremas(t, o, A, codigo, hist=None):
+def extremas(t, o, A, codigo, hist=None, oficial=None):
+    """oficial: extremas del resumen diario de la estación (dmc.extremas_oficiales): valor y hora oficiales."""
     out = []
     if A is None or A.empty or "T" not in A:
         return out
@@ -912,15 +913,21 @@ def extremas(t, o, A, codigo, hist=None):
                    [float(c) for c in cerca_t[col].dropna().unique() if ser - 0.05 <= c <= ser + 1.0]
             if cand:
                 ofi = min(cand, key=lambda c: abs(c - x))   # la que calza mejor con lo anotado (si hay varias plausibles)
+        hora_ofi = None
+        of = [x_ for x_ in (oficial or []) if x_["tipo"] == ("min" if minimo else "max")
+              and t - pd.Timedelta(hours=12) < x_["momento"] <= t]
+        if of:                                        # extrema oficial (resumen diario): manda sobre el minutario
+            o_ = min(of, key=lambda x_: x_["valor"]) if minimo else max(of, key=lambda x_: x_["valor"])
+            ofi, hora_ofi = o_["valor"], o_["momento"]
         real = ofi if ofi is not None else ser
         # tolerancia: exacta frente a la extrema oficial; sin ella, unas décimas hacia afuera por las muestras de segundos
         if ofi is not None:
             ok = abs(round(x - real, 1)) <= TOL_EXT
         else:
             ok = (round(ser - 0.6, 1) <= x <= round(ser + 0.3, 1)) if minimo else (round(ser - 0.3, 1) <= x <= round(ser + 0.6, 1))
-        fuente = "según la extrema de la estación" if ofi is not None else "según el minutario"
+        fuente = "según el resumen diario oficial" if hora_ofi is not None else "según la extrema de la estación" if ofi is not None else "según el minutario"
         cerca_real = W.loc[(W["T"] - real).abs() <= max(0.05, abs(real - ser) + 0.05), "momento"]
-        horas_real = ", ".join(f"{a_loc(m):%H:%M}" for m in _agrupar(cerca_real))
+        horas_real = f"{a_loc(hora_ofi):%H:%M}" if hora_ofi is not None else ", ".join(f"{a_loc(m):%H:%M}" for m in _agrupar(cerca_real))
         periodo = f"{a_loc(t - pd.Timedelta(hours=12)):%H:%M}–{a_loc(t):%H:%M}"
         d = round(x - real, 1)
         # 1) valor
@@ -949,6 +956,11 @@ def extremas(t, o, A, codigo, hist=None):
             continue
         # ±1 min: la hora de la extrema que muestra la estación (de sus muestras de segundos) puede caer en el minuto siguiente
         # o anterior al registro por minuto; esa diferencia no es un error
+        if hora_ofi is not None:                  # con la hora oficial basta compararla (±1 min)
+            if ok and abs(tu - hora_ofi) > pd.Timedelta(minutes=1):
+                add("SEXH", 1, f"{el} {x} °C a las {fh[11:16]}: según el resumen diario oficial la {nom} fue a las {a_loc(hora_ofi):%H:%M}. "
+                    f"Debería ir: {a_loc(hora_ofi):%H:%M}")
+            continue
         cerca = W[(W["momento"] - tu).abs() <= pd.Timedelta(minutes=1)]
         if cerca.empty or not ok:                  # si el valor ya está mal, la alerta de valor trae la hora que corresponde
             continue
@@ -994,7 +1006,7 @@ def _agrupar(momentos, salto=10):
 EXT_PP = {"SEXT", "SEXH", "SEXF", "SRRR6", "SPRE", "E12", "E13", "E17"}     # extremas y precipitación
 
 
-def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None):
+def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None, oficial=None):
     """Revisa las horas indicadas (por defecto la última) de una estación. Devuelve lista de hallazgos.
     horas_ext: horas (contadas desde la última) en que se revisan además las extremas y la precipitación, más atrás de «horas»
     (para no perder lo de un fin de semana largo)."""
@@ -1012,11 +1024,11 @@ def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None):
                             msg=f"{el} del observador difiere en forma constante {sg[el]:+.1f} hPa de la estación automática (diferencia propia: altura del sensor o de pista; ya se descuenta al comparar)"))
     for t in sel:
         o = obs[t]
-        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs) + satelital(t, o, sat):
+        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + satelital(t, o, sat):
             out.append(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"))
     for t in ext:
         o = obs[t]
-        for tipo, cod, niv, msg in evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs):
+        for tipo, cod, niv, msg in evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial):
             if cod in EXT_PP:
                 out.append(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"))
     return out

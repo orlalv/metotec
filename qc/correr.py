@@ -132,7 +132,17 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
         n_obs += len(obs)
         A = A_todo[A_todo["codigo"] == cod] if len(A_todo) else A_todo
         todas = {**obs_archivo(raiz, cod, ahora), **obs}
-        hall = SEN.revisar(cod, todas, A, horas=HORAS, sat=(SAT or {}).get(cod), horas_ext=HORAS_EXT)
+        oficial = None
+        try:   # extremas oficiales (valor con todos los decimales y hora) del resumen diario de la estación
+            js_r = dmc.descargar(f"getEmaResumenDiario/{cod}", timeout=60)
+            oficial = dmc.extremas_oficiales(js_r)
+            mu = Path(raiz) / "muestras" / f"resumen_{cod}.json"      # una muestra por estación para verificar el formato
+            if not mu.exists():
+                mu.parent.mkdir(parents=True, exist_ok=True)
+                mu.write_text(json.dumps(js_r, ensure_ascii=False)[:200000], encoding="utf-8")
+        except Exception:
+            pass
+        hall = SEN.revisar(cod, todas, A, horas=HORAS, sat=(SAT or {}).get(cod), horas_ext=HORAS_EXT, oficial=oficial)
         revisadas[cod] = [str(t) for t in sorted(obs)[-HORAS:]]
         for t, o in obs.items():
             archivo.setdefault(t.strftime("%Y/%m/%d"), {}).setdefault(cod, {})[t.strftime("%H")] = {k: x for k, x in o.items() if k != "_qa"}

@@ -165,6 +165,23 @@ def prueba_traza():
     si_alerta(S.evolucion(T, h[T], h, minutario(T)), "E21", "traza sin fenómenos", nivel=0)
 
 
+def prueba_extremas_oficiales():
+    """La extrema y su hora oficiales (resumen diario) mandan sobre el minutario."""
+    import dmc
+    js = {"datos": {"temperaturaExtremas": [{"fecha": "2026-11-10", "minima": {"valor": "3.37 °C", "momento": "2026-11-10 09:41:00"},
+                                              "maxima": {"valor": "21.84 °C", "momento": "2026-11-10 19:02:00"}}]}}
+    of = dmc.extremas_oficiales(js)
+    if sorted((x["tipo"], x["valor"]) for x in of) != [("max", 21.84), ("min", 3.37)]:
+        FALLAS.append(f"lector del resumen diario → {of}")
+    A = minutario(T, horas=13, T=5.0)
+    A.loc[A["momento"] == pd.Timestamp("2026-11-10 09:41"), "T"] = 3.4
+    bien = {"TnAM": {"TnAM": 3.4, "FechaHora": "2026-11-10 06:41:00"}}        # 09:41 UTC = 06:41 local (verano)
+    no_alerta(S.extremas(T, bien, A, "330020", None, of), "SEXT", "TnAM igual a la oficial")
+    no_alerta(S.extremas(T, bien, A, "330020", None, of), "SEXH", "TnAM a la hora oficial")
+    mala = {"TnAM": {"TnAM": 3.4, "FechaHora": "2026-11-10 05:10:00"}}
+    si_alerta(S.extremas(T, mala, A, "330020", None, of), "SEXH", "TnAM con hora distinta de la oficial")
+
+
 # ----------------------------------------------------------------- estaciones automáticas
 def _ema(horas, **cols):
     m = pd.date_range(T - pd.Timedelta(hours=horas) + pd.Timedelta(minutes=1), T, freq="1min")
