@@ -39,7 +39,7 @@ header img{height:32px}
 header h1{margin:0;font:600 18px var(--titulo);letter-spacing:.2px}
 header h1 small{display:block;color:var(--mu);font-weight:500;font-size:12.5px}
 .chips{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
-.bloques{display:flex;flex-direction:column;gap:5px}.grupos{display:flex;gap:4px}.grupos button{background:none;border:1px solid var(--bd);color:var(--mu);font:700 11.5px inherit;letter-spacing:.5px;text-transform:uppercase;padding:2px 10px;border-radius:6px;cursor:pointer}.grupos button.on{border-color:var(--oro);color:var(--oro)}.modos button[hidden]{display:none}
+.salto{flex-basis:100%;height:0;margin:-18px 0 0}.bloques{display:flex;flex-direction:column;gap:5px}.grupos{display:flex;gap:4px}.grupos button{background:none;border:1px solid var(--bd);color:var(--mu);font:700 11.5px inherit;letter-spacing:.5px;text-transform:uppercase;padding:2px 10px;border-radius:6px;cursor:pointer}.grupos button.on{border-color:var(--oro);color:var(--oro)}.modos button[hidden]{display:none}
 .modos{display:flex;flex-wrap:wrap;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:10px;padding:3px}
 .modos button{background:none;border:0;color:var(--mu);font:700 13.5px inherit;padding:6px 12px;border-radius:7px;cursor:pointer}
 .modos button.on{background:var(--oro);color:var(--on);box-shadow:0 0 16px color-mix(in srgb,var(--oro) 35%,transparent)}
@@ -187,7 +187,7 @@ main[hidden]{display:none}
  html,body{max-width:100vw;overflow-x:hidden}header{max-width:100vw}
  .chips{flex-wrap:nowrap;overflow-x:auto;width:100%}.chip{padding:4px 10px;font-size:13px;white-space:nowrap}
  header{padding:8px 12px;gap:8px 10px}header img{height:26px}header h1{font-size:15px}
- .bloques{width:100%;order:5}.grupos{overflow-x:auto}.modos{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}.modos button{white-space:nowrap;padding:7px 11px}
+ .salto{display:none}.bloques{width:100%;order:5}.grupos{overflow-x:auto}.modos{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}.modos button{white-space:nowrap;padding:7px 11px}
  .chips{margin-left:0;order:4}.perfil{order:3}.svcw{order:3}
  header{position:sticky;top:0;z-index:1500}#svcP{position:fixed;left:8px;right:8px;top:var(--hcab,96px);width:auto}
  #mapa{height:42vh;min-height:260px}main{display:block}aside{display:block;border-top:1px solid var(--bd)}#lista{overflow:visible}
@@ -210,6 +210,7 @@ main[hidden]{display:none}
  <label class="perfil" title="Su nombre: filtra sus estaciones y las marcas quedan con este nombre">👤 <select id="persona"><option value="">Todos</option></select></label>
  <div id="horasCL" title="Hora oficial de Chile (referencia: horaoficial.cl)"></div>
  <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
+ <div class="salto"></div>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
  <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="real">Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="real">Equipo</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
  <div class="chips" id="chips"></div>
