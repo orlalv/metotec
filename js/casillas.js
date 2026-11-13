@@ -18,18 +18,18 @@ const CM = {0: "Sin nubes medias", 1: "As delgado", 2: "As grueso o Ns", 3: "Ac 
 const CH = {0: "Sin nubes altas", 1: "Ci en filamentos", 2: "Ci densos en copos", 3: "Ci densos de Cb", 4: "Ci en ganchos, extendiéndose", 5: "Ci o Cs que invaden el cielo, < 45° de altura", 6: "Ci o Cs que invaden el cielo, > 45° de altura", 7: "Cs que cubre todo el cielo", 8: "Cs que no invade el cielo", 9: "Cc solo o con Ci/Cs"};
 const GEN = {0: "Ci (cirros)", 1: "Cc (cirrocúmulos)", 2: "Cs (cirroestratos)", 3: "Ac (altocúmulos)", 4: "As (altoestratos)", 5: "Ns (nimboestratos)", 6: "Sc (estratocúmulos)", 7: "St (estratos)", 8: "Cu (cúmulos)", 9: "Cb (cumulonimbos)", 10: "TCu (cúmulos congestus)"};
 const FEN = {1: "DZ llovizna", 2: "RA lluvia", 3: "SN nieve", 4: "SG gránulos de nieve", 5: "IC cristales de hielo", 6: "PL hielo granulado", 7: "GR granizo", 8: "GS granizo pequeño", 9: "BR neblina", 10: "FG niebla", 11: "FU humo", 12: "VA ceniza volcánica", 13: "DU polvo", 14: "SA arena", 15: "HZ calima"};
-const FSIG = {1: "DZ", 2: "RA", 3: "SN", 4: "SG", 5: "IC", 6: "PL", 7: "GR", 8: "GS", 9: "BR", 10: "FG", 11: "FU", 12: "VA", 13: "DU", 14: "SA", 15: "HZ", 16: "PO", 17: "SQ", 18: "FC", 19: "SS", 20: "DS"}, DSIG = {1: "MI", 2: "BC", 3: "PR", 4: "DR", 5: "SH", 6: "TS", 7: "FZ"}, ISIG = {1: "-", 2: "", 3: "+"};
-const DTXT = {1: "MI poco profundo", 2: "BC bancos", 3: "PR parcial", 4: "DR baja (arrastrado por el viento, bajo 2 m)", 5: "SH chubasco", 6: "TS tormenta", 7: "FZ engelante"}, ITXT = {1: "ligera (−)", 2: "moderada", 3: "fuerte (+)"};
+const FSIG = {1: "DZ", 2: "RA", 3: "SN", 4: "SG", 5: "IC", 6: "PL", 7: "GR", 8: "GS", 9: "BR", 10: "FG", 11: "FU", 12: "VA", 13: "DU", 14: "SA", 15: "HZ", 16: "PO", 17: "SQ", 18: "FC", 19: "SS", 20: "DS"}, DSIG = {1: "MI", 2: "BC", 3: "DR", 4: "BL", 5: "SH", 6: "TS", 7: "FZ", 8: "PR"}, ISIG = {1: "-", 2: "", 3: "+", 4: "VC"};
+const DTXT = {1: "MI baja", 2: "BC bancos", 3: "DR transportado por el viento a poca altura (< 2 m)", 4: "BL transportado por el viento a cierta altura (> 2 m)", 5: "SH chubasco(s)", 6: "TS tormenta", 7: "FZ engelante (superenfriado)", 8: "PR parcial (cubre una parte del aeródromo)"}, ITXT = {1: "débil (−)", 2: "moderada o sin intensidad", 3: "fuerte (+)", 4: "VC en la vecindad (8 a 16 km)"};
 const FTXT = n => FEN[n] || (FSIG[n] ? FSIG[n] : "código " + n);
 // texto claro del tiempo presente METAR de una observación (para el recuadro al pasar el mouse)
 const metarClaro = W => { if (!W) return ""; const n = x => (x == null || x === "SD" || x === "" ? null : +x);
   return [["IntProx", "DESC", ["FEN1", "FEN2", "FEN3"]], ["IntProx2", "DESC2", ["FEN12", "FEN22", "FEN32"]], ["IntProx3", "DESC3", ["FEN13", "FEN23", "FEN33"]]].map(([i, d, f]) => {
-    const fe = f.map(k => n(W[k])).filter(x => x != null); if (!fe.length) return "";
+    const fe = f.map(k => n(W[k])).filter(x => x != null); if (!fe.length && n(W[d]) == null) return "";
     return [n(i) != null ? "intensidad " + (ITXT[n(i)] || n(i)) : "", n(d) != null ? "descriptor " + (DTXT[n(d)] || n(d)) : "", ...fe.map(FTXT)].filter(Boolean).join(" · "); }).filter(Boolean).join("\n"); };
 // tiempo presente METAR como texto (p. ej. "-SHSN BR") a partir de las casillas FEN/DESC/IntProx
 const metarTxt = W => { if (!W) return ""; const n = x => (x == null || x === "SD" || x === "" ? null : +x);
   return [["IntProx", "DESC", ["FEN1", "FEN2", "FEN3"]], ["IntProx2", "DESC2", ["FEN12", "FEN22", "FEN32"]], ["IntProx3", "DESC3", ["FEN13", "FEN23", "FEN33"]]].map(([i, d, f]) => {
-    const fe = f.map(k => n(W[k])).filter(x => x != null).map(x => FSIG[x] || "?" + x).join(""); if (!fe) return "";
+    const fe = f.map(k => n(W[k])).filter(x => x != null).map(x => FSIG[x] || "?" + x).join(""); if (!fe && n(W[d]) == null) return "";
     return (n(W[i]) != null ? ISIG[n(W[i])] || "" : "") + (n(W[d]) != null ? DSIG[n(W[d])] || "" : "") + fe; }).filter(Boolean).join(" "); };
 const comp = c => /^FEN/.test(c) ? "FEN" : /^DESC\d?$/.test(c) ? "DESC" : /^IntProx\d?$/.test(c) ? "IntProx" : /^C$|^C\d$/.test(c) ? "C" : /^Ns\d?$/.test(c) ? "Ns" : /^hshshs\d?$/.test(c) ? "hshshs" : c;
 const SIG = {
@@ -43,7 +43,7 @@ const ORDEN = ["WWSINOP", "W1W2", "a", "N", "Nubes", "CapaNube", "VVSINOP", "WWM
 const tiene = (e, hora) => !!(e && e.cas && Object.keys(e.cas).length);
 // casillas que intervienen en cada regla (columnas que se señalan); si no está en la lista se buscan nombres de casilla en el mensaje
 const POR_REGLA = [[/^E14$/, ["ppp", "QFE"]], [/^E1[56]$/, ["a", "QFE"]], [/^E0[346]$/, ["ww", "Cl", "VV"]], [/^E0[78]$/, ["ww", "N"]], [/^E18$/, ["C", "hshshs"]], [/^S?B?Ts$|^STs/, ["Ts"]], [/^S?B?Td$/, ["Td"]], [/^S?B?HR$/, ["HR"]], [/QFE/, ["QFE"]], [/QFF/, ["QFF"]], [/QNH/, ["QNH"]], [/^Sff|^Sracha/, ["ff"]], [/^Sdd/, ["dd", "ff"]],
-  [/^C41/, ["Ts", "Td", "HR"]], [/^SRRR6$|^E1[237]$/, ["RRR6", "Traza", "ww"]], [/^SPRE$/, ["ww"]], [/^C4[3-9]$|^C5[0-2]$/, ["FEN1", "FEN12", "FEN13", "DESC", "DESC2", "DESC3", "IntProx", "IntProx2", "IntProx3", "Ts", "HR"]], [/^C0[147]$|^C35$/, ["ww", "VV", "FEN1", "FEN12", "FEN13"]], [/^C11$/, ["ww", "Cl"]], [/^C15$|^C19$/, ["N", "Ns", "Ns2", "Ns3", "Ns4"]],
+  [/^C41/, ["Ts", "Td", "HR"]], [/^SRRR6$|^E1[237]$/, ["RRR6", "Traza", "ww"]], [/^SPRE$/, ["ww"]], [/^C4[3-9]$|^C5[0-7]$/, ["FEN1", "FEN12", "FEN13", "DESC", "DESC2", "DESC3", "IntProx", "IntProx2", "IntProx3", "Ts", "HR"]], [/^C0[147]$|^C35$/, ["ww", "VV", "FEN1", "FEN12", "FEN13"]], [/^C11$/, ["ww", "Cl"]], [/^C15$|^C19$/, ["N", "Ns", "Ns2", "Ns3", "Ns4"]],
   [/^C27$/, ["W1", "W2"]], [/^C32$|^C40$/, ["Cl", "C", "C2", "C3"]], [/^E01$|^E05$/, ["ww", "VV"]], [/^E09$/, ["QFE"]]];
 function involucradas(regla, msg){
   const r = POR_REGLA.find(([re]) => re.test(regla)), s = new Set(r ? r[1] : []);

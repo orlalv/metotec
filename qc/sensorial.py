@@ -233,11 +233,11 @@ def categoria_W(ww):
 
 
 # fenómenos METAR en SACLIM (WWMETAR FEN1..FEN3x): código → sigla (vistos en el servicio)
-# orden de la tabla METAR (visto: 1 DZ, 2 RA, 3 SN, 9 BR, 10 FG, 15 HZ); descriptores: 4 DR?, 5 SH (confirmado con un METAR SHSN)
+# orden de la tabla METAR (visto: 1 DZ, 2 RA, 3 SN, 9 BR, 10 FG, 15 HZ)
 FEN_METAR = {1: "DZ", 2: "RA", 3: "SN", 4: "SG", 5: "IC", 6: "PL", 7: "GR", 8: "GS", 9: "BR", 10: "FG", 11: "FU", 12: "VA", 13: "DU", 14: "SA", 15: "HZ",
              16: "PO", 17: "SQ", 18: "FC", 19: "SS", 20: "DS"}
-DESC_METAR = {1: "MI", 2: "BC", 3: "PR", 4: "DR", 5: "SH", 6: "TS", 7: "FZ"}
-INT_METAR = {1: "-", 2: "", 3: "+"}
+DESC_METAR = {1: "MI", 2: "BC", 3: "DR", 4: "BL", 5: "SH", 6: "TS", 7: "FZ", 8: "PR"}      # tabla de SACLIM (confirmada)
+INT_METAR = {1: "-", 2: "", 3: "+", 4: "VC"}                                              # IntProx 4 = VC (en la vecindad)
 FEN_W = {"DZ": 5, "RA": 6, "SN": 7, "SG": 7, "FG": 4}   # categoría de tiempo pasado (W) que respalda cada fenómeno
 FEN_PRECIP = {"DZ", "RA", "SN", "SG", "PL", "GR", "GS"}
 
@@ -262,9 +262,9 @@ def metar_grupos(o):
     out = []
     for ii, dd, ff in (("IntProx", "DESC", ("FEN1", "FEN2", "FEN3")), ("IntProx2", "DESC2", ("FEN12", "FEN22", "FEN32")), ("IntProx3", "DESC3", ("FEN13", "FEN23", "FEN33"))):
         fen = [FEN_METAR.get(int(x), f"?{int(x)}") for x in (v(o, "WWMETAR", k) for k in ff) if x is not None]
-        if not fen:
-            continue
         d = v(o, "WWMETAR", dd); i = v(o, "WWMETAR", ii)
+        if not fen and d is None:
+            continue
         out.append((INT_METAR.get(int(i), "") if i is not None else "") + (DESC_METAR.get(int(d), "") if d is not None else "") + "".join(fen))
     return out
 
@@ -285,15 +285,18 @@ SIN_INT = {9, 10, 11, 12, 13, 14, 15}          # BR FG FU VA DU SA HZ: no llevan
 PRECIP_F = {1, 2, 3, 4, 5, 6, 7, 8}            # DZ RA SN SG IC PL GR GS
 SH_OK = {2, 3, 6, 7, 8}                        # con SH solo RA SN PL GR GS
 DR_OK = {3, 13, 14}                            # DR/BL solo SN DU SA
+TS_OK = {2, 3, 6, 7, 8}                        # con TS solo RA SN PL GR GS (o sola)
+FZ_OK = {10, 1, 2}                             # con FZ solo FG DZ RA
+D_MI, D_BC, D_DR, D_BL, D_SH, D_TS, D_FZ, D_PR = 1, 2, 3, 4, 5, 6, 7, 8
 
 
-def metar_forma(o, hr=None, ts=None, ff=None):
+def metar_forma(o, hr=None, ts=None, ff=None, vv=None):
     """Errores de cifrado del tiempo presente del METAR (guía de tiempo presente): combinaciones imposibles o sin intensidad válida. [(regla, nivel, mensaje)]."""
     G = metar_raw(o)
     if not G:
         return []
-    txt = lambda g: (INT_METAR.get(g[0], "") if g[0] in (1, 3) else "") + (DESC_METAR.get(g[1], "") if g[1] is not None else "") + "".join(FEN_METAR.get(f, f"?{f}") for f in g[2])
-    todos = [f for g in G for f in g[2]]
+    txt = lambda g: (INT_METAR.get(g[0], "") if g[0] in (1, 3, 4) else "") + (DESC_METAR.get(g[1], "") if g[1] is not None else "") + "".join(FEN_METAR.get(f, f"?{f}") for f in g[2])
+    todos = [f for g in G if g[0] != 4 for f in g[2]]
     out = []
     if 9 in todos and 10 in todos:
         out.append(("C43", 2, "el METAR informa BR (neblina) y FG (niebla) a la vez: se excluyen por la visibilidad (FG bajo 1000 m, BR de 1000 a 5000 m). Debería ir uno de los dos"))
@@ -302,32 +305,47 @@ def metar_forma(o, hr=None, ts=None, ff=None):
     vistos = set()
     for g in G:
         for f in g[2]:
-            k = (g[1], f)
+            k = (g[0] == 4, g[1], f)
             if k in vistos:
                 out.append(("C44", 2, f"el METAR repite {FEN_METAR.get(f, f)} en dos grupos ({', '.join(txt(x) for x in G if f in x[2])}): el mismo fenómeno se cifra una sola vez"))
             vistos.add(k)
     for g in G:
         i, d, fen = g
         t = txt(g)
+        if i == 4:                                                           # VC: solo VCTS, VCSH, VCFG, VCBLSN/DU/SA, PO, DS, SS, FC y VA
+            bien = ((d == D_TS or d == D_SH) and not fen) or (d is None and (fen == [10] or (fen and all(f == 12 or f >= 16 for f in fen)))) \
+                or (d == D_BL and fen and all(f in (3, 13, 14) for f in fen))
+            if not bien and (fen or d is not None):
+                out.append(("C53", 2, f"el METAR informa {t}: VC (en la vecindad) solo se usa con TS, SH, FG, ventisca alta (BLSN, BLDU, BLSA), PO, DS, SS, FC y VA. La lluvia, la nieve, la llovizna, la neblina y la calima en la vecindad no se cifran con VC"))
+            if fen == [10] and d is None and vv is not None and vv < 1000:
+                out.append(("C56", 1, f"el METAR informa VCFG con visibilidad de {vv} m en la estación: si la niebla está en la estación es FG, no VCFG"))
+            continue
         if i in (1, 3):
-            if fen and all(f in SIN_INT for f in fen) or (d == 4 and fen):
-                out.append(("C45", 2, f"el METAR informa {t} con intensidad ({'débil' if i == 1 else 'fuerte'}), pero ese fenómeno no lleva intensidad (la neblina, la niebla, la calima, el humo, el polvo, la arena y la ventisca baja DR van sin signo). Debería ir: intensidad moderada o sin intensidad"))
+            if (fen and all(f in SIN_INT for f in fen)) or (d in (D_DR, D_BL, D_MI, D_BC, D_PR) and fen) or (d == D_FZ and fen == [10]):
+                out.append(("C45", 2, f"el METAR informa {t} con intensidad ({'débil' if i == 1 else 'fuerte'}), pero ese fenómeno no lleva intensidad (la neblina, la niebla, la calima, el humo, el polvo, la arena, las ventiscas y MI, BC, PR van sin signo). Debería ir: intensidad moderada o sin intensidad"))
             elif not fen:
                 out.append(("C45", 1, f"el METAR tiene intensidad {'débil' if i == 1 else 'fuerte'} sin ningún fenómeno en el grupo"))
-        if d == 5:
-            if not fen and i in (None, 1, 2, 3):
+        if d == D_SH:
+            if not fen:
                 out.append(("C46", 2, "el METAR informa SH (chubasco) sin fenómeno: SH solo existe con precipitación (SHRA, SHSN…) o como VCSH"))
-            elif fen and any(f not in SH_OK for f in fen):
+            elif any(f not in SH_OK for f in fen):
                 out.append(("C46", 2, f"el METAR informa {t}: SH (chubasco) solo va con RA, SN, PL, GR o GS (no existe SHDZ, SHSG ni SH con niebla, neblina o calima)"))
-        if d == 4 and fen and any(f not in DR_OK for f in fen):
-            out.append(("C47", 2, f"el METAR informa {t}: DR (ventisca baja) solo va con SN, DU o SA"))
-        if d == 4 and 3 in fen and ff is not None and ff < 10:
-            out.append(("C48", 1, f"el METAR informa {t} con viento de {ff:g} kt: la ventisca baja necesita al menos 10 kt"))
-    if 10 in todos and ts is not None and ts < 0 and not any(g[1] is not None and 10 in g[2] for g in G):
+        if d in (D_DR, D_BL) and fen and any(f not in DR_OK for f in fen):
+            out.append(("C47", 2, f"el METAR informa {t}: DR y BL (ventiscas) solo van con SN, DU o SA"))
+        if d in (D_MI, D_BC, D_PR) and (not fen or any(f != 10 for f in fen)):
+            out.append(("C54", 2, f"el METAR informa {t}: MI, BC y PR son solo de niebla (MIFG, BCFG, PRFG)"))
+        if d == D_TS and fen and any(f not in TS_OK for f in fen):
+            out.append(("C55", 2, f"el METAR informa {t}: la tormenta (TS) solo va con RA, SN, PL, GR o GS (no existe TSDZ ni TSSG), o sola"))
+        if d == D_FZ and (not fen or any(f not in FZ_OK for f in fen)):
+            out.append(("C57", 2, f"el METAR informa {t}: FZ (engelante) solo va con FG, DZ o RA (FZFG, FZDZ, FZRA)"))
+        if d in (D_DR, D_BL) and 3 in fen and ff is not None and ff < (10 if d == D_DR else 15):
+            out.append(("C48", 1, f"el METAR informa {t} con viento de {ff:g} kt: {'DR (ventisca baja)' if d == D_DR else 'BL (ventisca alta)'} necesita al menos {10 if d == D_DR else 15} kt"))
+    fg_sin_fz = any(10 in g[2] and g[1] != D_FZ and g[0] != 4 and g[1] not in (D_MI, D_BC, D_PR) for g in G)
+    if fg_sin_fz and ts is not None and ts < 0:
         out.append(("C50", 1, f"el METAR informa FG con temperatura de {ts:g} °C: bajo 0 °C la niebla se cifra FZFG"))
-    if 10 in todos and hr is not None and hr < 90 and not any(g[1] is not None and 10 in g[2] for g in G):
+    if fg_sin_fz and hr is not None and hr < 90:
         out.append(("C51", 1, f"el METAR informa FG con humedad relativa de {hr:g} %: la niebla exige aire casi saturado (90 % o más); revisar si es HZ o FU"))
-    prec = [g for g in G if g[2] and all(f in PRECIP_F for f in g[2]) and g[1] is None]
+    prec = [g for g in G if g[0] != 4 and g[2] and all(f in PRECIP_F for f in g[2]) and g[1] is None]
     if len(prec) >= 2 and len({f for g in prec for f in g[2]}) >= 2:
         out.append(("C52", 1, f"el METAR informa precipitaciones mezcladas en grupos separados ({', '.join(txt(g) for g in prec)}): van en un solo grupo, con la dominante primero (p. ej. -RASN)"))
     return out
@@ -337,6 +355,8 @@ def fen_w(o):
     """[(categoría W, texto)] que respalda el METAR de esa hora: SH con precipitación = chubascos (8), TS = tormenta (9), SN = nieve (7), RA 6, DZ 5, FG 4."""
     out = []
     for g in metar_grupos(o):
+        if g.startswith("VC"):
+            continue                                 # en la vecindad, no en la estación
         fen = [g[i:i + 2] for i in range(len(g) - 1) if g[i:i + 2] in FEN_W or g[i:i + 2] in FEN_PRECIP]
         c_ = [FEN_W[f] for f in fen if f in FEN_W]
         if "TS" in g:
@@ -367,7 +387,7 @@ def codificacion(o):
     ww, VV, N = v(o, "WWSINOP", "ww"), v(o, "VVSINOP", "VV"), v(o, "N")
     CL, CM, CH, Nh = v(o, "Nubes", "Cl"), v(o, "Nubes", "Cm"), v(o, "Nubes", "Ch"), v(o, "Nubes", "Nh")
     HR, Ts, Td = v(o, "HR"), v(o, "Ts"), v(o, "Td")
-    for c_, n_, m_ in metar_forma(o, HR, Ts, v(o, "VTO", "ff")):
+    for c_, n_, m_ in metar_forma(o, HR, Ts, v(o, "VTO", "ff"), v(o, "VVMETAR", "Reinante")):
         add(c_, n_, m_)
     if VV is not None and ww is not None:
         if 42 <= ww <= 49 and VV >= 1000:

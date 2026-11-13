@@ -416,16 +416,16 @@ def prueba_metar_forma():
                 W[k] = x
         return {"WWMETAR": W, "Ts": {"Ts": ts}, "HR": {"HR": hr}, "VTO": {"ff": ff}}
     regs = lambda *g, **k: sorted({c for c, _, _ in SEN.metar_forma(obs(*g, **k), k.get("hr", 95.0), k.get("ts", 2.0), k.get("ff", 20.0))})
-    for nombre, g in {"SN DRSN": [(2, None, [3]), (2, 4, [3])], "SN BR": [(2, None, [3]), (2, None, [9])], "-RA BR": [(1, None, [2]), (2, None, [9])],
+    for nombre, g in {"SN BLSN": [(2, None, [3]), (2, 4, [3])], "VCSH": [(4, 5, [])], "VCTS": [(4, 6, [])], "VCFG": [(4, None, [10])], "-FZRA": [(1, 7, [2])], "FZFG": [(2, 7, [10])], "BCFG": [(2, 2, [10])], "TSRA": [(2, 6, [2])], "+TSRA": [(3, 6, [2])], "SN BR": [(2, None, [3]), (2, None, [9])], "-RA BR": [(1, None, [2]), (2, None, [9])],
                       "-SHRA": [(1, 5, [2])], "+RA": [(3, None, [2])], "-RASN": [(1, None, [2, 3])]}.items():
         if regs(*g):
             FALLAS.append(f"METAR válido {nombre} no debía avisar: {regs(*g)}")
-    for nombre, g, esp in (("BR y FG", [(2, None, [9]), (2, None, [10])], "C43"), ("-BR", [(1, None, [9])], "C45"), ("+FG", [(3, None, [10])], "C45"), ("-DRSN", [(1, 4, [3])], "C45"),
-                           ("SHDZ", [(2, 5, [1])], "C46"), ("SH solo", [(2, 5, [])], "C46"), ("DRRA", [(2, 4, [2])], "C47"), ("-RA RA", [(1, None, [2]), (2, None, [2])], "C44"),
+    for nombre, g, esp in (("BR y FG", [(2, None, [9]), (2, None, [10])], "C43"), ("-BR", [(1, None, [9])], "C45"), ("+FG", [(3, None, [10])], "C45"), ("-BLSN", [(1, 4, [3])], "C45"), ("-DRSN", [(1, 3, [3])], "C45"), ("-FZFG", [(1, 7, [10])], "C45"),
+                           ("SHDZ", [(2, 5, [1])], "C46"), ("SH solo", [(2, 5, [])], "C46"), ("BLRA", [(2, 4, [2])], "C47"), ("DRRA", [(2, 3, [2])], "C47"), ("VCRA", [(4, None, [2])], "C53"), ("VCBR", [(4, None, [9])], "C53"), ("MIBR", [(2, 1, [9])], "C54"), ("BCRA", [(2, 2, [2])], "C54"), ("TSDZ", [(2, 6, [1])], "C55"), ("FZSN", [(2, 7, [3])], "C57"), ("FZBR", [(2, 7, [9])], "C57"), ("-RA RA", [(1, None, [2]), (2, None, [2])], "C44"),
                            ("-RA SN separados", [(1, None, [2]), (1, None, [3])], "C52"), ("BR HZ", [(2, None, [9]), (2, None, [15])], "C49")):
         if esp not in regs(*g):
             FALLAS.append(f"METAR {nombre}: debía salir {esp} y salió {regs(*g)}")
-    if "C50" not in regs((2, None, [10]), ts=-3.0) or "C51" not in regs((2, None, [10]), hr=70.0) or "C48" not in regs((2, 4, [3]), ff=5.0):
+    if "C50" not in regs((2, None, [10]), ts=-3.0) or "C51" not in regs((2, None, [10]), hr=70.0) or "C48" not in regs((2, 4, [3]), ff=5.0) or "C48" not in regs((2, 3, [3]), ff=5.0):
         FALLAS.append("METAR: FG bajo 0 °C, FG con HR baja y DRSN con poco viento debían avisar")
 
 
