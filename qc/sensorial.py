@@ -642,7 +642,10 @@ def evolucion(t, o, hist, A=None):
     if W1 is not None and len([h for h in previas if h]) >= per - 2:
         # categorías W de lo informado en el período, con su origen (ww de cada hora o fenómeno de los METAR)
         fuentes = []
-        for k in range(1, per + 1):
+        # el ww de la hora t-per describe el tiempo de la hora ANTERIOR al período (ej.: para las 18 UTC, el ww de las 12 es de 11–12): no cuenta.
+        # Solo si la estación no tiene horas intermedias (SYNOP cada 3 h) se usa esa hora, porque no hay otra fuente.
+        ks = range(1, per) if len([1 for k in range(1, per) if hist.get(t - pd.Timedelta(hours=k))]) >= per - 2 else range(1, per + 1)
+        for k in ks:
             tk = t - pd.Timedelta(hours=k); hk = hist.get(tk)
             if not hk:
                 continue
