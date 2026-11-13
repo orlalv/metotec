@@ -3,9 +3,10 @@
 //   lluvia   : lluvia del último periodo 12–12 UTC de las estaciones con observador            (KV pub/lluvia_obs)
 //   boletin  : boletín climatológico diario con la revisión (qué dato difiere y cuál debería ir) (KV qc/boletin/<día>)
 // Si el KV no lo tiene, se lee el archivo guardado en la rama «datos».
+import { aplicar } from "./_boletin_marcas.js";
 const RAW = "https://raw.githubusercontent.com/orlalv/metotec/datos/";
 const cab = { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=120", "Access-Control-Allow-Origin": "*" };
-const resp = (d, st = 200) => new Response(JSON.stringify(d), { status: st, headers: cab });
+const resp = (d, st = 200) => new Response(JSON.stringify(d), { status: st, headers: st === 200 ? cab : { ...cab, "Cache-Control": "no-store" } });
 
 async function leer(env, clave, ruta){
   try { const r = await env.DATOS.get(clave, "json"); if (r) return r; } catch (e){}
@@ -31,7 +32,7 @@ export async function onRequestGet({ request, env }){
     const dias = pedido ? [pedido] : Array.from({ length: 8 }, (_, k) => new Date(hoy - k * 864e5).toISOString().slice(0, 10));
     for (const d of dias){
       const r = await leer(env, "qc/boletin/" + d, "boletin/" + d.replace(/-/g, "/") + ".json");
-      if (r && r.filas) return resp(publico(r));
+      if (r && r.filas) return resp(publico(await aplicar(env, r)));
     }
     return resp({ dia: dias[0], vacio: true });
   }

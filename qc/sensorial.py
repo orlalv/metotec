@@ -348,7 +348,7 @@ def codificacion(o):
         elif HR is not None:
             hc = hr_de(Ts, Td)
             if abs(hc - HR) > 3:
-                add("C41", 2 if abs(hc - HR) > 10 else 1, f"HR {HR:g} %: con Ts {Ts} °C y Td {Td} °C corresponde {hc:.0f} %. "
+                add("C41H", 2 if abs(hc - HR) > 10 else 1, f"HR {HR:g} %: con Ts {Ts} °C y Td {Td} °C corresponde {hc:.0f} %. "
                     f"Si la HR es correcta, el Td sería {td_de(Ts, HR):.1f} °C; si el Td es correcto, debería ir HR {hc:.0f} %")
     if Nh is not None and N is not None and N != 9 and Nh > N:
         add("C20", 2, f"Nh {Nh} mayor que N {N}")
@@ -879,7 +879,7 @@ EXTREMAS = (("TnAM", "mínima", True), ("TxAM", "máxima", False), ("TnPM", "mí
 TOL_EXT = 0.2                     # frente a la extrema de la estación (se ven diferencias de 0,1–0,2 por redondeo de pantalla)
 
 
-def extremas(t, o, A, codigo, hist=None, oficial=None):
+def _extremas(t, o, A, codigo, hist=None, oficial=None):
     """oficial: extremas del resumen diario de la estación (dmc.extremas_oficiales): valor y hora oficiales."""
     out = []
     if A is None or A.empty or "T" not in A:
@@ -975,25 +975,51 @@ def extremas(t, o, A, codigo, hist=None, oficial=None):
             add("SEXH", 2 if abs(en_hora - x) > 2 else 1, f"{el} {x} °C a las {fh[11:16]}: a esa hora la estación automática marcaba {en_hora:.1f} °C. "
                 + (f"El valor {x} °C se registró a las {otras}. Debería ir: {otras.split(', ')[0]}" if otras
                    else f"La {nom} real fue {real:.1f} °C cerca de las {horas_real}. Debería ir: {horas_real.split(', ')[0]}"))
-    # 3) extrema fuera del bloque habitual sin ingresar. TxAM y TnPM no son obligatorias: solo corresponden cuando el extremo
-    # del día ocurrió en ese período. Se evalúa con la observación de las 00 UTC, cuando ya están los dos bloques del día local
-    # (mañana 00–12 UTC = 21:00–09:00 y tarde 12–00 UTC = 09:00–21:00 en verano).
+    # 3) extrema que cae en un bloque (AM 00–12 UTC o PM 12–00 UTC) y no se ingresó. Se evalúa con la observación de las 00 UTC,
+    # cuando ya están los dos bloques del día local. Solo se avisa si la extrema NO fue reportada en su bloque: se busca en todas las
+    # observaciones del bloque (y la hora siguiente), por valor (±0.6 °C) o porque su hora (FechaHora) cae dentro del bloque.
     if t.hour == 0 and hist is not None:
         Wm = A[(A["momento"] > t - pd.Timedelta(hours=24)) & (A["momento"] <= t - pd.Timedelta(hours=12))].dropna(subset=["T"])
         cub = lambda w: len(w) > 1 and len(w) * (w["momento"].diff().median() / pd.Timedelta(minutes=1)) >= 0.8 * 720
+
+        def reportada(el, ini, fin, valor):
+            for k, ob in hist.items():
+                if not (ini < k <= fin + pd.Timedelta(hours=1)):
+                    continue
+                x_ = v(ob, el)
+                if x_ is None:
+                    continue
+                fh_ = (ob.get(el) or {}).get("FechaHora")
+                tu_ = a_utc(fh_[:16]) if isinstance(fh_, str) and re.match(r"\d{4}-\d\d-\d\d \d\d:\d\d", fh_) else None
+                if abs(x_ - valor) <= 0.6 or (tu_ is not None and pd.notna(tu_) and ini < tu_ <= fin):
+                    return True
+            return False
+
         if cub(Wm) and cub(W):
-            o12 = hist.get(t - pd.Timedelta(hours=12)) or {}
+            t0 = t - pd.Timedelta(hours=24); t12 = t - pd.Timedelta(hours=12)
             mx_m, mx_t = float(Wm["T"].max()), float(W["T"].max())
-            if mx_m > mx_t + 0.2 and v(o12, "TxAM") is None:
+            if mx_m > mx_t + 0.2 and not reportada("TxAM", t0, t12, mx_m):
                 tm = Wm["momento"].iloc[int(Wm["T"].values.argmax())]
-                add("SEXF", 1, f"La máxima del día se dio en la mañana: {mx_m:.1f} °C a las {a_loc(tm):%H:%M}, más alta que la de la tarde ({mx_t:.1f} °C). "
-                    f"Correspondía ingresar la TxAM en la observación de las 12 UTC. Debería ir: TxAM {mx_m:.1f} °C a las {a_loc(tm):%H:%M}")
+                add("SEXF", 1, f"Se dio una máxima AM ({mx_m:.1f} °C a las {a_loc(tm):%H:%M}), más alta que la de la tarde ({mx_t:.1f} °C), y no se ingresó. "
+                    f"Debería ir: Tmax AM {mx_m:.1f} °C a las {a_loc(tm):%H:%M}")
             mn_m, mn_t = float(Wm["T"].min()), float(W["T"].min())
-            if mn_t < mn_m - 0.2 and v(o, "TnPM") is None:
+            if mn_t < mn_m - 0.2 and not reportada("TnPM", t12, t, mn_t):
                 tn = W["momento"].iloc[int(W["T"].values.argmin())]
-                add("SEXF", 1, f"La mínima del día se dio en la tarde: {mn_t:.1f} °C a las {a_loc(tn):%H:%M}, más baja que la de la mañana ({mn_m:.1f} °C). "
-                    f"Correspondía ingresar la TnPM. Debería ir: TnPM {mn_t:.1f} °C a las {a_loc(tn):%H:%M}")
+                add("SEXF", 1, f"Se dio una mínima PM ({mn_t:.1f} °C a las {a_loc(tn):%H:%M}), más baja que la de la mañana ({mn_m:.1f} °C), y no se ingresó. "
+                    f"Debería ir: Tmin PM {mn_t:.1f} °C a las {a_loc(tn):%H:%M}")
     return out
+
+
+NOM_EXT = {"TnAM": "Tmin AM", "TxAM": "Tmax AM", "TnPM": "Tmin PM", "TxPM": "Tmax PM"}
+
+
+def nombre_ext(txt):
+    """Nombres que ve el usuario: Tmax AM, Tmin AM, Tmax PM, Tmin PM (los códigos TxAM… son solo internos)."""
+    return re.sub(r"\b(T[nx][AP]M)\b", lambda m: NOM_EXT[m.group(1)], txt)
+
+
+def extremas(t, o, A, codigo, hist=None, oficial=None):
+    return [(a, b, c, nombre_ext(d)) for a, b, c, d in _extremas(t, o, A, codigo, hist, oficial)]
 
 
 def _agrupar(momentos, salto=10):
@@ -1004,6 +1030,108 @@ def _agrupar(momentos, salto=10):
             res.append(m)
         ant = m
     return res[:4]
+
+
+# ======================================================================= columnas «Ingresado» y «Debería ir»
+_EL_REGLA = {"STs": "Ts", "STd": "Td", "SHR": "HR", "SQFE": "QFE", "SQFF": "QFF", "SQNH": "QNH", "Sff": "ff", "Sffkmh": "ff", "Sdd": "dd"}
+_U = {"Ts": "°C", "Td": "°C", "HR": "%", "QFE": "hPa", "QFF": "hPa", "QNH": "hPa", "ff": "kt", "dd": "°"}
+_COMP_EL = {"Ts": ("Ts", None), "Td": ("Td", None), "HR": ("HR", None), "QFE": ("QFE", None), "QFF": ("QFF", None), "QNH": ("QNH", None),
+            "ff": ("VTO", "ff"), "dd": ("VTO", "dd")}
+_FMT = {"Ts": "{:.1f}", "Td": "{:.1f}", "HR": "{:.0f}", "QFE": "{:.1f}", "QFF": "{:.1f}", "QNH": "{:.1f}", "ff": "{:.0f}", "dd": "{:.0f}"}
+_DESV = {"Ts": 1.5, "Td": 2.5, "HR": 12}
+
+
+def _el_de(h):
+    r = h["regla"]
+    if r in _EL_REGLA:
+        return _EL_REGLA[r]
+    m = re.match(r"(Ts|Td|HR|QFE|QFF|QNH)\b", h.get("msg", ""))
+    if m:
+        return m.group(1)
+    if re.match(r"viento anotado", h.get("msg", "")):
+        return "ff"
+    if re.match(r"dirección", h.get("msg", "")):
+        return "dd"
+    return None
+
+
+def _valor_ref(el, t, A, hist, sg=None):
+    """Valor de referencia de un elemento a la hora t: lo que marcó el sensor al minuto de la hora y, si no hay, la interpolación
+    de las horas vecinas del observador. Devuelve (valor, fuente) o (None, None)."""
+    e1, e2 = _COMP_EL[el]
+    col = {"Ts": "T", "Td": "Td", "HR": "HR", "QFE": "P_est", "QFF": "P_mar", "QNH": "P_std", "ff": "ff10", "dd": "dd10"}[el]
+    vecinas = []
+    for k in (-1, 1, -2, 2):
+        h_ = hist.get(t + pd.Timedelta(hours=k)) if hist else None
+        x = v(h_, e1, e2) if h_ else None
+        if x is not None:
+            vecinas.append((k, x))
+    interp = None
+    ant = [x for k, x in vecinas if k < 0]; sig = [x for k, x in vecinas if k > 0]
+    if ant and sig:
+        interp = (ant[0] + sig[0]) / 2
+    elif ant or sig:
+        interp = (ant or sig)[0]
+    sens = None
+    if A is not None and len(A) and col in A:
+        w = A[(A["momento"] > t - pd.Timedelta(minutes=15)) & (A["momento"] <= t)][col].dropna()
+        if len(w):
+            sens = float(w.iloc[-1]) + ((sg or {}).get(el, 0) if el in PRES else 0)
+    if sens is not None and (interp is None or abs(sens - interp) <= 3 * (_DESV.get(el, 2))):
+        return sens, "sensor"
+    if interp is not None:
+        return interp, "horas vecinas"
+    return (sens, "sensor") if sens is not None else (None, None)
+
+
+def campos(h, o, t, hist, A, sg=None):
+    """Agrega a un hallazgo de observaciones «ingresado» y «deberia» (siempre que se puedan deducir): lo que anotó el observador y lo que
+    debería ir, a partir del propio aviso, del sensor y de la secuencia de horas vecinas."""
+    msg = h.get("msg", "")
+    r = h["regla"]
+    if r in ("C41", "C41H"):
+        Ts, Td, HR = v(o, "Ts"), v(o, "Td"), v(o, "HR")
+        h["ingresado"] = " · ".join(f"{n} {x:g}" for n, x in (("Ts", Ts), ("Td", Td), ("HR", HR)) if x is not None)
+        refs = {el: _valor_ref(el, t, A, hist, sg)[0] for el in ("Ts", "Td", "HR")}
+        val = {"Ts": Ts, "Td": Td, "HR": HR}
+        dev = {el: abs(val[el] - refs[el]) / _DESV[el] for el in val if val[el] is not None and refs[el] is not None}
+        mal = max(dev, key=dev.get) if dev and max(dev.values()) > 0.3 else None
+        if mal:
+            h["deberia"] = f"{mal} " + _FMT[mal].format(refs[mal]) + f" {_U[mal]}"
+        elif r == "C41H" and Ts is not None and Td is not None and Td <= Ts:
+            h["deberia"] = f"HR {hr_de(Ts, Td):.0f} % (o Td {td_de(Ts, HR):.1f} °C)" if HR else f"HR {hr_de(Ts, Td):.0f} %"
+        elif r == "C41" and HR is not None and Ts is not None:
+            h["deberia"] = f"Td {min(td_de(Ts, HR), Ts):.1f} °C (con la HR anotada)"
+        return h
+    if r in ("SRRR6", "E12", "E13") or (r == "E17" and msg.startswith("precipitación informada")):
+        rr = v(o, "RRR6", "RRR6")
+        tz = (o.get("RRR6") or {}).get("Traza")
+        if rr is not None or tz:
+            h["ingresado"] = "RRR6 traza" if tz and not rr else f"RRR6 {rr:g} mm"
+        if A is not None and len(A) and "rr1m" in A:
+            w = A[(A["momento"] > t - pd.Timedelta(hours=6)) & (A["momento"] <= t)]
+            if len(w) >= 300 and not re.search(r"Debería ir:", msg):
+                suma = float(w["rr1m"].fillna(0).sum())
+                h["deberia"] = "RRR6 " + ("traza" if 0 < suma < 0.2 else f"{suma:.1f} mm") + " (pluviómetro automático, 6 h)"
+        return h
+    if r == "SPRE":
+        ww = v(o, "WWSINOP", "ww")
+        if ww is not None:
+            h["ingresado"] = f"ww {ww:g}"
+        return h
+    el = _el_de(h)
+    if el is None or el not in _COMP_EL:
+        return h
+    e1, e2 = _COMP_EL[el]
+    x = v(o, e1, e2)
+    if x is None:
+        return h
+    h.setdefault("ingresado", f"{el} {x:g} {_U[el]}")
+    if not re.search(r"Debería ir:", msg):
+        ref, fuente = _valor_ref(el, t, A, hist, sg)
+        if ref is not None and abs(ref - x) > 1e-9:
+            h["deberia"] = f"{el} " + _FMT[el].format(ref) + f" {_U[el]} ({'lo que marcó el sensor' if fuente == 'sensor' else 'según las horas vecinas'})"
+    return h
 
 
 # ======================================================================= ciclo
@@ -1029,10 +1157,10 @@ def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None, oficial=N
     for t in sel:
         o = obs[t]
         for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + satelital(t, o, sat):
-            out.append(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"))
+            out.append(campos(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"), o, t, obs, A, sg))
     for t in ext:
         o = obs[t]
         for tipo, cod, niv, msg in evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial):
             if cod in EXT_PP:
-                out.append(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"))
+                out.append(campos(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"), o, t, obs, A, sg))
     return out

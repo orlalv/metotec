@@ -97,3 +97,31 @@ def extremas_oficiales(js):
             except ValueError:
                 pass
     return out
+
+
+LIM_FISICO = (-60.0, 60.0)      # °C: fuera de esto el valor del resumen diario es imposible (ej. 322.0 °C de Frei, 13-11-2026)
+DIF_MAX = 2.0                   # °C: diferencia máxima aceptada entre la extrema del resumen y los minutos
+
+
+def validar_extremas(oficial, A):
+    """Valida las extremas del resumen diario ANTES de usarlas: rango físico y coherencia con los minutos de la estación (A: minutario
+    de esa estación). Si el valor es imposible o difiere en más de DIF_MAX °C de lo que marcaron los minutos en las 12 h que terminan
+    en su hora, se descarta (el control usa los minutos) y se informa la falla del sensor aparte, en estaciones automáticas.
+    Devuelve (extremas válidas, [dict(tipo, valor, momento, ref, motivo)])."""
+    ok, mal = [], []
+    for x in oficial or []:
+        val = x["valor"]
+        if val < LIM_FISICO[0] or val > LIM_FISICO[1]:
+            mal.append(dict(x, ref=None, motivo="fuera de rango físico")); continue
+        if A is not None and len(A) and "T" in A:
+            # el momento viene en hora local (UTC−3/−4/−5/−6): el hecho real cae entre m+2 h y m+7 h en UTC; se compara con los minutos
+            # de esa ventana, y solo si el minutario la cubre entera (si no, solo vale el rango físico)
+            m = x["momento"]
+            ini, fin = m - pd.Timedelta(hours=2), m + pd.Timedelta(hours=8)
+            W = A[(A["momento"] >= ini) & (A["momento"] <= fin)].dropna(subset=["T"])
+            if A["momento"].min() <= ini and A["momento"].max() >= fin and len(W) > 30:
+                ref = float(W["T"].min() if x["tipo"] == "min" else W["T"].max())
+                if (x["tipo"] == "min" and val < ref - DIF_MAX) or (x["tipo"] == "max" and val > ref + DIF_MAX):
+                    mal.append(dict(x, ref=ref, motivo=f"difiere {abs(val - ref):.1f} °C de los minutos")); continue
+        ok.append(x)
+    return ok, mal

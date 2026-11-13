@@ -20,7 +20,18 @@ function init(fclave){
   const mover = k => { const d = new Date($("#bDia").value + "T12:00Z"); d.setUTCDate(d.getUTCDate() + k); $("#bDia").value = d.toISOString().slice(0, 10); cargar(); };
   $("#bAnt").addEventListener("click", () => mover(-1)); $("#bSig").addEventListener("click", () => mover(1));
   $("#bDia").addEventListener("change", cargar); $("#bXls").addEventListener("click", excel);
-  s.addEventListener("click", ev => {
+  s.addEventListener("click", async ev => {
+    const mk = ev.target.closest("button[data-bm]");           // «Correcto / sin efecto» y «Resuelto»: quitan la marca y quedan registradas
+    if (mk){
+      ev.stopPropagation(); if (mk.disabled) return; mk.disabled = true;
+      const id = `b|${B.dia}|${mk.dataset.est}|${mk.dataset.col}`;
+      try {
+        const r = await fetch("/api/revision", {method: "POST", headers: {"x-clave": clave(), "content-type": "application/json"},
+          body: JSON.stringify({dia: B.dia, id, v: mk.dataset.bm, msg: mk.dataset.msg})});
+        if (!r.ok) throw new Error(r.status);
+      } catch (e){ mk.disabled = false; mk.textContent = "No se pudo guardar"; return; }
+      cargar(false, true); return;
+    }
     const f = ev.target.closest("[data-f]"); if (!f) return;
     selFila = selFila === f.dataset.f ? null : f.dataset.f; pintar();
     const t = document.querySelector(`#bol tbody tr[data-f="${CSS.escape(selFila || "")}"]`); t && t.scrollIntoView({block: "nearest"});
@@ -28,14 +39,14 @@ function init(fclave){
   cargar(true);
 }
 
-async function cargar(ultimo){
-  $("#bOut").innerHTML = `<p style="color:var(--mu)">Cargando…</p>`;
+async function cargar(ultimo, mantener){
+  if (!mantener) $("#bOut").innerHTML = `<p style="color:var(--mu)">Cargando…</p>`;
   try {
-    const r = await fetch("/api/boletin" + (ultimo ? "" : "?dia=" + $("#bDia").value), {headers: {"x-clave": clave()}, cache: "no-store"});
+    const r = await fetch("/api/boletin" + (ultimo ? "" : "?dia=" + (mantener && B ? B.dia : $("#bDia").value)), {headers: {"x-clave": clave()}, cache: "no-store"});
     if (r.status === 401){ $("#bOut").innerHTML = `<p style="color:#eb5757">Clave incorrecta.</p>`; return; }
     B = await r.json(); if (ultimo && B.dia) $("#bDia").value = B.dia;
   } catch (e){ $("#bOut").innerHTML = `<p style="color:#eb5757">No se pudo cargar (${esc(e.message)}).</p>`; return; }
-  selFila = null; pintar();
+  if (!mantener) selFila = null; pintar();
 }
 
 function marcasFila(f){ return Object.entries(f.marcas || {}).filter(([, m]) => m.nivel !== "info" || m.msg); }
@@ -71,10 +82,12 @@ function pintar(){
       <tbody>${filas}</tbody></table></div>
     <div class="lado"><h4>Inconsistencias${selFila ? " · " + esc(selFila) + ` <a data-f="${esc(selFila)}" style="color:var(--mu);font-size:12px;cursor:pointer">(ver todas)</a>` : ""}</h4>
       <div class="ley"><span><i style="background:#f8d7da;border:1px solid #dc3545"></i>dudoso</span><span><i style="background:#fff3cd"></i>revisar</span><span><i style="background:#e7f1ff"></i>informativo</span></div>
-      ${items.length ? items.map(x => `<div class="bit ${x.nivel}" data-f="${esc(x.estacion)}"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b><p>${esc(x.msg).replace(/(Debería ir|Probable): ([^(]+)/, "<br>$1: <em>$2</em>")}</p></div>`).join("")
+      ${items.length ? items.map(x => `<div class="bit ${x.nivel}" data-f="${esc(x.estacion)}"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b><p>${esc(x.msg).replace(/(Debería ir|Probable): ([^(]+)/, "<br>$1: <em>$2</em>")}</p>
+          <div class="bm"><button class="mk" data-bm="omitir" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="La marca no corresponde (p. ej. el dato era correcto): se quita y no vuelve, y queda registrada">✓ Correcto / sin efecto</button><button class="mk" data-bm="resuelto" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="Ya se corrigió: se quita la marca y queda registrada">✓ Resuelto</button></div></div>`).join("")
         : `<p style="color:#6fcf97;margin:0">${selFila ? "Esta estación no tiene" : "El boletín no tiene"} inconsistencias.</p>`}
+      ${(B.revisados || []).filter(x => !selFila || x.estacion === selFila).length ? `<h4 style="margin-top:14px">Quitadas a mano</h4>${B.revisados.filter(x => !selFila || x.estacion === selFila).map(x => `<div class="bit info"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b> <small style="color:var(--mu)">${x.v === "omitir" ? "correcto / sin efecto" : "resuelto"}${x.quien ? " · " + esc(x.quien) : ""}${x.t ? " · " + esc(x.t.slice(0, 16).replace("T", " ")) : ""}</small><p>${esc(x.msg)}</p></div>`).join("")}` : ""}
       ${cambios.length ? `<h4 style="margin-top:14px">Cambios entre pasadas</h4>${cambios.map(c => `<div class="bit info"><b>${esc(c.estacion)} · ${esc(NCOL[c.col] || c.col)}</b><p>A las ${esc(c.hora)} pasó de <em>${esc(c.antes)}</em> a <em>${esc(c.ahora)}</em>.</p></div>`).join("")}` : ""}
-      <p class="nota" style="margin:10px 0 0;color:var(--mu);font-size:12px">Se compara con la estación automática (mínima 00–12 UTC, máxima de ayer 12–24 UTC o el día local completo, agua caída 12–12 UTC), con lo que ingresó el observador (TnAM, TxPM y los cuatro RRR6) y con el boletín de ayer (A la fecha = ayer + 24 h). Pase el mouse por una celda marcada para ver el detalle.</p></div></div>`;
+      <p class="nota" style="margin:10px 0 0;color:var(--mu);font-size:12px">Se compara con la estación automática (mínima 00–12 UTC, máxima de ayer 12–24 UTC o el día local completo, agua caída 12–12 UTC), con lo que ingresó el observador (Tmin AM, Tmax PM y los cuatro RRR6) y con el boletín de ayer (A la fecha = ayer + 24 h). Pase el mouse por una celda marcada para ver el detalle.</p></div></div>`;
 }
 
 function excel(){

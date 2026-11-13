@@ -132,10 +132,18 @@ function pagMis(){
 }
 
 // completitud de observaciones: grilla estaciones × horas (✓ / ✗ según el programa), resumen diario y mensual
-let COMP = null;
-async function pagComp(){
+let COMP = null, COMP_T = 0;
+setInterval(() => { const S = $("#comp"); if (S && !S.hidden && clave()) pagComp(true); }, 5 * 60e3);     // con la pestaña abierta se actualiza sola
+async function pagComp(forzar){
   const S = $("#comp");
-  if (!COMP){ S.innerHTML = "<p>Cargando…</p>"; try { const r = await fetch("/api/completitud", {headers: {"x-clave": clave()}, cache: "no-store"}); COMP = r.ok ? await r.json() : {estaciones: []}; } catch (e){ COMP = {estaciones: []}; } }
+  // se vuelve a pedir si pasaron más de 5 min (el servidor la recalcula en cada pasada de observaciones, cada 30 min)
+  if (!COMP || forzar === true || Date.now() - COMP_T > 5 * 60e3){
+    if (!COMP) S.innerHTML = "<p>Cargando…</p>";
+    try { const r = await fetch("/api/completitud", {headers: {"x-clave": clave()}, cache: "no-store"}); if (r.ok){ COMP = await r.json(); COMP_T = Date.now(); } else if (!COMP) COMP = {estaciones: []}; } catch (e){ if (!COMP) COMP = {estaciones: []}; }
+  }
+  const gen = COMP.generado ? Date.parse(String(COMP.generado).replace(" ", "T") + (/Z|[+-]\d\d:?\d\d$/.test(COMP.generado) ? "" : "Z")) : NaN;
+  const edadMin = isNaN(gen) ? null : Math.round((Date.now() - gen) / 60e3);
+  const actual = isNaN(gen) ? "—" : `${new Date(gen).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false})} (hace ${edadMin < 90 ? edadMin + " min" : (edadMin / 60).toFixed(1) + " h"})`;
   const hoy = new Date().toISOString().slice(0, 10), dia = S.dataset.dia || hoy, vista = S.dataset.v || "dia", mes = dia.slice(0, 7);
   const E = (COMP.estaciones || []).filter(e => filtra(e.codigo)).sort((a, b) => (b.lat ?? -99) - (a.lat ?? -99));
   const hAct = dia === hoy ? new Date().getUTCHours() : 24;
@@ -163,7 +171,7 @@ async function pagComp(){
   }
   S.innerHTML = `<h2 style="margin:0 0 4px;font:600 20px var(--titulo)">Completitud de observaciones</h2>
    <div class="htools" style="margin:8px 0 12px"><button class="mk${vista === "dia" ? " ok" : ""}" data-cv="dia">Día</button><button class="mk${vista === "mes" ? " ok" : ""}" data-cv="mes">Mes</button>
-    <input type="date" id="cDia" value="${dia}" max="${hoy}"> <span style="color:var(--mu);font-size:12.5px">${E.length} estaciones${per(yo()) && soloMias() && (per(yo()).estaciones || []).length ? " (mis estaciones)" : ""} · hora UTC · actualizado ${COMP.generado ? String(COMP.generado).slice(11, 16) + " UTC" : "—"}</span>
+    <input type="date" id="cDia" value="${dia}" max="${hoy}"> <span style="color:var(--mu);font-size:12.5px">${E.length} estaciones${per(yo()) && soloMias() && (per(yo()).estaciones || []).length ? " (mis estaciones)" : ""} · hora UTC · se actualiza sola · última actualización de los datos: <b style="color:${edadMin != null && edadMin > 90 ? "var(--err)" : "inherit"}">${actual}</b></span>
     <button class="mk" id="cRecargar">↻</button></div>${E.length ? cuerpo : `<p style="color:var(--mu)">Todavía no hay datos de completitud (se generan en la próxima pasada de observaciones).</p>`}`;
 }
 

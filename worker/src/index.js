@@ -19,29 +19,35 @@ async function correo(env, dest, txt){
 
 export async function correr(env, ahora = Date.now()){
   const res = {inicio: new Date(ahora).toISOString().slice(0, 19) + "Z", errores: []};
-  const [equipo, obs, previo] = await Promise.all(["qc/equipo", "qc/sensorial", "qc/avisos_enviados"].map(k => env.DATOS.get(k, "json")));
-  let ema = null;
-  try { ema = resumir(await descargar(env), ahora); res.estaciones = ema.estaciones.length; res.datos_hasta = ema.datos_hasta; }
-  catch (e) { res.errores.push("EMA: " + e.message); }
-  if (ema) await env.DATOS.put("qc/ema_rapido", JSON.stringify(ema));
+  // Pase lo que pase, al final se deja el estado en el KV (si no, el indicador «Servicios» dice «Sin información» y no se sabe por qué)
+  try {
+    const [equipo, obs, previo] = await Promise.all(["qc/equipo", "qc/sensorial", "qc/avisos_enviados"].map(k => env.DATOS.get(k, "json")));
+    let ema = null;
+    try { ema = resumir(await descargar(env), ahora); res.estaciones = ema.estaciones.length; res.datos_hasta = ema.datos_hasta; }
+    catch (e) { res.errores.push("EMA: " + e.message); }
+    if (ema) await env.DATOS.put("qc/ema_rapido", JSON.stringify(ema));
 
-  const plan = planificar(equipo, ema, obs, previo, {ahora, sinEma: !ema, sinObs: !obs});
-  res.activas = plan.activas; res.envios = 0;
-  for (const {persona: p, nuevos} of plan.avisar){
-    const txt = mensaje(nuevos), R = [];
-    try { R.push(p.telegram ? await telegram(env, p.telegram, txt) : null); } catch (e) { R.push(false); res.errores.push("Telegram: " + e.message); }
-    try { R.push(p.correo ? await correo(env, p.correo, txt) : null); } catch (e) { R.push(false); res.errores.push("Correo: " + e.message); }
-    res.envios += R.filter(x => x === true).length;
-    // si todos los intentos fallaron, no se da por avisado: se reintenta en la pasada siguiente
-    if (R.includes(false) && !R.includes(true)){ const ids = new Set(nuevos.map(h => h.id)); plan.estado[p.nombre] = plan.estado[p.nombre].filter(id => !ids.has(id)); }
-  }
-  const nuevoEstado = JSON.stringify(plan.estado);
-  if (nuevoEstado !== JSON.stringify(previo || {})) await env.DATOS.put("qc/avisos_enviados", nuevoEstado);
+    res.activas = 0; res.envios = 0;
+    try {
+      const plan = planificar(equipo, ema, obs, previo, {ahora, sinEma: !ema, sinObs: !obs});
+      res.activas = plan.activas;
+      for (const {persona: p, nuevos} of plan.avisar){
+        const txt = mensaje(nuevos), R = [];
+        try { R.push(p.telegram ? await telegram(env, p.telegram, txt) : null); } catch (e) { R.push(false); res.errores.push("Telegram: " + e.message); }
+        try { R.push(p.correo ? await correo(env, p.correo, txt) : null); } catch (e) { R.push(false); res.errores.push("Correo: " + e.message); }
+        res.envios += R.filter(x => x === true).length;
+        // si todos los intentos fallaron, no se da por avisado: se reintenta en la pasada siguiente
+        if (R.includes(false) && !R.includes(true)){ const ids = new Set(nuevos.map(h => h.id)); plan.estado[p.nombre] = plan.estado[p.nombre].filter(id => !ids.has(id)); }
+      }
+      const nuevoEstado = JSON.stringify(plan.estado);
+      if (nuevoEstado !== JSON.stringify(previo || {})) await env.DATOS.put("qc/avisos_enviados", nuevoEstado);
+    } catch (e) { res.errores.push("Alertas: " + e.message); }
+  } catch (e) { res.errores.push("Worker: " + e.message); }
   // estado del servicio de la DMC y del propio Worker (lo muestra el indicador «Servicios» de la página)
   try {
     const ant = await env.DATOS.get("qc/servicios_worker", "json");
-    const ok = !!ema, desde = ok ? res.inicio : (ant && ant.dmc_ultimo_ok) || null;
-    await env.DATOS.put("qc/servicios_worker", JSON.stringify({t: res.inicio, dmc_ok: ok, dmc_ultimo_ok: desde, error: res.errores.slice(0, 3), estaciones: res.estaciones ?? null, datos_hasta: res.datos_hasta ?? null, envios: res.envios}));
+    const ok = res.estaciones != null, desde = ok ? res.inicio : (ant && ant.dmc_ultimo_ok) || null;
+    await env.DATOS.put("qc/servicios_worker", JSON.stringify({t: res.inicio, dmc_ok: ok, dmc_ultimo_ok: desde, error: res.errores.slice(0, 3), estaciones: res.estaciones ?? null, datos_hasta: res.datos_hasta ?? null, envios: res.envios ?? 0}));
   } catch (e) { res.errores.push("estado: " + e.message); }
   return res;
 }

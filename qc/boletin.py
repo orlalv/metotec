@@ -204,7 +204,7 @@ def revisar_dia(dia, bol, raiz, ayer=None):
                 elif not minimo and val is not None and elx == "TxAM" and hora_txt == hx and col + "_h" not in marcas:
                     marcas["tx_h"] = dict(nivel="info", sub="máx. en la mañana", msg=None, real=None)
                     items.append(dict(estacion=nom, col="tx_h", nivel="info", real=None,
-                                      msg=f"La máxima de ayer se dio en la mañana ({val:.1f} °C a las {hora_txt}, TxAM), más alta que la de la tarde"
+                                      msg=f"La máxima de ayer se dio en la mañana ({val:.1f} °C a las {hora_txt}, Tmax AM), más alta que la de la tarde"
                                       + "".join(f" ({xv:.1f} °C a las {h})" for xv, h, e in cands if e == "TxPM") + ". Calza con lo ingresado por el observador."))
         # ---- agua caída 24 h
         r24 = 0.0 if rr == "S/P" else num(rr)

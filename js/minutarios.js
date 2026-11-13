@@ -291,10 +291,10 @@ function pintar(){
         const gmin = [r.tn, r.tnPM].filter(Boolean).sort((a, b) => a.v - b.v)[0], gmax = [r.txAM, r.tx].filter(Boolean).sort((a, b) => b.v - a.v)[0];
         return tarjeta(`Mínima general del día`, gmin, "°C", gmin ? (gmin === r.tn ? "en la mañana (AM)" : "en la tarde (PM)") : "", r.curso.pm)
           + tarjeta(`Máxima general del día`, gmax, "°C", gmax ? (gmax === r.tx ? "en la tarde (PM)" : "en la mañana (AM)") : "", r.curso.pm)
-          + tarjeta(`TnAM · mínima 00–12 UTC${lAM}`, r.tn, "°C", cmp(cn), r.curso.am)
-          + tarjeta(`TxAM · máxima 00–12 UTC${lAM}`, r.txAM, "°C", "", r.curso.am)
-          + tarjeta(`TnPM · mínima 12–24 UTC${lPM}`, r.tnPM, "°C", "", r.curso.pm)
-          + tarjeta(`TxPM · máxima 12–24 UTC${lPM}`, r.tx, "°C", cmp(cx), r.curso.pm); })()}</div>
+          + tarjeta(`Tmin AM · mínima 00–12 UTC${lAM}`, r.tn, "°C", cmp(cn), r.curso.am)
+          + tarjeta(`Tmax AM · máxima 00–12 UTC${lAM}`, r.txAM, "°C", "", r.curso.am)
+          + tarjeta(`Tmin PM · mínima 12–24 UTC${lPM}`, r.tnPM, "°C", "", r.curso.pm)
+          + tarjeta(`Tmax PM · máxima 12–24 UTC${lPM}`, r.tx, "°C", cmp(cx), r.curso.pm); })()}</div>
     <div class="hres">${tarjeta("Racha máxima", d.fx, "kt")}${tarjeta("Humedad mínima", d.HRmin, "%")}${tarjeta("QFE mínimo", d.Pmin, "hPa")}${tarjeta("QFE máximo", d.Pmax, "hPa")}</div>
     <div class="hres">${r.per.map(p => `<div><span>Agua caída ${String(p.a).padStart(2, "0")}–${String(p.a + 6).padStart(2, "0")} UTC</span><b>${p.n ? f1(p.s || 0) + " mm" : "—"}</b><span>${p.inf != null ? "RRR6 informada " + f1(p.inf) : "sin RRR6 informada"}${p.n ? ` · ${p.n} reg.` : ""}</span></div>`).join("")}
       <div><span>Total del período</span><b>${d.rr != null ? f1(d.rr) + " mm" : "—"}</b><span>suma de agua caída del minuto</span></div></div>

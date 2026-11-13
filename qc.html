@@ -35,6 +35,7 @@ body{margin:0;background:var(--fondo);color:var(--tx);font:15px/1.45 Inter,syste
 header{background:linear-gradient(90deg,#1C2126 0%,#14181C 100%);border-bottom:2px solid var(--oro);padding:12px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
 header img{height:32px}
 .marca{display:flex;flex-direction:column;align-items:center;gap:2px}#relojUTC{font:600 14px/1 var(--mono);color:var(--oro);letter-spacing:.5px;white-space:nowrap}#relojUTC small{color:var(--mu);font-weight:600;font-size:11.5px}
+#horasCL{margin-left:auto;display:flex;gap:14px;align-items:center;font:600 13px/1.1 var(--mono);color:var(--tx)}#horasCL div{text-align:center}#horasCL small{display:block;color:var(--mu);font:500 10.5px var(--sans, inherit);letter-spacing:.2px}
 header h1{margin:0;font:600 18px var(--titulo);letter-spacing:.2px}
 header h1 small{display:block;color:var(--mu);font-weight:500;font-size:12.5px}
 .chips{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
@@ -125,7 +126,7 @@ main[hidden]{display:none}
 .cgrid{border-collapse:collapse;font:12px var(--mono)}.cgrid th,.cgrid td{border:1px solid var(--bd);padding:2px 4px;text-align:center;min-width:24px}.cgrid td:first-child{text-align:left;font-family:Inter,sans-serif;white-space:nowrap;position:sticky;left:0;background:var(--panel)}.cgrid th{color:var(--mu);position:sticky;top:0;background:var(--panel)}
 .cgrid td.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}.cgrid td.no{color:var(--err);background:color-mix(in srgb,var(--err) 18%,transparent);font-weight:700}.cgrid td.np{background:color-mix(in srgb,var(--mu) 10%,transparent)}.cgrid td.fx{color:var(--info)}.cgrid td.fu{color:var(--mu)}
 #bol,#ext,#per,#ser,#inf,#reg{flex:1;overflow:auto;padding:14px 20px}#bol[hidden],#ext[hidden],#per[hidden],#ser[hidden],#inf[hidden],#reg[hidden]{display:none}
-.sub2{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden;margin-right:6px}.tools .sub2 button{border:0;border-radius:0}.tools .sub2 button.on{background:var(--oro);color:var(--on)}.sub2 b{font-size:11px;margin-left:4px}
+.sub2[hidden]{display:none}.sub2{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden;margin-right:6px}.tools .sub2 button{border:0;border-radius:0}.tools .sub2 button.on{background:var(--oro);color:var(--on)}.sub2 b{font-size:11px;margin-left:4px}
 .mk{background:none;border:1px solid var(--bd);color:var(--mu);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer;margin:1px 2px 1px 0;white-space:nowrap}.mk:hover{border-color:var(--oro);color:var(--oro)}.mk.ok{border-color:var(--ok);color:var(--ok)}
 .sigue{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:700;color:var(--sos);border:1px solid var(--sos);border-radius:20px;padding:0 7px}
 .ep td{vertical-align:top}.ep .inf{color:var(--ok);font-size:12px;font-weight:700}
@@ -207,9 +208,10 @@ main[hidden]{display:none}
  <div class="marca"><a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a><div style="display:flex;align-items:center;gap:6px"><div id="relojUTC" title="Hora UTC (hora local entre paréntesis)">— UTC</div><button id="tema" title="Cambiar entre tema oscuro y claro">☀</button></div></div>
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
  <label class="perfil" title="Su nombre: filtra sus estaciones y las marcas quedan con este nombre">👤 <select id="persona"><option value="">Todos</option></select></label>
+ <div id="horasCL" title="Hora oficial de Chile (referencia: horaoficial.cl)"></div>
  <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
- <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="real">Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="real">Equipo</button><button data-m="cor" data-g="real">Correcciones</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
+ <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="real">Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="real">Equipo</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -238,7 +240,6 @@ main[hidden]{display:none}
 <section id="ser" hidden></section>
 <section id="inf" hidden></section>
 <section id="reg" hidden></section>
-<section id="cor" hidden></section>
 <section id="equ" hidden></section>
 <section id="mis" hidden></section>
 <section id="comp" hidden></section>
@@ -253,12 +254,17 @@ main[hidden]{display:none}
 <script src="js/reglas.js?v=202611131500"></script>
 <script src="js/fallas.js?v=202611131300"></script>
 <script src="js/equipo.js?v=202611131400"></script>
-<script src="js/correcciones.js?v=202611131700"></script>
 <script src="js/servicios.js?v=202611131500"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script>
 (function(){ const r = document.getElementById("relojUTC");
   const t = () => { const d = new Date(); r.innerHTML = d.toISOString().slice(11, 19) + " UTC <small>(" + d.toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit", hour12: false}) + " local)</small>"; };
+  t(); setInterval(t, 1000); })();
+// Hora oficial de Chile continental, Isla de Pascua y Antártica (horaoficial.cl): se calcula con la zona horaria de cada una,
+// así sigue solo los cambios de horario de verano.
+(function(){ const c = document.getElementById("horasCL"); if (!c) return;
+  const Z = [["Chile continental", "America/Santiago"], ["Isla de Pascua", "Pacific/Easter"], ["Antártica", "America/Punta_Arenas"]];
+  const t = () => { const d = new Date(); c.innerHTML = Z.map(([n, z]) => `<div>${d.toLocaleTimeString("es-CL", {timeZone: z, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false})}<small>${n}</small></div>`).join(""); };
   t(); setInterval(t, 1000); })();
 </script>
 <script>
@@ -314,12 +320,13 @@ const MARCA = window.MARCA = {
   id: (cod, h) => `o|${cod}|${String(h.hora).slice(0, 16)}|${h.regla}`,
   estado(cod, h){
     const m = ((R && R.marcas) || {})[MARCA.id(cod, h)]; if (!m || m.v === "real") return null;
+    if (m.v === "omitir") return "oculta";                                  // omitida: no vuelve nunca (estación/hora/regla), aunque el dato siga igual
     if (m.msg && m.msg !== h.msg) return null;                              // el dato cambió: es otra alerta
     if (m.v === "falsa") return "oculta";
     const gen = ((R.observaciones || {}).generado || "").slice(0, 19);
     return gen > m.t ? "sigue" : "oculta";
   },
-  botones: (cod, h) => `<button class="mk" data-mk="resuelto" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Ya se corrigió: quitar de la lista y pasar al Historial">✓ Resuelto</button><button class="mk" data-mk="falsa" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="La alerta no corresponde (sirve para ajustar las reglas)">✗ Falsa alarma</button>`,
+  botones: (cod, h) => `<button class="mk" data-mk="resuelto" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Ya se corrigió: quitar de la lista y pasar al Historial">✓ Resuelto</button><button class="mk" data-mk="falsa" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="La alerta no corresponde (sirve para ajustar las reglas)">✗ Falsa alarma</button><button class="mk" data-mk="omitir" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Archivar: queda en el Historial como omitida y no vuelve a salir para esta estación, hora y regla, aunque el dato siga igual">⊘ Omitir</button>`,
   aviso: `<span class="sigue" title="Se marcó como resuelta, pero en la revisión siguiente el dato sigue igual en SACLIM">resuelta, pero el dato sigue igual</span>`
 };
 document.addEventListener("click", async ev => {
@@ -351,7 +358,8 @@ document.addEventListener("click", ev => {
 // Pendientes / Informados: las alertas de un episodio de falla ya informado van a «Informados»
 let sub = "pend";
 function infSet(e){ return new Set(FALLAS.episodios(e, R).filter(p => p.informado).map(p => p.prueba + "|" + p.var)); }
-function filtrar(e){ const G = GRUPOS[grupo], I = infSet(e); let al = e.alertas.filter(a => (sub === "inf") === I.has(a.prueba + "|" + a.var)); if (G) al = al.filter(a => G.includes(a.prueba)); if (VSEL.size < VARGR.length) al = al.filter(a => String(a.var).split("+").some(x => VSEL.has(VAR2G[x]))); const nivel = e.nivel === 3 ? 3 : Math.max(0, ...al.map(a => a.nivel)); return {...e, alertas: al, nivel}; }
+const omitidaEma = a => (((R && R.marcas) || {})[idEma(a)] || {}).v === "omitir";
+function filtrar(e){ const G = GRUPOS[grupo], I = infSet(e); let al = e.alertas.filter(a => !omitidaEma(a) && (sub === "inf") === I.has(a.prueba + "|" + a.var)); if (G) al = al.filter(a => G.includes(a.prueba)); if (VSEL.size < VARGR.length) al = al.filter(a => String(a.var).split("+").some(x => VSEL.has(VAR2G[x]))); const nivel = e.nivel === 3 ? 3 : Math.max(0, ...al.map(a => a.nivel)); return {...e, alertas: al, nivel}; }
 const VAR = {T: "Ts (temp. seca)", Td: "Td (punto de rocío)", HR: "HR (humedad)", P_est: "QFE", P_mar: "QFF", P_std: "QNH", Tn12: "Tmín 12 h", Tx12: "Tmáx 12 h", ff10: "ff (viento 10 min)", ff2: "ff (viento 2 min)", dd10: "dd (dirección 10 min)", dd2: "dd (dirección 2 min)", fx10: "fx (racha)", rr1m: "RR (agua caída 1 min)", rr6: "RRR6", rr24: "RRR24", rr3h: "RR 3 h", Rad: "Radiación", registros: "Registros"};
 const ZONAS = {todo: [-90, 0], norte: [-27.5, 0], centro: [-38, -27.5], sur: [-46, -38], austral: [-90, -46]};
 let R = null, zona = "todo", ver = {0: true, 1: true, 2: true, 3: true}, sel = null, marcas = {};
@@ -360,6 +368,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&
 // «Falsa alarma» en avisos de estaciones automáticas (en observaciones va junto a «Resuelto», ver MARCA)
 const FALSAS = new Set();
 const botonFalsa = (dia, id) => ` <button class="fa mk${FALSAS.has(id) ? " on" : ""}" data-d="${esc(dia)}" data-i="${esc(id)}" title="Marcar como falsa alarma (para ajustar la regla)" style="${FALSAS.has(id) ? "background:#eb5757;color:#fff" : ""}">${FALSAS.has(id) ? "✗ falsa alarma" : "✗ Falsa alarma"}</button>`;
+const botonOmitir = (dia, id) => ` <button class="om mk" data-d="${esc(dia)}" data-i="${esc(id)}" title="Archivar: queda en el Historial como omitida y no vuelve a salir para esta estación, hora y regla, aunque el dato siga igual">⊘ Omitir</button>`;
 const idEma = a => a.episodio ? `a|${a.codigo}|${a.episodio.inicio}|episodio|${a.episodio.sensor}` : `a|${a.codigo}|${String(a.momento).slice(0, 16)}|${a.prueba}|${a.var}`;
 document.addEventListener("click", async ev => {
   const b = ev.target.closest("button.fa"); if (!b) return;
@@ -369,12 +378,21 @@ document.addEventListener("click", async ev => {
   v ? FALSAS.add(id) : FALSAS.delete(id);
   b.outerHTML = botonFalsa(b.dataset.d, id);
 });
+document.addEventListener("click", async ev => {
+  const b = ev.target.closest("button.om"); if (!b || b.disabled) return;
+  const id = b.dataset.i; b.disabled = true;
+  const r = await fetch("/api/revision", {method: "POST", headers: {"x-clave": clave(), "content-type": "application/json"}, body: JSON.stringify({dia: b.dataset.d, id, v: "omitir"})});
+  if (!r.ok){ b.disabled = false; b.textContent = "no se pudo guardar"; return; }
+  const j = await r.json(); (R.marcas ||= {})[id] = {...j.marca, dia: b.dataset.d};
+  pintar();
+});
 const clave = () => { try { return sessionStorage.getItem("qcClave") || ""; } catch (e) { return window._qc || ""; } };
 
 const mapa = L.map("mapa", {zoomControl: true, preferCanvas: true}).setView([-33.5, -71], 5);
-const capaMapa = t => "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_" + (document.documentElement.dataset.tema === "claro" ? "Light" : "Dark") + "_Gray_" + t + "/MapServer/tile/{z}/{y}/{x}";
-const MB = L.tileLayer(capaMapa("Base"), {maxZoom: 13, attribution: "Mapa base © Esri"}).addTo(mapa);
-const MR = L.tileLayer(capaMapa("Reference"), {maxZoom: 13, pane: "overlayPane", opacity: .8}).addTo(mapa);
+// Mapa base de CARTO (sin clave): fondo sin rótulos + capa de rótulos encima. El de Esri empezó a pedir «API key».
+const capaMapa = t => "https://{s}.basemaps.cartocdn.com/" + (document.documentElement.dataset.tema === "claro" ? "light" : "dark") + (t === "Base" ? "_nolabels" : "_only_labels") + "/{z}/{x}/{y}{r}.png";
+const MB = L.tileLayer(capaMapa("Base"), {maxZoom: 13, subdomains: "abcd", attribution: "© OpenStreetMap · © CARTO"}).addTo(mapa);
+const MR = L.tileLayer(capaMapa("Reference"), {maxZoom: 13, subdomains: "abcd", pane: "overlayPane", opacity: .8}).addTo(mapa);
 function pintarTema(){ const c = document.documentElement.dataset.tema === "claro"; $("#tema").textContent = c ? "☾" : "☀"; $("#tema").title = c ? "Pasar al tema oscuro" : "Pasar al tema claro"; MB.setUrl(capaMapa("Base")); MR.setUrl(capaMapa("Reference")); }
 $("#tema").addEventListener("click", () => { const c = document.documentElement.dataset.tema !== "claro";
   if (c) document.documentElement.dataset.tema = "claro"; else delete document.documentElement.dataset.tema;
@@ -395,7 +413,7 @@ function visibles(){
   return R.estaciones.map(filtrar).filter(e => enZona(e) && ver[e.nivel] && EQ.filtra(e.codigo) && (sub === "pend" || e.alertas.length) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
 function pintar(){
-  if (modo === "hist" || modo === "reg" || modo === "cor" || modo === "minu" || modo === "bol") return;
+  if (modo === "hist" || modo === "reg" || modo === "minu" || modo === "bol") return;
   if (modo === "equ" || modo === "mis" || modo === "comp") return EQ.pagina(modo);
   if (modo === "ext" || modo === "pp" || modo === "tem") return EXT.init(() => R, modo);
   if (modo === "inf") return pintarInf();
@@ -442,7 +460,7 @@ function detalle(c, mover = true){
    <tr><td>Viento 10 min</td><td>${v.dd10 ?? "—"}° ${v.ff10 ?? "—"} kt</td><td>${c3(m.ff10_wrf, "kt")}</td><td></td></tr><tr><td>Lluvia última hora</td><td>${c3(v.rr1h, "mm")}</td><td></td><td></td></tr></table>
    <h3 style="font-size:14px;margin:14px 0 6px">Alertas</h3>
    ${epHtml(e0)}
-   ${e.alertas.filter(a => !FALLAS.esFalla(a)).length ? `<table><tr><th>Prueba</th><th>Variable</th><th>Valor</th><th>Referencia</th><th>Detalle</th></tr>${e.alertas.filter(a => !FALLAS.esFalla(a)).map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba}</td><td>${nomVar(a.var)}</td><td>${a.valor ?? "—"}</td><td>${a.ref ?? "—"}</td><td>${esc(a.msg)}${a.detalle && a.detalle.length ? `<details><summary style="cursor:pointer;color:var(--mu)">detalle técnico</summary><small>${a.detalle.map(esc).join("<br>")}</small></details>` : ""}${botonFalsa(String(a.momento).slice(0, 10), idEma(a))}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin otras alertas.</p>`}
+   ${e.alertas.filter(a => !FALLAS.esFalla(a)).length ? `<table><tr><th>Prueba</th><th>Variable</th><th>Valor</th><th>Referencia</th><th>Detalle</th></tr>${e.alertas.filter(a => !FALLAS.esFalla(a)).map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba}</td><td>${nomVar(a.var)}</td><td>${a.valor ?? "—"}</td><td>${a.ref ?? "—"}</td><td>${esc(a.msg)}${a.detalle && a.detalle.length ? `<details><summary style="cursor:pointer;color:var(--mu)">detalle técnico</summary><small>${a.detalle.map(esc).join("<br>")}</small></details>` : ""}${botonFalsa(String(a.momento).slice(0, 10), idEma(a))}${botonOmitir(String(a.momento).slice(0, 10), idEma(a))}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin otras alertas.</p>`}
    <p style="color:var(--mu);font-size:12.5px;margin-top:10px">${e.aislada ? "Estación aislada: tiene menos de 3 vecinas comparables; la principal referencia es el modelo." : "Vecinas: " + esc(vec)}</p>`;
 }
 // fallas de sensor agrupadas por episodio, con «Informar» (texto para copiar) y «Ver gráfico»
@@ -452,7 +470,7 @@ function epHtml(e0){
     <td style="color:${HEX[p.nivel]};font-weight:600">${esc(FALLAS.que(p))}<br><small style="color:var(--mu)">${esc(FALLAS.sensor(p))}</small></td>
     <td style="white-space:nowrap">${FALLAS.utc(p.inicio).slice(5)}<br>${p.sigue ? "<b style='color:var(--err)'>sigue</b>" : FALLAS.utc(p.ultima).slice(5)}</td><td>${FALLAS.dur(p.minutos)}</td>
     <td>${esc(p.msg)}${p.detalle.length ? `<details><summary style="cursor:pointer;color:var(--mu)">detalle técnico</summary><small style="color:var(--mu)">${p.detalle.map(esc).join("<br>")}</small></details>` : ""}${p.informado ? `<div class="inf">✓ Informado ${esc(((R.informados || {})[p.informado] || {}).t?.slice(0, 16).replace("T", " ") || "")}</div>` : ""}</td>
-    <td style="white-space:nowrap"><button class="mk" data-ep="${i}" data-ac="inf">${p.informado ? "📋 Copiar texto" : "📨 Informar"}</button><br><button class="mk" data-ep="${i}" data-ac="graf">📈 Ver gráfico</button>${p.informado ? `<br><button class="mk" data-ep="${i}" data-ac="quitar" title="Volver a Pendientes">↩ Quitar</button>` : ""}<br>${botonFalsa(String(p.alertas[0].momento).slice(0, 10), idEma(p.alertas[0])).trim()}</td></tr>`).join("")}</table>
+    <td style="white-space:nowrap"><button class="mk" data-ep="${i}" data-ac="inf">${p.informado ? "📋 Copiar texto" : "📨 Informar"}</button><br><button class="mk" data-ep="${i}" data-ac="graf">📈 Ver gráfico</button>${p.informado ? `<br><button class="mk" data-ep="${i}" data-ac="quitar" title="Volver a Pendientes">↩ Quitar</button>` : ""}<br>${botonFalsa(String(p.alertas[0].momento).slice(0, 10), idEma(p.alertas[0])).trim()}<br>${botonOmitir(String(p.alertas[0].momento).slice(0, 10), idEma(p.alertas[0])).trim()}</td></tr>`).join("")}</table>
     <div id="epTxt"></div>`;
 }
 document.addEventListener("click", async ev => {
@@ -509,16 +527,17 @@ function cambiarModo(m){
   if (modo !== m) sel = null;
   modo = m; $("#det").style.display = "none";
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", prio: "prio", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", cor: "cor", equ: "equ", mis: "mis", comp: "comp"}[m];
+  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", prio: "prio", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", equ: "equ", mis: "mis", comp: "comp"}[m];
   document.querySelector("main").hidden = h;
-  ["hist", "prio", "minu", "bol", "ext", "ser", "inf", "reg", "cor", "equ", "mis", "comp"].forEach(i => $("#" + i).hidden = i !== sec);
+  ["hist", "prio", "minu", "bol", "ext", "ser", "inf", "reg", "equ", "mis", "comp"].forEach(i => $("#" + i).hidden = i !== sec);
   $("#chips").style.display = h ? "none" : "";
   $("#mvar").hidden = $("#mref").hidden = m !== "mod"; leyenda(m === "mod");
   $("#sub").hidden = $("#grupo").hidden = $("#vars").hidden = m !== "ema"; $("#gobs").hidden = m !== "obs";
   guardarVista();
+  try { history.replaceState(null, "", "#" + m); } catch (e) {}      // la pestaña también queda en la dirección: F5 vuelve a la misma
   if (h){
     if (m === "hist"){ hInit(); if (!HI) hCargar(); } else if (m === "minu") MINU.init(); else if (m === "bol") BOL.init(clave);
-    else if (sec === "cor") CORR.pagina(clave); else if (sec === "ext") EXT.init(() => R, m); else if (sec === "ser") SER.init(clave, m === "ser" ? "dia" : "hora");
+    else if (sec === "ext") EXT.init(() => R, m); else if (sec === "ser") SER.init(clave, m === "ser" ? "dia" : "hora");
     else if (sec === "equ" || sec === "mis" || sec === "comp") EQ.pagina(m);
     else if (m === "inf") R && pintarInf(); else if (m === "reg") REGLAS.pagina($("#reg"), esc); else pintarPrio();
     return;
@@ -654,7 +673,8 @@ function datosInf(){
   const sin = E.filter(e => e.nivel === 3), inc = E.filter(e => e.nivel !== 3 && e.completitud != null && e.completitud < 90);
   return {E, act, res, sin, inc, hoy};
 }
-let turnoH = 8;
+let turnoH = (() => { try { return +localStorage.getItem("qcTurnoH") || 8; } catch (e) { return 8; } })();
+const setTurnoH = h => { turnoH = Math.min(72, Math.max(1, Math.round(h) || 8)); try { localStorage.setItem("qcTurnoH", turnoH); } catch (e) {} pintarInf(); };
 function pintarInf(){
   if (!R) return;
   const {E, act, res, sin, inc, hoy} = datosInf(), cnt = R.resumen || {};
@@ -681,8 +701,9 @@ function pintarInf(){
     `DATOS INCOMPLETOS (menos de 90 % en la última hora)`,
     porZona(inc, e => `${e.nombre} (${e.codigo}): ${e.completitud} %`),
   ].join("\n");
-  $("#inf").innerHTML = `<div class="htools"><button id="iCopiar">📋 Copiar texto</button><button id="iXlsx">⬇ Excel</button><label style="font-size:13px;color:var(--mu)">Resumen de turno: <select id="iTurno">${[4, 8, 12, 24].map(h => `<option value="${h}"${h === turnoH ? " selected" : ""}>últimas ${h} h</option>`).join("")}</select></label><span style="color:var(--mu);font-size:13px;align-self:center">Regiones de norte a sur. Las fallas resueltas hoy son las informadas que ya terminaron.</span></div><pre>${esc(txt)}</pre>`;
-  $("#iTurno").onchange = ev => { turnoH = +ev.target.value; pintarInf(); };
+  $("#inf").innerHTML = `<div class="htools"><button id="iCopiar">📋 Copiar texto</button><button id="iXlsx">⬇ Excel</button><label style="font-size:13px;color:var(--mu)">Resumen de turno: últimas <input type="number" id="iTurnoN" min="1" max="72" value="${turnoH}" style="width:56px"> h</label><span class="ctl-turno">${[4, 8, 12, 24, 48].map(h => `<button class="mk" data-th="${h}"${h === turnoH ? ' style="border-color:var(--oro);color:var(--oro)"' : ""}>${h} h</button>`).join("")}</span><span style="color:var(--mu);font-size:13px;align-self:center">Regiones de norte a sur. Las fallas resueltas hoy son las informadas que ya terminaron.</span></div><pre>${esc(txt)}</pre>`;
+  $("#iTurnoN").addEventListener("change", ev => setTurnoH(+ev.target.value));
+  document.querySelectorAll("#inf [data-th]").forEach(b => b.addEventListener("click", () => setTurnoH(+b.dataset.th)));
   $("#iCopiar").onclick = async () => { try { await navigator.clipboard.writeText(txt); $("#iCopiar").textContent = "¡Copiado!"; } catch (e){ prompt("Copie el informe:", txt); } };
   $("#iXlsx").onclick = () => {
     if (!window.XLSX) return alert("No se pudo cargar la librería de Excel; revise la conexión.");
@@ -799,19 +820,19 @@ function hPintar(){
   const ab = S.filter(x => x.estado === "abierto").length, co = S.filter(x => x.estado === "corregido").length;
   $("#hRes").innerHTML = `<div><b>${S.length}</b><span>hallazgos ${HI.desde} a ${HI.hasta}</span></div>` + (obs ? `<div><b class="ab">${ab}</b><span>abiertos</span></div><div><b class="co">${co}</b><span>corregidos</span></div>` : "")
     + `<div><b>${new Set(S.map(x => x.codigo)).size}</b><span>estaciones</span></div>`
-    + (() => { const rv = S.filter(x => x._rev), re = rv.filter(x => x._rev === "real").length;
+    + (() => { const rv = S.filter(x => x._rev && x._rev !== "omitir"), re = rv.filter(x => x._rev === "real").length;
         return `<div><b>${rv.length ? Math.round(100 * re / rv.length) + " %" : "—"}</b><span>aciertos (${rv.length} revisados: ${re} reales, ${rv.length - re} falsas alarmas)</span></div>`; })();
   const por = {}; S.forEach(x => { const p = por[x.codigo] ||= {c: x.codigo, n: x.nombre || x.codigo, t: 0, a: 0}; p.t++; if (x.estado === "abierto") p.a++; });
   const PE = Object.values(por).sort((a, b) => b.t - a.t);
-  const porP = {}; S.filter(x => x._rev).forEach(x => { const k = obs ? (x.regla || x.tipo) : (PR[x.prueba] || x.prueba); const q = porP[k] ||= {n: 0, r: 0}; q.n++; if (x._rev === "real") q.r++; });
+  const porP = {}; S.filter(x => x._rev && x._rev !== "omitir").forEach(x => { const k = obs ? (x.regla || x.tipo) : (PR[x.prueba] || x.prueba); const q = porP[k] ||= {n: 0, r: 0}; q.n++; if (x._rev === "real") q.r++; });
   const tablaP = Object.keys(porP).length ? `<h3 style="font-size:13px;margin:16px 0 6px;color:var(--mu)">DESEMPEÑO POR ${obs ? "REGLA" : "PRUEBA"} (avisos revisados)</h3><table><tr><th>${obs ? "Regla" : "Prueba"}</th><th>Revisados</th><th>Aciertos</th></tr>${Object.entries(porP).sort((a, b) => b[1].n - a[1].n).map(([k, q]) => `<tr><td>${esc(k)}</td><td>${q.n}</td><td style="color:${q.r / q.n >= .7 ? "#6fcf97" : q.r / q.n >= .4 ? "#f2c94c" : "#eb5757"};font-weight:700">${Math.round(100 * q.r / q.n)} %</td></tr>`).join("")}</table>` : "";
   $("#hEst").innerHTML = `<table><tr><th>Estación</th><th>Total</th>${obs ? "<th>Abiertos</th>" : ""}</tr>${PE.map(p => `<tr class="hs ${hEst === p.c ? "on" : ""}" data-c="${p.c}"><td>${esc(p.n)}</td><td>${p.t}</td>${obs ? `<td class="${p.a ? "ab" : ""}">${p.a}</td>` : ""}</tr>`).join("")}</table>` + tablaP;
   const T = S.filter(x => !hEst || x.codigo === hEst).sort((a, b) => (b.hora || b.momento).localeCompare(a.hora || a.momento) || a.nombre?.localeCompare(b.nombre || ""));
   const MAX = 1500;
   $("#hTab").innerHTML = T.length ? `<table><tr><th>Día y hora UTC</th><th>Estación</th><th>${obs ? "Tipo" : "Prueba"}</th><th>${obs ? "Regla" : "Variable"}</th><th>Detalle</th><th>${obs ? "Estado" : "Visto"}</th><th>Revisión</th></tr>`
     + T.slice(0, MAX).map(x => `<tr><td style="white-space:nowrap">${(x.hora || x.momento).slice(8, 10)}/${(x.hora || x.momento).slice(5, 7)} ${(x.hora || x.momento).slice(11, 16)}</td><td>${esc(x.nombre || x.codigo)}</td>
-      <td style="color:${HEX[x.nivel] || "inherit"}">${obs ? TIPO[x.tipo] || x.tipo : PR[x.prueba] || x.prueba}</td><td>${obs ? x.regla : VAR[x.var] || x.var}</td><td>${esc(x.msg)}${obs && SGRAF.tiene(x.regla) ? ` <button class="sgbtn" data-sg="${esc(x.hora)}|${esc(x.regla)}|${esc(x.codigo)}" data-msg="${esc(x.msg)}">📈 ver gráfico</button>` : ""}</td>
-      <td style="white-space:nowrap">${obs && x._rev === "resuelto" && x.estado !== "corregido" ? `<span class="co" title="Marcado a mano como resuelto">resuelto (a mano)</span>` : ""}${obs ? (x.estado === "corregido" ? `<span class="co" title="Marcado por el sistema: en una revisión posterior la observación se volvió a leer desde SACLIM y ya no falla (el dato se modificó, llegó el minutario que faltaba o cambió la regla)">corregido</span><br><small style="color:var(--mu)">${x.corregido.slice(8, 10)}/${x.corregido.slice(5, 7)} ${x.corregido.slice(11, 16)} UTC</small>` : `<span class="ab">abierto</span>`) : (x.n + (x.n === 1 ? " pasada" : " pasadas"))}</td>
+      <td style="color:${HEX[x.nivel] || "inherit"}">${obs ? TIPO[x.tipo] || x.tipo : PR[x.prueba] || x.prueba}</td><td>${obs ? REGLAS.html(x.regla, esc) : VAR[x.var] || x.var}</td><td>${esc(x.msg)}${obs && SGRAF.tiene(x.regla) ? ` <button class="sgbtn" data-sg="${esc(x.hora)}|${esc(x.regla)}|${esc(x.codigo)}" data-msg="${esc(x.msg)}">📈 ver gráfico</button>` : ""}</td>
+      <td style="white-space:nowrap">${obs && x._rev === "resuelto" && x.estado !== "corregido" ? `<span class="co" title="Marcado a mano como resuelto">resuelto (a mano)</span>` : ""}${x._rev === "omitir" ? `<span class="co" title="Archivada a mano: no vuelve a salir para esta estación, hora y regla">omitida</span><br>` : ""}${obs ? (x.estado === "corregido" ? `<span class="co" title="Marcado por el sistema: en una revisión posterior la observación se volvió a leer desde SACLIM y ya no falla (el dato se modificó, llegó el minutario que faltaba o cambió la regla)">corregido</span><br><small style="color:var(--mu)">${x.corregido.slice(8, 10)}/${x.corregido.slice(5, 7)} ${x.corregido.slice(11, 16)} UTC</small>` : `<span class="ab">abierto</span>`) : (x.n + (x.n === 1 ? " pasada" : " pasadas"))}</td>
       <td style="white-space:nowrap"><button class="rv ${x._rev === "real" ? "on r" : ""}" data-d="${x._dia}" data-i="${esc(x._id)}" data-v="real" title="Era un error real">✓ real</button>${x._quien ? ` <small style="color:var(--mu)">${esc(x._quien)}</small>` : ""} <button class="rv ${x._rev === "falsa" ? "on f" : ""}" data-d="${x._dia}" data-i="${esc(x._id)}" data-v="falsa" title="Falsa alarma">✗ falsa</button></td></tr>`).join("") + `</table>`
     + (T.length > MAX ? `<p style="color:var(--mu)">Se muestran ${MAX} de ${T.length}; descargue el CSV para verlos todos.</p>` : "")
     : `<p style="color:var(--mu)">Sin hallazgos guardados con ese filtro. El historial se empezó a guardar el 8 de noviembre de 2026.</p>`;
@@ -826,7 +847,7 @@ function hResumen(){
   const med = tiempos.length ? tiempos[Math.floor(tiempos.length / 2)] : null;
   const top = (L, k, n = 5) => { const c = {}; L.forEach(h => { const v = k(h); c[v] = (c[v] || 0) + 1; }); return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, n); };
   const tipo = h => TIPO[h.tipo] || h.tipo, prue = h => PR[h.prueba] || h.prueba;
-  const rv = O.concat(A).filter(h => h._rev), re = rv.filter(h => h._rev === "real").length;
+  const rv = O.concat(A).filter(h => h._rev && h._rev !== "omitir"), re = rv.filter(h => h._rev === "real").length;
   const lin = [
     `Control de calidad · ${HI.desde} a ${HI.hasta}`,
     ``,
@@ -861,8 +882,11 @@ $("#fl").addEventListener("submit", ev => { ev.preventDefault(); const c = $("#c
 const VISTA0 = new URLSearchParams(location.search).get("vista"), VG = leerVista();
 if (VG){ zona = VG.zona || "todo"; sub = VG.sub || "pend"; grupo = VG.grupo || "todas"; gobs = VG.gobs || "todas"; $("#buscar").value = VG.q || "";
   $("#grupo").value = grupo; $("#gobs").value = gobs; document.querySelectorAll(".tools button[data-z]").forEach(x => x.classList.toggle("on", x.dataset.z === zona)); }
-if (VISTA0 && VISTA0 !== "modelo") cambiarModo(VISTA0); else if (VG && VG.modo) cambiarModo(VG.modo);
-if (VG && VG.sel && !VISTA0) sel = VG.sel;
+const HASH0 = decodeURIComponent((location.hash || "").slice(1));
+if (VISTA0 && VISTA0 !== "modelo") cambiarModo(VISTA0);
+else if (HASH0 && document.querySelector(`.modos button[data-m="${CSS.escape(HASH0)}"]`)) cambiarModo(HASH0);     // la dirección manda sobre lo guardado
+else if (VG && VG.modo) cambiarModo(VG.modo);
+if (VG && VG.sel && !VISTA0 && (!HASH0 || HASH0 === VG.modo)) sel = VG.sel;
 if (/^\/modelo/.test(location.pathname) || new URLSearchParams(location.search).get("vista") === "modelo"){
   document.querySelector('.modos button[data-m="mod"]').click(); document.querySelector(".modos").style.display = "none";
   document.querySelector("header h1").firstChild.textContent = "Control de calidad · contraste con modelos"; document.title = "Contraste con modelos · METOTEC";

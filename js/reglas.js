@@ -12,7 +12,7 @@ const N = {
   C27: "W1 menor que W2", C29: "Tormenta sin capa Cb", C30: "Precipitación continua solo con cumuliformes", C31: "Llovizna solo con cumuliformes",
   C32: "Capa TCu con CL incorrecto", C33: "Visibilidad < 5000 m sin fenómeno", C34: "METAR DZ/RA sin precipitación en SYNOP",
   C35: "METAR BR distinto del ww", C36: "METAR FG sin niebla en ww", C37: "METAR HZ distinto del ww", C38: "St muy alto", C39: "Nube baja muy alta",
-  C40: "CL sin su capa", C41: "Td mayor que Ts",
+  C40: "CL sin su capa", C41: "Td mayor que Ts", C41H: "HR no calza con Ts y Td",
   E01: "Fin de precipitación sin ww 20–27", E03: "Llovizna a chubasco sin cambio de nubes", E04: "Chubasco a lluvia continua sin cambio de nubes",
   E05: "Niebla adelgaza y baja la visibilidad", E06: "Niebla espesa y sube la visibilidad", E07: "ww 01 con N que sube", E08: "ww 03 con N que baja",
   E09: "Salto de QFE en una hora", E10: "Tiempo pasado (W1) incorrecto", E11: "W1 sin ww que lo respalde", E12: "Precipitación con RRR6 0",
@@ -25,18 +25,25 @@ const N = {
   SEXT: "Extrema: valor", SEXH: "Extrema: hora", SEXF: "Extrema fuera de bloque sin ingresar", SRRR6: "RRR6 frente al pluviómetro",
   SPRE: "Pluviómetro y tiempo presente", SinDato: "Sin dato", St: "Satélite: nubosidad", Sc: "Satélite: nubes", SD: "Satélite"
 };
-const nombre = c => N[c] || (c && c.startsWith("SB") && N["SB" + c.slice(2)]) || c;
-const html = (c, esc) => `${esc(nombre(c))}${N[c] ? ` <small style="color:var(--mu);font-family:var(--mono)">${esc(c)}</small>` : ""}`;
+// Controles Definidos de SACLIM (qc/reglas_sistema.json): su código es un número; el texto del aviso es el propio mensaje del sistema
+const esSaclim = c => /^\d+$/.test(String(c));
+const nombre = c => N[c] || (esSaclim(c) && "Control de SACLIM") || (c && c.startsWith("SB") && N["SB" + c.slice(2)]) || c;
+const SIN_CODIGO = new Set(["SEXT", "SEXH"]);     // estas dos se muestran sin el código
+const html = (c, esc) => `${esc(nombre(c))}${(N[c] || esSaclim(c)) && !SIN_CODIGO.has(c) ? ` <small style="color:var(--mu);font-family:var(--mono)">${esc(c)}</small>` : ""}`;
 
 // a qué pestaña va cada regla de observaciones (cada alerta vive en un solo lugar; lo demás queda en «Observaciones»)
 const PESTANA = {SEXT: "ext", SEXH: "ext", SEXF: "ext",
   SRRR6: "pp", SPRE: "pp", E12: "pp", E13: "pp", E17: "pp",
-  STs: "tem", STd: "tem", SHR: "tem", SBTs: "tem", SBTd: "tem", SBHR: "tem", C41: "tem"};
+  STs: "tem", STd: "tem", SHR: "tem", SBTs: "tem", SBTd: "tem", SBHR: "tem", C41: "tem", C41H: "tem"};
 const pestana = c => PESTANA[c] || "obs";
 
 /* Registro de cambios de reglas. Al cambiar una regla o umbral en qc/, agregar una fila ARRIBA: [fecha AAAA-MM-DD, códigos, qué cambió, por qué].
    Lo que se vea aquí debe coincidir con lo que dicen las pruebas fijas (qc/casos.py). */
 const CAMBIOS = [
+  ["2026-11-13", "SEXF", "Solo avisa si la Tmax AM / Tmin PM del día no se ingresó en su bloque (AM 00–12 UTC, PM 12–00 UTC); se busca en todas las observaciones del bloque. El texto dice «se dio una máxima AM (valor, hora) y no se ingresó».", "Pudahuel 10/11 00:00: avisaba que faltaba la Tmax AM aunque el observador ya la había reportado."],
+  ["2026-11-13", "SEXT, SEXH", "La extrema del resumen diario se valida antes de usarla (rango físico y coherencia con los minutos: más de 2 °C de diferencia se descarta y se usan los minutos; la falla se informa aparte en estaciones automáticas). Nombres: Tmax AM, Tmin AM, Tmax PM, Tmin PM; los códigos SEXT/SEXH ya no se muestran.", "Frei 13/11: máxima «322.0 °C» (era la dirección del viento)."],
+  ["2026-11-13", "C41, C41H", "C41 se divide en dos casos con su propio nombre: «Td mayor que Ts» (C41) y «HR no calza con Ts y Td» (C41H).", "Melinka 12/11 18:00 salía como «Td mayor que Ts» siendo un problema de HR."],
+  ["2026-11-13", "Todas las de observaciones", "Las columnas «Ingresado» y «Debería ir» se completan siempre que se pueda deducir: lo anotado, y lo que marcó el sensor o la secuencia de horas vecinas.", "Muchas alertas salían con esas columnas vacías."],
   ["2026-11-13", "Todas", "Se agrega este registro de cambios a la página «Reglas».", "Saber desde cuándo rige cada umbral al revisar un aviso viejo en el Historial."],
   ["2026-11-13", "E20 y S*", "Serie del observador como alerta principal (Ts, Td, HR, presiones, viento y dirección); si el sensor marcó el valor en la hora previa, no se alerta. «Frente al sensor» solo con diferencias grandes: presión > 2 hPa, Ts > 1,5 °C, Td > 2,5 °C, HR > 12 %, viento > 10 kt.", "Menos ruido: los avisos por diferencias chicas eran casi todos falsas alarmas."],
   ["2026-11-13", "Sffkmh", "Solo si la diferencia con el sensor es ≥ 3 kt y el valor en km/h calza mejor.", "Evitar avisos cuando la diferencia es pequeña."],
@@ -61,7 +68,10 @@ const UMBRALES = [
     "RRR6 debe calzar con la suma del pluviómetro en las 6 h que cierran a las 00, 06, 12 y 18 UTC.",
     "Traza con pluviómetro ≥ 0,2 mm → dudoso («Debería ir: RRR6 x.x»). Traza con RRR6 ≠ 0.0 → dudoso. Traza sin fenómenos en 6 h y pluviómetro 0 → informativo."]],
   ["Extremas", [
-    "TnAM/TxAM (00–12 UTC) y TnPM/TxPM (12–00 UTC) frente a la extrema oficial de la estación automática, en valor y hora (hora local)."]],
+    "Tmin AM/Tmax AM (00–12 UTC) y Tmin PM/Tmax PM (12–00 UTC) frente a la extrema oficial de la estación automática, en valor y hora (hora local)."]],
+  ["Controles Definidos de SACLIM", [
+    "Se aplican las reglas propias del sistema de ingreso (qc/reglas_sistema.json) sobre lo grabado por el observador; se avisan como «Control de SACLIM» con el número de la regla y su mensaje.",
+    "Solo se evalúan cuando todos los elementos de la regla están en la observación; en nivel erróneo si el sistema la exige, y dudoso si no."]],
   ["Codificación y visibilidad", [
     "Fenómenos que reducen la visibilidad (humo, calima, polvo, neblina): se avisa solo con VV > 8000 m.",
     "C40 (CL sin su capa): solo si no hay ninguna capa baja."]],

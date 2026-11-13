@@ -15,8 +15,8 @@ const VARS = {
   Sdd: {cols: ["dd10"], nom: "Dirección 10 min", u: "°", obs: /dirección anotada (-?[\d.]+)/},
 };
 // diferencias constantes observador − automática (SBTs, SBQFE, …): misma serie, sin valor puntual del observador
-VARS.SEXT = VARS.SEXH = {cols: ["T"], nom: "Ts (período de la extrema)", u: "°C", obs: /(?:Tn|Tx)(?:AM|PM) (-?[\d.]+)/, horas: 12};
-VARS.C41 = {cols: ["HR"], nom: "HR", u: "%", obs: /HR (-?[\d.]+) %/};
+VARS.SEXT = VARS.SEXH = {cols: ["T"], nom: "Ts (período de la extrema)", u: "°C", obs: /T(?:min|max) (?:AM|PM) (-?[\d.]+)/, horas: 12};
+VARS.C41 = VARS.C41H = {cols: ["HR"], nom: "HR", u: "%", obs: /HR (-?[\d.]+) %/};
 VARS.SRRR6 = {cols: ["rr1m"], nom: "Agua caída acumulada (6 h)", u: "mm", obs: /RRR6 anotado (-?[\d.]+)/, horas: 6, acum: true};
 VARS.E12 = VARS.E13 = VARS.E17 = {...VARS.SRRR6, obs: /RRR6 (-?[\d.]+)/};
 VARS.SPRE = {cols: ["rr1m"], nom: "Agua caída por minuto (2 h previas)", u: "mm", obs: /$^/, horas: 2};
@@ -130,6 +130,6 @@ async function calculadora(cont, cod, hora){
     const yo = r.filas.find(f => f.hora === hora.slice(0, 16)); if (yo) ["Ts", "Td", "HR"].forEach(c => inp(c).value = yo[c] ?? "");
   } catch (e){ div.querySelector(".hrseq").innerHTML = `<p class="sgnota">No se pudo cargar la secuencia de observaciones.</p>`; }
 }
-const CALC = /^(S|SB)(Ts|Td|HR)$|^C41$/;
+const CALC = /^(S|SB)(Ts|Td|HR)$|^C41H?$/;
 window.SGRAF = {abrir: async (cont, cod, hora, regla, msg) => { await abrir(cont, cod, hora, regla, msg); if (CALC.test(regla)) calculadora(cont, cod, hora); }, tiene};
 })();

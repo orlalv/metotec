@@ -189,6 +189,54 @@ def prueba_extremas_oficiales():
     no_alerta(S.extremas(T, mala, A, "330020", None, of), "SEXH", "TnAM repetida a la hora anotada")
 
 
+def prueba_sexf_y_resumen():
+    """SEXF: solo avisa si la máxima AM no se ingresó; el resumen diario con 322 °C se descarta y se informa aparte."""
+    import dmc
+    t0 = pd.Timestamp("2026-11-10 00:00")
+    m = pd.date_range(t0 - pd.Timedelta(hours=26) + pd.Timedelta(minutes=1), t0, freq="1min")
+    A = pd.DataFrame({"momento": m, "T": 15.0, "rr1m": 0.0})
+    A.loc[A["momento"] == pd.Timestamp("2026-11-09 05:30"), "T"] = 25.0       # máxima AM (00–12 UTC del 9)
+    A.loc[A["momento"] == pd.Timestamp("2026-11-09 20:00"), "T"] = 20.0       # máxima PM, más baja
+    t12 = t0 - pd.Timedelta(hours=12)
+    con = {t12: {"TxAM": {"TxAM": 25.0, "FechaHora": "2026-11-09 02:30:00"}}, t0: {}}
+    no_alerta(S.extremas(t0, con[t0], A, "330020", con, None), "SEXF", "Tmax AM ya reportada en su bloque")
+    sin = {t12: {}, t0: {}}
+    r = reglas(S.extremas(t0, sin[t0], A, "330020", sin, None), "SEXF")
+    if not r or "Tmax AM" not in r[0][3] or "TxAM" in r[0][3]:
+        FALLAS.append(f"SEXF sin ingresar debía avisar con «Tmax AM» → {r}")
+    js = {"datos": {"temperaturaExtremas": {"10-11-2026": {"maxima": {"valor": "322.0", "momento": "2026-11-09 05:30:00"},
+                                                          "minima": {"valor": "14.0", "momento": "2026-11-09 03:00:00"}}}}}
+    ok, mal = dmc.validar_extremas(dmc.extremas_oficiales(js), A)
+    if [x["tipo"] for x in mal] != ["max"] or [x["tipo"] for x in ok] != ["min"]:
+        FALLAS.append(f"resumen diario: 322 °C debía descartarse → ok={ok} mal={mal}")
+
+
+def prueba_columnas_ingresado_y_c41():
+    """Las alertas traen «ingresado» y «deberia»; C41 usa el nombre según el caso (Td > Ts / HR que no calza)."""
+    t = pd.Timestamp("2026-11-12 18:00")
+    A = minutario(t, horas=2, T=10.0, Td=8.0, HR=87.0)
+    h = S.revisar("330020", {t: obs(Ts=10.0, Td=8.0, HR=50)}, A, horas=1)
+    r = [x for x in h if x["regla"] == "C41H"]
+    if not r or "HR 87" not in r[0].get("deberia", "") or "HR 50" not in r[0].get("ingresado", ""):
+        FALLAS.append(f"C41H: HR 50 con Ts 10 y Td 8 debía dar «HR 87» y mostrar lo ingresado → {r}")
+    if any(x["regla"] == "C41" for x in h):
+        FALLAS.append("C41 (Td mayor que Ts) no corresponde cuando Td < Ts")
+    h = S.revisar("330020", {t: obs(Ts=10.0, Td=11.5, HR=87)}, A, horas=1)
+    r = [x for x in h if x["regla"] == "C41"]
+    if not r or not r[0].get("deberia", "").startswith("Td 8.0"):
+        FALLAS.append(f"C41: Td 11.5 con Ts 10 y sensor Td 8.0 debía dar «Td 8.0» → {r}")
+
+
+def prueba_reglas_saclim_activas():
+    """Los Controles Definidos de SACLIM (reglas_sistema.json) siguen cargados y siguen avisando dentro de revisar()."""
+    if len(S._COMP) < 300:
+        FALLAS.append(f"reglas SACLIM: solo {len(S._COMP)} reglas compiladas")
+    t = pd.Timestamp("2026-11-12 18:00")
+    h = S.revisar("330020", {t: {"Ts": {"Ts": 10.0}, "Td": {"Td": 12.0}}}, None, horas=1)
+    if not [x for x in h if x["tipo"] == "sistema"]:
+        FALLAS.append(f"reglas SACLIM: Td 12 con Ts 10 debía avisar una regla del sistema → {[x['regla'] for x in h]}")
+
+
 # ----------------------------------------------------------------- estaciones automáticas
 def _ema(horas, **cols):
     m = pd.date_range(T - pd.Timedelta(hours=horas) + pd.Timedelta(minutes=1), T, freq="1min")

@@ -23,7 +23,7 @@ function estado(R){
     const d = edad(w.datos_hasta);
     L.push({nombre: "Datos EMA más recientes", nivel: nivelEdad(d, LIM.dato), detalle: `Último dato de las estaciones: ${hora(w.datos_hasta)} (hace ${dur(d)}).`});
   } else {
-    L.push({nombre: "DMC · red de estaciones (Worker)", nivel: 3, detalle: "El Worker aún no deja su estado (aparece con su próximo ciclo)."});
+    L.push({nombre: "DMC · red de estaciones (Worker)", nivel: 3, detalle: "El Worker no ha dejado su estado. Revisar en GitHub → Actions que «Publicar Worker de alertas» terminó bien (necesita el plan Workers Paid y un token con «Workers Scripts: Edit») y en Cloudflare → Workers → metotec-alertas → Logs."});
     const d = edad(R.datos_hasta);
     L.push({nombre: "Datos EMA más recientes", nivel: nivelEdad(d, LIM.dato), detalle: `Último dato en la pasada de control: ${hora(R.datos_hasta)} (hace ${dur(d)}).`});
   }
@@ -33,8 +33,9 @@ function estado(R){
   L.push({nombre: "Observaciones (SACLIM)", nivel: nivelEdad(o, LIM.obs), detalle: `Última revisión ${hora((R.observaciones || {}).generado)} (hace ${dur(o)}).`});
   [["modelo", "Modelo Open-Meteo"], ["wrf", "Modelo WRF-DMC"], ["satelite", "Satélite GOES-19"]].forEach(([k, n]) => {
     if (!f) L.push({nombre: n, nivel: 3, detalle: "Se informa desde la próxima pasada de control."});
+    else if (f[k] && k === "modelo" && (f.motivos || {}).modelo_parcial) L.push({nombre: n, nivel: 1, detalle: "Respondió solo en parte: " + f.motivos.modelo_parcial + ". Se usó lo recibido y se reintenta en la pasada siguiente."});
     else if (f[k]) L.push({nombre: n, nivel: 0, detalle: "Disponible en la última pasada."});
-    else L.push({nombre: n, nivel: 1, detalle: "No respondió en la última pasada: esas pruebas quedaron sin revisar."});
+    else L.push({nombre: n, nivel: 1, detalle: "No respondió en la última pasada: esas pruebas quedaron sin revisar." + ((f.motivos || {})[k] ? " Motivo: " + f.motivos[k] + "." : "") + " Se reintenta en la pasada siguiente."});
   });
   return L;
 }

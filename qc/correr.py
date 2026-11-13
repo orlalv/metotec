@@ -162,6 +162,9 @@ def obs_archivo(raiz, cod, fin, horas=HORAS_EXT):
     return out
 
 
+FALLAS_RESUMEN = []      # extremas del resumen diario descartadas (se informan como falla en estaciones automáticas)
+
+
 def control_sensorial(E, raiz, pausa=0.3, SAT=None):
     """Baja las observaciones de las estaciones con observador, las archiva y las revisa. Sube el resultado al KV (qc/sensorial)."""
     import time, gzip
@@ -185,7 +188,12 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
         oficial = None
         try:   # extremas oficiales (valor con todos los decimales y hora) del resumen diario de la estación
             js_r = dmc.descargar(f"getEmaResumenDiario/{cod}", timeout=60)
-            oficial = dmc.extremas_oficiales(js_r)
+            oficial, mal_ofi = dmc.validar_extremas(dmc.extremas_oficiales(js_r), A)     # se valida antes de usarla (rango y minutos)
+            for x in mal_ofi:
+                var = "Tn" if x["tipo"] == "min" else "Tx"
+                FALLAS_RESUMEN.append(P.alerta(cod, "extremas", var, 2, x["momento"], x["valor"], x.get("ref"),
+                                               f"{'Mínima' if x['tipo'] == 'min' else 'Máxima'} del resumen diario {x['valor']:.1f} °C ({x['motivo']}): "
+                                               f"falla del sensor o del servicio; el control usa los minutos de la estación"))
             mu = Path(raiz) / "muestras" / f"resumen_{cod}.json"      # una muestra por estación para verificar el formato
             if not mu.exists():
                 mu.parent.mkdir(parents=True, exist_ok=True)
@@ -247,6 +255,8 @@ def main():
         try:
             M = MO.obtener(E)
             estado["modelo"] = len(M)
+            if MO.ULTIMOS_ERRORES:       # llegó parte: se usa lo que hay y se deja el motivo de lo que faltó
+                estado["errores"].append(f"modelo_parcial: {len(MO.ULTIMOS_ERRORES)} lotes sin respuesta ({MO.ULTIMOS_ERRORES[0]})")
         except Exception as e:
             estado["errores"].append(f"modelo: {e}")
 
@@ -389,8 +399,9 @@ def main():
                estaciones=est)
     # estado de las fuentes de esta pasada (lo muestra el indicador «Servicios» de la página)
     falla = lambda k: any(str(x).startswith(k) for x in estado["errores"])
-    res["servicios"] = {"dmc": True, "modelo": M is not None and not falla("modelo"), "wrf": W is not None and len(W) > 0 and not falla("wrf"), "satelite": bool(sat) and not falla("satelite"),
-                        "errores": [str(x).split(":")[0] for x in estado["errores"]][:8]}
+    res["servicios"] = {"dmc": True, "modelo": M is not None and not falla("modelo:"), "wrf": W is not None and len(W) > 0 and not falla("wrf"), "satelite": bool(sat) and not falla("satelite"),
+                        "errores": [str(x).split(":")[0] for x in estado["errores"]][:8],
+                        "motivos": {str(x).split(":")[0]: str(x).split(":", 1)[-1].strip()[:200] for x in estado["errores"]}}
     hacer = a.sensorial == "si" or (a.sensorial == "auto" and not a.json)      # en cada pasada (:15 y :45)
     sen_res = sen_rev = None
     if hacer:
@@ -398,6 +409,14 @@ def main():
             estado["sensorial"], sen_res, sen_rev = control_sensorial(E, a.datos, SAT=SAT.series(sat))
         except Exception:
             estado["errores"].append(f"sensorial: {traceback.format_exc(limit=2)}")
+    for f_ in FALLAS_RESUMEN:      # extrema imposible del resumen diario: falla aparte, en estaciones automáticas
+        alertas.append(f_)
+        for e_ in est:
+            if e_["codigo"] == f_["codigo"]:
+                e_["alertas"].append(f_); e_["nivel"] = max(e_["nivel"], 2)
+                if e_["estado"] == "bien" or e_["estado"] == "sospechoso":
+                    e_["estado"] = "erróneo"
+    res["resumen"] = {k: sum(1 for e in est if e["estado"] == k) for k in ("bien", "sospechoso", "erróneo", "sin datos")}
     try:   # historial: nada se borra; lo corregido queda marcado
         dias = HIS.actualizar(a.datos, datetime.now(timezone.utc), sen_res, sen_rev, [x for x in alertas if x["prueba"] != "completitud"] + terminados,
                               E.set_index("codigo")["nombre"].to_dict())

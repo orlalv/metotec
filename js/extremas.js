@@ -20,7 +20,7 @@ function init(fR, t){
 }
 
 const deb = m => { const x = (m || "").match(/Debería ir: ([^.]+(?:\.\d[^.]*)?)\.?$/); return x ? x[1] : ""; };
-const ing = f => { const m = (f.msg || "").match(/^((?:Tn|Tx)(?:AM|PM)) (-?[\d.]+) °C(?: a las (\d\d:\d\d))?/) || (f.msg || "").match(/^(?:(TnAM|TxAM|TnPM|TxPM) con hora (\d\d:\d\d))/);
+const ing = f => { const m = (f.msg || "").match(/^(T(?:min|max) (?:AM|PM)) (-?[\d.]+) °C(?: a las (\d\d:\d\d))?/) || (f.msg || "").match(/^(?:(T(?:min|max) (?:AM|PM)) con hora (\d\d:\d\d))/);
   if (m && m[2] && /^-?[\d.]+$/.test(m[2])) return `${m[1]} ${m[2]} °C${m[3] ? " · " + m[3] : ""}`;
   if (m) return `${m[1]} · ${m[2]}`;
   const r = (f.msg || "").match(/RRR6 (?:anotado )?(-?[\d.]+)/); if (r) return `RRR6 ${r[1]} mm`;
@@ -42,10 +42,10 @@ function pintar(){
   $("#xOut").innerHTML = `<div class="hres">${kpi(est.size, "estaciones con alertas", "var(--oro)")}${porRegla}</div>
     ${V.length ? `<div class="bcard" style="padding:0"><table class="xtab"><tr><th>Estación</th><th>Obs. UTC</th><th>Alerta</th><th>Ingresado</th><th>Debería ir</th><th>Detalle</th><th></th></tr>
       ${V.map(f => `<tr><td class="nom"><b>${esc(f.e.nombre)}</b><br><small>${f.e.codigo}</small><br><a class="vlink" style="display:inline-block;margin-top:4px" href="https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/${encodeURIComponent(f.e.codigo)}" target="_blank" rel="noopener" title="Abrir la estación en línea en el portal de climatología">↗ en línea</a></td><td style="white-space:nowrap">${f.hora.slice(8, 10)}/${f.hora.slice(5, 7)} ${f.hora.slice(11, 16)}</td>
-        <td style="color:${NIVC[f.nivel] || "inherit"};font-weight:600">${REGLAS.html(f.regla, esc)}</td><td class="n">${esc(ing(f))}</td><td class="n" style="color:var(--oro)">${esc(deb(f.msg))}</td>
+        <td style="color:${NIVC[f.nivel] || "inherit"};font-weight:600">${REGLAS.html(f.regla, esc)}</td><td class="n">${esc(f.ingresado || ing(f) || (f.regla === "SEXF" ? "No ingresada" : "—"))}</td><td class="n" style="color:var(--oro)">${esc(f.deberia || deb(f.msg))}</td>
         <td>${esc(f.msg)}${f.st === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${MARCA.botones(f.e.codigo, f)}<br>${SGRAF.tiene(f.regla) ? `<button class="sgbtn" data-sg="${esc(f.hora)}|${esc(f.regla)}|${esc(f.e.codigo)}" data-msg="${esc(f.msg)}">📈 ver gráfico</button>` : ""}</td></tr>`).join("")}</table></div>`
       : `<p style="color:var(--ok)">Sin alertas de ${TIT[tipo]}${q ? " con ese filtro" : ""}.</p>`}
-    <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">${tipo === "ext" ? "Extremas: TnAM y TxAM (00–12 UTC) y TnPM y TxPM (12–00 UTC), comparadas con la extrema oficial de la estación automática, en valor y hora (la hora del observador es local)."
+    <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">${tipo === "ext" ? "Extremas: Tmin AM y Tmax AM (00–12 UTC) y Tmin PM y Tmax PM (12–00 UTC), comparadas con la extrema oficial de la estación automática, en valor y hora (la hora del observador es local)."
       : tipo === "pp" ? "Precipitación: el RRR6 debe calzar exacto con la suma del pluviómetro en las 6 h que cierran a las 00, 06, 12 y 18 UTC."
       : "Ts, Td y HR del observador frente al sensor de la estación automática, y las diferencias constantes."} «Resuelto» quita la alerta y la manda al Historial; si en la pasada siguiente el dato sigue igual, vuelve marcada.</p>`;
 }

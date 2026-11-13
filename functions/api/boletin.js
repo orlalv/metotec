@@ -1,6 +1,7 @@
 // GET /api/boletin?dia=AAAA-MM-DD : revisión del boletín climatológico diario (solo con clave).
 // Sin «dia»: el último día disponible (hoy o, si aún no sale, los días anteriores hasta 7).
 import { json } from "./_kv.js";
+import { aplicar } from "./_boletin_marcas.js";
 // primero el KV; si no está (p. ej. falló la subida), el archivo guardado en la rama «datos»
 async function leer(env, dia){
   const r = await env.DATOS.get("qc/boletin/" + dia, "json"); if (r) return r;
@@ -14,12 +15,12 @@ export async function onRequestGet({ request, env }){
   if (pedido){
     if (!/^\d{4}-\d{2}-\d{2}$/.test(pedido)) return new Response("Fecha inválida", { status: 400 });
     const r = await leer(env, pedido);
-    return r ? json(r) : json({ dia: pedido, vacio: true });
+    return r ? json(await aplicar(env, r)) : json({ dia: pedido, vacio: true });
   }
   const hoy = new Date(Date.now() - 3 * 3600e3);
   for (let k = 0; k < 8; k++){
     const d = new Date(hoy - k * 864e5).toISOString().slice(0, 10), r = await leer(env, d);
-    if (r) return json(r);
+    if (r) return json(await aplicar(env, r));
   }
   return json({ dia: hoy.toISOString().slice(0, 10), vacio: true });
 }

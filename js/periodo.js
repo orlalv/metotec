@@ -8,7 +8,7 @@ const NOM = {CMS: "METAR y SYNOP no coinciden", FALTA: "Mensaje que falta", STs:
   SQFF: "QFF frente al sensor", SQNH: "QNH frente al sensor", Sff: "Viento frente al sensor", Sffkmh: "Viento en km/h", Sdd: "Dirección frente al sensor",
   Sracha: "Racha", SRRR6: "RRR6 frente al pluviómetro", SPRE: "Lluvia del pluviómetro y tiempo presente", SEXT: "Extrema: valor", SEXF: "Extrema fuera de bloque",
   E10: "Tiempo pasado W1W2", E11: "W1 sin respaldo", E12: "Precipitación con RRR6 0", E13: "RRR6 sin precipitación", E14: "ppp y QFE", E15: "Tendencia a y QFE",
-  E16: "Tendencia a y QFE", E17: "Precipitación sin traza", E19: "Valor inusual", E20: "Posible error de digitación", C41: "HR, Ts y Td"};
+  E16: "Tendencia a y QFE", E17: "Precipitación sin traza", E19: "Valor inusual", E20: "Posible error de digitación", C41: "Td mayor que Ts", C41H: "HR no calza con Ts y Td"};
 let clave = () => "", getR = () => null, P = null, idAct = null, timer = null, filtro = "";
 
 function init(fclave, fR){
@@ -20,7 +20,7 @@ function init(fclave, fR){
       <label class="rvbtn" style="margin:0;cursor:pointer" title="Excel de la «Extracción de datos» de SACLIM (puede elegir varios)">⬆ Subir extracción de SACLIM<input type="file" id="pArch" accept=".xlsx" multiple hidden></label>
       <span class="tag" id="pEstado"></span><button id="pXls" hidden>⬇ Excel</button></div>
     <p class="nota" style="color:var(--mu);font-size:12.5px;margin:4px 0 10px">Revisa los METAR y SYNOP que codificó SACLIM (hasta 31 días). Se aplican las reglas de las observaciones de hoy más la coherencia METAR–SYNOP
-      y los mensajes que faltan. No viajan en los mensajes la HR, la hora de las extremas, TxAM/TnPM ni el ww 00–03, así que eso no se revisa. Las reglas frente al sensor solo corren desde el 8-11-2026 (minutario guardado por METOTEC).</p>
+      y los mensajes que faltan. No viajan en los mensajes la HR, la hora de las extremas, Tmax AM/Tmin PM ni el ww 00–03, así que eso no se revisa. Las reglas frente al sensor solo corren desde el 8-11-2026 (minutario guardado por METOTEC).</p>
     <div id="pLista"></div><div id="pOut"></div>`;
   const E = ((getR() || {}).observaciones || {}).estaciones || [];
   $("#pEst").innerHTML = E.slice().sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "")).map(e => `<option value="${e.codigo}">${esc(e.nombre)} (${e.codigo})</option>`).join("")
