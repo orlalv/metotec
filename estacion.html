@@ -46,6 +46,11 @@ th{font-size:12.5px;color:var(--mu);text-transform:uppercase;letter-spacing:.05e
 td:first-child{font-weight:700;white-space:nowrap}
 .aviso{background:#fff8e6;border:1px solid #ecd9a2;border-radius:10px;padding:10px 14px;font-size:14px;margin-bottom:14px}
 .err{color:#a02a2a}
+.cal{display:flex;gap:6px 16px;flex-wrap:wrap;align-items:center;font-size:13.5px;margin-top:10px}
+.cal i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:6px;vertical-align:-2px;border:1px solid rgba(0,0,0,.15)}
+.cal label{cursor:pointer;margin-left:auto}
+.val{position:relative}.val em{position:absolute;top:10px;right:10px;width:11px;height:11px;border-radius:50%;border:1px solid rgba(0,0,0,.2)}
+table.mk td:first-child{white-space:nowrap}.mk i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 footer{margin-top:30px;background:var(--noche);color:#9fb0c8;font-size:13px;padding:20px 0}
 footer a{color:#9fb0c8}
 @media (max-width:600px){header nav{width:100%;gap:18px;overflow-x:auto;font-size:14px}h1{font-size:22px}}
@@ -75,11 +80,13 @@ footer a{color:#9fb0c8}
    <div class="aviso" id="avmuestreo" hidden>En 30 días se muestra una hora de cada 6 (muestreo) para que cargue rápido. Para el detalle use 24 horas o 7 días.</div>
    <div id="graf"><div id="tip"></div></div>
    <div class="leyenda" id="ley"></div>
+   <div class="cal" id="cal"></div>
+   <div id="marcados" style="margin-top:12px"></div>
   </div>
 
   <div class="card">
    <h2>Series y descarga</h2>
-   <p class="mu" style="margin:0 0 12px">Descarga los datos del período elegido arriba (24 horas, 7 días o 30 días), tal como los entrega la estación (minuto a minuto; hora UTC; en 30 días, una hora de cada 6). Los datos no han pasado por revisión manual.</p>
+   <p class="mu" style="margin:0 0 12px">Descarga los datos del período elegido arriba (24 horas, 7 días o 30 días), tal como los entrega la estación, con una columna «calidad» que indica los datos erróneos, dudosos, corregidos o rellenados (vacía = dato original) (minuto a minuto; hora UTC; en 30 días, una hora de cada 6). Los datos sin color ni marca son originales de la estación, sin corrección.</p>
    <div class="bar"><button id="dl">Descargar CSV</button><span class="mu" id="dlinfo"></span></div>
   </div>
  </div>
@@ -104,7 +111,7 @@ footer a{color:#9fb0c8}
   <p class="mu" style="margin:12px 0 0">Un valor vacío significa que la estación no lo midió o no lo envió en ese momento. Las horas son UTC (en Chile continental, restar 3 h en verano y 4 h en invierno).</p>
  </div>
 </main>
-<footer><div class="w">© 2026 O. Álvarez B. · Datos de estaciones automáticas de la DMC, sin revisión manual; herramienta de apoyo, no oficial. <a href="acerca.html">Acerca</a></div></footer>
+<footer><div class="w">© 2026 O. Álvarez B. · Datos de estaciones automáticas de la DMC, con control de calidad automático y revisión parcial; herramienta de apoyo, no oficial. <a href="acerca.html">Acerca</a></div></footer>
 
 <script>
 (function(){
@@ -117,6 +124,9 @@ const VARS = {
   lluv: {nom: "Lluvia", u: "mm", s: [["rr24", "Acumulada 24 h", "#2D6CB5"], ["rr6", "Acumulada 6 h", "#7DB6E8"]]},
 };
 const DEC = {T: 1, Td: 1, HR: 0, P_est: 1, P_mar: 1, P_std: 1, ff10: 0, fx10: 0, dd10: 0, rr1m: 1, rr6: 1, rr24: 1, Rad: 0, Tn12: 1, Tx12: 1};
+const EST = {erroneo: ["Erróneo", "#D64545"], dudoso: ["Dudoso, pendiente de revisar", "#E8B93C"], corregido: ["Corregido", "#3E7BD6"], revisado: ["Revisado y correcto", "#3FA878"], rellenado: ["Rellenado", "#9AA3AE"]};
+const PRIO = {erroneo: 5, dudoso: 4, corregido: 3, rellenado: 2, revisado: 1};
+let tramos = [], solo = false;
 let cat = [], est = null, rango = 24, vsel = "temp", cache = {}, filas = [], cab = [];
 const hh = t => new Date(t).toISOString().slice(0, 13);
 
@@ -177,13 +187,15 @@ async function ultimos(){
     const t = tms(f), ed = Math.round((Date.now() - t) / 60000);
     $("cuando").textContent = "· " + new Date(t).toISOString().slice(0, 16).replace("T", " ") + " UTC (hace " + (ed < 90 ? ed + " min" : Math.round(ed / 60) + " h") + ")";
     const it = [["T", "Temperatura", "°C"], ["Td", "Punto de rocío", "°C"], ["HR", "Humedad", "%"], ["P_mar", "Presión (QFF)", "hPa"], ["P_est", "Presión (QFE)", "hPa"], ["ff10", "Viento medio", "kt"], ["dd10", "Dirección", "°"], ["fx10", "Racha", "kt"], ["rr6", "Lluvia 6 h", "mm"], ["rr24", "Lluvia 24 h", "mm"], ["Rad", "Radiación", "W/m²"]];
-    $("vals").innerHTML = it.map(([c, n, u]) => { const v = colv(f, c); return v == null ? "" : `<div class="val"><span>${n}</span><b>${v.toFixed(DEC[c] ?? 1)}</b><small>${u}</small></div>`; }).join("");
+    $("vals").innerHTML = it.map(([c, n, u]) => { const v = colv(f, c); return v == null ? "" : `<div class="val" data-c="${c}"><span>${n}</span><b>${v.toFixed(DEC[c] ?? 1)}</b><small>${u}</small></div>`; }).join("");
+    marcarUltimos();
     $("nota").textContent = ed > 120 ? "La estación no ha enviado datos en más de 2 horas." : "";
   } catch (e){ $("vals").innerHTML = '<span class="err">No se pudieron cargar los datos.</span>'; }
 }
 
 async function cargar(){
   const k = est.codigo + "|" + rango;
+  traerCal();
   if (cache[k]){ ({cab, filas} = cache[k]); dibujar(); return; }
   $("estado").textContent = "Cargando…"; $("graf").querySelector("svg")?.remove();
   try {
@@ -191,6 +203,37 @@ async function cargar(){
     if (d.cab.length) cab = d.cab; filas = d.filas; cache[k] = {cab, filas}; $("estado").textContent = "";
     dibujar();
   } catch (e){ $("estado").textContent = "No se pudo cargar. Intente de nuevo."; $("estado").className = "err"; }
+}
+
+// ---- calidad de los datos (/api/calidad): tramos por variable; sin tramo = dato original
+async function traerCal(){
+  const dd = t => new Date(t).toISOString().slice(0, 10), fin = Date.now();
+  try {
+    const r = await fetch(`/api/calidad?cod=${est.codigo}&desde=${dd(fin - rango * 3600e3)}&hasta=${dd(fin)}`).then(r => r.json());
+    tramos = r.tramos || [];
+  } catch (e){ tramos = []; }
+  dibujar(); marcarUltimos();
+}
+const aplica = (m, g) => m.g === g || m.g === "todas";
+function estadoEn(t, g){ let b = null; tramos.forEach(m => { if (aplica(m, g) && t >= m.ini && t < m.fin && (!b || PRIO[m.estado] > PRIO[b.estado])) b = m; }); return b; }
+const fmtT = t => new Date(t).toISOString().slice(0, 16).replace("T", " ");
+function marcarUltimos(){   // punto de color en los últimos datos si el dato está marcado
+  const f = filas[filas.length - 1]; if (!f || !$("vals").children.length) return;
+  const G = {T: "temp", Td: "temp", HR: "hr", P_mar: "pres", P_est: "pres", ff10: "vien", dd10: "vien", fx10: "vien", rr6: "lluv", rr24: "lluv"};
+  [...$("vals").children].forEach(d => { d.querySelector("em")?.remove(); const c = d.dataset.c, m = G[c] && estadoEn(tms(f), G[c]);
+    if (m) d.insertAdjacentHTML("beforeend", `<em style="background:${EST[m.estado][1]}" title="${EST[m.estado][0]}"></em>`); });
+}
+function listaMarcados(){
+  const g = VARS[vsel], ms = tramos.filter(m => m.g === vsel || m.g === "todas");
+  $("cal").innerHTML = Object.entries(EST).map(([k, [n, c]]) => `<span><i style="background:${c}"></i>${n}</span>`).join("") + `<span class="mu"><i style="background:#fff"></i>Sin color: dato original</span>` +
+    `<label><input type="checkbox" id="solo"${solo ? " checked" : ""}> Solo corregidos / dudosos</label>`;
+  $("solo").onchange = ev => { solo = ev.target.checked; dibujar(); };
+  const esc = x => String(x ?? "").replace(/[<>&]/g, c => ({"<": "&lt;", ">": "&gt;", "&": "&amp;"}[c]));
+  $("marcados").innerHTML = ms.length ? `<table class="mk"><tr><th>Estado</th><th>Desde (UTC)</th><th>Hasta</th><th>Dato</th><th>Detalle</th></tr>` + ms.slice().reverse().map(m => {
+    const det = m.estado === "corregido" || m.estado === "rellenado" ? `${m.anterior != null ? "antes " + esc(m.anterior) + " → " : ""}${esc(m.nuevo)}${m.motivo ? " · " + esc(m.motivo) : ""}${m.quien ? " · " + esc(m.quien) : ""}${m.t ? " · " + esc(m.t.slice(0, 10)) : ""}`
+      : m.estado === "revisado" ? "Aviso revisado por una persona: el dato es correcto" : (m.sigue ? "Sigue en curso. " : "") + (m.resuelto ? "Aviso resuelto." : "Aviso automático pendiente de revisión.");
+    return `<tr><td><i style="background:${EST[m.estado][1]}"></i>${EST[m.estado][0].split(",")[0]}</td><td>${fmtT(m.ini)}</td><td>${m.sigue ? "sigue" : fmtT(m.fin - 60e3)}</td><td>${esc(m.var || "—")}</td><td>${det}</td></tr>`; }).join("") + `</table>`
+    : `<p class="mu" style="margin:0">Sin datos marcados de ${g.nom.toLowerCase()} en este período: todos son originales de la estación.</p>`;
 }
 
 // ---- gráfico SVG
@@ -218,8 +261,12 @@ function dibujar(){
     s += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${H - B}" stroke="#F0F2F5"/><text x="${X(t)}" y="${H - 12}" text-anchor="middle" font-size="12" fill="#6B7686">${lab}</text>`; }
   s += `<text x="${W - R}" y="${H - 1}" text-anchor="end" font-size="11" fill="#8896A8">hora UTC</text>`;
   const hueco = rango >= 720 ? 9 * 3600e3 : 40 * 60e3;
+  listaMarcados();
+  tramos.filter(m => m.g === vsel || m.g === "todas").forEach(m => {   // bandas de calidad detrás de las líneas
+    const a = Math.max(x0, m.ini), b = Math.min(x1, Math.max(m.fin, m.ini + (x1 - x0) / 300)); if (b <= x0 || a >= x1) return;
+    s += `<rect x="${X(a).toFixed(1)}" y="${T}" width="${Math.max(2, X(b) - X(a)).toFixed(1)}" height="${H - T - B}" fill="${EST[m.estado][1]}" opacity="${solo ? .35 : .2}"/><rect x="${X(a).toFixed(1)}" y="${H - B - 5}" width="${Math.max(2, X(b) - X(a)).toFixed(1)}" height="5" fill="${EST[m.estado][1]}"/>`; });
   ser.forEach(se => { let d = "", ant = null; se.p.forEach(([t, v]) => { d += (ant == null || t - ant > hueco ? "M" : "L") + X(t).toFixed(1) + " " + Y(v).toFixed(1); ant = t; });
-    s += `<path d="${d}" fill="none" stroke="${se.col}" stroke-width="${rango >= 720 ? 1.4 : 1.8}" stroke-linejoin="round"/>`; });
+    s += `<path d="${d}" fill="none" stroke="${se.col}" stroke-width="${rango >= 720 ? 1.4 : 1.8}" stroke-linejoin="round"${solo ? ' opacity=".3"' : ""}/>`; });
   s += `<line id="cur" y1="${T}" y2="${H - B}" stroke="#16202E" stroke-opacity=".35" style="display:none"/><rect id="cap" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent"/></svg>`;
   g.insertAdjacentHTML("afterbegin", s);
   const svg = $("svg"), tip = $("tip"), cur = $("cur");
@@ -233,7 +280,8 @@ function dibujar(){
     const tx = best.t, xs = X(tx);
     cur.setAttribute("x1", xs); cur.setAttribute("x2", xs); cur.style.display = "";
     const lines = ser.map(se => { const p = se.p.find(q => q[0] === tx); return p ? `<span style="color:${se.col}">●</span> ${se.n}: <b>${p[1].toFixed(DEC[se.c] ?? 1)} ${V.u}</b>` : ""; }).filter(Boolean);
-    tip.innerHTML = new Date(tx).toISOString().slice(0, 16).replace("T", " ") + " UTC<br>" + lines.join("<br>");
+    const q = estadoEn(tx, vsel), nota = q ? `<br><span style="color:${EST[q.estado][1]}">■</span> ${EST[q.estado][0]}` + (q.anterior != null ? ` (antes ${q.anterior})` : "") : "";
+    tip.innerHTML = new Date(tx).toISOString().slice(0, 16).replace("T", " ") + " UTC<br>" + lines.join("<br>") + nota;
     tip.style.display = "block"; const gb = g.getBoundingClientRect();
     let lx = ev.clientX - gb.left + 14; if (lx > gb.width - 190) lx = ev.clientX - gb.left - 190; tip.style.left = lx + "px"; tip.style.top = Math.max(0, ev.clientY - gb.top - 50) + "px";
   }
@@ -242,7 +290,8 @@ function niceStep(raw){ const p = Math.pow(10, Math.floor(Math.log10(raw))), f =
 
 function descargar(){
   if (!filas.length){ $("dlinfo").textContent = "No hay datos para descargar."; return; }
-  const txt = cab.join(",") + "\n" + filas.map(f => f.join(",")).join("\n") + "\n";
+  const cal = f => { const t = tms(f), o = []; tramos.forEach(m => { if (t >= m.ini && t < m.fin && m.estado !== "revisado") o.push(m.estado + ":" + (m.var || m.g)); }); return [...new Set(o)].join(" "); };
+  const txt = cab.join(",") + ",calidad\n" + filas.map(f => f.join(",") + "," + cal(f)).join("\n") + "\n";
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], {type: "text/csv"}));
   a.download = est.codigo + "_" + (est.nombre.replace(/[^\w]+/g, "_")) + "_" + (rango / 24) + "d.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
