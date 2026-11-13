@@ -22,12 +22,12 @@ const N = {
   SQNH: "QNH frente al sensor", Sff: "Viento frente al sensor", Sffkmh: "Viento anotado en km/h", Sdd: "Dirección frente al sensor", Sracha: "Racha sin informar",
   SBTs: "Diferencia constante de Ts", SBTd: "Diferencia constante de Td", SBHR: "Diferencia constante de HR", SBQFE: "Diferencia constante del QFE",
   SBQFF: "Diferencia constante del QFF", SBQNH: "Diferencia constante del QNH",
-  ZT01: "Super: salto de Ts", ZT02: "Super: salto de Td", ZT03: "Super: salto de HR", ZT04: "Super: Td mayor que Ts", ZT05: "Super: HR no calza con Ts y Td",
-  ZT06: "Super: Ts pegada", ZT07: "Super: Td pegado", ZT08: "Super: HR pegada", ZT09: "Super: Ts fuera de lo habitual",
-  ZP01: "Super: salto de QFE", ZP02: "Super: QFE pegado", ZP03: "Super: QFE lejos de lo esperado", ZP04: "Super: QFE cambia mucho en 3 h", ZP05: "Super: QFF no calza con QFE",
-  ZV01: "Super: cambio fuerte del viento en 10 min", ZV02: "Super: viento pegado", ZV03: "Super: dirección pegada", ZV05: "Super: dirección inválida", ZV06: "Super: racha menor que el viento",
-  ZR01: "Super: lluvia con aire seco", ZR02: "Super: lluvia con Ts−Td alto", ZR03: "Super: lluvia excesiva por minuto", ZR04: "Super: pluviómetro pegado", ZR05: "Super: RR6 no calza con los minutos",
-  ZE01: "Super: extrema imposible", ZE03: "Super: Tn12 mayor que Tx12",
+  ZT01: "Salto brusco de Ts", ZT02: "Salto brusco de Td", ZT03: "Salto brusco de HR", ZT04: "Td mayor que Ts", ZT05: "HR no calza con Ts y Td",
+  ZT06: "Ts sin cambio (sensor pegado)", ZT07: "Td sin cambio (sensor pegado)", ZT08: "HR sin cambio (sensor pegado)", ZT09: "Ts fuera de lo habitual para la zona",
+  ZP01: "Salto brusco de QFE", ZP02: "QFE sin cambio (sensor pegado)", ZP03: "QFE lejos de lo esperado por la altura", ZP04: "QFE cambia demasiado en 3 h", ZP05: "QFF no calza con el QFE",
+  ZV01: "Cambio fuerte del viento en 10 min", ZV02: "Viento sin cambio (sensor pegado)", ZV03: "Dirección sin cambio (sensor pegado)", ZV05: "Dirección fuera de 0–360", ZV06: "Racha menor que el viento medio",
+  ZR01: "Lluvia con aire seco", ZR02: "Lluvia con Ts − Td muy alta", ZR03: "Demasiada lluvia en un minuto", ZR04: "Pluviómetro pegado (mismo valor repetido)", ZR05: "Lluvia de 6 h no calza con los minutos",
+  ZE01: "Mínima o máxima de 12 h no coincide con la temperatura por minuto", ZE03: "Mínima de 12 h mayor que la máxima de 12 h",
   SEXT: "Extrema: valor", SEXH: "Extrema: hora", SEXF: "Extrema fuera de bloque sin ingresar", SRRR6: "RRR6 frente al pluviómetro",
   SPRE: "Pluviómetro y tiempo presente", SinDato: "Sin dato", St: "Satélite: nubosidad", Sc: "Satélite: nubes", SD: "Satélite"
 };

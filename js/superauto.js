@@ -9,7 +9,7 @@ const TABS = {sup_pp: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], su
 const COLS = [["pp", "Precipitación", "sup_pp"], ["ext", "Extremas", "sup_ext"], ["pre", "Presiones", "sup_pre"], ["tem", "Temperaturas", "sup_tem"], ["vie", "Viento", "sup_vie"]];
 const NOTA = {
   pp: "Lluvia con aire seco, más de 2 mm en un minuto, el mismo valor repetido 10 minutos (pluviómetro pegado) y el acumulado de 6 h contra la suma de los minutos.",
-  ext: "Tn12 y Tx12 del sensor contra la temperatura por minuto de las últimas 24 h (avisa si pasa más de 1 °C; error sobre 1,5 °C).",
+  ext: "La temperatura mínima y máxima de 12 h que informa la estación (Tn12 y Tx12) contra la temperatura por minuto de las últimas 24 h (avisa si pasa más de 1 °C; error sobre 1,5 °C).",
   pre: "Saltos de QFE sobre 0,8 hPa en un minuto, QFE pegado 2 h, QFE lejos de lo esperado por altura, cambio sobre 8 hPa en 3 h y QFF contra el QFE reducido.",
   tem: "Saltos de Ts, Td y HR, Td mayor que Ts, HR que no calza con Ts y Td, valores pegados (Ts y Td 2 h, HR 6 h) y Ts fuera de lo habitual para la zona.",
   vie: "Cambio del viento medio sobre 10 kt en 10 min (tendencia, no minuto a minuto), viento o dirección pegados, dirección fuera de 0–360 y racha menor que el viento medio."};

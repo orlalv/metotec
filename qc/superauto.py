@@ -206,12 +206,13 @@ def _estacion(g, m):
             ref = float(W["T"].min() if mn else W["T"].max())
             dif = (ref - val) if mn else (val - ref)       # cuánto pasa la extrema del sensor al valor por minuto más extremo
             if dif > TOL_EXT[0]:
+                nom = "mínima" if mn else "máxima"
                 out.append(_h(None, "ZE01", 2 if dif > TOL_EXT[1] else 1, "ext", t,
-                              f"{var} {val:.1f} °C: en las últimas 24 h el {'mínimo' if mn else 'máximo'} de la temperatura por minuto fue {ref:.1f} °C. "
-                              f"La extrema {'baja' if mn else 'sube'} {dif:.1f} °C más que cualquier minuto, y no debería pasar de ~1 °C."))
+                              f"La estación informa una temperatura {nom} de 12 h ({var}) de {val:.1f} °C, pero en las últimas 24 h ningún minuto {'bajó' if mn else 'subió'} de {ref:.1f} °C. "
+                              f"Diferencia: {dif:.1f} °C (hasta ~1 °C es normal, porque la extrema sale de muestras más finas que el minuto)."))
         a, b = g["Tn12"].dropna(), g["Tx12"].dropna()
         if len(a) and len(b) and a.iloc[-1] > b.iloc[-1] + 0.05:
-            out.append(_h(None, "ZE03", 2, "ext", g["momento"].max(), f"Tn12 {a.iloc[-1]:.1f} mayor que Tx12 {b.iloc[-1]:.1f} °C"))
+            out.append(_h(None, "ZE03", 2, "ext", g["momento"].max(), f"La temperatura mínima de 12 h (Tn12 {a.iloc[-1]:.1f} °C) es mayor que la máxima de 12 h (Tx12 {b.iloc[-1]:.1f} °C)"))
     return out
 
 
