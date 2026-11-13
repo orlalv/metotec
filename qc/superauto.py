@@ -13,16 +13,16 @@ import pandas as pd
 import pruebas as P
 
 # --- umbrales estrictos (sospechoso, erróneo)
-SALTO_T = (2.5, 4.5)       # °C entre minutos consecutivos (≤ 10 min); la pasada normal usa 4 / 8
-SALTO_TD = (3.0, 6.0)
-SALTO_HR = (15, 30)        # la normal: 25 / 45
-SALTO_P = (0.8, 1.5)       # hPa; la normal: 1.5 / 3
-SALTO_FF10 = (10, 20)      # kt: cambio del viento medio entre dos ventanas de 10 min seguidas (no entre minutos: un minuto casi no mueve un promedio de 10)
+SALTO_T = (5, 8)           # °C entre minutos consecutivos: solo saltos groseros (el ruido normal del sensor no avisa)
+SALTO_TD = (6.0, 10.0)
+SALTO_HR = (30, 45)
+SALTO_P = (2.0, 4.0)       # hPa
+SALTO_FF10 = (15, 25)      # kt: cambio del viento medio entre dos ventanas de 10 min seguidas (no entre minutos: un minuto casi no mueve un promedio de 10)
 TOL_EXT = (1.0, 1.5)      # °C (sospechoso, erróneo): la extrema sale de muestras de segundos y puede pasar ~1 °C al valor por minuto; la normal acepta 1.5
 TOL_HR = (6, 12)           # % entre HR informada y la calculada con Ts y Td
 TOL_QFF = (3.0, 6.0)       # hPa entre QFF informado y el reducido desde QFE
-PEGADO_H = {"T": 2, "Td": 2, "P_est": 2, "HR": 6}      # horas sin cambio (la normal: 3, 3, 3, 10)
-VAR3H_P = 8.0              # hPa en 3 h
+PEGADO_H = {"T": 3, "Td": 3, "P_est": 3, "HR": 8}      # horas sin cambio (la normal: 3, 3, 3, 10)
+VAR3H_P = 10.0             # hPa en 3 h
 PP_MIN_HR = 55             # % : lluvia con aire más seco que esto es dudosa
 PP_MIN_MIN = 5             # minutos con lluvia para avisar
 
@@ -95,7 +95,7 @@ def _estacion(g, m):
     if m.get("lat") is not None and not pd.isna(m.get("lat")):
         z = P.zona(m["lat"], 0 if alt is None else alt)
         tl, th = P.ZONAS_T[z]
-        lo, hi = tl + 2, th - 2          # 2 °C más estrecho que en la pasada normal
+        lo, hi = tl + 1, th - 1          # 1 °C más estrecho que en la pasada normal
         mal = g24[((g24["T"] < lo) | (g24["T"] > hi)) & g24["T"].between(*P.LIM["T"])]
         if len(mal):
             i = mal.index[-1]
@@ -152,8 +152,8 @@ def _estacion(g, m):
                 i = mal.index[-1]
                 out.append(_h(None, "ZV05", 2, "vie", mal.at[i, "momento"], f"Dirección {mal.at[i, 'dd10']:.0f}° fuera de 0–360"))
         if "fx10" in g24:
-            mal = g24[g24["fx10"] < g24["ff10"] - 0.5]
-            if len(mal):
+            mal = g24[g24["fx10"] < g24["ff10"] - 2]
+            if len(mal) >= 10:
                 i = mal.index[-1]
                 out.append(_h(None, "ZV06", 1, "vie", mal.at[i, "momento"], f"Racha {mal.at[i, 'fx10']:.1f} menor que el viento medio {mal.at[i, 'ff10']:.1f} ({len(mal)} minutos)"))
 
@@ -237,13 +237,80 @@ def _resumen(g):
     return out
 
 
-def correr(raiz, E, cods_obs, leer_archivo, horas=26):
+# --- comparación con estaciones vecinas y con el modelo (errores groseros): diferencia sostenida en ≥ 2 de las últimas 3 horas
+VEC_S = {"T": (3, 6, True, "Ts", "°C"), "Td": (4, 8, True, "Td", "°C"), "HR": (25, 40, False, "HR", "%"), "P_mar": (2, 4, False, "QFF", "hPa")}     # sospechoso, erróneo, corrige por altura
+MOD_S = {"T": (5, 9, "Ts", "°C"), "Td": (6, 11, "Td", "°C"), "HR": (25, 40, "HR", "%"), "P_mar": (3.5, 7, "QFF", "hPa"), "ff10": (12, 20, "Viento medio", "kt")}
+REGLA_V = {"T": ("ZC01", "tem"), "Td": ("ZC02", "tem"), "HR": ("ZC03", "tem"), "P_mar": ("ZC04", "pre")}
+REGLA_M = {"T": ("ZM01", "tem"), "Td": ("ZM02", "tem"), "HR": ("ZM03", "tem"), "P_mar": ("ZM04", "pre"), "ff10": ("ZM05", "vie")}
+ALT_PMAR = 1500
+
+
+def _hc(cod, *a):
+    x = _h(None, *a); x["_cod"] = cod
+    return x
+
+
+def _sostenida(dif, t1, t2, horas=3, minimo=2):
+    """dif: Serie horaria (valor − referencia). Devuelve (momento, valor, nivel) del peor caso si ≥ `minimo` de las últimas `horas` horas pasan t1."""
+    d = dif.dropna().sort_index().tail(horas)
+    if len(d) < minimo:
+        return None
+    mal = d[d.abs() > t1]
+    if len(mal) < minimo:
+        return None
+    t = mal.abs().idxmax()
+    return t, float(mal[t]), 2 if (mal.abs() > t2).sum() >= minimo else 1
+
+
+def comparar(H, E, V, M=None, aisladas=()):
+    """Alertas de comparación con vecinas (mediana de ≥ 3, con corrección por altura) y con el modelo, solo estaciones sin observador (H ya viene filtrado)."""
+    out = []
+    if H is None or H.empty:
+        return out
+    alt = {c: (None if pd.isna(z) else float(z)) for c, z in E.set_index("codigo")["alt"].items()}
+    Hi = H.set_index(["codigo", "momento"]).sort_index()
+    Ha = H.pivot(index="momento", columns="codigo")
+    horas = sorted(H["momento"].unique())[-4:]
+    for cod in H["codigo"].unique():
+        a = alt.get(cod)
+        vs = [c for c in V.get(cod, []) if c in Ha["T"].columns]
+        for v, (t1, t2, corr, nom, un) in VEC_S.items():
+            if v == "P_mar" and (a or 0) > ALT_PMAR or v not in Ha or cod not in Ha[v].columns or len(vs) < 3:
+                continue
+            ref = pd.DataFrame({c: Ha[v][c] + (0.0065 * ((alt.get(c) or 0) - (a or 0)) if corr else 0) for c in vs})
+            ref = ref[ref.notna().sum(axis=1) >= 3].median(axis=1)
+            r = _sostenida((Ha[v][cod] - ref).loc[lambda x: x.index.isin(horas)], t1, t2)
+            if r:
+                t, d, niv = r
+                out.append(_hc(cod, REGLA_V[v][0], niv, REGLA_V[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que la mediana de sus {len(vs)} estaciones vecinas (diferencia sostenida en las últimas horas; revisar el sensor)"))
+        if M is not None and not M.empty:
+            Mc = M[M["codigo"] == cod].set_index("momento")
+            for v, (t1, t2, nom, un) in MOD_S.items():
+                if v == "P_mar" and (a or 0) > ALT_PMAR or v not in Mc or v not in Ha or cod not in Ha[v].columns:
+                    continue
+                dif = (Ha[v][cod] - Mc[v]).dropna()
+                f = 1.5 if (a or 0) >= 2000 and cod in aisladas else 1.0
+                r = _sostenida(dif[dif.index.isin(horas)], t1 * f, t2 * f)
+                if r:
+                    t, d, niv = r
+                    out.append(_hc(cod, REGLA_M[v][0], niv, REGLA_M[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que el modelo (diferencia sostenida en las últimas horas; revisar el sensor)"))
+    return out
+
+
+def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=()):
     """E: estaciones (DataFrame); cods_obs: códigos con observador (se excluyen). Devuelve el dict para el KV."""
     fin = pd.Timestamp.utcnow().tz_localize(None)
     A = leer_archivo(raiz, fin, horas=horas)
     cods_obs = {str(c) for c in cods_obs}
     meta = E.set_index("codigo")[["nombre", "oaci", "lat", "lon", "alt"]].to_dict("index")
     por = {c: g for c, g in A.groupby("codigo")} if len(A) else {}
+    cmp_al = {}
+    try:   # comparación con vecinas y modelo, sobre el valor horario
+        sin = A[~A["codigo"].isin(cods_obs)] if len(A) else A
+        for h in comparar(P.horario(sin[sin["momento"] > fin - pd.Timedelta(hours=8)]) if len(sin) else sin, E, V or {}, M, aisladas):
+            cmp_al.setdefault(h.pop("_cod"), []).append(h)
+    except Exception:
+        cmp_al = {}
     est = []
     for cod, m in meta.items():
         if cod in cods_obs:
@@ -259,6 +326,7 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26):
                 fila["res"] = {}
             try:
                 fila["hallazgos"] = _estacion(g, m)
+                fila["hallazgos"] += cmp_al.get(cod, [])
             except Exception as e:      # una estación mala no tumba a las demás
                 fila["hallazgos"] = [dict(hora=fila["ultima"], regla="ZERR", nivel=0, tipo="tem", msg=f"No se pudo revisar: {e}")][:0]
             fila["nivel"] = max([h["nivel"] for h in fila["hallazgos"]], default=0)
