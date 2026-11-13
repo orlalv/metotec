@@ -64,6 +64,7 @@ function turno(R, horas, {act, sin, E}){
   const cuenta = v => M.filter(m => m.v === v).length;
   const quien = {}; M.forEach(m => { const q = m.quien || "sin nombre"; quien[q] = (quien[q] || 0) + 1; });
   const sinInf = act.filter(p => !p.informado);
+  const nuevasAct = act.filter(p => dentro(p.inicio)), viejas = act.filter(p => !dentro(p.inicio));
   const lin = (L, f) => L.length ? L.map(x => "  · " + f(x)).join("\n") : "  (ninguna)";
   return [
     `RESUMEN DE TURNO · últimas ${horas} h (${hora(t0)} a ${hora(t1)}, hora local)`,
@@ -72,6 +73,8 @@ function turno(R, horas, {act, sin, E}){
     ``,
     `INFORMADAS EN EL TURNO`, lin(nuevas, r => `${nombre(r)}: ${FALLAS.sensor(r)}, desde ${hora(r.inicio)}`),
     `RESUELTAS EN EL TURNO`, lin(cerradas, r => `${nombre(r)}: ${FALLAS.sensor(r)}, hasta ${hora(r.fin)}`),
+    `- De las ${act.length} activas: ${nuevasAct.length} empezaron en estas ${horas} h y ${viejas.length} vienen de antes (llevan más de ${horas} h)`,
+    ``,
     `PASAN AL SIGUIENTE TURNO`,
     lin(act, p => `${p.nombre} (${p.codigo}): ${FALLAS.sensor(p)}, ${FALLAS.que(p)}, desde ${hora(p.inicio)}${p.informado ? " [informada]" : " [SIN INFORMAR]"}`),
     `  Sin datos: ${sin.length ? sin.map(e => e.nombre).join(", ") : "ninguna"}`

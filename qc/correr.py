@@ -108,6 +108,19 @@ def ultimos_valores(obs, n=6):
     return out
 
 
+CASILLAS = ("WWSINOP", "W1W2", "N", "Nubes", "CapaNube", "VVSINOP", "WWMETAR", "VTO", "RRR6", "Ts", "Td", "HR", "QFE", "QFF", "QNH", "TxAM", "TnAM", "TxPM", "TnPM")
+
+
+def casillas(obs, n=12):
+    """Casillas ingresadas por el observador en las últimas n observaciones (para la tabla «ver casillas» de la página)."""
+    out = {}
+    for t in sorted(obs)[-n:]:
+        o = obs[t]
+        d = {el: {c: x for c, x in (o.get(el) or {}).items() if not isinstance(x, set)} for el in CASILLAS if el in o}
+        out[t.strftime("%Y-%m-%d %H:%M")] = d
+    return out
+
+
 def completitud_obs(raiz, cods, nombres, dias=40, base=14):
     """Etapa 3 · completitud de observaciones: horas con mensaje por estación y día (últimos «dias» días, UTC)
     y programa de cada estación (horas cubiertas al menos la mitad de los últimos «base» días). Sube qc/completitud."""
@@ -206,7 +219,7 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
             archivo.setdefault(t.strftime("%Y/%m/%d"), {}).setdefault(cod, {})[t.strftime("%H")] = {k: x for k, x in o.items() if k != "_qa"}
         m = nombres.get(cod, {})
         resultado.append(dict(codigo=cod, nombre=m.get("nombre"), oaci=m.get("oaci"), lat=m.get("lat"), lon=m.get("lon"),
-                              ultima=str(max(obs)) if obs else None, horas=len(obs), hallazgos=hall, ult=ultimos_valores(obs),
+                              ultima=str(max(obs)) if obs else None, horas=len(obs), hallazgos=hall, ult=ultimos_valores(obs), cas=casillas(todas),
                               nivel=max([h["nivel"] for h in hall], default=0)))
         time.sleep(pausa)
     # archivo de observaciones (sin identificador del observador)
