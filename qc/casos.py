@@ -403,6 +403,32 @@ def prueba_super_vecinas_viento_lluvia():
         FALLAS.append("vecinas: la estación sana no debía tener alertas")
 
 
+def prueba_metar_forma():
+    """Errores de cifrado del tiempo presente METAR (guía): válidas no avisan, imposibles sí."""
+    import sensorial as SEN
+    def obs(*grupos, ts=2.0, hr=95.0, ff=20.0):
+        W = {k: "SD" for k in ("FEN1", "FEN12", "FEN13", "FEN2", "FEN22", "FEN23", "FEN3", "FEN32", "FEN33", "DESC", "DESC2", "DESC3", "IntProx", "IntProx2", "IntProx3")}
+        for n, (i, d, f) in enumerate(grupos):
+            suf = ["", "2", "3"][n]
+            W["IntProx" + suf] = i
+            W["DESC" + suf] = d if d is not None else "SD"
+            for k, x in zip((["FEN1", "FEN2", "FEN3"], ["FEN12", "FEN22", "FEN32"], ["FEN13", "FEN23", "FEN33"])[n], f):
+                W[k] = x
+        return {"WWMETAR": W, "Ts": {"Ts": ts}, "HR": {"HR": hr}, "VTO": {"ff": ff}}
+    regs = lambda *g, **k: sorted({c for c, _, _ in SEN.metar_forma(obs(*g, **k), k.get("hr", 95.0), k.get("ts", 2.0), k.get("ff", 20.0))})
+    for nombre, g in {"SN DRSN": [(2, None, [3]), (2, 4, [3])], "SN BR": [(2, None, [3]), (2, None, [9])], "-RA BR": [(1, None, [2]), (2, None, [9])],
+                      "-SHRA": [(1, 5, [2])], "+RA": [(3, None, [2])], "-RASN": [(1, None, [2, 3])]}.items():
+        if regs(*g):
+            FALLAS.append(f"METAR válido {nombre} no debía avisar: {regs(*g)}")
+    for nombre, g, esp in (("BR y FG", [(2, None, [9]), (2, None, [10])], "C43"), ("-BR", [(1, None, [9])], "C45"), ("+FG", [(3, None, [10])], "C45"), ("-DRSN", [(1, 4, [3])], "C45"),
+                           ("SHDZ", [(2, 5, [1])], "C46"), ("SH solo", [(2, 5, [])], "C46"), ("DRRA", [(2, 4, [2])], "C47"), ("-RA RA", [(1, None, [2]), (2, None, [2])], "C44"),
+                           ("-RA SN separados", [(1, None, [2]), (1, None, [3])], "C52"), ("BR HZ", [(2, None, [9]), (2, None, [15])], "C49")):
+        if esp not in regs(*g):
+            FALLAS.append(f"METAR {nombre}: debía salir {esp} y salió {regs(*g)}")
+    if "C50" not in regs((2, None, [10]), ts=-3.0) or "C51" not in regs((2, None, [10]), hr=70.0) or "C48" not in regs((2, 4, [3]), ff=5.0):
+        FALLAS.append("METAR: FG bajo 0 °C, FG con HR baja y DRSN con poco viento debían avisar")
+
+
 if __name__ == "__main__":
     pruebas = [f for k, f in sorted(globals().items()) if k.startswith("prueba_")]
     for f in pruebas:

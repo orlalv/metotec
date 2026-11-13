@@ -43,7 +43,7 @@ const ORDEN = ["WWSINOP", "W1W2", "a", "N", "Nubes", "CapaNube", "VVSINOP", "WWM
 const tiene = (e, hora) => !!(e && e.cas && Object.keys(e.cas).length);
 // casillas que intervienen en cada regla (columnas que se señalan); si no está en la lista se buscan nombres de casilla en el mensaje
 const POR_REGLA = [[/^E14$/, ["ppp", "QFE"]], [/^E1[56]$/, ["a", "QFE"]], [/^E0[346]$/, ["ww", "Cl", "VV"]], [/^E0[78]$/, ["ww", "N"]], [/^E18$/, ["C", "hshshs"]], [/^S?B?Ts$|^STs/, ["Ts"]], [/^S?B?Td$/, ["Td"]], [/^S?B?HR$/, ["HR"]], [/QFE/, ["QFE"]], [/QFF/, ["QFF"]], [/QNH/, ["QNH"]], [/^Sff|^Sracha/, ["ff"]], [/^Sdd/, ["dd", "ff"]],
-  [/^C41/, ["Ts", "Td", "HR"]], [/^SRRR6$|^E1[237]$/, ["RRR6", "Traza", "ww"]], [/^SPRE$/, ["ww"]], [/^C0[147]$|^C35$/, ["ww", "VV", "FEN1", "FEN12", "FEN13"]], [/^C11$/, ["ww", "Cl"]], [/^C15$|^C19$/, ["N", "Ns", "Ns2", "Ns3", "Ns4"]],
+  [/^C41/, ["Ts", "Td", "HR"]], [/^SRRR6$|^E1[237]$/, ["RRR6", "Traza", "ww"]], [/^SPRE$/, ["ww"]], [/^C4[3-9]$|^C5[0-2]$/, ["FEN1", "FEN12", "FEN13", "DESC", "DESC2", "DESC3", "IntProx", "IntProx2", "IntProx3", "Ts", "HR"]], [/^C0[147]$|^C35$/, ["ww", "VV", "FEN1", "FEN12", "FEN13"]], [/^C11$/, ["ww", "Cl"]], [/^C15$|^C19$/, ["N", "Ns", "Ns2", "Ns3", "Ns4"]],
   [/^C27$/, ["W1", "W2"]], [/^C32$|^C40$/, ["Cl", "C", "C2", "C3"]], [/^E01$|^E05$/, ["ww", "VV"]], [/^E09$/, ["QFE"]]];
 function involucradas(regla, msg){
   const r = POR_REGLA.find(([re]) => re.test(regla)), s = new Set(r ? r[1] : []);

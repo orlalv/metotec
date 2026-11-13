@@ -12,7 +12,7 @@ const N = {
   C27: "W1 menor que W2", C29: "Tormenta sin capa Cb", C30: "Precipitación continua solo con cumuliformes", C31: "Llovizna solo con cumuliformes",
   C32: "Capa TCu con CL incorrecto", C33: "Visibilidad < 5000 m sin fenómeno", C34: "METAR DZ/RA sin precipitación en SYNOP",
   C35: "METAR BR distinto del ww", C36: "METAR FG sin niebla en ww", C37: "METAR HZ distinto del ww", C38: "St muy alto", C39: "Nube baja muy alta",
-  C40: "CL sin su capa", C41: "Td mayor que Ts", C41H: "HR no calza con Ts y Td",
+  C43: "METAR BR y FG juntos", C44: "METAR fenómeno repetido", C45: "METAR con intensidad donde no corresponde", C46: "METAR SH mal combinado", C47: "METAR DR mal combinado", C48: "METAR ventisca baja con poco viento", C49: "METAR BR y HZ juntos", C50: "METAR FG bajo 0 °C sin FZ", C51: "METAR FG con HR baja", C52: "METAR precipitaciones mezcladas en grupos separados", C40: "CL sin su capa", C41: "Td mayor que Ts", C41H: "HR no calza con Ts y Td",
   E01: "Fin de precipitación sin ww 20–27", E03: "Llovizna a chubasco sin cambio de nubes", E04: "Chubasco a lluvia continua sin cambio de nubes",
   E05: "Niebla adelgaza y baja la visibilidad", E06: "Niebla espesa y sube la visibilidad", E07: "ww 01 con N que sube", E08: "ww 03 con N que baja",
   E09: "Salto de QFE en una hora", E10: "Tiempo pasado (W1) incorrecto", E11: "W1 sin ww que lo respalde", E12: "Precipitación con RRR6 0",
@@ -64,6 +64,7 @@ const CAMBIOS = [
   ["2026-11-13", "EMA: rango, salto, pegado", "Fallas de sensor agrupadas por episodio (un aviso por estación y sensor, con inicio, duración y si sigue). HR pegada desde 10 h. Rangos por zona (latitud y altura).", "Un solo aviso por falla en vez de decenas."],
   ["2026-11-13", "C02, C03, C40", "Humo, calima, polvo y neblina solo con VV > 8000 m. C40 solo si no hay ninguna capa baja.", "Reducir falsos avisos de codificación."],
   ["2026-11-13", "SRRR6, C42, E21", "Traza: con pluviómetro ≥ 0,2 mm → dudoso; traza con RRR6 ≠ 0 → dudoso; traza sin fenómenos y pluviómetro 0 → informativo.", "La traza se codificaba de forma inconsistente."],
+  ["2026-11-13", "C43–C52", "Errores de cifrado del tiempo presente METAR: BR y FG juntos, intensidad en neblina/niebla/calima/ventisca, SH o DR con fenómenos que no admiten, fenómeno repetido, FG bajo 0 °C o con HR baja, mezclas en grupos separados.", "Basado en la guía de tiempo presente METAR y SYNOP."],
   ["2026-11-13", "Modelos / WRF", "Sin QFF sobre 1500 m; tolerancia ×1,5 en estaciones aisladas sobre 2000 m.", "Los modelos no representan bien la altura."],
   ["2026-11-13", "SEXT, SEXH", "Las extremas oficiales (getEmaResumenDiario) mandan sobre el minutario.", "Usar el valor y la hora oficiales de la estación."]
 ];
