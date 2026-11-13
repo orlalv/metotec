@@ -209,7 +209,7 @@ main[hidden]{display:none}
  <label class="perfil" title="Su nombre: filtra sus estaciones y las marcas quedan con este nombre">👤 <select id="persona"><option value="">Todos</option></select></label>
  <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
- <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="real">Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="real">Equipo</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
+ <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="prio" data-g="real">Prioridades</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="real">Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="real">Equipo</button><button data-m="cor" data-g="real">Correcciones</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -238,6 +238,7 @@ main[hidden]{display:none}
 <section id="ser" hidden></section>
 <section id="inf" hidden></section>
 <section id="reg" hidden></section>
+<section id="cor" hidden></section>
 <section id="equ" hidden></section>
 <section id="mis" hidden></section>
 <section id="comp" hidden></section>
@@ -252,6 +253,7 @@ main[hidden]{display:none}
 <script src="js/reglas.js?v=202611131500"></script>
 <script src="js/fallas.js?v=202611131300"></script>
 <script src="js/equipo.js?v=202611131400"></script>
+<script src="js/correcciones.js?v=202611131700"></script>
 <script src="js/servicios.js?v=202611131500"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script>
@@ -393,7 +395,7 @@ function visibles(){
   return R.estaciones.map(filtrar).filter(e => enZona(e) && ver[e.nivel] && EQ.filtra(e.codigo) && (sub === "pend" || e.alertas.length) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
 function pintar(){
-  if (modo === "hist" || modo === "reg" || modo === "minu" || modo === "bol") return;
+  if (modo === "hist" || modo === "reg" || modo === "cor" || modo === "minu" || modo === "bol") return;
   if (modo === "equ" || modo === "mis" || modo === "comp") return EQ.pagina(modo);
   if (modo === "ext" || modo === "pp" || modo === "tem") return EXT.init(() => R, modo);
   if (modo === "inf") return pintarInf();
@@ -507,16 +509,16 @@ function cambiarModo(m){
   if (modo !== m) sel = null;
   modo = m; $("#det").style.display = "none";
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", prio: "prio", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", equ: "equ", mis: "mis", comp: "comp"}[m];
+  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", prio: "prio", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", cor: "cor", equ: "equ", mis: "mis", comp: "comp"}[m];
   document.querySelector("main").hidden = h;
-  ["hist", "prio", "minu", "bol", "ext", "ser", "inf", "reg", "equ", "mis", "comp"].forEach(i => $("#" + i).hidden = i !== sec);
+  ["hist", "prio", "minu", "bol", "ext", "ser", "inf", "reg", "cor", "equ", "mis", "comp"].forEach(i => $("#" + i).hidden = i !== sec);
   $("#chips").style.display = h ? "none" : "";
   $("#mvar").hidden = $("#mref").hidden = m !== "mod"; leyenda(m === "mod");
   $("#sub").hidden = $("#grupo").hidden = $("#vars").hidden = m !== "ema"; $("#gobs").hidden = m !== "obs";
   guardarVista();
   if (h){
     if (m === "hist"){ hInit(); if (!HI) hCargar(); } else if (m === "minu") MINU.init(); else if (m === "bol") BOL.init(clave);
-    else if (sec === "ext") EXT.init(() => R, m); else if (sec === "ser") SER.init(clave, m === "ser" ? "dia" : "hora");
+    else if (sec === "cor") CORR.pagina(clave); else if (sec === "ext") EXT.init(() => R, m); else if (sec === "ser") SER.init(clave, m === "ser" ? "dia" : "hora");
     else if (sec === "equ" || sec === "mis" || sec === "comp") EQ.pagina(m);
     else if (m === "inf") R && pintarInf(); else if (m === "reg") REGLAS.pagina($("#reg"), esc); else pintarPrio();
     return;
