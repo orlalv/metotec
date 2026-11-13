@@ -65,17 +65,21 @@ function tabla(cas, hora, msg, regla){
   if (!cols.length) return "";
   const rot = (el, c) => (NOMBRE[el] ? NOMBRE[el] + (/^(ww|VV|N)$/.test(c) ? "" : " ") : "") + (/^(ww|VV|N)$/.test(c) && NOMBRE[el] === c ? "" : c);
   const usado = (el, c) => (c.length > 2 && (msg || "").includes(c)) || (el === "WWSINOP" && /\bww\b/.test(msg || ""));
+  // casillas de las que habla la alerta: juntas, a la izquierda; el resto, más tenue y a la derecha
+  const inv = ([el, c]) => mal.has(c) || usado(el, c);
+  let nInv = 0; if (cols.some(inv) && cols.some(x => !inv(x))){ const a_ = cols.filter(inv), b_ = cols.filter(x => !inv(x)); nInv = a_.length; cols.length = 0; a_.concat(b_).forEach(x => cols.push(x)); }
   const OFF = {E14: [-3], E15: [-3], E16: [-3], E20: [-1, 1]}, offs = /^E(0[1-9]|1[4-6]|18|19|20)$/.test(regla || "") ? (OFF[regla] || [-1]) : [];
   const cmp = new Set(offs.map(o => new Date(Date.parse(clave.replace(" ", "T") + ":00Z") + o * 3600e3).toISOString().slice(0, 16).replace("T", " ")));
+  const sep = ix => nInv ? (ix === nInv ? "border-left:3px solid var(--oro);" : "") + (ix >= nInv ? "opacity:.55;" : "") : "";
   const algunaMal = cols.some(([el, c]) => mal.has(c) && ((cas[clave] || {})[el] || {})[c] != null);
-  const filas = ts.map(t => `<tr${t === clave ? ' class="sgalerta"' : ""}><td style="white-space:nowrap"><b>${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}</b></td><td style="white-space:nowrap;font-weight:700">${esc(metarTxt((cas[t] || {}).WWMETAR)) || "—"}</td>${cols.map(([el, c]) => {
+  const filas = ts.map(t => `<tr${t === clave ? ' class="sgalerta"' : ""}><td style="white-space:nowrap"><b>${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}</b></td><td style="white-space:nowrap;font-weight:700">${esc(metarTxt((cas[t] || {}).WWMETAR)) || "—"}</td>${cols.map(([el, c], ix) => {
     const x = ((cas[t] || {})[el] || {})[c], k = comp(c), f = SIG[k];
     const tt = x == null ? "" : typeof x === "number" && f ? (f(x) || "") : "";
     const comp_ = cmp.has(t) && mal.has(c) && x != null;
     const falla = t === clave && x != null && (mal.has(c) || (!algunaMal && el !== "Ts" && el !== "Td" && el !== "HR" && el !== "QFE" && el !== "QFF" && el !== "QNH")), est = (tt ? "cursor:help;text-decoration:underline dotted;" : "") + (falla ? "background:var(--err);color:#fff;font-weight:800;outline:2px solid var(--err);" : "") + (comp_ ? "outline:2px dashed var(--oro);background:color-mix(in srgb,var(--oro) 28%,transparent);font-weight:800;" : "");
-    return `<td${comp_ ? ` title="${esc((tt ? tt + " · " : "") + "Casilla con la que se compara")}"` : tt ? ` title="${esc(tt)}"` : ""}${est ? ` style="${est}"` : ""}>${x == null ? "—" : esc(x)}</td>`; }).join("")}</tr>`).join("");
+    return `<td${comp_ ? ` title="${esc((tt ? tt + " · " : "") + "Casilla con la que se compara")}"` : tt ? ` title="${esc(tt)}"` : ""}${(est + sep(ix)) ? ` style="${est}${sep(ix)}"` : ""}>${x == null ? "—" : esc(x)}</td>`; }).join("")}</tr>`).join("");
   return `<div class="sgcas"><h4 style="margin:10px 0 4px">Casillas ingresadas por el observador · ${ts.length} observaciones alrededor de la alerta</h4>
-    <div style="overflow-x:auto"><table class="sgtab"><tr><th>Hora UTC</th><th title="Tiempo presente del METAR, armado con IntProx, DESC y FEN" style="color:var(--oro)">METAR</th>${cols.map(([el, c]) => `<th title="${esc(el)} · ${esc(c)}"${usado(el, c) || mal.has(c) ? ' style="color:var(--oro)"' : ""}>${esc(rot(el, c))}</th>`).join("")}</tr>${filas}</table></div>
+    <div style="overflow-x:auto"><table class="sgtab"><tr><th>Hora UTC</th><th title="Tiempo presente del METAR, armado con IntProx, DESC y FEN" style="color:var(--oro)">METAR</th>${cols.map(([el, c]) => `<th title="${esc(el)} · ${esc(c)}" style="${usado(el, c) || mal.has(c) ? "color:var(--oro);" : ""}${sep(cols.findIndex(x => x[0] === el && x[1] === c))}">${esc(rot(el, c))}</th>`).join("")}</tr>${filas}</table></div>
     <p class="sgnota">La fila de la alerta va resaltada y las casillas cuestionadas en rojo; con borde dorado, la casilla con la que se compara (hora anterior o tres horas antes, según la regla); si la regla no apunta a una casilla concreta, se marcan todas las de codificación de esa hora. Se ocultan las casillas vacías. Pase el mouse sobre un número subrayado para ver qué significa.</p></div>`;
 }
 const f2 = t => t ? `${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}` : "";
