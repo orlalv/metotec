@@ -13,6 +13,13 @@ const NOTA = {
   pre: "Saltos de QFE sobre 0,8 hPa en un minuto, QFE pegado 2 h, QFE lejos de lo esperado por altura, cambio sobre 8 hPa en 3 h y QFF contra el QFE reducido.",
   tem: "Saltos de Ts, Td y HR, Td mayor que Ts, HR que no calza con Ts y Td, valores pegados (Ts y Td 2 h, HR 6 h) y Ts fuera de lo habitual para la zona.",
   vie: "Cambio del viento medio sobre 10 kt en 10 min (tendencia, no minuto a minuto), viento o dirección pegados, dirección fuera de 0–360 y racha menor que el viento medio."};
+// columnas de la tabla de datos de cada pestaña: [campo del resumen, título, unidad]
+const DATOS = {
+  pp: [["rr_24h", "Lluvia 24 h (suma de minutos)", "mm"], ["rr_1h", "Lluvia última hora", "mm"], ["rr_min", "Máx. en un minuto", "mm"], ["rr6", "RRR6 informada", "mm"], ["rr24", "RRR24 informada", "mm"], ["HR", "HR", "%"]],
+  ext: [["Tmin24", "Ts mínima 24 h (por minuto)", "°C"], ["Tmax24", "Ts máxima 24 h (por minuto)", "°C"], ["Tn12", "Mínima 12 h informada (Tn12)", "°C"], ["Tx12", "Máxima 12 h informada (Tx12)", "°C"]],
+  pre: [["P_est", "QFE", "hPa"], ["P_mar", "QFF", "hPa"], ["dP3", "Cambio del QFE en 3 h", "hPa"]],
+  tem: [["T", "Ts", "°C"], ["Td", "Td", "°C"], ["HR", "HR", "%"], ["Tmin24", "Ts mín. 24 h", "°C"], ["Tmax24", "Ts máx. 24 h", "°C"]],
+  vie: [["ff10", "Viento medio 10 min", "kt"], ["fx10", "Racha", "kt"], ["dd10", "Dirección", "°"], ["ffmax24", "Viento máx. 24 h", "kt"], ["fxmax24", "Racha máx. 24 h", "kt"]]};
 let getR = () => null, modo = "sup", q = "";
 
 function init(fR, m){
@@ -42,6 +49,13 @@ const kpi = (n, t, c) => `<div><b style="color:${c}">${n}</b><span>${esc(t)}</sp
 const hora = h => `${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}`;
 const enlinea = c => `<a class="vlink" style="display:inline-block;margin-top:4px" href="https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/${encodeURIComponent(c)}" target="_blank" rel="noopener" title="Abrir la estación en línea en el portal de climatología">↗ en línea</a>`;
 
+function filasDatos(F, tipo){
+  const f = v => v == null ? "—" : String(v);
+  return [...F].sort((a, b) => b.H.filter(h => h.tipo === tipo).length - a.H.filter(h => h.tipo === tipo).length || (a.e.nombre || "").localeCompare(b.e.nombre || "")).map(({e, H}) => {
+    const n = H.filter(h => h.tipo === tipo), r = e.res || {};
+    return `<tr data-ir="${e.codigo}" data-tp="${tipo}" style="cursor:pointer"><td class="nom"><b>${esc(e.nombre)}</b><br><small>${e.codigo}</small></td><td style="white-space:nowrap">${e.ultima ? hora({hora: e.ultima}) : "<span style='color:var(--mu)'>sin datos</span>"}</td>
+      ${DATOS[tipo].map(c => `<td class="n">${f(r[c[0]])}</td>`).join("")}<td style="color:${n.length ? NIVC[Math.max(...n.map(h => h.nivel))] : "var(--mu)"};font-weight:600">${n.length || "—"}</td></tr>`; }).join("");
+}
 function pintar(){
   if (!$("#sup") || !$("#sup").dataset.ok) return;
   const R = getR(), S = (R && R.super) || {}, g = S.generado ? new Date(S.generado + "Z") : null;
@@ -74,8 +88,12 @@ function pintar(){
         <td style="color:${NIVC[f.nivel] || "inherit"};font-weight:600">${REGLAS.html(f.regla, esc)}</td>
         <td>${esc(f.msg)}${f.st === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${MARCA.botones(f.e.codigo, f)}</td></tr>`).join("")}</table></div>`
       : `<p style="color:var(--ok)">Sin alertas de ${nom}${q ? " con ese filtro" : ""}.</p>`}
+    <h3 style="margin:16px 0 6px;font:600 15px var(--titulo)">Datos de las estaciones sin observador · ${esc(nom)}</h3>
+    <div class="bcard" style="padding:0;max-height:520px;overflow:auto"><table class="xtab"><tr><th>Estación</th><th>Último dato UTC</th>${DATOS[tipo].map(c => `<th>${esc(c[1])}${c[2] ? ` <small>(${c[2]})</small>` : ""}</th>`).join("")}<th>Alertas</th></tr>
+      ${filasDatos(F, tipo)}</table></div>
+    <p class="nota" style="color:var(--mu);font-size:12px;margin:4px 0">Haga clic en una estación para ver sus gráficos y su tabla minuto a minuto. Los valores nuevos aparecen desde la próxima pasada del control.</p>
     <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">${NOTA[tipo]} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
 }
-document.addEventListener("click", ev => { const a = ev.target.closest("a[data-sup]"); if (!a) return; ev.preventDefault(); q = ""; window.cambiarModo(a.dataset.sup); });
+document.addEventListener("click", ev => { const r = ev.target.closest("tr[data-ir]"); if (r && !ev.target.closest("a")){ window.supIr(r.dataset.ir, r.dataset.tp); return; } const a = ev.target.closest("a[data-sup]"); if (!a) return; ev.preventDefault(); q = ""; window.cambiarModo(a.dataset.sup); });
 window.SUPER = {init, pintar, modos: new Set(["sup", ...Object.keys(TABS)])};
 })();

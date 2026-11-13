@@ -216,6 +216,27 @@ def _estacion(g, m):
     return out
 
 
+def _resumen(g):
+    """Últimos valores y extremos de 24 h de una estación, para las tablas de cada pestaña."""
+    g = g.sort_values("momento")
+    fin = g["momento"].max()
+    g24 = g[g["momento"] > fin - pd.Timedelta(hours=24)]
+    r = lambda x, n=1: None if x is None or pd.isna(x) else round(float(x), n)
+    ult = lambda v: r(g[v].dropna().iloc[-1]) if v in g and g[v].notna().any() else None
+    mx = lambda v: r(g24[v].max()) if v in g24 and g24[v].notna().any() else None
+    mn = lambda v: r(g24[v].min()) if v in g24 and g24[v].notna().any() else None
+    out = {v: ult(v) for v in ("T", "Td", "HR", "P_est", "P_mar", "ff10", "fx10", "dd10", "rr6", "rr24", "Tn12", "Tx12")}
+    out.update(Tmin24=mn("T"), Tmax24=mx("T"), ffmax24=mx("ff10"), fxmax24=mx("fx10"))
+    if "rr1m" in g24 and g24["rr1m"].notna().sum() >= 600:
+        out["rr_24h"] = r(g24["rr1m"].sum()); out["rr_1h"] = r(g24[g24["momento"] > fin - pd.Timedelta(hours=1)]["rr1m"].sum())
+        out["rr_min"] = r(g24["rr1m"].max())
+    if "P_est" in g24 and g24["P_est"].notna().sum() > 200:
+        h = g24.set_index("momento")["P_est"].dropna()
+        a = h[h.index <= fin - pd.Timedelta(hours=3)]
+        out["dP3"] = r(h.iloc[-1] - a.iloc[-1]) if len(a) else None
+    return out
+
+
 def correr(raiz, E, cods_obs, leer_archivo, horas=26):
     """E: estaciones (DataFrame); cods_obs: códigos con observador (se excluyen). Devuelve el dict para el KV."""
     fin = pd.Timestamp.utcnow().tz_localize(None)
@@ -232,6 +253,10 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26):
                     ultima=None, nivel=0, hallazgos=[])
         if g is not None and len(g):
             fila["ultima"] = _f(g["momento"].max())
+            try:
+                fila["res"] = _resumen(g)
+            except Exception:
+                fila["res"] = {}
             try:
                 fila["hallazgos"] = _estacion(g, m)
             except Exception as e:      # una estación mala no tumba a las demás
