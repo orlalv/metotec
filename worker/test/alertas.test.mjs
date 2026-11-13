@@ -86,3 +86,10 @@ test("fenómeno (ww o METAR): chubascos y nieve sin importar quién los informe"
   const sig = evaluar(P([{id: "z", fuente: "obs", donde: "todas", var: "fen", op: "hay", valor: "SHSN"}]), ema, o, ahora).map(h => h.codigo);
   assert.deepEqual(sig, ["1"]);
 });
+
+test("vigencia: desactivada, fuera de periodo y vigente", () => {
+  const base = {fuente: "obs", donde: "todas", var: "ww", op: "en", valor: "07-09"};      // 2026-11-13 12:00 UTC = 09:00 en Chile
+  const ids = alertas => evaluar(P(alertas), ema, obs, ahora).map(h => h.id.split("|")[0]);
+  assert.deepEqual(ids([{...base, id: "a"}, {...base, id: "b", activa: false}, {...base, id: "c", hasta: "2026-11-12"}, {...base, id: "d", desde: "2026-11-14"},
+                        {...base, id: "e", desde: "2026-11-13", hasta: "2026-11-13"}, {...base, id: "f", desde: "2026-11-01", hasta: "2026-12-01"}]), ["a", "e", "f"]);
+});

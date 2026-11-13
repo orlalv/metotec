@@ -63,7 +63,7 @@ function filtra(cod){ const p = per(yo()); return !p || !soloMias() || !(p.estac
 
 // --------------------------------------------------------------- evaluación (módulo común js/alertas_core.js)
 let CORE = null;
-import("/js/alertas_core.js?v=202611132200").then(m => { CORE = m; contador(); }).catch(() => {});
+import("/js/alertas_core.js?v=202611132215").then(m => { CORE = m; contador(); }).catch(() => {});
 function evaluar(p, R){
   if (!R || !CORE) return [];
   const fresco = R.ema_rapido && Date.now() - Date.parse(R.ema_rapido.generado) < 20 * 60e3;      // si el Worker se detuvo, vale la última pasada de qc.yml
@@ -121,6 +121,12 @@ function reglaTxt(r){
   const lugar = r.donde === "cods" ? (r.cods || []).join(", ") : DONDE[r.donde] || r.donde;
   return `${r.fuente === "obs" ? "Observación" : "EMA"} · ${esc(lugar)} · ${r.op === "sin" ? "sin dato" : `${esc((VARS[r.fuente] || {})[r.var] || r.var)} ${esc(OPS[r.op])} ${esc(r.valor)}`}`;
 }
+const COLV = {vigente: "var(--ok)", "desactivada": "var(--mu)", "vencida": "var(--err)", "aún no vigente": "var(--sos)"};
+function vigTxt(r){
+  const e = CORE ? CORE.estadoRegla(r) : "vigente", f = x => x.split("-").reverse().join("/");
+  const per_ = r.desde || r.hasta ? `${r.desde ? "desde " + f(r.desde) : ""}${r.desde && r.hasta ? " " : ""}${r.hasta ? "hasta " + f(r.hasta) : ""}` : "sin límite";
+  return `<b style="color:${COLV[e] || "inherit"}">${e}</b><br><small>${per_}</small>`;
+}
 function pagMis(){
   const S = $("#mis"), p = per(yo()), A = activas();
   const form = r => `<div class="mform"><input id="mNom" placeholder="Nombre de la alerta" value="${esc(r.nombre || "")}">
@@ -130,6 +136,7 @@ function pagMis(){
     <select id="mVar">${Object.entries(VARS[r.fuente || "ema"]).map(([k, v]) => `<option value="${k}"${r.var === k ? " selected" : ""}>${v}</option>`).join("")}</select>
     <select id="mOp">${Object.entries(OPS).map(([k, v]) => `<option value="${k}"${r.op === k ? " selected" : ""}>${v}</option>`).join("")}</select>
     <input id="mVal" placeholder="Valor (ej. 0, 07-09,30-35 o, para fenómeno: chubasco, nieve, tormenta, granizo, engelante, ventisca, niebla, SHSN…)" value="${esc(r.valor || "")}" style="width:170px">
+    <label class="mvig">Vigente desde <input type="date" id="mDes" value="${esc(r.desde || "")}"></label><label class="mvig">hasta <input type="date" id="mHas" value="${esc(r.hasta || "")}"></label>
     <button class="mk" id="mGuardar">${r.id ? "Guardar cambios" : "+ Agregar alerta"}</button>${r.id ? `<button class="mk" id="mCancelar">Cancelar</button>` : ""}</div>`;
   const ed = S._ed || {fuente: "ema", donde: "mias", op: ">"};
   S.innerHTML = `<h2 style="margin:0 0 4px;font:600 20px var(--titulo)">Mis alertas ${p ? `· ${esc(p.nombre)}` : "· todo el equipo"}</h2>
@@ -137,7 +144,7 @@ function pagMis(){
    <h4>Activas ahora (${A.length})</h4>
    ${A.length ? `<table class="xtab"><tr>${p ? "" : "<th>Persona</th>"}<th>Alerta</th><th>Estación</th><th>Valor</th><th>Hora UTC</th></tr>${A.map(a => `<tr>${p ? "" : `<td>${esc(a.persona)}</td>`}<td><b>${esc(a.regla.nombre || "")}</b><br><small>${reglaTxt(a.regla)}</small></td><td>${esc(a.nombre)} <small>${a.codigo}</small></td><td class="n">${a.regla.op === "sin" ? "sin dato" : esc(a.x)}</td><td class="n">${esc(a.hora)}</td></tr>`).join("")}</table>` : `<p style="color:var(--ok)">Ninguna alerta propia se cumple ahora.</p>`}
    ${p ? `<h4 style="margin-top:18px">Mis reglas</h4>
-   ${(p.alertas || []).length ? `<table class="xtab"><tr><th>Activa</th><th>Alerta</th><th>Condición</th><th></th></tr>${p.alertas.map(r => `<tr><td><input type="checkbox" data-act="${esc(r.id)}"${r.activa !== false ? " checked" : ""}></td><td><b>${esc(r.nombre)}</b></td><td>${reglaTxt(r)}</td><td style="white-space:nowrap"><button class="mk" data-edit="${esc(r.id)}">Editar</button><button class="mk" data-quit="${esc(r.id)}">Quitar</button></td></tr>`).join("")}</table>` : `<p class="nota" style="color:var(--mu)">Todavía no tiene reglas.</p>`}
+   ${(p.alertas || []).length ? `<table class="xtab"><tr><th>Activa</th><th>Alerta</th><th>Condición</th><th>Vigencia</th><th></th></tr>${p.alertas.map(r => `<tr><td><input type="checkbox" data-act="${esc(r.id)}"${r.activa !== false ? " checked" : ""}></td><td><b>${esc(r.nombre)}</b></td><td>${reglaTxt(r)}</td><td>${vigTxt(r)}</td><td style="white-space:nowrap"><button class="mk" data-edit="${esc(r.id)}">Editar</button><button class="mk" data-quit="${esc(r.id)}">Quitar</button></td></tr>`).join("")}</table>` : `<p class="nota" style="color:var(--mu)">Todavía no tiene reglas.</p>`}
    <p style="font-size:13px;color:var(--mu);margin:12px 0 4px">Ejemplos: ${PRESETS.map((x, i) => `<button class="mk" data-pre="${i}">${esc(x.nombre)}</button>`).join("")}</p>
    ${form(ed)}
    <h4 style="margin-top:18px">Avisos</h4>
@@ -211,7 +218,7 @@ document.addEventListener("change", async ev => {
 document.addEventListener("input", ev => { if (ev.target.id === "eqQ"){ const S = $("#equ"); S.dataset.q = ev.target.value; const pos = ev.target.selectionStart; pagEqu(); const i = $("#eqQ"); i.focus(); i.setSelectionRange(pos, pos); } });
 document.addEventListener("change", ev => { if (ev.target.id === "mVar" && ev.target.value === "fen" && $("#mOp")) $("#mOp").value = "hay"; });
 function leerForm(){ return {nombre: $("#mNom").value.trim(), fuente: $("#mFue").value, donde: $("#mDon").value, cods: $("#mCods").value.split(/[,\s]+/).filter(Boolean),
-  var: $("#mVar").value, op: $("#mOp").value, valor: $("#mVal").value.trim(), id: ($("#mis")._ed || {}).id}; }
+  var: $("#mVar").value, op: $("#mOp").value, valor: $("#mVal").value.trim(), desde: $("#mDes").value || "", hasta: $("#mHas").value || "", id: ($("#mis")._ed || {}).id}; }
 document.addEventListener("click", async ev => {
   const b = ev.target.closest("button"); if (!b) return;
   if (b.id === "soloMias"){ try { localStorage.setItem("qcSoloMias", soloMias() ? "0" : "1"); } catch (e){} selector(); window.EQ.alCambiar && window.EQ.alCambiar(); if (modoAct === "comp") pagComp(); return; }
@@ -231,7 +238,8 @@ document.addEventListener("click", async ev => {
       await guardar({...p, estaciones: [...s]}); window.EQ.alCambiar && window.EQ.alCambiar(); return pagEqu(); }
     if (b.id === "mGuardar"){ const p = per(yo()), r = leerForm(); if (r.op !== "sin" && r.valor === "") throw new Error("falta el valor"); if (r.donde === "cods" && !r.cods.length) throw new Error("faltan los códigos");
       if (!r.nombre) r.nombre = reglaTxt(r).replace(/<[^>]+>/g, "");
-      const L = p.alertas || []; r.id ||= Date.now().toString(36); r.activa = true;
+      const L = p.alertas || []; const ant = L.find(x => x.id === r.id); r.id ||= Date.now().toString(36); r.activa = ant ? ant.activa !== false : true;
+      if (r.desde && r.hasta && r.hasta < r.desde) throw new Error("la fecha «hasta» es anterior a «desde»");
       await guardar({...p, alertas: L.some(x => x.id === r.id) ? L.map(x => x.id === r.id ? r : x) : [...L, r]}); $("#mis")._ed = null; return pagMis(); }
     if (b.dataset.quit){ const p = per(yo()); await guardar({...p, alertas: p.alertas.filter(r => r.id !== b.dataset.quit)}); return pagMis(); }
     if (b.id === "mAvisos"){ const p = per(yo()); await guardar({...p, telegram: $("#mTg").value.trim(), correo: $("#mMail").value.trim(), ausente: $("#mAus").checked}); $("#mMsg").style.color = "var(--ok)"; $("#mMsg").textContent = "Guardado."; return; }

@@ -2,7 +2,8 @@
    lo usan la página (js/equipo.js, con import dinámico) y el Worker de cron (worker/src/index.js).
 
    Regla: {id, nombre, fuente: "ema"|"obs", donde: "mias"|"todas"|"norte"|"centro"|"sur"|"austral"|"cods", cods: [..],
-           var, op: ">"|">="|"<"|"<="|"="|"en"|"sin"|"hay", valor, activa}
+           var, op: ">"|">="|"<"|"<="|"="|"en"|"sin"|"hay", valor, activa, desde?, hasta?}
+   · vigencia: activa=false la deja desactivada; desde/hasta (AAAA-MM-DD, hora de Chile, inclusivas) limitan el periodo; vacío = sin límite
    · op "hay" (var "fen"): fenómenos de tiempo presente por ww o METAR: chubasco, nieve, tormenta, granizo, engelante, ventisca, lluvia, llovizna, niebla, neblina, calima, polvo, o siglas (SH, SHSN, TS…)
    · op "en": lista y rangos de códigos, ej. "07-09,30-35" (tormentas de polvo/arena con ww).
    · op "sin": sin dato (EMA con nivel 3; observación sin mensaje en las últimas 2 h).
@@ -60,13 +61,22 @@ export function donde(r, e, mias){
   return e.lat != null && e.lat >= lo && e.lat < hi;
 }
 
+/** Estado de una regla en el instante t0: "desactivada" | "aún no vigente" | "vencida" | "vigente". Fechas (desde/hasta, AAAA-MM-DD, ambas inclusivas) en hora de Chile. */
+export function estadoRegla(r, t0 = Date.now()){
+  if (r.activa === false) return "desactivada";
+  const hoy = new Date(t0).toLocaleDateString("sv-SE", {timeZone: "America/Santiago"});
+  if (r.desde && hoy < r.desde) return "aún no vigente";
+  if (r.hasta && hoy > r.hasta) return "vencida";
+  return "vigente";
+}
+
 const aMs = u => { if (!u) return NaN; const t = Date.parse(String(u).slice(0, 19).replace(" ", "T") + "Z"); return t; };
 
 /** Alertas que se cumplen ahora para una persona: [{id, r, codigo, nombre, x, hora, texto}] (hora: "AAAA-MM-DDTHH:MM"). */
 export function evaluar(persona, ema, obs, ahora = Date.now()){
   const t0 = ahora instanceof Date ? ahora.getTime() : ahora;
   const mias = new Set(persona.estaciones || []), out = [];
-  (persona.alertas || []).filter(r => r.activa !== false).forEach(r => {
+  (persona.alertas || []).filter(r => estadoRegla(r, t0) === "vigente").forEach(r => {
     const esObs = r.fuente === "obs";
     const L = esObs ? (obs || {}).estaciones || [] : (ema || {}).estaciones || [];
     L.forEach(e => {

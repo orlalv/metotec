@@ -10,7 +10,7 @@ const limpio = p => ({
   estaciones: [...new Set((p.estaciones || []).map(String))].filter(c => /^\d{4,8}$/.test(c)).slice(0, 400),
   alertas: (p.alertas || []).slice(0, 40).map(r => ({ id: String(r.id || Date.now().toString(36)).slice(0, 20), nombre: String(r.nombre || "").slice(0, 80),
     fuente: r.fuente === "obs" ? "obs" : "ema", donde: String(r.donde || "todas").slice(0, 10), cods: (r.cods || []).map(String).slice(0, 100),
-    var: String(r.var || "").slice(0, 10), op: [">", ">=", "<", "<=", "=", "en", "sin", "hay"].includes(r.op) ? r.op : ">", valor: String(r.valor ?? "").slice(0, 60), activa: r.activa !== false })),
+    var: String(r.var || "").slice(0, 10), op: [">", ">=", "<", "<=", "=", "en", "sin", "hay"].includes(r.op) ? r.op : ">", desde: /^\d{4}-\d{2}-\d{2}$/.test(r.desde || "") ? r.desde : "", hasta: /^\d{4}-\d{2}-\d{2}$/.test(r.hasta || "") ? r.hasta : "", valor: String(r.valor ?? "").slice(0, 60), activa: r.activa !== false })),
   pestanas: [...new Set((p.pestanas || []).map(String))].filter(m => /^[a-z_]{2,12}$/.test(m)).slice(0, 40),     // pestañas que ve (vacío = todas)
   telegram: String(p.telegram || "").trim().slice(0, 30), correo: String(p.correo || "").trim().slice(0, 80)
 });
