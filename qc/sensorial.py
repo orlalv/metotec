@@ -634,7 +634,9 @@ def evolucion(t, o, hist, A=None):
     # período de tiempo pasado
     per = 6 if t.hour % 6 == 0 else 3
     horas = [hist.get(t - pd.Timedelta(hours=k)) for k in range(1, per)]
-    disponibles = [h for h in horas if h]
+    n_horas = len([h for h in horas if h])                       # horas en punto con observación (para saber si hay datos suficientes)
+    # observaciones del período (t-per, t), también las de media hora (SPECI)
+    disponibles = [hist[x] for x in sorted(hist) if t - pd.Timedelta(hours=per) < x < t and hist[x]]
     W1, W2 = v(o, "W1W2", "W1"), v(o, "W1W2", "W2")
     # el tiempo pasado (W1 W2) es lo ocurrido ANTES de la observación: principales (00, 06, 12, 18) 6 h; intermedias 3 h.
     # El ww y el METAR de la propia hora son tiempo presente y no cuentan.
@@ -676,8 +678,8 @@ def evolucion(t, o, hist, A=None):
         add("E17", 1, f"precipitación informada (W1 {W1}, W2 {W2}, ww {ww}) y RRR6 0 sin traza: si llovió o lloviznó debe ir al menos traza")
     # precipitación del período
     rr, traza = v(o, "RRR6", "RRR6"), v(o, "RRR6", "Traza")
-    if ingresado(o, "RRR6", "RRR6") and len(disponibles) >= 4:
-        hubo = any(v(h, "WWSINOP", "ww") in PRECIP or 20 <= (v(h, "WWSINOP", "ww") or 0) <= 27 for h in disponibles) or (ww in PRECIP)
+    if ingresado(o, "RRR6", "RRR6") and n_horas >= 4:
+        hubo = any(v(h, "WWSINOP", "ww") in PRECIP or 20 <= (v(h, "WWSINOP", "ww") or 0) <= 27 or any(f in FEN_PRECIP for f in fen_metar(h)) for h in disponibles) or (ww in PRECIP) or any(f in FEN_PRECIP for f in fen_metar(o))
         if hubo and not ((rr or 0) > 0 or traza == 1):
             add("E12", 2, "en las últimas 6 h se informó precipitación y RRR6 es 0 sin traza")
         hubo_w = any((v(h, "W1W2", "W1") or 0) >= 5 or (v(h, "W1W2", "W2") or 0) >= 5 for h in [o] + disponibles) or \
