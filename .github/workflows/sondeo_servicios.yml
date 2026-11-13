@@ -1,0 +1,26 @@
+name: Sondeo servicios (temporal)
+on: workflow_dispatch
+jobs:
+  s:
+    runs-on: ubuntu-latest
+    env:
+      DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
+      DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
+    steps:
+      - run: |
+          python3 - <<'P'
+          import os, json, urllib.request, urllib.parse
+          q = urllib.parse.urlencode({"usuario": os.environ["DMC_USUARIO"], "token": os.environ["DMC_TOKEN"]})
+          B = "https://climatologia.meteochile.gob.cl/application/servicios/"
+          for s in ("getDatosRecientesEma/330020", "getEmaResumenDiario/330020"):
+              try:
+                  j = json.load(urllib.request.urlopen(B + s + "?" + q, timeout=120))
+              except Exception as e:
+                  print(s, "ERROR", e); continue
+              print("=====", s)
+              def corta(x, n=0):
+                  if isinstance(x, dict): return {k: corta(v, n + 1) for k, v in list(x.items())[:80]}
+                  if isinstance(x, list): return [corta(v, n + 1) for v in x[:2]] + ([f"... {len(x)} elementos"] if len(x) > 2 else [])
+                  return x
+              print(json.dumps(corta(j), ensure_ascii=False, indent=1)[:9000])
+          P
