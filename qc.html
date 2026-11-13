@@ -169,7 +169,7 @@ main[hidden]{display:none}
 #hist .rv.on.r{background:#1f5a3a;border-color:#6fcf97;color:#fff}#hist .rv.on.f{background:#5a1f1f;border-color:#eb5757;color:#fff}
 #hist tr.hs{cursor:pointer}#hist tr.hs:hover,#hist tr.hs.on{background:#16264a}
 @media (max-width:900px){main{grid-template-columns:1fr}#mapa{height:55vh}aside{border-left:0}}
-.svcw{position:relative}#svc{background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:999px;padding:5px 12px;font:700 13px inherit;color:var(--tx);cursor:pointer;white-space:nowrap}#svc{--c:var(--sin)}#svc i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;background:var(--c)}
+.svcw{position:relative}#svc{background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:999px;padding:5px 12px;font:700 13px inherit;color:var(--tx);cursor:pointer;white-space:nowrap}#gear{background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:999px;padding:4px 11px;font:700 15px inherit;color:var(--tx);cursor:pointer}#gear:hover,#gear.on{border-color:var(--oro);color:var(--oro)}#svc{--c:var(--sin)}#svc i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;background:var(--c)}
 #svcP{position:absolute;z-index:3000;left:0;top:calc(100% + 8px);width:min(420px,92vw);background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;box-shadow:var(--sombra)}#svcP[hidden]{display:none}
 #svcP h4{margin:0 0 8px;font:600 15px var(--titulo)}#svcP .svr{display:flex;gap:9px;padding:6px 0;border-top:1px solid var(--bd);font-size:13.5px}#svcP .svr i{flex:none;width:10px;height:10px;border-radius:50%;margin-top:5px}#svcP small{color:var(--mu);font-size:12.5px}
 /* vista para celular */
@@ -201,10 +201,11 @@ main[hidden]{display:none}
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
  <label class="perfil" title="Su nombre: filtra sus estaciones y las marcas quedan con este nombre">👤 <select id="persona"><option value="">Todos</option></select></label>
  <div id="horasCL" title="Hora oficial de Chile (referencia: horaoficial.cl)"></div>
+ <button id="gear" title="Gestión: equipo y mis alertas">⚙<b id="gearN" class="cnt"></b></button>
  <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
  <div class="salto"></div>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
- <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="real">Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="real">Equipo</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
+ <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -358,6 +359,12 @@ const VAR = {T: "Ts (temp. seca)", Td: "Td (punto de rocío)", HR: "HR (humedad)
 const ZONAS = {todo: [-90, 0], norte: [-27.5, 0], centro: [-38, -27.5], sur: [-46, -38], austral: [-90, -46]};
 let R = null, zona = "todo", ver = {0: true, 1: true, 2: true, 3: true}, sel = null, marcas = {};
 const $ = s => document.querySelector(s);
+$("#gear").addEventListener("click", () => {
+  document.querySelectorAll(".grupos button").forEach(x => x.classList.remove("on")); $("#gear").classList.add("on");
+  document.querySelectorAll(".modos button").forEach(x => x.hidden = x.dataset.g !== "gestion");
+  const act = document.querySelector('.modos button.on[data-g="gestion"]') || document.querySelector('.modos button[data-g="gestion"]'); cambiarModo(act.dataset.m);
+});
+new MutationObserver(() => { $("#gearN").textContent = $("#misN").textContent; }).observe($("#misN"), {childList: true, characterData: true, subtree: true});
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 // «Falsa alarma» en avisos de estaciones automáticas (en observaciones va junto a «Resuelto», ver MARCA)
 const FALSAS = new Set();
@@ -516,6 +523,7 @@ document.addEventListener("click", ev => {
 const MAPA_MODOS = new Set(["ema", "obs", "mod"]);
 function cambiarModo(m){
   const mb = document.querySelector(`.modos button[data-m="${m}"]`); if (!mb) return;
+  $("#gear").classList.toggle("on", mb.dataset.g === "gestion");
   if (mb.hidden){ const g = mb.dataset.g; document.querySelectorAll(".grupos button").forEach(x => x.classList.toggle("on", x.dataset.g === g)); document.querySelectorAll(".modos button").forEach(x => x.hidden = x.dataset.g !== g); }
   if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
   modo = m; $("#det").style.display = "none";
