@@ -137,7 +137,7 @@ def detectar_cambios(previo, obs, ahora):
         for el in sorted(set(a) | set(b)):
             for c in sorted(set(a.get(el, {})) | set(b.get(el, {}))):
                 x, y = a.get(el, {}).get(c), b.get(el, {}).get(c)
-                if x != y:
+                if x != y and x is not None:       # solo valores corregidos o borrados; lo que llega por primera vez (sensores que se completan después) no es un cambio
                     out.append(dict(hora=t.strftime("%Y-%m-%d %H:%M"), el=el, c=c, antes=x, despues=y, visto=ahora.strftime("%Y-%m-%d %H:%M")))
     return out
 
