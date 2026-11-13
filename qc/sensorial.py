@@ -644,16 +644,19 @@ def evolucion(t, o, hist, A=None):
         fuentes = []
         # el ww de la hora t-per describe el tiempo de la hora ANTERIOR al período (ej.: para las 18 UTC, el ww de las 12 es de 11–12): no cuenta.
         # Solo si la estación no tiene horas intermedias (SYNOP cada 3 h) se usa esa hora, porque no hay otra fuente.
-        ks = range(1, per) if len([1 for k in range(1, per) if hist.get(t - pd.Timedelta(hours=k))]) >= per - 2 else range(1, per + 1)
-        for k in ks:
-            tk = t - pd.Timedelta(hours=k); hk = hist.get(tk)
+        horario = len([1 for k in range(1, per) if hist.get(t - pd.Timedelta(hours=k))]) >= per - 2
+        ini = t - pd.Timedelta(hours=per)
+        # todas las observaciones del período, también las de media hora (SPECI, p. ej. 17:36); la que abre el período solo si no hay horas intermedias
+        for tk in sorted(x for x in hist if (x > ini if horario else x >= ini) and x < t):
+            hk = hist[tk]
             if not hk:
                 continue
+            hh = f"{tk:%H}" if tk.minute == 0 else f"{tk:%H:%M}"
             wk = v(hk, "WWSINOP", "ww"); ck = categoria_W(wk)
             if ck is not None:
-                fuentes.append((ck, f"ww {wk:02d} a las {tk:%H} UTC"))
+                fuentes.append((ck, f"ww {wk:02d} a las {hh} UTC"))
             for c_m, txt in fen_w(hk):
-                fuentes.append((c_m, f"{txt} en el METAR de las {tk:%H} UTC"))
+                fuentes.append((c_m, f"{txt} en el METAR de las {hh} UTC"))
         cats = [c_ for c_, _ in fuentes]
         dist = sorted(set(cats), reverse=True)      # categorías distintas, de mayor a menor
         mx = dist[0] if dist else None
