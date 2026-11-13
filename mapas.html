@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapas · METOTEC</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--noche:#0A1F44;--marino:#082B5C;--azul:#1688D4;--oro:#C9A54C;--fondo:#F5F6F8;--tx:#16202E;--mu:#6B7686;--bd:#E3E7EC}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tx);font:16px/1.5 Inter,system-ui,"Segoe UI",Roboto,Arial,sans-serif}
+.w{max-width:1280px;margin:0 auto;padding:0 clamp(16px,4vw,56px)}
+header{background:radial-gradient(1100px 380px at 85% 0%,#163a73 0%,var(--noche) 62%);color:#fff;padding:22px 0}
+header .w{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+header .logo img{display:block;height:40px;width:auto}
+header nav{display:flex;gap:26px;font-size:14.5px;font-weight:500}
+header nav a{color:#c8d2e2;text-decoration:none;padding-bottom:4px;border-bottom:2px solid transparent}
+header nav a:hover,header nav a.on{color:#fff;border-bottom-color:var(--oro)}
+.rule{height:3px;background:linear-gradient(90deg,var(--oro),rgba(201,165,76,0) 70%)}
+main.w{padding-top:24px;padding-bottom:20px}
+h1{margin:0 0 2px;font-size:26px}
+.mu{color:var(--mu);font-size:14px}
+.err{color:#b23a3a}
+.tarjetas{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));margin:16px 0}
+.t{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px 14px;text-align:left;font:inherit;color:inherit;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.t:hover{border-color:#c9d2dd}
+.t.on{border-color:var(--azul);box-shadow:0 0 0 2px rgba(22,136,212,.18)}
+.t b{display:block;font-size:14.5px}
+.t .ex{display:block;font-size:12.5px;color:var(--mu);margin-top:4px;line-height:1.35}
+.t .ex i{font-style:normal;color:var(--tx);font-weight:600}
+.barra{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.seg{display:inline-flex;border:1px solid #c9d2dd;border-radius:9px;overflow:hidden;background:#fff}
+.seg button{font:inherit;font-size:14px;padding:6px 14px;border:0;background:#fff;cursor:pointer;color:var(--tx)}
+.seg button.on{background:var(--marino);color:#fff}
+#mapa{height:min(78vh,820px);min-height:420px;border:1px solid var(--bd);border-radius:12px;background:#dfe6ee}
+.leyenda{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:var(--mu);flex-wrap:wrap}
+.leyenda .esc{flex:0 1 360px;height:12px;border-radius:6px;border:1px solid var(--bd)}
+.leyenda .ln{display:flex;justify-content:space-between;width:min(360px,100%)}
+.dato{display:flex;align-items:center;justify-content:center;min-width:34px;height:22px;padding:0 5px;border-radius:11px;border:1.5px solid rgba(255,255,255,.95);box-shadow:0 1px 4px rgba(0,0,0,.35);font:700 11.5px/1 Inter,system-ui,Arial,sans-serif;white-space:nowrap;gap:2px}
+.dato svg{width:11px;height:11px;flex:none}
+.pop b{font-size:15px}.pop table{border-collapse:collapse;margin-top:6px;font-size:13px}.pop td{padding:1px 10px 1px 0}.pop td:first-child{color:#6B7686}
+.pop a{display:inline-block;margin-top:8px;font-weight:600;color:#1688D4;text-decoration:none}
+.aviso{font-size:13px;color:var(--mu);margin-top:14px}
+footer{margin-top:30px;background:var(--noche);color:#9fb0c8;font-size:13px;padding:22px 0}
+footer .w{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer img{height:26px;width:auto;filter:brightness(0) invert(1);opacity:.8;margin-right:12px;vertical-align:middle}
+footer a{color:#9fb0c8}
+@media (max-width:600px){header{padding:16px 0}header .logo img{height:30px}header nav{width:100%;gap:18px;overflow-x:auto;font-size:14px}header nav a{white-space:nowrap}
+  .tarjetas{display:flex;overflow-x:auto;gap:10px;margin-right:-16px;padding-bottom:4px}.t{flex:0 0 160px}}
+</style>
+</head>
+<body>
+<header><div class="w">
+ <a href="index.html" class="logo"><img src="img/logo_blanco.svg" alt="METOTEC"></a>
+ <nav><a href="index.html#datos">Datos</a><a href="mapas.html" class="on">Mapas</a><a href="index.html#productos">Productos</a><a href="qc.html">Control de calidad</a><a href="acerca.html">Acerca</a></nav>
+</div></header>
+<div class="rule"></div>
+<main class="w">
+ <h1>Mapas de la red de estaciones automáticas</h1>
+ <div class="mu" id="sub">Cargando datos…</div>
+ <div class="tarjetas" id="tarjetas"></div>
+ <div class="barra"><span class="seg" id="sub1" hidden></span><span class="seg" id="zonas"><button data-z="cont" class="on">Chile continental</button><button data-z="pascua">Rapa Nui</button><button data-z="ant">Antártica</button></span><span class="mu" id="nota"></span></div>
+ <div id="mapa"></div>
+ <div class="leyenda"><div><div class="esc" id="esc"></div><div class="ln" id="ln"></div></div><span id="un"></span></div>
+ <p class="aviso">Datos automáticos sin revisión: pueden incluir valores erróneos. Se omiten valores fuera de rango físico. Al alejar el mapa se muestran solo algunas estaciones para que no se encimen; acérquese para ver las demás. Las extremas son de las últimas 24 h; la lluvia de 72 h es aproximada (suma de tres valores de 24 h). Toque una estación para ver sus datos y abrir su ficha. Información de apoyo, no oficial.</p>
+</main>
+<footer><div class="w"><div><img src="img/isotipo.svg" alt="">© 2026 O. Álvarez B. · Herramientas educativas y de apoyo, no oficiales.</div><a href="index.html">Portada</a></div></footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+// Escalas: paradas [valor, color]; se interpola entre ellas.
+const ESC = {
+  temp: [[-10,"#5b3b9a"],[0,"#2a6fc4"],[8,"#3fb0d8"],[14,"#6cc56a"],[20,"#f2e24a"],[26,"#f29a2e"],[32,"#d9412b"],[40,"#7a1020"]],
+  prec: [[0,"#e9eef5"],[0.2,"#bfe0f5"],[2,"#6fb7ea"],[10,"#2a7fd0"],[30,"#4a3fc4"],[80,"#8a2bb5"],[150,"#c0185e"]],
+  vien: [[0,"#e9eef5"],[5,"#b9e3c4"],[10,"#6cc56a"],[20,"#f2e24a"],[30,"#f29a2e"],[45,"#d9412b"],[60,"#7a1020"]],
+  hum:  [[0,"#c8791f"],[30,"#e6c06a"],[50,"#e9eef5"],[70,"#9ccbe8"],[90,"#2a7fd0"],[100,"#1b3f94"]],
+  pres: [[995,"#5b3b9a"],[1005,"#2a6fc4"],[1012,"#e9eef5"],[1018,"#f2c46a"],[1028,"#d9412b"]]
+};
+// Cada tarjeta: variable (o función), decimales, unidad, escala y opciones del selector secundario.
+const VARS = {
+  temp: {nom: "Temperatura", tit: "Temperatura actual", u: "°C", e: "temp", d: 1, v: s => s.T},
+  tx:   {nom: "Máxima", tit: "Temperatura máxima (últimas 24 h)", u: "°C", e: "temp", d: 1, v: s => s.Tx24},
+  tn:   {nom: "Mínima", tit: "Temperatura mínima (últimas 24 h)", u: "°C", e: "temp", d: 1, v: s => s.Tn24},
+  prec: {nom: "Precipitación", tit: "Precipitación acumulada", u: "mm", e: "prec", d: 1, sub: [["rr1h", "1 h"], ["rr24", "24 h"], ["rr72", "72 h"]], v: (s, o) => s[o]},
+  vien: {nom: "Viento", tit: "Viento (10 min)", u: "kt", e: "vien", d: 0, sub: [["ff10", "Medio"], ["fx10", "Racha"]], v: (s, o) => s[o], flecha: true},
+  hum:  {nom: "Humedad", tit: "Humedad relativa", u: "%", e: "hum", d: 0, v: s => s.HR},
+  pres: {nom: "Presión", tit: "Presión a nivel del mar (QFF)", u: "hPa", e: "pres", d: 1, v: s => s.P_mar}
+};
+// Valores fuera de estos rangos físicos se omiten (los datos no están revisados)
+const RANGO = {T: [-60, 50], Td: [-70, 40], Tx24: [-60, 50], Tn24: [-60, 50], HR: [1, 100], P_mar: [930, 1070], ff10: [0, 120], fx10: [0, 150], rr1h: [0, 200], rr24: [0, 600], rr72: [0, 1500]};
+function limpiar(s){ const o = {...s}; for (const k in RANGO){ const v = o[k]; if (v != null && (v < RANGO[k][0] || v > RANGO[k][1])) o[k] = null; } return o; }
+const ZONAS = {cont: [[-56, -76], [-17, -66]], pascua: [[-27.4, -109.6], [-26.9, -109.1]], ant: [[-70, -80], [-60, -50]]};
+let datos = null, cat = {}, cur = "temp", marcas = [], opc = {prec: "rr24", vien: "ff10"}, map, capa;
+
+function hex(c){ return [1, 3, 5].map(i => parseInt(c.substr(i, 2), 16)); }
+function color(esc, v){
+  const P = ESC[esc]; if (v <= P[0][0]) return hex(P[0][1]); if (v >= P[P.length - 1][0]) return hex(P[P.length - 1][1]);
+  for (let i = 1; i < P.length; i++) if (v <= P[i][0]){ const a = P[i - 1], b = P[i], f = (v - a[0]) / (b[0] - a[0]), A = hex(a[1]), B = hex(b[1]); return A.map((x, k) => Math.round(x + (B[k] - x) * f)); }
+}
+const css = c => "rgb(" + c.join(",") + ")";
+const oscuro = c => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) < 150;
+const fmt = (v, d) => v == null ? "—" : v.toFixed(d).replace(".", ",");
+function valor(k, s){ const V = VARS[k]; return V.v(s, opc[k]); }
+
+function tarjetas(){
+  $("tarjetas").innerHTML = Object.keys(VARS).map(k => {
+    const V = VARS[k], lista = Object.entries(datos.estaciones).map(([c, s]) => [c, valor(k, s)]).filter(x => x[1] != null && cat[x[0]]);
+    let ex = "Sin datos";
+    if (lista.length){
+      const mx = lista.reduce((a, b) => b[1] > a[1] ? b : a), mn = lista.reduce((a, b) => b[1] < a[1] ? b : a);
+      ex = k === "prec" && mx[1] <= 0 ? "Sin lluvia en la red" : `Mayor <i>${fmt(mx[1], V.d)} ${V.u}</i> · ${cat[mx[0]].nombre}` + (k === "prec" ? "" : `<br>Menor <i>${fmt(mn[1], V.d)} ${V.u}</i> · ${cat[mn[0]].nombre}`);
+    }
+    return `<button class="t${k === cur ? " on" : ""}" data-k="${k}"><b>${V.nom}</b><span class="ex">${ex}</span></button>`;
+  }).join("");
+  document.querySelectorAll(".t").forEach(b => b.onclick = () => { cur = b.dataset.k; dibujar(); });
+}
+
+function leyenda(V){
+  const P = ESC[V.e], a = P[0][0], b = P[P.length - 1][0];
+  $("esc").style.background = "linear-gradient(90deg," + P.map(p => css(hex(p[1])) + " " + ((p[0] - a) / (b - a) * 100).toFixed(1) + "%").join(",") + ")";
+  $("ln").innerHTML = `<span>${a}</span><span>${b}${V.e === "prec" || V.e === "vien" ? "+" : ""}</span>`; $("un").textContent = V.u;
+}
+
+const FLECHA = '<svg viewBox="0 0 10 10"><path d="M5 0.5 L8.5 9 L5 7 L1.5 9 Z" fill="currentColor"/></svg>';
+function dibujar(){
+  const V = VARS[cur];
+  $("sub1").hidden = !V.sub; $("nota").textContent = V.tit;
+  if (V.sub){ $("sub1").innerHTML = V.sub.map(([k, n]) => `<button data-o="${k}" class="${opc[cur] === k ? "on" : ""}">${n}</button>`).join(""); $("sub1").querySelectorAll("button").forEach(b => b.onclick = () => { opc[cur] = b.dataset.o; dibujar(); }); }
+  tarjetas(); leyenda(V);
+  if (capa) capa.remove(); capa = L.layerGroup().addTo(map); marcas = [];
+  for (const [cod, s] of Object.entries(datos.estaciones)){
+    const e = cat[cod]; if (!e) continue;
+    const v = valor(cur, s); if (v == null) continue;
+    const c = color(V.e, v), tx = oscuro(c) ? "#fff" : "#16202E";
+    const fl = V.flecha && s.dd10 > 0 ? `<span style="display:inline-block;transform:rotate(${(s.dd10 + 180) % 360}deg);line-height:0">${FLECHA}</span>` : "";
+    const vacio = V.e === "prec" && v <= 0;      // sin lluvia: solo un punto
+    const ic = vacio ? L.divIcon({className: "", iconSize: [10, 10], iconAnchor: [5, 5], html: `<div style="width:10px;height:10px;border-radius:50%;background:#cfd8e3;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>`})
+      : L.divIcon({className: "", iconSize: [40, 22], iconAnchor: [20, 11], html: `<div class="dato" style="background:${css(c)};color:${tx}">${fmt(v, V.d)}${fl}</div>`});
+    const f = (x, d, u) => x == null ? "—" : fmt(x, d) + " " + u;
+    const mk = L.marker([e.lat, e.lon], {icon: ic}); mk._ancho = vacio ? 10 : 40; mk._prio = (e.omm ? 1e6 : 0) + (vacio ? 0 : Math.abs(v)); marcas.push(mk);
+    mk.bindPopup(`<div class="pop"><b>${e.nombre}</b><div class="mu">${cod}${e.oaci ? " · " + e.oaci : ""} · ${Math.round(e.alt)} m · ${s.hora.replace("T", " ").replace("Z", " UTC")}</div>
+      <table><tr><td>Temperatura</td><td>${f(s.T, 1, "°C")}</td></tr><tr><td>Máx / mín 24 h</td><td>${f(s.Tx24, 1, "°C")} / ${f(s.Tn24, 1, "°C")}</td></tr><tr><td>Humedad</td><td>${f(s.HR, 0, "%")}</td></tr>
+      <tr><td>Presión (QFF)</td><td>${f(s.P_mar, 1, "hPa")}</td></tr><tr><td>Viento / racha</td><td>${f(s.ff10, 0, "kt")}${s.dd10 > 0 ? " · " + Math.round(s.dd10) + "°" : ""} / ${f(s.fx10, 0, "kt")}</td></tr>
+      <tr><td>Lluvia 1 h · 24 h · 72 h</td><td>${f(s.rr1h, 1, "")} · ${f(s.rr24, 1, "")} · ${f(s.rr72, 1, "")} mm</td></tr></table><a href="estacion.html?cod=${cod}">Ver ficha de la estación →</a></div>`, {maxWidth: 340});
+  }
+  ordenar();
+}
+// Evita que se encimen los datos: al alejar el mapa se muestran primero las estaciones OMM y los valores más altos.
+function ordenar(){
+  if (!capa) return; marcas.sort((a, b) => b._prio - a._prio);
+  const usados = [];
+  for (const m of marcas){
+    const p = map.latLngToContainerPoint(m.getLatLng()), w = m._ancho / 2 + 2, h = 13;
+    const choca = usados.some(q => Math.abs(q[0] - p.x) < q[2] + w && Math.abs(q[1] - p.y) < q[3] + h);
+    if (!choca){ usados.push([p.x, p.y, w, h]); if (!capa.hasLayer(m)) capa.addLayer(m); } else if (capa.hasLayer(m)) capa.removeLayer(m);
+  }
+}
+
+(async function(){
+  map = L.map("mapa", {zoomControl: true, minZoom: 3}).setView([-35.5, -71.5], 5);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {maxZoom: 12, attribution: "© OpenStreetMap · © CARTO"}).addTo(map);
+  try {
+    const [c, d] = await Promise.all([fetch("/api/minutarios?estaciones").then(r => r.json()), fetch("/api/mapa").then(r => { if (!r.ok) throw 0; return r.json(); })]);
+    c.forEach(e => cat[e.codigo] = e); datos = d; for (const k in d.estaciones) d.estaciones[k] = limpiar(d.estaciones[k]);
+    const n = Object.keys(d.estaciones).filter(k => cat[k]).length;
+    $("sub").textContent = `${n} estaciones · datos hasta ${d.hasta.replace("T", " ").replace("Z", " UTC")}`;
+    map.on("zoomend moveend", ordenar);
+    document.querySelectorAll("#zonas button").forEach(b => b.onclick = () => { document.querySelectorAll("#zonas button").forEach(x => x.classList.toggle("on", x === b)); map.fitBounds(ZONAS[b.dataset.z], {padding: [10, 10]}); });
+    map.fitBounds(ZONAS.cont, {padding: [10, 10], animate: false});
+    dibujar();
+  } catch (e){ $("sub").textContent = "No se pudieron cargar los datos de las estaciones. Intente de nuevo en unos minutos."; $("sub").className = "err"; }
+})();
+</script>
+</body>
+</html>
