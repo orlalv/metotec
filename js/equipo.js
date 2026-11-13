@@ -1,7 +1,7 @@
 /* Etapa 3 · Equipo: perfiles (hasta 8, con la clave general), «Mis estaciones», «Mis alertas» y completitud de observaciones.
    - Perfil elegido arriba (lista con los nombres + «Todos»); se guarda en este navegador. Cualquiera entra a la vista de
      cualquiera (cubre ausencias). Las marcas (Resuelto, Falsa alarma, Informar) quedan con el nombre elegido.
-   - La evaluación de reglas es la misma de qc/mis_alertas.py (que además avisa por Telegram / correo): cambiar ambas juntas. */
+   - La evaluación de reglas está en js/alertas_core.js, el mismo módulo que usa el Worker de cron (worker/), que además avisa por Telegram / correo. */
 (function(){
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
@@ -55,32 +55,14 @@ function selector(){
 // filtro de las listas (EMA y Observaciones): con un perfil elegido que tiene estaciones y «Mis estaciones» activo
 function filtra(cod){ const p = per(yo()); return !p || !soloMias() || !(p.estaciones || []).length || p.estaciones.includes(String(cod)); }
 
-// --------------------------------------------------------------- evaluación (igual que qc/mis_alertas.py)
-const rangos = t => String(t || "").replace(/\s/g, "").split(",").filter(Boolean).map(p => { const [a, b] = p.split("-"); return [+a, +(b ?? a)]; }).filter(x => !isNaN(x[0]) && !isNaN(x[1]));
-function cumple(x, op, v){
-  if (x == null || typeof x === "string") return false;
-  if (op === "en") return rangos(v).some(([a, b]) => x >= a && x <= b);
-  const y = parseFloat(v); if (isNaN(y)) return false;
-  return {">": x > y, ">=": x >= y, "<": x < y, "<=": x <= y, "=": x === y}[op] || false;
-}
-function donde(r, e, mias){
-  const d = r.donde || "todas";
-  if (d === "mias") return mias.has(e.codigo); if (d === "cods") return (r.cods || []).includes(e.codigo);
-  const [lo, hi] = ZONAS[d] || ZONAS.todas; return e.lat != null && e.lat >= lo && e.lat < hi;
-}
+// --------------------------------------------------------------- evaluación (módulo común js/alertas_core.js)
+let CORE = null;
+import("/js/alertas_core.js?v=202611131400").then(m => { CORE = m; contador(); }).catch(() => {});
 function evaluar(p, R){
-  if (!R) return []; const mias = new Set(p.estaciones || []), out = [];
-  (p.alertas || []).filter(r => r.activa !== false).forEach(r => {
-    const L = r.fuente === "obs" ? ((R.observaciones || {}).estaciones || []) : (R.estaciones || []);
-    L.forEach(e => { if (!donde(r, e, mias)) return; let ok, x = null, h;
-      if (r.fuente !== "obs"){ if (r.op === "sin"){ ok = e.nivel === 3; h = R.datos_hasta; } else { x = (e.valores || {})[r.var]; h = e.hora || R.datos_hasta; ok = cumple(x, r.op, r.valor); } }
-      else { const u = (e.ult || []).slice(-1)[0] || {};
-        if (r.op === "sin"){ const t = e.ultima ? Date.parse(String(e.ultima).slice(0, 19).replace(" ", "T") + "Z") : NaN; ok = isNaN(t) || Date.now() - t > 2 * 3600e3; h = e.ultima; }
-        else { x = u[r.var]; h = u.h; ok = cumple(x, r.op, r.valor); } }
-      if (ok) out.push({persona: p.nombre, regla: r, codigo: e.codigo, nombre: e.nombre, x, hora: String(h || "").slice(0, 16).replace("T", " ")});
-    });
-  });
-  return out;
+  if (!R || !CORE) return [];
+  const fresco = R.ema_rapido && Date.now() - Date.parse(R.ema_rapido.generado) < 20 * 60e3;      // si el Worker se detuvo, vale la última pasada de qc.yml
+  const ema = fresco ? R.ema_rapido : {estaciones: R.estaciones || [], datos_hasta: R.datos_hasta};      // el Worker deja un dato EMA cada ~5 min
+  return CORE.evaluar(p, ema, R.observaciones).map(h => ({persona: p.nombre, regla: h.r, codigo: h.codigo, nombre: h.nombre, x: h.x, hora: h.hora.replace("T", " ")}));
 }
 function activas(){ const R = R0(); const P = yo() ? [per(yo())].filter(Boolean) : EQP.personas; return P.flatMap(p => evaluar(p, R)); }
 let cargando = false;
@@ -135,7 +117,7 @@ function pagMis(){
     <button class="mk" id="mGuardar">${r.id ? "Guardar cambios" : "+ Agregar alerta"}</button>${r.id ? `<button class="mk" id="mCancelar">Cancelar</button>` : ""}</div>`;
   const ed = S._ed || {fuente: "ema", donde: "mias", op: ">"};
   S.innerHTML = `<h2 style="margin:0 0 4px;font:600 20px var(--titulo)">Mis alertas ${p ? `· ${esc(p.nombre)}` : "· todo el equipo"}</h2>
-   <p class="nota" style="color:var(--mu);font-size:13px;margin:0 0 12px">Reglas propias sobre la última pasada (EMA cada 30 min y observaciones). Se avisa por Telegram o correo solo cuando la condición aparece (no se repite mientras sigue) y no a quien está marcado ausente.</p>
+   <p class="nota" style="color:var(--mu);font-size:13px;margin:0 0 12px">Reglas propias sobre el último dato de las estaciones automáticas (cada ~5 min) y las observaciones. Se avisa por Telegram o correo solo cuando la condición aparece (no se repite mientras sigue) y no a quien está marcado ausente.</p>
    <h4>Activas ahora (${A.length})</h4>
    ${A.length ? `<table class="xtab"><tr>${p ? "" : "<th>Persona</th>"}<th>Alerta</th><th>Estación</th><th>Valor</th><th>Hora UTC</th></tr>${A.map(a => `<tr>${p ? "" : `<td>${esc(a.persona)}</td>`}<td><b>${esc(a.regla.nombre || "")}</b><br><small>${reglaTxt(a.regla)}</small></td><td>${esc(a.nombre)} <small>${a.codigo}</small></td><td class="n">${a.regla.op === "sin" ? "sin dato" : esc(a.x)}</td><td class="n">${esc(a.hora)}</td></tr>`).join("")}</table>` : `<p style="color:var(--ok)">Ninguna alerta propia se cumple ahora.</p>`}
    ${p ? `<h4 style="margin-top:18px">Mis reglas</h4>

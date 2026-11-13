@@ -1,0 +1,13 @@
+# Worker de «Mis alertas» (cron cada 5 minutos). Se publica con .github/workflows/worker.yml.
+# Necesita el plan Workers Paid: el JSON de la red EMA supera los 10 ms de CPU del plan gratis.
+name = "metotec-alertas"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[[kv_namespaces]]
+binding = "DATOS"
+id = "0d6aa4b37a834b5983ac9c7f638e2dbb"

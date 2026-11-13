@@ -15,7 +15,6 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
-import mis_alertas as MIS
 import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC, boletin as BOL
 
 VERSION = "0.1"
@@ -410,12 +409,6 @@ def main():
     Path(a.salida).write_text(txt, encoding="utf-8")
     estado["kv"] = subir_kv("qc/ultimo", txt)
     estado["alertas"] = len(alertas)
-    if not a.json:   # Etapa 3 · «Mis alertas»: reglas de cada persona y aviso por Telegram / correo
-        try:
-            obs_ult = json.loads(Path("qc_sensorial.json").read_text(encoding="utf-8")) if Path("qc_sensorial.json").exists() else leer_kv("qc/sensorial")
-            estado["mis_alertas"] = MIS.avisar(leer_kv("qc/equipo"), res, obs_ult, a.datos)
-        except Exception:
-            estado["errores"].append(f"mis_alertas: {traceback.format_exc(limit=2)}")
     estado["resumen"] = res["resumen"]
     estado["fin"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
     (Path(a.datos) / "estado.json").write_text(json.dumps(estado, ensure_ascii=False, indent=1), encoding="utf-8")

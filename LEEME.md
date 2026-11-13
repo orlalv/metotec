@@ -47,3 +47,12 @@
 - **Datos personales:** se guardan nombre, curso, respuestas, notas y tiempos. Avise a los alumnos que sus resultados quedan registrados para el docente.
 - **Borrar resultados:** desde el panel, botón «Ver» → «Borrar».
 - El plan gratuito de Netlify alcanza de sobra para un curso: cada resultado pesa pocos kilobytes.
+
+## Worker de «Mis alertas» (worker/)
+Cron de Cloudflare cada 5 minutos: lee la red EMA de la DMC, evalúa las reglas de cada persona (KV `qc/equipo`) y avisa por Telegram / correo solo lo que aparece.
+- Reglas: `js/alertas_core.js` (un solo módulo; lo usan el Worker y la página `js/equipo.js`).
+- Estado: KV `qc/avisos_enviados` (qué ya se avisó). Si el envío falla, se reintenta en la pasada siguiente. Si la DMC no responde, no se dan por terminadas las alertas de EMA.
+- Deja el último dato de cada estación en KV `qc/ema_rapido`; `/api/qc` lo entrega y la página lo usa si tiene menos de 20 min (si no, usa la pasada de qc.yml).
+- Publicación: `.github/workflows/worker.yml` (pruebas `node --test worker/test/alertas.test.mjs`, `wrangler deploy` y copia de secretos DMC_USUARIO, DMC_TOKEN, TELEGRAM_TOKEN, RESEND_API_KEY, RESEND_FROM).
+- Requisitos: plan **Workers Paid** (el plan gratis da 10 ms de CPU por cron) y que `CLOUDFLARE_API_TOKEN` tenga el permiso «Workers Scripts: Edit».
+- Ver el resultado de cada pasada: Cloudflare → Workers → metotec-alertas → Logs.
