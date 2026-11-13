@@ -25,9 +25,9 @@ const N = {
   ZT01: "Super: salto de Ts", ZT02: "Super: salto de Td", ZT03: "Super: salto de HR", ZT04: "Super: Td mayor que Ts", ZT05: "Super: HR no calza con Ts y Td",
   ZT06: "Super: Ts pegada", ZT07: "Super: Td pegado", ZT08: "Super: HR pegada", ZT09: "Super: Ts fuera de lo habitual",
   ZP01: "Super: salto de QFE", ZP02: "Super: QFE pegado", ZP03: "Super: QFE lejos de lo esperado", ZP04: "Super: QFE cambia mucho en 3 h", ZP05: "Super: QFF no calza con QFE",
-  ZV01: "Super: salto del viento", ZV02: "Super: viento pegado", ZV03: "Super: dirección pegada", ZV04: "Super: dirección 0° con viento", ZV05: "Super: dirección inválida", ZV06: "Super: racha menor que el viento",
+  ZV01: "Super: cambio fuerte del viento en 10 min", ZV02: "Super: viento pegado", ZV03: "Super: dirección pegada", ZV05: "Super: dirección inválida", ZV06: "Super: racha menor que el viento",
   ZR01: "Super: lluvia con aire seco", ZR02: "Super: lluvia con Ts−Td alto", ZR03: "Super: lluvia excesiva por minuto", ZR04: "Super: pluviómetro pegado", ZR05: "Super: RR6 no calza con los minutos",
-  ZE01: "Super: extrema imposible", ZE02: "Super: extrema no recoge el mínimo/máximo", ZE03: "Super: Tn12 mayor que Tx12",
+  ZE01: "Super: extrema imposible", ZE03: "Super: Tn12 mayor que Tx12",
   SEXT: "Extrema: valor", SEXH: "Extrema: hora", SEXF: "Extrema fuera de bloque sin ingresar", SRRR6: "RRR6 frente al pluviómetro",
   SPRE: "Pluviómetro y tiempo presente", SinDato: "Sin dato", St: "Satélite: nubosidad", Sc: "Satélite: nubes", SD: "Satélite"
 };
@@ -47,7 +47,7 @@ const pestana = c => PESTANA[c] || (/^Z[TPVRE]\d\d$/.test(c) ? "super" : "obs");
    Lo que se vea aquí debe coincidir con lo que dicen las pruebas fijas (qc/casos.py). */
 const CAMBIOS = [
   ["2026-11-13", "Resuelto", "«Resuelto» ya no devuelve la alerta si en la pasada siguiente el dato sigue igual (observaciones y Super automático); solo vuelve si el mensaje o el valor cambian.", "El servicio de observaciones no refleja las correcciones hechas en SACLIM, así que la etiqueta «el dato sigue igual» era una falsa alarma permanente."],
-  ["2026-11-13", "ZT01–ZT09, ZP01–ZP05, ZV01–ZV06, ZR01–ZR05, ZE01–ZE03", "Nuevo grupo «Super automático»: estaciones automáticas sin observador con umbrales cerca de la mitad de la pasada normal (salto de Ts 2,5 °C, de QFE 0,8 hPa, extremas 0,3 °C, pegados 2 h, etc.).", "Detectar con más rigor fallas de sensor; puede dar más falsas alarmas, que se registran con ✗."],
+  ["2026-11-13", "ZT01–ZT09, ZP01–ZP05, ZV01–ZV06, ZR01–ZR05, ZE01, ZE03", "Nuevo grupo «Super automático»: estaciones automáticas sin observador con umbrales cerca de la mitad de la pasada normal (salto de Ts 2,5 °C, de QFE 0,8 hPa, pegados 2 h, etc.).", "Detectar con más rigor fallas de sensor; puede dar más falsas alarmas, que se registran con ✗."],
   ["2026-11-13", "SEXH", "Si el valor de la extrema se repite en varias horas del minutario (un solo decimal) y no hay hora oficial del resumen diario, no se avisa por la hora: no se puede saber cuál es la que da el portal. El aviso por el valor (SEXT) se mantiene y lista las horas empatadas.", "El minutario no permite desempatar como lo hace el portal."],
   ["2026-11-13", "E10, E11", "El tiempo pasado (W1 W2) mira solo las horas anteriores a la observación y no cuenta el ww ni el METAR de la propia hora (tiempo presente). Principales (00, 06, 12, 18 UTC): 6 h; intermedias (03, 09, 15, 21 UTC): 3 h. E11 sí acepta el tiempo presente como respaldo de un W1 de precipitación. El mensaje de E10 indica también W2. Los avisos E10 y E11 guardados con la regla anterior se borraron del historial.", "Un ww 50 de las 09 UTC se usaba como «tiempo pasado» de la observación de las 09 UTC."],
   ["2026-11-13", "SEXF", "Solo avisa si la Tmax AM / Tmin PM del día no se ingresó en su bloque (AM 00–12 UTC, PM 12–00 UTC); se busca en todas las observaciones del bloque. El texto dice «se dio una máxima AM (valor, hora) y no se ingresó».", "Pudahuel 10/11 00:00: avisaba que faltaba la Tmax AM aunque el observador ya la había reportado."],

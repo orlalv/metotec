@@ -17,8 +17,8 @@ SALTO_T = (2.5, 4.5)       # °C entre minutos consecutivos (≤ 10 min); la pas
 SALTO_TD = (3.0, 6.0)
 SALTO_HR = (15, 30)        # la normal: 25 / 45
 SALTO_P = (0.8, 1.5)       # hPa; la normal: 1.5 / 3
-SALTO_FF = (2.5, 5.0)      # el viento medio de 10 min no puede cambiar tanto de un minuto a otro
-TOL_EXT = 0.3              # °C: la normal acepta 1.5 °C
+SALTO_FF10 = (10, 20)      # kt: cambio del viento medio entre dos ventanas de 10 min seguidas (no entre minutos: un minuto casi no mueve un promedio de 10)
+TOL_EXT = (1.0, 1.5)      # °C (sospechoso, erróneo): la extrema sale de muestras de segundos y puede pasar ~1 °C al valor por minuto; la normal acepta 1.5
 TOL_HR = (6, 12)           # % entre HR informada y la calculada con Ts y Td
 TOL_QFF = (3.0, 6.0)       # hPa entre QFF informado y el reducido desde QFE
 PEGADO_H = {"T": 2, "Td": 2, "P_est": 2, "HR": 6}      # horas sin cambio (la normal: 3, 3, 3, 10)
@@ -133,8 +133,12 @@ def _estacion(g, m):
 
     # ---------------- viento
     if "ff10" in g24:
-        x = _salto(g24, "ff10", SALTO_FF, "ZV01", "vie", "Viento medio 10 min", "")
-        if x: out.append(x)
+        sf = g24.set_index("momento")["ff10"]
+        d = (sf - sf.shift(10, freq="min").reindex(sf.index)).dropna()
+        if len(d) and d.abs().max() > SALTO_FF10[0]:
+            t = d.abs().idxmax()
+            out.append(_h(None, "ZV01", 2 if abs(d[t]) > SALTO_FF10[1] else 1, "vie", t,
+                          f"Viento medio de 10 min: de {sf[t] - d[t]:.1f} a {sf[t]:.1f} kt en 10 min (cambio de {abs(d[t]):.1f} kt)"))
         x = _pegado(g, "ff10", 3, "ZV02", "vie", "Viento medio 10 min", lambda s: s.iloc[-1] > 1)
         if x: out.append(x)
         if "dd10" in g:
@@ -143,10 +147,6 @@ def _estacion(g, m):
                 s, f = W["dd10"].dropna(), W["ff10"].dropna()
                 if len(s) >= 6 and s.max() == s.min() and len(f) and f.min() > 2:
                     out.append(_h(None, "ZV03", 2, "vie", fin, f"Dirección {s.iloc[-1]:.0f}° sin cambio durante 3 h con viento sobre {f.min():.0f}"))
-            mal = g24[(g24["dd10"] == 0) & (g24["ff10"] > 1)]
-            if len(mal):
-                i = mal.index[-1]
-                out.append(_h(None, "ZV04", 1, "vie", mal.at[i, "momento"], f"Dirección 0° con viento {mal.at[i, 'ff10']:.1f} (el norte se informa como 360°; {len(mal)} minutos)"))
             mal = g24[(g24["dd10"] > 360) | (g24["dd10"] < 0)]
             if len(mal):
                 i = mal.index[-1]
@@ -191,7 +191,7 @@ def _estacion(g, m):
                     out.append(_h(None, "ZR05", 1, "pp", t, f"Agua caída 6 h {r['rr6']:.1f} mm y la suma de los minutos da {suma:.1f} mm"))
                     break
 
-    # ---------------- extremas del sensor (Tn12, Tx12) frente a la temperatura por minuto
+    # ---------------- extremas del sensor (Tn12, Tx12) frente a la temperatura por minuto de las 24 h previas
     if "Tn12" in g and (g["momento"].max() - g["momento"].min()) >= pd.Timedelta(hours=24):
         u = g.dropna(subset=["T"])
         for var, mn in (("Tn12", True), ("Tx12", False)):
@@ -200,15 +200,15 @@ def _estacion(g, m):
                 continue
             t = g.at[x.index[-1], "momento"]
             val = float(x.iloc[-1])
-            W = u[(u["momento"] > t - pd.Timedelta(hours=12)) & (u["momento"] <= t)]
-            if len(W) < 600:
+            W = u[(u["momento"] > t - pd.Timedelta(hours=24)) & (u["momento"] <= t)]
+            if len(W) < 1200:
                 continue
             ref = float(W["T"].min() if mn else W["T"].max())
-            nom = "Tmín" if mn else "Tmáx"
-            if (mn and val < ref - TOL_EXT) or (not mn and val > ref + TOL_EXT):
-                out.append(_h(None, "ZE01", 2, "ext", t, f"{var} {val:.1f} °C pero la temperatura por minuto de las 12 h previas solo {'bajó' if mn else 'subió'} a {ref:.1f} °C (extrema imposible, diferencia {abs(val - ref):.1f} °C)"))
-            elif (mn and val > ref + TOL_EXT) or (not mn and val < ref - TOL_EXT):
-                out.append(_h(None, "ZE02", 1, "ext", t, f"{var} {val:.1f} °C no recoge el {nom.lower()} por minuto de las 12 h previas ({ref:.1f} °C, diferencia {abs(val - ref):.1f} °C)"))
+            dif = (ref - val) if mn else (val - ref)       # cuánto pasa la extrema del sensor al valor por minuto más extremo
+            if dif > TOL_EXT[0]:
+                out.append(_h(None, "ZE01", 2 if dif > TOL_EXT[1] else 1, "ext", t,
+                              f"{var} {val:.1f} °C: en las últimas 24 h el {'mínimo' if mn else 'máximo'} de la temperatura por minuto fue {ref:.1f} °C. "
+                              f"La extrema {'baja' if mn else 'sube'} {dif:.1f} °C más que cualquier minuto, y no debería pasar de ~1 °C."))
         a, b = g["Tn12"].dropna(), g["Tx12"].dropna()
         if len(a) and len(b) and a.iloc[-1] > b.iloc[-1] + 0.05:
             out.append(_h(None, "ZE03", 2, "ext", g["momento"].max(), f"Tn12 {a.iloc[-1]:.1f} mayor que Tx12 {b.iloc[-1]:.1f} °C"))
