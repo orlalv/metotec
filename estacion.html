@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ficha de estación · METOTEC</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<style>
+:root{--noche:#0A1F44;--marino:#082B5C;--azul:#1688D4;--oro:#C9A54C;--fondo:#F5F6F8;--tx:#16202E;--mu:#6B7686;--bd:#E3E7EC}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tx);font:16px/1.5 Inter,system-ui,"Segoe UI",Roboto,Arial,sans-serif}
+.w{max-width:1280px;margin:0 auto;padding:0 clamp(16px,4vw,56px)}
+header{background:radial-gradient(1100px 380px at 85% 0%,#163a73 0%,var(--noche) 62%);color:#fff;padding:22px 0}
+header .w{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+header .logo img{display:block;height:40px;width:auto}
+header nav{display:flex;gap:26px;font-size:14.5px;font-weight:500}
+header nav a{color:#c8d2e2;text-decoration:none;padding-bottom:4px;border-bottom:2px solid transparent}
+header nav a:hover{color:#fff;border-bottom-color:var(--oro)}
+.rule{height:3px;background:linear-gradient(90deg,var(--oro),rgba(201,165,76,0) 70%)}
+main.w{padding-top:28px;padding-bottom:20px}
+h1{margin:0 0 4px;font-size:26px}h2{margin:0 0 12px;font-size:19px}
+.mu{color:var(--mu);font-size:14px}
+.card{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:20px;margin-bottom:18px}
+.buscar{position:relative;max-width:520px}
+.buscar input{width:100%;font:inherit;padding:11px 14px;border:1px solid #c9d2dd;border-radius:10px}
+.lista{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--bd);border-radius:10px;box-shadow:0 10px 24px rgba(10,31,68,.12);max-height:320px;overflow:auto;z-index:5}
+.lista a{display:flex;justify-content:space-between;gap:10px;padding:8px 14px;color:inherit;text-decoration:none;font-size:14.5px;border-bottom:1px solid #f0f2f5}
+.lista a:hover,.lista a.on{background:#eef2f8}.lista i{font-style:normal;color:var(--mu)}
+.meta{display:grid;gap:10px 28px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));margin:12px 0 0}
+.meta div span{display:block;font-size:12px;color:var(--mu);text-transform:uppercase;letter-spacing:.06em}
+.meta div b{font-size:15.5px}
+.vals{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.val{border:1px solid var(--bd);border-radius:10px;padding:12px 14px}
+.val span{display:block;font-size:12.5px;color:var(--mu)}.val b{font-size:23px}.val small{color:var(--mu);font-size:13px;margin-left:3px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.bar button,.bar a.b{font:inherit;font-size:14px;font-weight:600;border:1px solid #c9d2dd;background:#fff;color:var(--tx);border-radius:8px;padding:6px 13px;cursor:pointer;text-decoration:none}
+.bar button.on{background:var(--noche);border-color:var(--noche);color:#fff}
+.bar .sep{flex:1}
+#graf{position:relative}
+#graf svg{width:100%;height:auto;display:block}
+#tip{position:absolute;pointer-events:none;background:rgba(10,31,68,.94);color:#fff;font-size:13px;padding:6px 10px;border-radius:8px;white-space:nowrap;display:none}
+.leyenda{display:flex;gap:16px;flex-wrap:wrap;font-size:13.5px;margin-top:6px}.leyenda i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:6px;vertical-align:middle}
+table{border-collapse:collapse;width:100%;font-size:14.2px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--bd);vertical-align:top}
+th{font-size:12.5px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+td:first-child{font-weight:700;white-space:nowrap}
+.aviso{background:#fff8e6;border:1px solid #ecd9a2;border-radius:10px;padding:10px 14px;font-size:14px;margin-bottom:14px}
+.err{color:#a02a2a}
+footer{margin-top:30px;background:var(--noche);color:#9fb0c8;font-size:13px;padding:20px 0}
+footer a{color:#9fb0c8}
+@media (max-width:600px){header nav{width:100%;gap:18px;overflow-x:auto;font-size:14px}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<header><div class="w">
+ <a href="index.html" class="logo"><img src="img/logo_blanco.svg" alt="METOTEC"></a>
+ <nav><a href="index.html#datos">Datos</a><a href="index.html#productos">Productos</a><a href="index.html#control">Control de calidad</a><a href="index.html#educacion">Educación</a></nav>
+</div></header>
+<div class="rule"></div>
+<main class="w">
+ <div class="card">
+  <h1 id="tit">Ficha de estación</h1>
+  <p class="mu" id="sub" style="margin:0 0 14px">Busque una estación automática por nombre, código, OMM u OACI.</p>
+  <div class="buscar"><input id="q" type="search" placeholder="Ej.: Chacalluta, 180005, SCAR…" autocomplete="off"><div class="lista" id="lista" hidden></div></div>
+  <div class="meta" id="meta"></div>
+ </div>
+
+ <div id="ficha" hidden>
+  <div class="card"><h2>Últimos datos <span class="mu" id="cuando"></span></h2><div class="vals" id="vals"></div><p class="mu" id="nota" style="margin:12px 0 0"></p></div>
+
+  <div class="card">
+   <h2>Gráficos</h2>
+   <div class="bar" id="bvar"></div>
+   <div class="bar" id="brng"><button data-r="24">24 horas</button><button data-r="168">7 días</button><button data-r="720">30 días</button><span class="sep"></span><span class="mu" id="estado"></span></div>
+   <div class="aviso" id="avmuestreo" hidden>En 30 días se muestra una hora de cada 6 (muestreo) para que cargue rápido. Para el detalle use 24 horas o 7 días.</div>
+   <div id="graf"><div id="tip"></div></div>
+   <div class="leyenda" id="ley"></div>
+  </div>
+
+  <div class="card">
+   <h2>Series y descarga</h2>
+   <p class="mu" style="margin:0 0 12px">Descarga los datos del período elegido arriba (24 horas, 7 días o 30 días), tal como los entrega la estación (minuto a minuto; hora UTC; en 30 días, una hora de cada 6). Los datos no han pasado por revisión manual.</p>
+   <div class="bar"><button id="dl">Descargar CSV</button><span class="mu" id="dlinfo"></span></div>
+  </div>
+ </div>
+
+ <div class="card">
+  <h2>Glosario de cada dato</h2>
+  <table>
+   <tr><th>Dato</th><th>Qué es</th><th>Unidad</th></tr>
+   <tr><td>T</td><td>Temperatura del aire (Ts), medida a unos 1,5 m del suelo.</td><td>°C</td></tr>
+   <tr><td>Td</td><td>Temperatura del punto de rocío: temperatura a la que el aire se satura; mientras más cerca de T, más húmedo.</td><td>°C</td></tr>
+   <tr><td>HR</td><td>Humedad relativa del aire.</td><td>%</td></tr>
+   <tr><td>P_est (QFE)</td><td>Presión en la estación, sin reducir al nivel del mar.</td><td>hPa</td></tr>
+   <tr><td>P_mar (QFF)</td><td>Presión reducida al nivel medio del mar.</td><td>hPa</td></tr>
+   <tr><td>P_std (QNH)</td><td>Presión reducida a nivel del mar con atmósfera estándar (la que se usa en aviación).</td><td>hPa</td></tr>
+   <tr><td>ff10 / dd10</td><td>Viento medio de los últimos 10 minutos: rapidez y dirección de donde sopla (0° = sin viento o calma).</td><td>kt · °</td></tr>
+   <tr><td>fx10</td><td>Racha: máximo de viento en los últimos 10 minutos.</td><td>kt</td></tr>
+   <tr><td>ff2 / dd2</td><td>Viento medio de los últimos 2 minutos.</td><td>kt · °</td></tr>
+   <tr><td>rr1m · rr6 · rr24</td><td>Agua caída (lluvia) en el último minuto, en las últimas 6 horas y en las últimas 24 horas.</td><td>mm</td></tr>
+   <tr><td>Rad</td><td>Radiación solar (solo estaciones que la miden).</td><td>W/m²</td></tr>
+   <tr><td>Tn12 / Tx12</td><td>Temperatura mínima y máxima de las últimas 12 horas.</td><td>°C</td></tr>
+  </table>
+  <p class="mu" style="margin:12px 0 0">Un valor vacío significa que la estación no lo midió o no lo envió en ese momento. Las horas son UTC (en Chile continental, restar 3 h en verano y 4 h en invierno).</p>
+ </div>
+</main>
+<footer><div class="w">© 2026 O. Álvarez B. · Datos de estaciones automáticas de la DMC, sin revisión manual; herramienta de apoyo, no oficial. <a href="acerca.html">Acerca</a></div></footer>
+
+<script>
+(function(){
+const $ = id => document.getElementById(id);
+const VARS = {
+  temp: {nom: "Temperatura", u: "°C", s: [["T", "Temperatura", "#E0603E"], ["Td", "Punto de rocío", "#3E9AD6"]]},
+  hr:   {nom: "Humedad", u: "%", s: [["HR", "Humedad relativa", "#3FA878"]]},
+  pres: {nom: "Presión", u: "hPa", s: [["P_mar", "QFF (nivel del mar)", "#8B5CC4"], ["P_est", "QFE (estación)", "#B8A2DB"]]},
+  vien: {nom: "Viento", u: "kt", s: [["ff10", "Medio 10 min", "#3E9AD6"], ["fx10", "Racha", "#E0603E"]]},
+  lluv: {nom: "Lluvia", u: "mm", s: [["rr24", "Acumulada 24 h", "#2D6CB5"], ["rr6", "Acumulada 6 h", "#7DB6E8"]]},
+};
+const DEC = {T: 1, Td: 1, HR: 0, P_est: 1, P_mar: 1, P_std: 1, ff10: 0, fx10: 0, dd10: 0, rr1m: 1, rr6: 1, rr24: 1, Rad: 0, Tn12: 1, Tx12: 1};
+let cat = [], est = null, rango = 24, vsel = "temp", cache = {}, filas = [], cab = [];
+const hh = t => new Date(t).toISOString().slice(0, 13);
+
+fetch("/api/minutarios?estaciones").then(r => r.json()).then(c => { cat = c; init(); }).catch(() => { $("sub").textContent = "No se pudo cargar el catálogo de estaciones."; $("sub").className = "err"; });
+
+function init(){
+  const cod = new URLSearchParams(location.search).get("cod");
+  const e = cat.find(x => x.codigo === cod);
+  if (e) abrir(e);
+  const q = $("q"), lista = $("lista");
+  const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  q.addEventListener("input", () => {
+    const t = norm(q.value.trim()); if (!t){ lista.hidden = true; return; }
+    const r = cat.filter(x => norm([x.nombre, x.codigo, x.omm, x.oaci].join(" ")).includes(t)).slice(0, 40);
+    lista.innerHTML = r.map(x => `<a href="?cod=${x.codigo}" data-c="${x.codigo}"><span>${x.nombre}</span><i>${x.codigo}${x.oaci ? " · " + x.oaci : ""}</i></a>`).join("") || `<a><span>Sin resultados</span></a>`;
+    lista.hidden = false;
+  });
+  q.addEventListener("keydown", ev => { if (ev.key === "Enter"){ const a = lista.querySelector("a[data-c]"); if (a){ ev.preventDefault(); location.search = "?cod=" + a.dataset.c; } } });
+  document.addEventListener("click", ev => { if (!ev.target.closest(".buscar")) lista.hidden = true; });
+}
+
+function abrir(e){
+  est = e; document.title = e.nombre + " · METOTEC";
+  $("tit").textContent = e.nombre; $("sub").textContent = "Estación automática · código " + e.codigo + (e.oaci ? " · " + e.oaci : "");
+  const m = [["Código", e.codigo], ["OMM", e.omm || "—"], ["OACI", e.oaci || "—"], ["Latitud", e.lat.toFixed(4) + "°"], ["Longitud", e.lon.toFixed(4) + "°"], ["Altura", Math.round(e.alt) + " m"], ["Estado", e.status || "—"]];
+  $("meta").innerHTML = m.map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join("");
+  $("ficha").hidden = false;
+  $("bvar").innerHTML = Object.entries(VARS).map(([k, v]) => `<button data-v="${k}">${v.nom}</button>`).join("");
+  $("bvar").onclick = ev => { const b = ev.target.closest("button"); if (b){ vsel = b.dataset.v; marcar(); dibujar(); } };
+  $("brng").onclick = ev => { const b = ev.target.closest("button[data-r]"); if (b){ rango = +b.dataset.r; marcar(); cargar(); } };
+  $("dl").onclick = descargar;
+  marcar(); ultimos(); cargar();
+}
+function marcar(){
+  [...$("bvar").children].forEach(b => b.classList.toggle("on", b.dataset.v === vsel));
+  [...$("brng").querySelectorAll("button")].forEach(b => b.classList.toggle("on", +b.dataset.r === rango));
+  $("avmuestreo").hidden = rango < 720;
+}
+
+// ---- datos: trozos de hasta 48·paso horas contra /api/minutarios
+async function traer(horas, paso){
+  const fin = Math.floor(Date.now() / 3600e3) * 3600e3, ini = fin - horas * 3600e3, tr = 48 * paso * 3600e3;
+  const urls = []; for (let t = ini; t <= fin; t += tr) urls.push(`/api/minutarios?cod=${est.codigo}&desde=${hh(t)}&hasta=${hh(Math.min(t + tr - 3600e3 * paso, fin))}&paso=${paso}`);
+  const rs = await Promise.all(urls.map(u => fetch(u).then(r => r.json())));
+  let c = null, f = new Set(); rs.forEach(r => { if (r.cab) c = c || r.cab.split(","); (r.filas || []).forEach(x => f.add(x)); });
+  return {cab: c || [], filas: [...f].sort().map(x => x.split(","))};
+}
+const num = v => v === "" || v == null || isNaN(+v) ? null : +v;
+function colv(f, c){ const i = cab.indexOf(c); return i < 0 ? null : num(f[i]); }
+const tms = f => Date.parse(f[cab.indexOf("momento")].replace(" ", "T") + "Z");
+
+async function ultimos(){
+  $("vals").innerHTML = '<span class="mu">Cargando…</span>';
+  try {
+    const d = await traer(6, 1); cab = d.cab.length ? d.cab : cab;
+    const f = d.filas[d.filas.length - 1];
+    if (!f){ $("vals").innerHTML = '<span class="mu">Sin datos en las últimas 6 horas.</span>'; return; }
+    const t = tms(f), ed = Math.round((Date.now() - t) / 60000);
+    $("cuando").textContent = "· " + new Date(t).toISOString().slice(0, 16).replace("T", " ") + " UTC (hace " + (ed < 90 ? ed + " min" : Math.round(ed / 60) + " h") + ")";
+    const it = [["T", "Temperatura", "°C"], ["Td", "Punto de rocío", "°C"], ["HR", "Humedad", "%"], ["P_mar", "Presión (QFF)", "hPa"], ["P_est", "Presión (QFE)", "hPa"], ["ff10", "Viento medio", "kt"], ["dd10", "Dirección", "°"], ["fx10", "Racha", "kt"], ["rr6", "Lluvia 6 h", "mm"], ["rr24", "Lluvia 24 h", "mm"], ["Rad", "Radiación", "W/m²"]];
+    $("vals").innerHTML = it.map(([c, n, u]) => { const v = colv(f, c); return v == null ? "" : `<div class="val"><span>${n}</span><b>${v.toFixed(DEC[c] ?? 1)}</b><small>${u}</small></div>`; }).join("");
+    $("nota").textContent = ed > 120 ? "La estación no ha enviado datos en más de 2 horas." : "";
+  } catch (e){ $("vals").innerHTML = '<span class="err">No se pudieron cargar los datos.</span>'; }
+}
+
+async function cargar(){
+  const k = est.codigo + "|" + rango;
+  if (cache[k]){ ({cab, filas} = cache[k]); dibujar(); return; }
+  $("estado").textContent = "Cargando…"; $("graf").querySelector("svg")?.remove();
+  try {
+    const paso = rango >= 720 ? 6 : 1, d = await traer(rango, paso);
+    if (d.cab.length) cab = d.cab; filas = d.filas; cache[k] = {cab, filas}; $("estado").textContent = "";
+    dibujar();
+  } catch (e){ $("estado").textContent = "No se pudo cargar. Intente de nuevo."; $("estado").className = "err"; }
+}
+
+// ---- gráfico SVG
+const W = 900, H = 340, L = 54, R = 16, T = 14, B = 34;
+function dibujar(){
+  const V = VARS[vsel], g = $("graf"); g.querySelector("svg")?.remove();
+  const ser = V.s.map(([c, n, col]) => ({c, n, col, p: filas.map(f => [tms(f), colv(f, c)]).filter(p => p[1] != null)}));
+  $("ley").innerHTML = V.s.map(([c, n, col]) => `<span><i style="background:${col}"></i>${n}</span>`).join("");
+  const todos = ser.flatMap(s => s.p);
+  const fin = Math.floor(Date.now() / 3600e3) * 3600e3, x0 = fin - rango * 3600e3, x1 = fin;
+  $("dlinfo").textContent = filas.length ? filas.length.toLocaleString("es-CL") + " registros" : "";
+  if (!todos.length){ g.insertAdjacentHTML("afterbegin", `<svg viewBox="0 0 ${W} 120"><text x="${W / 2}" y="60" text-anchor="middle" fill="#6B7686" font-size="15">Sin datos de ${V.nom.toLowerCase()} en este período</text></svg>`); return; }
+  let mn = Math.min(...todos.map(p => p[1])), mx = Math.max(...todos.map(p => p[1]));
+  if (vsel === "hr"){ mn = Math.min(mn, 0); mx = Math.max(mx, 100); }
+  if (vsel === "vien" || vsel === "lluv") mn = 0;
+  if (mx - mn < 1e-6){ mx += 1; mn -= vsel === "lluv" ? 0 : 1; }
+  const pad = (mx - mn) * .06; if (vsel !== "hr" && !(vsel === "vien" || vsel === "lluv")) mn -= pad; mx += pad;
+  const X = t => L + (t - x0) / (x1 - x0) * (W - L - R), Y = v => T + (1 - (v - mn) / (mx - mn)) * (H - T - B);
+  let s = `<svg viewBox="0 0 ${W} ${H}" id="svg">`;
+  const nt = 5, step = niceStep((mx - mn) / nt);
+  for (let v = Math.ceil(mn / step) * step; v <= mx + 1e-9; v += step){ const y = Y(v); s += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#E3E7EC"/><text x="${L - 8}" y="${y + 4}" text-anchor="end" font-size="12" fill="#6B7686">${(+v.toFixed(2))}</text>`; }
+  s += `<text x="12" y="${T + 6}" font-size="12" fill="#6B7686">${V.u}</text>`;
+  const dia = rango <= 24 ? 3 * 3600e3 : rango <= 168 ? 864e5 : 5 * 864e5;
+  for (let t = Math.ceil(x0 / dia) * dia; t <= x1; t += dia){ const d = new Date(t), lab = rango <= 24 ? String(d.getUTCHours()).padStart(2, "0") + "h" : d.getUTCDate() + "/" + (d.getUTCMonth() + 1);
+    s += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${H - B}" stroke="#F0F2F5"/><text x="${X(t)}" y="${H - 12}" text-anchor="middle" font-size="12" fill="#6B7686">${lab}</text>`; }
+  s += `<text x="${W - R}" y="${H - 1}" text-anchor="end" font-size="11" fill="#8896A8">hora UTC</text>`;
+  const hueco = rango >= 720 ? 9 * 3600e3 : 40 * 60e3;
+  ser.forEach(se => { let d = "", ant = null; se.p.forEach(([t, v]) => { d += (ant == null || t - ant > hueco ? "M" : "L") + X(t).toFixed(1) + " " + Y(v).toFixed(1); ant = t; });
+    s += `<path d="${d}" fill="none" stroke="${se.col}" stroke-width="${rango >= 720 ? 1.4 : 1.8}" stroke-linejoin="round"/>`; });
+  s += `<line id="cur" y1="${T}" y2="${H - B}" stroke="#16202E" stroke-opacity=".35" style="display:none"/><rect id="cap" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent"/></svg>`;
+  g.insertAdjacentHTML("afterbegin", s);
+  const svg = $("svg"), tip = $("tip"), cur = $("cur");
+  svg.addEventListener("mousemove", ev => mover(ev));
+  svg.addEventListener("touchmove", ev => mover(ev.touches[0]), {passive: true});
+  svg.addEventListener("mouseleave", () => { tip.style.display = "none"; cur.style.display = "none"; });
+  function mover(ev){
+    const r = svg.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * W, t = x0 + (x - L) / (W - L - R) * (x1 - x0);
+    let best = null; ser.forEach(se => se.p.forEach(p => { const dd = Math.abs(p[0] - t); if (!best || dd < best.d) best = {d: dd, t: p[0]}; }));
+    if (!best || best.d > hueco){ tip.style.display = "none"; cur.style.display = "none"; return; }
+    const tx = best.t, xs = X(tx);
+    cur.setAttribute("x1", xs); cur.setAttribute("x2", xs); cur.style.display = "";
+    const lines = ser.map(se => { const p = se.p.find(q => q[0] === tx); return p ? `<span style="color:${se.col}">●</span> ${se.n}: <b>${p[1].toFixed(DEC[se.c] ?? 1)} ${V.u}</b>` : ""; }).filter(Boolean);
+    tip.innerHTML = new Date(tx).toISOString().slice(0, 16).replace("T", " ") + " UTC<br>" + lines.join("<br>");
+    tip.style.display = "block"; const gb = g.getBoundingClientRect();
+    let lx = ev.clientX - gb.left + 14; if (lx > gb.width - 190) lx = ev.clientX - gb.left - 190; tip.style.left = lx + "px"; tip.style.top = Math.max(0, ev.clientY - gb.top - 50) + "px";
+  }
+}
+function niceStep(raw){ const p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p; }
+
+function descargar(){
+  if (!filas.length){ $("dlinfo").textContent = "No hay datos para descargar."; return; }
+  const txt = cab.join(",") + "\n" + filas.map(f => f.join(",")).join("\n") + "\n";
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], {type: "text/csv"}));
+  a.download = est.codigo + "_" + (est.nombre.replace(/[^\w]+/g, "_")) + "_" + (rango / 24) + "d.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+})();
+</script>
+</body>
+</html>
