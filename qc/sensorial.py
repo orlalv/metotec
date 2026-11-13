@@ -950,7 +950,7 @@ def _extremas(t, o, A, codigo, hist=None, oficial=None):
             add("SEXT", 2 if nunca or abs(d) > 0.5 else 1,
                 (f"{el} {x} °C: la estación automática nunca {'bajó' if minimo else 'subió'} a ese valor en el período ({periodo} local); " if nunca
                  else f"{el} {x} °C, pero ") + f"la {nom} real fue {real:.1f} °C ({fuente}), cerca de las {horas_real}. " + nota_rep +
-                f"Debería ir: {real:.1f} °C a las {horas_real.replace(', ', ' o ')}" + (" (el valor se repite en esas horas: cualquiera sirve)" if ", " in horas_real else ""))
+                f"Debería ir: {real:.1f} °C a las {horas_real.replace(', ', ' o ')}" + (" (el minutario empata en esas horas, con un solo decimal; la hora que vale es la de la extrema del portal)" if ", " in horas_real and hora_ofi is None else ""))
         # 2) hora
         if not isinstance(fh, str) or not re.match(r"\d{4}-\d\d-\d\d \d\d:\d\d", fh):
             continue

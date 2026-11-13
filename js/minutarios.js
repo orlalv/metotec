@@ -339,7 +339,7 @@ async function vecinas(){
 function grafico(){
   if (!M) return;
   document.querySelectorAll("#minu [data-mv]").forEach(b => b.style.cssText = b.dataset.mv === mVar ? "border-color:var(--oro);color:var(--oro)" : "");
-  const v = mVar, W = 1100, H = 250, iz = 46, de = 12, ar = 14, ab = 26;
+  const v = mVar, W = 1100, H = 250, iz = 58, de = 12, ar = 14, ab = 26;
   const otras = (M.cmp || []).map(c => [...DC.entries()].find(([k]) => k.startsWith(c + "|" + M.dia + "|" + M.local))).filter(Boolean).map(x => x[1]);
   Promise.all(otras).then(Ds => dibujar([M, ...Ds]));
   function dibujar(S){
@@ -359,7 +359,22 @@ function grafico(){
   const ticks = []; for (let h = 0; h <= 24; h += 3) ticks.push(`<line x1="${X(M.ini + h * 3600e3)}" x2="${X(M.ini + h * 3600e3)}" y1="${ar}" y2="${H - ab}" stroke="#ffffff14"/><text x="${X(M.ini + h * 3600e3)}" y="${H - 8}" fill="#9fb0cc" font-size="11" text-anchor="middle">${hhmm(M.ini + h * 3600e3)}</text>`);
   const yt = [y0, (y0 + y1) / 2, y1].map(y => `<text x="${iz - 6}" y="${Y(y) + 4}" fill="#9fb0cc" font-size="11" text-anchor="end">${f1(y)}</text>`).join("");
   $("#mGraf").innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:var(--panel);border:1px solid var(--bd);border-radius:8px">${ticks.join("")}${yt}
-    ${paths}${marcas}<text x="${iz}" y="${ar - 2}" fill="#9fb0cc" font-size="11">${NOM[v]}${v === "rr1m" ? " acumulada" : ""} (${UNI[v]}) · hora UTC   ${ley}</text></svg>`;
+    ${paths}${marcas}<text x="${iz}" y="${ar - 2}" fill="#9fb0cc" font-size="11">${NOM[v]}${v === "rr1m" ? " acumulada" : ""} (${UNI[v]}) · hora UTC   ${ley}</text>
+    <line id="mCur" y1="${ar}" y2="${H - ab}" stroke="#ffffff" stroke-width="1" opacity="0"/><g id="mPts"></g><rect id="mHit" x="${iz}" y="${ar}" width="${W - iz - de}" height="${H - ar - ab}" fill="transparent" style="cursor:crosshair"/></svg>`;
+  // al pasar el mouse: hora y valor de cada serie en el minuto más cercano
+  const svgEl = $("#mGraf").querySelector("svg"), cur = svgEl.querySelector("#mCur"), pts = svgEl.querySelector("#mPts");
+  const cercano = (L, t) => { let b = null, bd = Infinity; for (const p of L){ const d = Math.abs(p[0] - t); if (d < bd){ bd = d; b = p; } } return b; };
+  svgEl.querySelector("#mHit").addEventListener("mousemove", ev => {
+    const r = svgEl.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width, t = M.ini + (px - iz) / (W - iz - de) * (M.fin - M.ini);
+    const ps = series.map((L, i) => [i, cercano(L, t)]).filter(([, p]) => p && Math.abs(p[0] - t) <= 30 * 60e3);
+    if (!ps.length){ cur.setAttribute("opacity", 0); pts.innerHTML = ""; return; }
+    const x = X(ps[0][1][0]); cur.setAttribute("x1", x); cur.setAttribute("x2", x); cur.setAttribute("opacity", .5);
+    const lin = ps.map(([i, p]) => `${S.length > 1 ? S[i].nombre + " " : ""}${f1(p[1])} ${UNI[v]}`), txt = `${hhmm(ps[0][1][0])} UTC  ·  ${lin.join("  ·  ")}`, w = txt.length * 6.4 + 14, izq = x + w + 12 > W - de;
+    const bx = izq ? x - w - 8 : x + 8, by = ar + 4;
+    pts.innerHTML = ps.map(([i, p]) => `<circle cx="${X(p[0])}" cy="${Y(p[1])}" r="4" fill="${COLS[i]}" stroke="var(--panel)" stroke-width="1.5"/>`).join("") +
+      `<rect x="${bx}" y="${by}" width="${w}" height="20" rx="5" fill="var(--panel)" stroke="${COLS[ps[0][0]]}"/><text x="${bx + 7}" y="${by + 14}" font-size="12" font-weight="600" fill="var(--tx)" font-family="var(--mono)">${esc(txt)}</text>`;
+  });
+  svgEl.querySelector("#mHit").addEventListener("mouseleave", () => { cur.setAttribute("opacity", 0); pts.innerHTML = ""; });
   tablaComp(S, series);
   }
 }
