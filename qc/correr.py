@@ -103,7 +103,8 @@ def ultimos_valores(obs, n=6):
     for t in sorted(obs)[-n:]:
         o = obs[t]
         d = dict(h=t.strftime("%Y-%m-%d %H:%M"), Ts=SEN.v(o, "Ts"), Td=SEN.v(o, "Td"), HR=SEN.v(o, "HR"), ff=SEN.v(o, "VTO", "ff"),
-                 dd=SEN.v(o, "VTO", "dd"), VV=SEN.v(o, "VVSINOP", "VV"), ww=SEN.v(o, "WWSINOP", "ww"), RRR6=SEN.v(o, "RRR6", "RRR6"), QFE=SEN.v(o, "QFE"))
+                 dd=SEN.v(o, "VTO", "dd"), VV=SEN.v(o, "VVSINOP", "VV"), ww=SEN.v(o, "WWSINOP", "ww"), RRR6=SEN.v(o, "RRR6", "RRR6"), QFE=SEN.v(o, "QFE"),
+                 W1=SEN.v(o, "W1W2", "W1"), W2=SEN.v(o, "W1W2", "W2"), fm=SEN.metar_texto(o) or None)
         out.append({k: x for k, x in d.items() if x is not None})
     return out
 

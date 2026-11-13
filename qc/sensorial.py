@@ -301,6 +301,11 @@ RE_WW = {1: {56, 57}, 2: {66, 67}, 3: {50, 51, 52, 53, 54, 55}, 4: {60, 61, 62, 
          9: {85, 86}, 10: {89, 90}, 11: {87, 88}, 12: {36, 37, 38, 39}, 15: {17, 95, 96, 97, 98, 99}}
 
 
+def metar_texto(o):
+    """Tiempo presente y reciente del METAR como texto (p. ej. 'SHSN BR RERA'), para «Mis alertas»."""
+    return " ".join(metar_grupos(o) + [RE_METAR[c][0] for c in re_codigos(o) if c in RE_METAR])
+
+
 def re_codigos(o):
     if importada(o):                  # los METAR importados traen reWW=1 solo como bandera de «hubo tiempo reciente», no como código
         return []

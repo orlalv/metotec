@@ -8,11 +8,14 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&
 const ZONAS = {todas: [-90, 0], norte: [-27.5, 0], centro: [-38, -27.5], sur: [-46, -38], austral: [-90, -46]};
 const ZNOM = {norte: "Norte", centro: "Centro", sur: "Sur", austral: "Austral"};
 const VARS = {ema: {T: "Ts (°C)", Td: "Td (°C)", HR: "HR (%)", P_mar: "QFF (hPa)", ff10: "Viento (kt)", dd10: "Dirección (°)", rr1h: "Lluvia 1 h (mm)"},
-              obs: {Ts: "Ts (°C)", Td: "Td (°C)", HR: "HR (%)", ff: "Viento (kt)", VV: "Visibilidad (m)", ww: "ww (tiempo presente)", RRR6: "RRR6 (mm)", QFE: "QFE (hPa)"}};
-const OPS = {">": "mayor que", ">=": "mayor o igual", "<": "menor que", "<=": "menor o igual", "=": "igual a", en: "está en (códigos/rangos)", sin: "sin dato"};
+              obs: {Ts: "Ts (°C)", Td: "Td (°C)", HR: "HR (%)", ff: "Viento (kt)", VV: "Visibilidad (m)", ww: "ww (tiempo presente)", RRR6: "RRR6 (mm)", QFE: "QFE (hPa)", fen: "Fenómeno (ww o METAR)"}};
+const OPS = {">": "mayor que", ">=": "mayor o igual", "<": "menor que", "<=": "menor o igual", "=": "igual a", en: "está en (códigos/rangos)", sin: "sin dato", hay: "hay (fenómeno)"};
 const DONDE = {mias: "Mis estaciones", todas: "Todas", norte: "Norte", centro: "Centro", sur: "Sur", austral: "Austral", cods: "Estaciones elegidas"};
 const PRESETS = [
   {nombre: "Arica: RRR6 > 0", fuente: "obs", donde: "cods", cods: ["180005"], var: "RRR6", op: ">", valor: "0"},
+  {nombre: "Chubascos (ww o METAR)", fuente: "obs", donde: "todas", var: "fen", op: "hay", valor: "chubasco"},
+  {nombre: "Nieve (ww o METAR)", fuente: "obs", donde: "todas", var: "fen", op: "hay", valor: "nieve"},
+  {nombre: "Tormenta o granizo", fuente: "obs", donde: "todas", var: "fen", op: "hay", valor: "tormenta,granizo"},
   {nombre: "Tormenta de polvo o arena", fuente: "obs", donde: "todas", var: "ww", op: "en", valor: "07-09,30-35"},
   {nombre: "Observación sin mensaje (2 h)", fuente: "obs", donde: "mias", var: "", op: "sin", valor: ""},
   {nombre: "EMA sin datos", fuente: "ema", donde: "mias", var: "", op: "sin", valor: ""}];
@@ -60,7 +63,7 @@ function filtra(cod){ const p = per(yo()); return !p || !soloMias() || !(p.estac
 
 // --------------------------------------------------------------- evaluación (módulo común js/alertas_core.js)
 let CORE = null;
-import("/js/alertas_core.js?v=202611131400").then(m => { CORE = m; contador(); }).catch(() => {});
+import("/js/alertas_core.js?v=202611132200").then(m => { CORE = m; contador(); }).catch(() => {});
 function evaluar(p, R){
   if (!R || !CORE) return [];
   const fresco = R.ema_rapido && Date.now() - Date.parse(R.ema_rapido.generado) < 20 * 60e3;      // si el Worker se detuvo, vale la última pasada de qc.yml
@@ -126,7 +129,7 @@ function pagMis(){
     <input id="mCods" placeholder="Códigos, ej. 180005, 200006" value="${esc((r.cods || []).join(", "))}" ${r.donde === "cods" ? "" : "hidden"}>
     <select id="mVar">${Object.entries(VARS[r.fuente || "ema"]).map(([k, v]) => `<option value="${k}"${r.var === k ? " selected" : ""}>${v}</option>`).join("")}</select>
     <select id="mOp">${Object.entries(OPS).map(([k, v]) => `<option value="${k}"${r.op === k ? " selected" : ""}>${v}</option>`).join("")}</select>
-    <input id="mVal" placeholder="Valor (ej. 0 o 07-09,30-35)" value="${esc(r.valor || "")}" style="width:170px">
+    <input id="mVal" placeholder="Valor (ej. 0, 07-09,30-35 o, para fenómeno: chubasco, nieve, tormenta, granizo, engelante, ventisca, niebla, SHSN…)" value="${esc(r.valor || "")}" style="width:170px">
     <button class="mk" id="mGuardar">${r.id ? "Guardar cambios" : "+ Agregar alerta"}</button>${r.id ? `<button class="mk" id="mCancelar">Cancelar</button>` : ""}</div>`;
   const ed = S._ed || {fuente: "ema", donde: "mias", op: ">"};
   S.innerHTML = `<h2 style="margin:0 0 4px;font:600 20px var(--titulo)">Mis alertas ${p ? `· ${esc(p.nombre)}` : "· todo el equipo"}</h2>
@@ -206,6 +209,7 @@ document.addEventListener("change", async ev => {
   } catch (e){ const m = $("#eqMsg") || $("#mMsg"); if (m) m.textContent = "No se pudo guardar: " + e.message; }
 });
 document.addEventListener("input", ev => { if (ev.target.id === "eqQ"){ const S = $("#equ"); S.dataset.q = ev.target.value; const pos = ev.target.selectionStart; pagEqu(); const i = $("#eqQ"); i.focus(); i.setSelectionRange(pos, pos); } });
+document.addEventListener("change", ev => { if (ev.target.id === "mVar" && ev.target.value === "fen" && $("#mOp")) $("#mOp").value = "hay"; });
 function leerForm(){ return {nombre: $("#mNom").value.trim(), fuente: $("#mFue").value, donde: $("#mDon").value, cods: $("#mCods").value.split(/[,\s]+/).filter(Boolean),
   var: $("#mVar").value, op: $("#mOp").value, valor: $("#mVal").value.trim(), id: ($("#mis")._ed || {}).id}; }
 document.addEventListener("click", async ev => {

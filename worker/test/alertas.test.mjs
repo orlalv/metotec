@@ -71,3 +71,18 @@ test("correr: KV, envío fallido se reintenta y no avisa dos veces", async () =>
     assert.equal(kv.get("qc/ema_rapido").estaciones[0].valores.rr1h, 1);
   } finally { globalThis.fetch = f0; }
 });
+
+test("fenómeno (ww o METAR): chubascos y nieve sin importar quién los informe", () => {
+  const o = {estaciones: [
+    {codigo: "1", nombre: "A", lat: -33, ultima: "2026-11-13T11:30:00", ult: [{h: "2026-11-13T11:00:00", ww: 10}, {h: "2026-11-13T11:30:00", fm: "SHSN BR"}]},
+    {codigo: "2", nombre: "B", lat: -33, ultima: "2026-11-13T11:00:00", ult: [{h: "2026-11-13T11:00:00", ww: 81}]},
+    {codigo: "3", nombre: "C", lat: -33, ultima: "2026-11-13T11:00:00", ult: [{h: "2026-11-13T11:00:00", ww: 61, fm: "-RA VCSH"}]},
+    {codigo: "4", nombre: "D", lat: -33, ultima: "2026-11-13T11:00:00", ult: [{h: "2026-11-13T11:00:00", fm: "SN BLSN"}]},
+    {codigo: "5", nombre: "E", lat: -33, ultima: "2026-11-13T05:00:00", ult: [{h: "2026-11-13T05:00:00", ww: 80}]}]};
+  const ch = evaluar(P([{id: "x", fuente: "obs", donde: "todas", var: "fen", op: "hay", valor: "chubasco"}]), ema, o, ahora).map(h => h.codigo);
+  assert.deepEqual(ch, ["1", "2"]);                       // 3: VCSH no cuenta; 5: hace más de 3 h
+  const ni = evaluar(P([{id: "y", fuente: "obs", donde: "todas", var: "fen", op: "hay", valor: "nieve"}]), ema, o, ahora).map(h => h.codigo);
+  assert.deepEqual(ni, ["1", "4"]);
+  const sig = evaluar(P([{id: "z", fuente: "obs", donde: "todas", var: "fen", op: "hay", valor: "SHSN"}]), ema, o, ahora).map(h => h.codigo);
+  assert.deepEqual(sig, ["1"]);
+});
