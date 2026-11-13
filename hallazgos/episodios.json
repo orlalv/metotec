@@ -34,10 +34,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-13 17:00",
-"visto": "2026-11-13 17:18",
+"fin": "2026-11-13 17:30",
+"visto": "2026-11-13 17:48",
 "detalle": [
-"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -54,9 +54,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-13 13:00",
-"visto": "2026-11-13 17:18",
+"visto": "2026-11-13 17:48",
 "detalle": [
-"HR · rango: 360 valores fuera de rango físico [1, 100] (valor 0.0)"
+"HR · rango: 375 valores fuera de rango físico [1, 100] (valor 0.0)"
 ]
 },
 "330162|barómetro": {
@@ -73,7 +73,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-13 14:23",
-"visto": "2026-11-13 17:18",
+"visto": "2026-11-13 17:48",
 "detalle": [
 "QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 550.2)",
 "QFE · rango: 8 valores fuera de lo habitual para la zona centro [886, 966] (valor 505.1)",
@@ -94,7 +94,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-13 12:37",
-"visto": "2026-11-13 17:18",
+"visto": "2026-11-13 17:48",
 "detalle": [
 "QFF · rango: 6 valores fuera de rango físico [920, 1060] (valor 523.3)",
 "QFE · rango: 6 valores fuera de lo habitual para la zona centro [936, 1016] (valor 504.4)",
@@ -114,10 +114,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-13 11:59",
-"visto": "2026-11-13 17:18",
+"visto": "2026-11-13 17:48",
 "detalle": [
-"QFF · rango: 341 valores fuera de rango físico [920, 1060] (valor 503.8)",
-"QFE · rango: 341 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.7)"
+"QFF · rango: 385 valores fuera de rango físico [920, 1060] (valor 503.8)",
+"QFE · rango: 385 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.7)"
 ]
 },
 "370036|piranómetro (radiación)": {
@@ -132,9 +132,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-13 11:59",
-"visto": "2026-11-13 17:18",
+"visto": "2026-11-13 17:48",
 "detalle": [
-"radiación · rango: 351 valores fuera de rango físico [0, 1600] (valor 6106.89)"
+"radiación · rango: 381 valores fuera de rango físico [0, 1600] (valor 6106.89)"
 ]
 },
 "200007|piranómetro (radiación)": {
@@ -149,9 +149,9 @@
 ],
 "nivel": 1,
 "fin": "2026-11-13 14:59",
-"visto": "2026-11-13 17:18",
+"visto": "2026-11-13 17:48",
 "detalle": [
-"radiación · rango: 158 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1469.92)"
+"radiación · rango: 188 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1469.92)"
 ]
 }
 }
