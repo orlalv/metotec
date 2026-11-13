@@ -168,8 +168,12 @@ def prueba_traza():
 def prueba_extremas_oficiales():
     """La extrema y su hora oficiales (resumen diario) mandan sobre el minutario."""
     import dmc
-    js = {"datos": {"temperaturaExtremas": [{"fecha": "2026-11-10", "minima": {"valor": "3.37 °C", "momento": "2026-11-10 09:41:00"},
-                                              "maxima": {"valor": "21.84 °C", "momento": "2026-11-10 19:02:00"}}]}}
+    # formato real (Frei, 13-11-2026): el lector no debe tomar la dirección del viento ni los «datos» de maxima06
+    js = {"datos": {"vientoMaxino": {"10-11-2026": {"maxima": {"direccion": "322", "intensidad": "30.52", "momento": "2026-11-10 09:36:00"}}},
+                    "extremas6Horas": {"viento": {"datos": 354, "maxima": {"direccion": "322", "intensidad": "30.52", "momento": "2026-11-10 09:36:00"}}},
+                    "temperaturaExtremas": {"10-11-2026": {"maxima06": {"datos": 360, "valor": "0.2", "momento": "2026-11-09 21:05:00"}, "datos": 765,
+                                                           "minima": {"valor": "3.37", "momento": "2026-11-10 09:41:00"},
+                                                           "maxima": {"valor": "21.84", "momento": "2026-11-10 19:02:00"}}}}}
     of = dmc.extremas_oficiales(js)
     if sorted((x["tipo"], x["valor"]) for x in of) != [("max", 21.84), ("min", 3.37)]:
         FALLAS.append(f"lector del resumen diario → {of}")

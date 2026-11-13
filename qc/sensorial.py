@@ -918,7 +918,9 @@ def extremas(t, o, A, codigo, hist=None, oficial=None):
               and t - pd.Timedelta(hours=12) < x_["momento"] <= t]
         if of:                                        # extrema oficial (resumen diario): manda sobre el minutario
             o_ = min(of, key=lambda x_: x_["valor"]) if minimo else max(of, key=lambda x_: x_["valor"])
-            ofi, hora_ofi = o_["valor"], o_["momento"]
+            # se usa solo si es coherente con el minutario (la del día puede no cubrir todo el período de 12 h)
+            if (o_["valor"] <= ser + 0.05 and o_["valor"] >= ser - 1.0) if minimo else (ser - 0.05 <= o_["valor"] <= ser + 1.0):
+                ofi, hora_ofi = o_["valor"], o_["momento"]
         real = ofi if ofi is not None else ser
         # tolerancia: exacta frente a la extrema oficial; sin ella, unas décimas hacia afuera por las muestras de segundos
         if ofi is not None:
