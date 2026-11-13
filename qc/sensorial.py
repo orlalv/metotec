@@ -950,7 +950,7 @@ def _extremas(t, o, A, codigo, hist=None, oficial=None):
             add("SEXT", 2 if nunca or abs(d) > 0.5 else 1,
                 (f"{el} {x} °C: la estación automática nunca {'bajó' if minimo else 'subió'} a ese valor en el período ({periodo} local); " if nunca
                  else f"{el} {x} °C, pero ") + f"la {nom} real fue {real:.1f} °C ({fuente}), cerca de las {horas_real}. " + nota_rep +
-                f"Debería ir: {real:.1f} °C a las {horas_real.split(', ')[0]}")
+                f"Debería ir: {real:.1f} °C a las {horas_real.replace(', ', ' o ')}" + (" (el valor se repite en esas horas: cualquiera sirve)" if ", " in horas_real else ""))
         # 2) hora
         if not isinstance(fh, str) or not re.match(r"\d{4}-\d\d-\d\d \d\d:\d\d", fh):
             continue
@@ -960,7 +960,7 @@ def _extremas(t, o, A, codigo, hist=None, oficial=None):
         if not (t - pd.Timedelta(hours=12) <= tu <= t):
             if str(codigo) != "270001":            # Isla de Pascua: el huso que usa el observador no es seguro
                 add("SEXH", 1, f"{el} con hora {fh[11:16]} del {fh[8:10]}/{fh[5:7]}: queda fuera del período de la {nom} ({periodo} local). "
-                    f"La {nom} real fue {real:.1f} °C cerca de las {horas_real}. Debería ir: {horas_real.split(', ')[0]}")
+                    f"La {nom} real fue {real:.1f} °C cerca de las {horas_real}. Debería ir: {horas_real.replace(', ', ' o ')}")
             continue
         # ±1 min: la hora de la extrema que muestra la estación (de sus muestras de segundos) puede caer en el minuto siguiente
         # o anterior al registro por minuto; esa diferencia no es un error
@@ -978,8 +978,8 @@ def _extremas(t, o, A, codigo, hist=None, oficial=None):
             donde = W.loc[(W["T"] - x).abs() <= 0.15, "momento"]
             otras = ", ".join(f"{a_loc(m):%H:%M}" for m in _agrupar(donde))
             add("SEXH", 2 if abs(en_hora - x) > 2 else 1, f"{el} {x} °C a las {fh[11:16]}: a esa hora la estación automática marcaba {en_hora:.1f} °C. "
-                + (f"El valor {x} °C se registró a las {otras}. Debería ir: {otras.split(', ')[0]}" if otras
-                   else f"La {nom} real fue {real:.1f} °C cerca de las {horas_real}. Debería ir: {horas_real.split(', ')[0]}"))
+                + (f"El valor {x} °C se registró a las {otras}. Debería ir: {otras.replace(', ', ' o ')}" if otras
+                   else f"La {nom} real fue {real:.1f} °C cerca de las {horas_real}. Debería ir: {horas_real.replace(', ', ' o ')}"))
     # 3) extrema que cae en un bloque (AM 00–12 UTC o PM 12–00 UTC) y no se ingresó. Se evalúa con la observación de las 00 UTC,
     # cuando ya están los dos bloques del día local. Solo se avisa si la extrema NO fue reportada en su bloque: se busca en todas las
     # observaciones del bloque (y la hora siguiente), por valor (±0.6 °C) o porque su hora (FechaHora) cae dentro del bloque.
