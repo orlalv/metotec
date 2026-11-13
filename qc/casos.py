@@ -172,18 +172,21 @@ def prueba_extremas_oficiales():
     js = {"datos": {"vientoMaxino": {"10-11-2026": {"maxima": {"direccion": "322", "intensidad": "30.52", "momento": "2026-11-10 09:36:00"}}},
                     "extremas6Horas": {"viento": {"datos": 354, "maxima": {"direccion": "322", "intensidad": "30.52", "momento": "2026-11-10 09:36:00"}}},
                     "temperaturaExtremas": {"10-11-2026": {"maxima06": {"datos": 360, "valor": "0.2", "momento": "2026-11-09 21:05:00"}, "datos": 765,
-                                                           "minima": {"valor": "3.37", "momento": "2026-11-10 09:41:00"},
+                                                           "minima": {"valor": "3.37", "momento": "2026-11-10 06:41:00"},
                                                            "maxima": {"valor": "21.84", "momento": "2026-11-10 19:02:00"}}}}}
     of = dmc.extremas_oficiales(js)
     if sorted((x["tipo"], x["valor"]) for x in of) != [("max", 21.84), ("min", 3.37)]:
         FALLAS.append(f"lector del resumen diario → {of}")
     A = minutario(T, horas=13, T=5.0)
     A.loc[A["momento"] == pd.Timestamp("2026-11-10 09:41"), "T"] = 3.4
-    bien = {"TnAM": {"TnAM": 3.4, "FechaHora": "2026-11-10 06:41:00"}}        # 09:41 UTC = 06:41 local (verano)
+    bien = {"TnAM": {"TnAM": 3.4, "FechaHora": "2026-11-10 06:41:00"}}        # resumen y observador en hora local (06:41 = 09:41 UTC)
     no_alerta(S.extremas(T, bien, A, "330020", None, of), "SEXT", "TnAM igual a la oficial")
     no_alerta(S.extremas(T, bien, A, "330020", None, of), "SEXH", "TnAM a la hora oficial")
     mala = {"TnAM": {"TnAM": 3.4, "FechaHora": "2026-11-10 05:10:00"}}
     si_alerta(S.extremas(T, mala, A, "330020", None, of), "SEXH", "TnAM con hora distinta de la oficial")
+    # mismo valor repetido a la hora que anotó el observador: no es error
+    A.loc[A["momento"] == pd.Timestamp("2026-11-10 08:10"), "T"] = 3.4
+    no_alerta(S.extremas(T, mala, A, "330020", None, of), "SEXH", "TnAM repetida a la hora anotada")
 
 
 # ----------------------------------------------------------------- estaciones automáticas

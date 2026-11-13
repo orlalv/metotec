@@ -82,7 +82,7 @@ if __name__ == "__main__":
 # ======================================================================= resumen diario (extremas oficiales)
 def extremas_oficiales(js):
     """Extremas oficiales de temperatura desde getEmaResumenDiario/{cod}: datos.temperaturaExtremas[día].maxima|minima
-    {valor, momento UTC}, con todos los decimales y su hora. Solo la extrema de cada día (no maxima06 ni extremas6Horas,
+    {valor, momento en hora LOCAL de la estación}, con todos los decimales y su hora. Solo la extrema de cada día (no maxima06 ni extremas6Horas,
     que son de tramos parciales y podrían no ser la extrema del período). Devuelve [dict(tipo='min'|'max', valor, momento)]."""
     out = []
     te = ((js or {}).get("datos") or {}).get("temperaturaExtremas") or {}

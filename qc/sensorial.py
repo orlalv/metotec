@@ -914,8 +914,9 @@ def extremas(t, o, A, codigo, hist=None, oficial=None):
             if cand:
                 ofi = min(cand, key=lambda c: abs(c - x))   # la que calza mejor con lo anotado (si hay varias plausibles)
         hora_ofi = None
-        of = [x_ for x_ in (oficial or []) if x_["tipo"] == ("min" if minimo else "max")
-              and t - pd.Timedelta(hours=12) < x_["momento"] <= t]
+        # el «momento» de temperaturaExtremas viene en hora LOCAL de la estación (no UTC, aunque el servicio diga timezone UTC)
+        of = [dict(x_, momento=a_utc(x_["momento"])) for x_ in (oficial or []) if x_["tipo"] == ("min" if minimo else "max")]
+        of = [x_ for x_ in of if pd.notna(x_["momento"]) and t - pd.Timedelta(hours=12) < x_["momento"] <= t]
         if of:                                        # extrema oficial (resumen diario): manda sobre el minutario
             o_ = min(of, key=lambda x_: x_["valor"]) if minimo else max(of, key=lambda x_: x_["valor"])
             # se usa solo si es coherente con el minutario (la del día puede no cubrir todo el período de 12 h)
@@ -959,7 +960,8 @@ def extremas(t, o, A, codigo, hist=None, oficial=None):
         # ±1 min: la hora de la extrema que muestra la estación (de sus muestras de segundos) puede caer en el minuto siguiente
         # o anterior al registro por minuto; esa diferencia no es un error
         if hora_ofi is not None:                  # con la hora oficial basta compararla (±1 min)
-            if ok and abs(tu - hora_ofi) > pd.Timedelta(minutes=1):
+            rep = W[(W["momento"] - tu).abs() <= pd.Timedelta(minutes=1)]      # el valor se repitió a la hora anotada: también vale
+            if ok and abs(tu - hora_ofi) > pd.Timedelta(minutes=1) and not (len(rep) and float((rep["T"] - x).abs().min()) <= 0.15):
                 add("SEXH", 1, f"{el} {x} °C a las {fh[11:16]}: según el resumen diario oficial la {nom} fue a las {a_loc(hora_ofi):%H:%M}. "
                     f"Debería ir: {a_loc(hora_ofi):%H:%M}")
             continue
