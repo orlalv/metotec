@@ -1,5 +1,5 @@
 // Etapa 3 · Equipo (KV «qc/equipo»): personas (hasta 8), sus estaciones, sus reglas de «Mis alertas» y cómo avisarles.
-//   {personas: [{nombre, ausente, estaciones: [cod], alertas: [regla], telegram, correo}]}
+//   {personas: [{nombre, ausente, estaciones: [cod], pestanas: [modo], alertas: [regla], telegram, correo}]}
 // GET               : el equipo (con clave general)
 // POST {persona, antes?} : crea o actualiza una persona (antes = nombre anterior, para renombrar)
 // POST {borrar: nombre}  : quita a una persona
@@ -11,6 +11,7 @@ const limpio = p => ({
   alertas: (p.alertas || []).slice(0, 40).map(r => ({ id: String(r.id || Date.now().toString(36)).slice(0, 20), nombre: String(r.nombre || "").slice(0, 80),
     fuente: r.fuente === "obs" ? "obs" : "ema", donde: String(r.donde || "todas").slice(0, 10), cods: (r.cods || []).map(String).slice(0, 100),
     var: String(r.var || "").slice(0, 10), op: [">", ">=", "<", "<=", "=", "en", "sin"].includes(r.op) ? r.op : ">", valor: String(r.valor ?? "").slice(0, 60), activa: r.activa !== false })),
+  pestanas: [...new Set((p.pestanas || []).map(String))].filter(m => /^[a-z_]{2,12}$/.test(m)).slice(0, 40),     // pestañas que ve (vacío = todas)
   telegram: String(p.telegram || "").trim().slice(0, 30), correo: String(p.correo || "").trim().slice(0, 80)
 });
 export async function onRequestGet({ request, env }){

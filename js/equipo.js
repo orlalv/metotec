@@ -50,9 +50,12 @@ function selector(){
   if (yo() && !per(yo()) && cargado) try { localStorage.removeItem("qcPersona"); } catch (e){}
   s.innerHTML = `<option value="">Todos</option>` + EQP.personas.map(p => `<option value="${esc(p.nombre)}"${p.nombre === yo() ? " selected" : ""}>${esc(p.nombre)}${p.ausente ? " (ausente)" : ""}</option>`).join("");
   const b = $("#soloMias"); if (b){ const p = per(yo()); b.hidden = !p || !(p.estaciones || []).length; b.classList.toggle("on", soloMias()); b.textContent = soloMias() ? "★ Mis estaciones" : "☆ Mis estaciones"; }
+  window.aplicarPestanas && window.aplicarPestanas();
 }
 
 // filtro de las listas (EMA y Observaciones): con un perfil elegido que tiene estaciones y «Mis estaciones» activo
+// Pestañas que ve cada persona (vacío = todas). Es solo para ordenar la pantalla: la clave sigue siendo una sola. «Equipo» siempre se ve.
+const ve = m => { const p = per(yo()); return !p || !(p.pestanas || []).length || m === "equ" || p.pestanas.includes(m); };
 function filtra(cod){ const p = per(yo()); return !p || !soloMias() || !(p.estaciones || []).length || p.estaciones.includes(String(cod)); }
 
 // --------------------------------------------------------------- evaluación (módulo común js/alertas_core.js)
@@ -80,6 +83,15 @@ function estacionesTodas(){
 }
 const dueños = cod => EQP.personas.filter(p => (p.estaciones || []).includes(cod)).map(p => p.nombre);
 
+function pestanasHtml(p){
+  const G = [...document.querySelectorAll(".grupos button")].map(b => [b.dataset.g, b.textContent.trim()]);
+  const M = [...document.querySelectorAll(".modos button")].filter(b => b.dataset.m !== "equ").map(b => [b.dataset.m, b.firstChild.textContent.trim(), b.dataset.g]);
+  const todas = !(p.pestanas || []).length, sel = new Set(p.pestanas || []);
+  return `<h4 style="margin-top:14px">Pestañas que ve <b style="color:var(--oro)">${esc(p.nombre)}</b></h4>
+   <p class="nota" style="color:var(--mu);font-size:12.5px;margin:0 0 6px">Solo ordena la pantalla (hay una sola clave). Sin ninguna marcada ve todas. «Equipo» siempre se ve.</p>
+   ${[...G, ["gestion", "Gestión (engranaje)"]].map(([g, n]) => { const L = M.filter(x => x[2] === g); return L.length ? `<div style="margin:4px 0"><small style="color:var(--mu)">${esc(n)}</small><br>${L.map(([m, t]) => `<label style="margin-right:10px;white-space:nowrap"><input type="checkbox" data-pes="${m}"${todas || sel.has(m) ? " checked" : ""}> ${esc(t)}</label>`).join("")}</div>` : ""; }).join("")}
+   <p><button class="mk" id="pesTodas">Ver todas</button></p>`;
+}
 function pagEqu(){
   const S = $("#equ"), p = per(yo()), q = (S.dataset.q || "").toLowerCase(), z = S.dataset.z || "";
   const L = estacionesTodas().filter(e => (!z || zona(e.lat) === z) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q)));
@@ -91,6 +103,7 @@ function pagEqu(){
      ${EQP.personas.map(x => `<tr${x.nombre === yo() ? ' style="background:color-mix(in srgb,var(--oro) 12%,transparent)"' : ""}><td><b>${esc(x.nombre)}</b></td><td>${(x.estaciones || []).length}</td>
        <td><input type="checkbox" data-aus="${esc(x.nombre)}"${x.ausente ? " checked" : ""}></td><td style="white-space:nowrap"><button class="mk" data-ver="${esc(x.nombre)}">Ver como</button><button class="mk" data-ren="${esc(x.nombre)}">Renombrar</button><button class="mk" data-del="${esc(x.nombre)}">Quitar</button></td></tr>`).join("")}</table>
      ${EQP.personas.length < 8 ? `<p><input id="eqNuevo" placeholder="Nombre" maxlength="40"> <button class="mk" id="eqAgregar">+ Agregar persona</button></p>` : `<p class="nota">Equipo completo (8).</p>`}
+     ${p ? pestanasHtml(p) : ""}
      <p id="eqMsg" style="color:var(--err);font-size:13px"></p></div>
     <div><h4>Estaciones ${p ? `de <b style="color:var(--oro)">${esc(p.nombre)}</b> (${(p.estaciones || []).length})` : ""} <small style="color:var(--mu)">· ${sinResp} sin responsable</small></h4>
      ${p ? "" : `<p class="nota" style="color:var(--sos)">Elija su nombre arriba para marcar sus estaciones.</p>`}
@@ -184,6 +197,9 @@ document.addEventListener("change", async ev => {
   if (t.id === "mFue"){ const S = $("#mis"); S._ed = {...leerForm(), fuente: t.value, var: ""}; return pagMis(); }
   if (t.id === "mDon"){ $("#mCods").hidden = t.value !== "cods"; return; }
   try {
+    if (t.dataset.pes){ const p = per(yo()), todas = [...document.querySelectorAll(".modos button")].map(b => b.dataset.m).filter(m => m !== "equ");
+      const s = new Set((p.pestanas || []).length ? p.pestanas : todas); t.checked ? s.add(t.dataset.pes) : s.delete(t.dataset.pes);
+      await guardar({...p, pestanas: s.size >= todas.length ? [] : [...s]}); return pagEqu(); }
     if (t.dataset.aus){ const p = per(t.dataset.aus); await guardar({...p, ausente: t.checked}); return pagEqu(); }
     if (t.dataset.est){ const p = per(yo()), s = new Set(p.estaciones || []); t.checked ? s.add(t.dataset.est) : s.delete(t.dataset.est); await guardar({...p, estaciones: [...s]}); window.EQ.alCambiar && window.EQ.alCambiar(); return pagEqu(); }
     if (t.dataset.act){ const p = per(yo()); await guardar({...p, alertas: p.alertas.map(r => r.id === t.dataset.act ? {...r, activa: t.checked} : r)}); return; }
@@ -195,6 +211,7 @@ function leerForm(){ return {nombre: $("#mNom").value.trim(), fuente: $("#mFue")
 document.addEventListener("click", async ev => {
   const b = ev.target.closest("button"); if (!b) return;
   if (b.id === "soloMias"){ try { localStorage.setItem("qcSoloMias", soloMias() ? "0" : "1"); } catch (e){} selector(); window.EQ.alCambiar && window.EQ.alCambiar(); if (modoAct === "comp") pagComp(); return; }
+  if (b.id === "pesTodas"){ const p = per(yo()); if (p){ try { await guardar({...p, pestanas: []}); } catch (e){} pagEqu(); } return; }
   if (b.dataset.cv){ $("#comp").dataset.v = b.dataset.cv; return pagComp(); }
   if (b.id === "cRecargar"){ COMP = null; return pagComp(); }
   if (b.dataset.ver){ try { localStorage.setItem("qcPersona", b.dataset.ver); } catch (e){} selector(); contador(); window.EQ.alCambiar && window.EQ.alCambiar(); return pagEqu(); }
@@ -217,5 +234,5 @@ document.addEventListener("click", async ev => {
   } catch (e){ const m = $("#eqMsg") || $("#mMsg"); if (m){ m.style.color = "var(--err)"; m.textContent = "No se pudo guardar: " + e.message; } }
 });
 
-window.EQ = {init: (fR, fClave) => { R0 = fR; clave = fClave; return cargar(); }, filtra, contador, pagina, yo, evaluar, alCambiar: null};
+window.EQ = {ve, init: (fR, fClave) => { R0 = fR; clave = fClave; return cargar(); }, filtra, contador, pagina, yo, evaluar, alCambiar: null};
 })();
