@@ -108,7 +108,7 @@ def ultimos_valores(obs, n=6):
     return out
 
 
-CASILLAS = ("WWSINOP", "W1W2", "N", "Nubes", "CapaNube", "VVSINOP", "WWMETAR", "VTO", "RRR6", "Ts", "Td", "HR", "QFE", "QFF", "QNH", "TxAM", "TnAM", "TxPM", "TnPM")
+CASILLAS = ("WWSINOP", "W1W2", "a", "N", "Nubes", "CapaNube", "VVSINOP", "WWMETAR", "VTO", "RRR6", "Ts", "Td", "HR", "QFE", "QFF", "QNH", "TxAM", "TnAM", "TxPM", "TnPM")
 
 
 def casillas(obs, n=30):

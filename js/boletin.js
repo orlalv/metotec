@@ -21,7 +21,10 @@ function init(fclave){
   $("#bAnt").addEventListener("click", () => mover(-1)); $("#bSig").addEventListener("click", () => mover(1));
   $("#bDia").addEventListener("change", cargar); $("#bXls").addEventListener("click", excel);
   s.addEventListener("click", async ev => {
-    const mk = ev.target.closest("button[data-bm]");           // «Correcto / sin efecto» y «Resuelto»: quitan la marca y quedan registradas
+    let mk = ev.target.closest("button[data-bm]");           // «Correcto / sin efecto» y «Resuelto»: quitan la marca y quedan registradas
+    const tq = !mk && ev.target.closest("td[data-bq]");        // clic en la celda marcada: pide confirmar y la quita
+    if (tq && confirm(`¿Quitar la marca de ${tq.dataset.est} (${NCOL[tq.dataset.col] || tq.dataset.col})?\n\n${tq.dataset.msg}\n\nSe quita como «correcto / sin efecto», queda registrada en «Quitadas a mano» y no vuelve a salir.`))
+      mk = {dataset: {bm: "omitir", est: tq.dataset.est, col: tq.dataset.col, msg: tq.dataset.msg}};
     if (mk){
       ev.stopPropagation(); if (mk.disabled) return; mk.disabled = true;
       const id = `b|${B.dia}|${mk.dataset.est}|${mk.dataset.col}`;
@@ -63,7 +66,8 @@ function pintar(){
   const celda = (f, c) => {
     const m = (f.marcas || {})[c], val = f.v[c], cls = ["n"]; if (c === "tn") cls.push("tn"); if (c === "tx") cls.push("tx");
     if (m) cls.push(m.nivel);
-    return `<td class="${cls.join(" ")}"${m && m.msg ? ` title="${esc(m.msg)}"` : ""}>${esc(val)}${m && m.sub ? `<small>${esc(m.sub)}</small>` : ""}${m && (m.nivel === "err" || m.nivel === "warn") ? `<button class="bx" data-bm="omitir" data-est="${esc(f.nombre)}" data-col="${esc(c)}" data-msg="${esc(m.msg || "")}" title="Quitar esta marca: el dato no es un error (queda registrado en «Quitadas a mano»)">✕</button>` : ""}</td>`;
+    const quitable = m && (m.nivel === "err" || m.nivel === "warn");
+    return `<td class="${cls.join(" ")}${quitable ? " bq" : ""}"${m && m.msg ? ` title="${esc(m.msg)}${quitable ? "\n(Clic en la celda: quitar esta marca si no es un error)" : ""}"` : ""}${quitable ? ` data-bq="1" data-est="${esc(f.nombre)}" data-col="${esc(c)}" data-msg="${esc(m.msg || "")}"` : ""}>${esc(val)}${m && m.sub ? `<small>${esc(m.sub)}</small>` : ""}</td>`;
   };
   const filas = B.filas.map(f => {
     const m = marcasFila(f), e = m.filter(x => x[1].nivel === "err").length, w = m.filter(x => x[1].nivel === "warn").length;

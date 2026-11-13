@@ -73,7 +73,7 @@ aside{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(
 #sgPanel .sghead{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}#sgPanel .sghead>div{flex:1}#sgPanel .sghead b{font:600 16px var(--titulo)}#sgPanel .sghead small{color:var(--mu)}#sgPanel .sghead p{margin:6px 0 0;font-size:13px;color:var(--tx)}
 #sgPanel .sgx{background:none;border:1px solid var(--bd);color:var(--tx);border-radius:8px;font-size:16px;padding:2px 10px;cursor:pointer}#sgPanel .sgx:hover{border-color:var(--oro);color:var(--oro)}
 @media (max-width:900px){#sgPanel{width:100vw}}
-.sgbtn{white-space:nowrap;margin-left:6px;background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer}.sgbtn:hover{border-color:var(--oro)}
+tr.sgsel td{background:color-mix(in srgb,var(--oro) 22%,transparent)!important;box-shadow:inset 0 2px 0 var(--oro),inset 0 -2px 0 var(--oro)}tr.sgsel td:first-child{box-shadow:inset 5px 0 0 var(--oro),inset 0 2px 0 var(--oro),inset 0 -2px 0 var(--oro)}#sgPanel .sgalmsg{margin:8px 0 0;border:1px solid var(--oro);border-left-width:5px;border-radius:8px;padding:6px 10px;background:color-mix(in srgb,var(--oro) 10%,transparent)}#sgPanel .sgalmsg span{display:block;font:700 10.5px inherit;letter-spacing:.6px;text-transform:uppercase;color:var(--oro)}.sgbtn{white-space:nowrap;margin-left:6px;background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer}.sgbtn:hover{border-color:var(--oro)}
 .sgraf{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin:4px 0}.sgtop{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:13px}
 .sgtop input{width:64px;background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:3px 6px;font:600 13px var(--mono)}.sgval{font-family:var(--mono);font-size:12.5px}
 .sgley{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mu);margin:4px 0 6px}.sgley i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
@@ -127,7 +127,7 @@ main[hidden]{display:none}
 .cgrid td.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}.cgrid td.no{color:var(--err);background:color-mix(in srgb,var(--err) 18%,transparent);font-weight:700}.cgrid td.np{background:color-mix(in srgb,var(--mu) 10%,transparent)}.cgrid td.fx{color:var(--info)}.cgrid td.fu{color:var(--mu)}
 #bol,#ext,#per,#ser,#inf,#reg{flex:1;overflow:auto;padding:14px 20px}#bol[hidden],#ext[hidden],#per[hidden],#ser[hidden],#inf[hidden],#reg[hidden]{display:none}
 .sub2[hidden]{display:none}.sub2{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden;margin-right:6px}.tools .sub2 button{border:0;border-radius:0}.tools .sub2 button.on{background:var(--oro);color:var(--on)}.sub2 b{font-size:11px;margin-left:4px}
-.mk{background:none;border:1px solid var(--bd);color:var(--mu);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer;margin:1px 2px 1px 0;white-space:nowrap}.mk:hover{border-color:var(--oro);color:var(--oro)}.mk.ok{border-color:var(--ok);color:var(--ok)}
+.mk{min-width:26px;text-align:center;background:none;border:1px solid var(--bd);color:var(--mu);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer;margin:1px 2px 1px 0;white-space:nowrap}.mk:hover{border-color:var(--oro);color:var(--oro)}.mk.ok{border-color:var(--ok);color:var(--ok)}
 .sigue{display:inline-block;margin-left:6px;font-size:11.5px;font-weight:700;color:var(--sos);border:1px solid var(--sos);border-radius:20px;padding:0 7px}
 .ep td{vertical-align:top}.ep .inf{color:var(--ok);font-size:12px;font-weight:700}
 #inf .htools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}#inf .htools button{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:6px 11px;font:600 13px inherit;cursor:pointer}#inf .htools button:hover{border-color:var(--oro)}
@@ -146,7 +146,7 @@ main[hidden]{display:none}
 #bol table{border-collapse:collapse;width:100%;font-size:12.5px}#bol th,#bol td{border-bottom:1px solid color-mix(in srgb,var(--bd) 70%,transparent);padding:4px 7px}#bol th{background:var(--hover);color:var(--oro2);font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;text-align:center}#bol tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--panel2) 60%,transparent)}
 #bol td.n{text-align:right;white-space:nowrap;font-family:var(--mono);font-size:12px}#bol td.tn{color:#62B6E8}#bol td.tx{color:#F07A5A}:root[data-tema="claro"] #bol td.tn{color:#1F7FB8}:root[data-tema="claro"] #bol td.tx{color:#C8432A}#bol td.nom{white-space:nowrap}#bol td small{display:block;font:600 10.5px var(--mono)}
 #bol td.err{background:color-mix(in srgb,var(--err) 16%,transparent)!important;box-shadow:inset 0 0 0 1px var(--err)}#bol td.err small{color:var(--err)}#bol td.warn{background:color-mix(in srgb,var(--sos) 14%,transparent)!important}#bol td.warn small{color:var(--sos)}#bol td.info{background:color-mix(in srgb,var(--info) 12%,transparent)!important}#bol td.info small{color:var(--info)}
-#bol td[title]{cursor:help}#bol .bx{margin-left:5px;padding:0 5px;line-height:15px;font:700 11px inherit;background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:4px;cursor:pointer;vertical-align:middle}#bol .bx:hover{background:var(--err)}#bol td.rv{text-align:center;min-width:92px}#bol .ok{color:var(--ok);font-weight:700}#bol .bb{display:inline-block;margin:1px 0;font-size:11px;border-radius:4px;padding:1px 6px;font-weight:700}#bol .bb{border-radius:20px}#bol .bb.err{background:color-mix(in srgb,var(--err) 18%,transparent);color:var(--err);border:1px solid var(--err)}#bol .bb.warn{background:color-mix(in srgb,var(--sos) 16%,transparent);color:var(--sos);border:1px solid var(--sos)}
+#bol td[title]{cursor:help}#bol td.bq{cursor:pointer}#bol .bx{margin-left:5px;padding:0 5px;line-height:15px;font:700 11px inherit;background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:4px;cursor:pointer;vertical-align:middle}#bol .bx:hover{background:var(--err)}#bol td.rv{text-align:center;min-width:92px}#bol .ok{color:var(--ok);font-weight:700}#bol .bb{display:inline-block;margin:1px 0;font-size:11px;border-radius:4px;padding:1px 6px;font-weight:700}#bol .bb{border-radius:20px}#bol .bb.err{background:color-mix(in srgb,var(--err) 18%,transparent);color:var(--err);border:1px solid var(--err)}#bol .bb.warn{background:color-mix(in srgb,var(--sos) 16%,transparent);color:var(--sos);border:1px solid var(--sos)}
 #bol tr.sel td{background:color-mix(in srgb,var(--oro) 10%,transparent)!important}#bol tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--oro)}#bol tbody tr{cursor:pointer}
 #bol .lado{background:var(--panel);box-shadow:var(--sombra);border:1px solid var(--bd);border-radius:10px;padding:12px 14px}#bol .lado h4{margin:0 0 8px;font-size:15px}
 #bol .bit{border:1px solid var(--bd);border-left:3px solid var(--err);background:var(--panel);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-size:13px;cursor:pointer}#bol .bit.warn{border-color:var(--sos)}#bol .bit.info{border-color:var(--info)}#bol .bit p{margin:3px 0 0;color:var(--mu)}#bol .bit em{font-family:var(--mono);font-size:12px}#bol .bit em{font-style:normal;color:var(--oro);font-weight:700}
@@ -246,12 +246,12 @@ main[hidden]{display:none}
 <section id="comp" hidden></section>
 <footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · satélite GOES-19 · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
-<script src="js/casillas.js?v=202611131845"></script>
+<script src="js/casillas.js?v=202611131930"></script>
 <script src="js/sensorgraf.js?v=202611131700"></script>
 <script src="js/prioridad.js?v=202611101031"></script>
 <script src="js/minutarios.js?v=202611101101"></script>
 <script src="js/extremas.js?v=202611131710"></script>
-<script src="js/boletin.js?v=202611131830"></script>
+<script src="js/boletin.js?v=202611131940"></script>
 <script src="js/series.js?v=202611101600"></script>
 <script src="js/reglas.js?v=202611131500"></script>
 <script src="js/fallas.js?v=202611131300"></script>
@@ -328,9 +328,10 @@ const MARCA = window.MARCA = {
     const gen = ((R.observaciones || {}).generado || "").slice(0, 19);
     return gen > m.t ? "sigue" : "oculta";
   },
-  botones: (cod, h) => `<button class="mk" data-mk="resuelto" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Ya se corrigió: quitar de la lista y pasar al Historial">✓ Resuelto</button><button class="mk" data-mk="falsa" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="La alerta no corresponde (sirve para ajustar las reglas)">✗ Falsa alarma</button><button class="mk" data-mk="omitir" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Archivar: queda en el Historial como omitida y no vuelve a salir para esta estación, hora y regla, aunque el dato siga igual">⊘ Omitir</button>`,
+  botones: (cod, h) => `<button class="mk" data-mk="resuelto" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Resuelto: ya se corrigió; se quita de la lista y pasa al Historial" aria-label="Resuelto">✓</button><button class="mk" data-mk="falsa" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Falsa alarma: la alerta no corresponde (sirve para ajustar las reglas)" aria-label="Falsa alarma">✗</button><button class="mk" data-mk="omitir" data-id="${esc(MARCA.id(cod, h))}" data-msg="${esc(h.msg)}" title="Omitir: archivar; queda en el Historial como omitida y no vuelve a salir para esta estación, hora y regla, aunque el dato siga igual" aria-label="Omitir">⊘</button>`,
   aviso: `<span class="sigue" title="Se marcó como resuelta, pero en la revisión siguiente el dato sigue igual en SACLIM">resuelta, pero el dato sigue igual</span>`
 };
+new MutationObserver(() => { const P = $("#sgPanel"); if (P && !P._obs){ P._obs = 1; new MutationObserver(() => { if (P.hidden) document.querySelectorAll("tr.sgsel").forEach(x => x.classList.remove("sgsel")); }).observe(P, {attributes: true, attributeFilter: ["hidden"]}); } }).observe(document.body, {childList: true});
 document.addEventListener("click", async ev => {
   const b = ev.target.closest(".mk[data-mk]"); if (!b || b.disabled) return;
   const id = b.dataset.id, v = b.dataset.mk, dia = id.split("|")[2].slice(0, 10); b.disabled = true;
@@ -348,13 +349,14 @@ document.addEventListener("click", ev => {
   // el gráfico se abre en un panel lateral a la izquierda (sobre el mapa), así la lista y los hallazgos siguen a la vista
   const [hora, regla, cod0] = bt.dataset.sg.split("|"), h = DETH.find(x => x.hora === hora && x.regla === regla);
   const cod = cod0 || $("#det").dataset.cod, msg = bt.dataset.msg || (h ? h.msg : "");
-  const fila = bt.closest("tr"), nom = fila && fila.querySelector(".nom b") ? fila.querySelector(".nom b").textContent : ($("#det h2") ? $("#det h2").firstChild.textContent.trim() : cod);
+  const fila = bt.closest("tr"); document.querySelectorAll("tr.sgsel").forEach(x => x.classList.remove("sgsel")); if (fila) fila.classList.add("sgsel");
+  const nom = fila && fila.querySelector(".nom b") ? fila.querySelector(".nom b").textContent : ($("#det h2") ? $("#det h2").firstChild.textContent.trim() : cod);
   let P = $("#sgPanel");
   if (!P){ P = document.createElement("aside"); P.id = "sgPanel"; document.body.appendChild(P);
     P.addEventListener("click", e => { if (e.target.closest(".sgx")) P.hidden = true; });
     document.addEventListener("keydown", e => { if (e.key === "Escape") P.hidden = true; }); }
   P.hidden = false;
-  P.innerHTML = `<div class="sghead"><div><b>${esc(nom)}</b> <small>${esc(cod)} · ${esc(regla)} · obs. ${esc(hora.slice(8, 10))}/${esc(hora.slice(5, 7))} ${esc(hora.slice(11, 16))} UTC</small><p>${esc(msg)}</p></div><button class="sgx" title="Cerrar (Esc)">✕</button></div><div class="sgcuerpo"></div>`;
+  P.innerHTML = `<div class="sghead"><div><b>${esc(nom)}</b> <small>${esc(cod)} · ${esc(regla)} · obs. ${esc(hora.slice(8, 10))}/${esc(hora.slice(5, 7))} ${esc(hora.slice(11, 16))} UTC</small><div class="sgalmsg"><span>Alerta que está viendo</span>${esc(msg)}</div></div><button class="sgx" title="Cerrar (Esc)">✕</button></div><div class="sgcuerpo"></div>`;
   SGRAF.abrir(P.querySelector(".sgcuerpo"), cod, hora, regla, msg);
 });
 // Pendientes / Informados: las alertas de un episodio de falla ya informado van a «Informados»
@@ -370,7 +372,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&
 // «Falsa alarma» en avisos de estaciones automáticas (en observaciones va junto a «Resuelto», ver MARCA)
 const FALSAS = new Set();
 const botonFalsa = (dia, id) => ` <button class="fa mk${FALSAS.has(id) ? " on" : ""}" data-d="${esc(dia)}" data-i="${esc(id)}" title="Marcar como falsa alarma (para ajustar la regla)" style="${FALSAS.has(id) ? "background:#eb5757;color:#fff" : ""}">${FALSAS.has(id) ? "✗ falsa alarma" : "✗ Falsa alarma"}</button>`;
-const botonOmitir = (dia, id) => ` <button class="om mk" data-d="${esc(dia)}" data-i="${esc(id)}" title="Archivar: queda en el Historial como omitida y no vuelve a salir para esta estación, hora y regla, aunque el dato siga igual">⊘ Omitir</button>`;
+const botonOmitir = (dia, id) => ` <button class="om mk" data-d="${esc(dia)}" data-i="${esc(id)}" title="Omitir: archivar; queda en el Historial como omitida y no vuelve a salir para esta estación, hora y regla, aunque el dato siga igual" aria-label="Omitir">⊘</button>`;
 const idEma = a => a.episodio ? `a|${a.codigo}|${a.episodio.inicio}|episodio|${a.episodio.sensor}` : `a|${a.codigo}|${String(a.momento).slice(0, 16)}|${a.prueba}|${a.var}`;
 document.addEventListener("click", async ev => {
   const b = ev.target.closest("button.fa"); if (!b) return;
