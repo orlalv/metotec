@@ -524,7 +524,7 @@ const MAPA_MODOS = new Set(["ema", "obs", "mod"]);
 function cambiarModo(m){
   const mb = document.querySelector(`.modos button[data-m="${m}"]`); if (!mb) return;
   if (mb.hidden){ const g = mb.dataset.g; document.querySelectorAll(".grupos button").forEach(x => x.classList.toggle("on", x.dataset.g === g)); document.querySelectorAll(".modos button").forEach(x => x.hidden = x.dataset.g !== g); }
-  if (modo !== m) sel = null;
+  if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
   modo = m; $("#det").style.display = "none";
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
   const h = !MAPA_MODOS.has(m), sec = {hist: "hist", prio: "prio", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", equ: "equ", mis: "mis", comp: "comp"}[m];
