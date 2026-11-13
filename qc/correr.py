@@ -15,7 +15,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
-import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC, boletin as BOL
+import dmc, pruebas as P, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC, boletin as BOL, productos as PRO
 
 VERSION = "0.1"
 
@@ -409,6 +409,11 @@ def main():
             estado["boletin"] = BOL.correr(a.datos, forzar=a.boletin == "si", subir=subir_kv)
         except Exception:
             estado["errores"].append(f"boletin: {traceback.format_exc(limit=2)}")
+    if not a.json:   # productos públicos: extremas del día y lluvia con observador
+        try:
+            estado["productos"] = PRO.correr(a.datos, subir=subir_kv)
+        except Exception:
+            estado["errores"].append(f"productos: {traceback.format_exc(limit=2)}")
     txt = json.dumps(res, ensure_ascii=False, default=str)
     Path(a.salida).write_text(txt, encoding="utf-8")
     estado["kv"] = subir_kv("qc/ultimo", txt)

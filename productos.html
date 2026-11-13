@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Productos del día · METOTEC</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<style>
+:root{--noche:#0A1F44;--marino:#082B5C;--azul:#1688D4;--oro:#C9A54C;--fondo:#F5F6F8;--tx:#16202E;--mu:#6B7686;--bd:#E3E7EC}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tx);font:16px/1.5 Inter,system-ui,"Segoe UI",Roboto,Arial,sans-serif}
+.w{max-width:1280px;margin:0 auto;padding:0 clamp(16px,4vw,56px)}
+header{background:radial-gradient(1100px 380px at 85% 0%,#163a73 0%,var(--noche) 62%);color:#fff;padding:22px 0}
+header .w{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+header .logo img{display:block;height:40px;width:auto}
+header nav{display:flex;gap:26px;font-size:14.5px;font-weight:500}
+header nav a{color:#c8d2e2;text-decoration:none;padding-bottom:4px;border-bottom:2px solid transparent}
+header nav a:hover,header nav a.on{color:#fff;border-bottom-color:var(--oro)}
+.rule{height:3px;background:linear-gradient(90deg,var(--oro),rgba(201,165,76,0) 70%)}
+main.w{padding-top:24px;padding-bottom:20px}
+h1{margin:0 0 2px;font-size:26px}
+.mu{color:var(--mu);font-size:14px}
+.err{color:#b23a3a}
+.seg{display:inline-flex;border:1px solid #c9d2dd;border-radius:9px;overflow:hidden;background:#fff;flex-wrap:wrap}
+.seg button{font:inherit;font-size:14px;padding:7px 16px;border:0;background:#fff;cursor:pointer;color:var(--tx)}
+.seg button.on{background:var(--marino);color:#fff}
+.barra{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:14px 0}
+.barra input[type=date],.barra .bt{font:inherit;font-size:14px;padding:5px 10px;border:1px solid #c9d2dd;border-radius:8px;background:#fff}
+.sc{overflow-x:auto;background:#fff;border:1px solid var(--bd);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{background:#eef2f8;color:var(--marino);text-align:right;padding:8px 10px;font-size:12.5px;white-space:nowrap}th:first-child,td:first-child{text-align:left}
+td{padding:7px 10px;border-top:1px solid #eef1f5;text-align:right;white-space:nowrap}
+td.n{white-space:normal}
+td small,.mu small{color:var(--mu)}
+.ok{color:#2a7d4f}.err2{background:#fbe3e3;color:#8f1d1d;font-weight:600}.warn2{background:#fff3cd;color:#7a5b00;font-weight:600}.inf2{color:#8a94a6}
+.sub{display:block;font-size:11px;font-weight:500}
+.g2{display:grid;gap:16px;grid-template-columns:repeat(2,1fr)}
+.card{background:#fff;border:1px solid var(--bd);border-radius:12px;overflow:hidden}.card h3{margin:0;padding:12px 14px;font-size:15px;background:#eef2f8;color:var(--marino)}
+.card td{padding:6px 12px}.card td:nth-child(2){text-align:left;white-space:normal}.pos{color:var(--mu);width:28px;text-align:center}
+.lis{margin:14px 0 0;padding-left:18px;font-size:13.5px}.lis li{margin:4px 0}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--mu);margin-top:10px}.leg span{padding:2px 8px;border-radius:6px}
+.aviso{font-size:13px;color:var(--mu);margin-top:14px}
+footer{margin-top:30px;background:var(--noche);color:#9fb0c8;font-size:13px;padding:22px 0}
+footer .w{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer img{height:26px;width:auto;filter:brightness(0) invert(1);opacity:.8;margin-right:12px;vertical-align:middle}
+footer a{color:#9fb0c8}
+@media (max-width:760px){.g2{grid-template-columns:1fr}header{padding:16px 0}header .logo img{height:30px}header nav{width:100%;gap:18px;overflow-x:auto;font-size:14px}header nav a{white-space:nowrap}}
+</style>
+</head>
+<body>
+<header><div class="w">
+ <a href="index.html" class="logo"><img src="img/logo_blanco.svg" alt="METOTEC"></a>
+ <nav><a href="index.html#datos">Datos</a><a href="mapas.html">Mapas</a><a href="productos.html" class="on">Productos</a><a href="qc.html">Control de calidad</a><a href="acerca.html">Acerca</a></nav>
+</div></header>
+<div class="rule"></div>
+<main class="w">
+ <h1>Productos del día</h1>
+ <div class="mu" id="sub">Boletín revisado · extremas del día · lluvia con observador</div>
+ <div class="barra"><span class="seg" id="tabs"><button data-t="bol" class="on">Boletín revisado</button><button data-t="ext">Extremas del día</button><button data-t="llu">Lluvia con observador</button></span></div>
+ <div id="out"><p class="mu">Cargando…</p></div>
+</main>
+<footer><div class="w"><div><img src="img/isotipo.svg" alt="">© 2026 O. Álvarez B. · Herramientas educativas y de apoyo, no oficiales.</div><a href="index.html">Portada</a></div></footer>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
+const f1 = v => v == null ? "—" : (Math.round(v * 10) / 10).toFixed(1);
+const cache = {};
+async function api(q){ if (cache[q]) return cache[q]; const r = await fetch("/api/productos?" + q); if (!r.ok) throw 0; return cache[q] = await r.json(); }
+const nombreCorto = n => String(n || "").replace(/\s{2,}/g, " ");
+const dmy = d => d ? d.split("-").reverse().join("-") : "";
+
+// ---------------------------------------------------------------- boletín revisado
+const COLS = ["tn", "tn_h", "tx", "tx_h", "rr24", "acum", "ant", "normal_f", "defsup", "normal_a"];
+const NCOL = {tn: "T. mínima", tn_h: "Hora", tx: "T. máxima ayer", tx_h: "Hora", rr24: "Agua caída 24 h", acum: "A la fecha", ant: "Año pasado", normal_f: "Normal a la fecha", defsup: "Déf/Sup %", normal_a: "Normal anual"};
+async function boletin(dia){
+  const b = await api("tipo=boletin" + (dia ? "&dia=" + dia : ""));
+  const hoy = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10), d = b.dia || dia || hoy;
+  const barra = `<div class="barra"><button class="bt" id="ant">◀</button><input type="date" id="dia" value="${d}" max="${hoy}"><button class="bt" id="sig">▶</button>` +
+    (b.filas ? `<span class="mu">${esc(b.fecha_txt || "")} · revisado ${esc((b.revisado || "").slice(11, 16))} UTC · ${b.pasadas} pasada(s)</span>` : "") + `</div>`;
+  let cuerpo;
+  if (!b.filas) cuerpo = `<p class="mu">No hay boletín revisado para ${dmy(d)}. El boletín se publica desde las 10:00 (hora de Santiago) y se revisa hasta las 13:00.</p>`;
+  else {
+    const hall = [];
+    const filas = b.filas.map(f => `<tr><td>${esc(f.nombre)}</td>` + COLS.map(c => {
+      const m = (f.marcas || {})[c], v = f.v[c];
+      if (!m) return `<td>${esc(v)}</td>`;
+      if (m.nivel === "info") return `<td class="inf2">${esc(v)}${m.sub ? `<span class="sub">${esc(m.sub)}</span>` : ""}</td>`;
+      if (m.msg) hall.push({f: f.nombre, c, m});
+      return `<td class="${m.nivel === "err" ? "err2" : "warn2"}" title="${esc(m.msg || "")}">${esc(v)}${m.sub ? `<span class="sub">${esc(m.sub)}</span>` : ""}</td>`;
+    }).join("") + "</tr>").join("");
+    const lista = hall.length ? `<ul class="lis">` + hall.map(h => `<li><b>${esc(nombreCorto(h.f))}</b> · ${esc(h.m.msg)}</li>`).join("") + `</ul>` : `<p class="mu">La revisión no encontró diferencias.</p>`;
+    cuerpo = `<div class="sc"><table><thead><tr><th>Estación</th>${COLS.map(c => `<th>${NCOL[c]}</th>`).join("")}</tr></thead><tbody>${filas}</tbody></table></div>
+      <div class="leg"><span class="err2">erróneo</span><span class="warn2">dudoso</span><span class="inf2">sin dato / pendiente</span><span>sin color = revisado sin diferencias</span></div>
+      <h3 style="margin:18px 0 0;font-size:16px">Qué se encontró</h3>${lista}
+      <p class="aviso">La revisión compara el boletín con la estación automática del mismo lugar y con lo que ingresó el observador. «→ valor» es el valor probable. Información de apoyo, no oficial.</p>`;
+  }
+  $("#out").innerHTML = barra + cuerpo;
+  $("#dia").onchange = e => boletin(e.target.value);
+  $("#ant").onclick = () => boletin(new Date(Date.parse(d + "T12:00Z") - 864e5).toISOString().slice(0, 10));
+  $("#sig").onclick = () => { const n = new Date(Date.parse(d + "T12:00Z") + 864e5).toISOString().slice(0, 10); if (n <= hoy) boletin(n); };
+}
+
+// ---------------------------------------------------------------- extremas
+function ranking(tit, L, u, dec){
+  const filas = (L || []).map((x, i) => `<tr><td class="pos">${i + 1}</td><td><a href="estacion.html?cod=${x.cod}" style="color:inherit;text-decoration:none">${esc(nombreCorto(x.nombre))}</a>${x.alt != null ? ` <small>${Math.round(x.alt)} m</small>` : ""}</td><td><b>${(+x.valor).toFixed(dec)}</b> <small>${u}</small></td><td><small>${esc(x.hora || "")}</small></td></tr>`).join("");
+  return `<div class="card"><h3>${tit}</h3><table><tbody>${filas || `<tr><td class="mu">Sin datos</td></tr>`}</tbody></table></div>`;
+}
+async function extremas(sel){
+  const e = await api("tipo=extremas"), D = sel === "ayer" && e.ayer ? e.ayer : e.hoy;
+  const nota = D.completo ? `día completo` : `hasta las ${D.hasta} (hora de Santiago)`;
+  $("#out").innerHTML = `<div class="barra"><span class="seg" id="dd"><button data-d="hoy" class="${D === e.hoy ? "on" : ""}">Hoy</button><button data-d="ayer" class="${D === e.ayer ? "on" : ""}">Ayer</button></span>
+    <span class="mu">${dmy(D.dia)} · ${nota} · ${D.con_T} estaciones con temperatura · ${D.con_lluvia} con lluvia</span></div>
+    <div class="g2">${ranking("Temperatura máxima", D.tx, "°C", 1)}${ranking("Temperatura mínima", D.tn, "°C", 1)}${ranking("Racha máxima de viento", D.racha, "kt", 0)}${ranking("Lluvia acumulada del día", D.lluvia, "mm", 1)}</div>
+    <p class="aviso">Red de estaciones automáticas, día local de Santiago (00:00 a 24:00). Solo entran estaciones con datos en al menos el 80 % del tiempo (90 % para lluvia) y se omiten valores fuera de rango físico, picos aislados y estaciones con una falla de sensor registrada. Datos automáticos sin revisión manual: pueden incluir errores. La racha solo la informan algunas estaciones. Información de apoyo, no oficial.</p>`;
+  document.querySelectorAll("#dd button").forEach(b => b.onclick = () => extremas(b.dataset.d));
+}
+
+// ---------------------------------------------------------------- lluvia con observador
+const ETQ = {coincide: ["ok", "coincide"], difiere: ["warn2", "difiere"], incompleto: ["inf2", "incompleto"], "sin referencia": ["inf2", "sin referencia"]};
+async function lluvia(solo){
+  const l = await api("tipo=lluvia"), todas = l.filas;
+  const L = solo ? todas.filter(x => x.total >= 0.1 || x.traza) : todas;
+  const fila = x => { const [cl, tx] = ETQ[x.estado] || ["", x.estado]; return `<tr><td><a href="estacion.html?cod=${x.cod}" style="color:inherit;text-decoration:none">${esc(nombreCorto(x.nombre))}</a></td>${x.r6.map(v => `<td>${v == null ? "—" : f1(v)}</td>`).join("")}<td><b>${f1(x.total)}</b>${x.traza ? " <small>(traza)</small>" : ""}</td><td>${f1(x.ema)}</td><td>${f1(x.boletin)}</td><td class="${cl}">${tx}</td></tr>`; };
+  $("#out").innerHTML = `<div class="barra"><span class="seg"><button class="${solo ? "on" : ""}" id="s1">Con lluvia</button><button class="${solo ? "" : "on"}" id="s2">Todas (${todas.length})</button></span>
+    <span class="mu">Del ${l.desde.slice(5, 10).split("-").reverse().join("-")} ${l.desde.slice(11)} al ${l.hasta.slice(5, 10).split("-").reverse().join("-")} ${l.hasta.slice(11)} UTC · ${l.con_lluvia} estaciones con lluvia o traza</span></div>
+    <div class="sc"><table><thead><tr><th>Estación</th>${l.horas.map(h => `<th>RRR6 ${h}</th>`).join("")}<th>Total 24 h</th><th>Automática</th><th>Boletín</th><th>Comparación</th></tr></thead><tbody>${L.map(fila).join("") || `<tr><td colspan="9" class="mu" style="text-align:left">Sin lluvia en las estaciones con observador en este periodo.</td></tr>`}</tbody></table></div>
+    <p class="aviso">Lluvia que ingresó el observador en cada observación de las 18, 00, 06 y 12 UTC (RRR6, mm) y su suma, frente a lo que sumó el pluviómetro automático de la misma estación y al agua caída del boletín climatológico. «Difiere» es una diferencia de 0,2 mm o más con alguna de las dos referencias. Información de apoyo, no oficial.</p>`;
+  $("#s1").onclick = () => lluvia(true); $("#s2").onclick = () => lluvia(false);
+}
+
+const VISTAS = {bol: () => boletin(), ext: () => extremas("hoy"), llu: () => lluvia(true)};
+async function ir(t){
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === t));
+  history.replaceState(null, "", "#" + t); $("#out").innerHTML = `<p class="mu">Cargando…</p>`;
+  try { await VISTAS[t](); } catch (e){ $("#out").innerHTML = `<p class="err">No se pudieron cargar los datos. Intente de nuevo en unos minutos.</p>`; }
+}
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => ir(b.dataset.t));
+ir(VISTAS[location.hash.slice(1)] ? location.hash.slice(1) : "bol");
+</script>
+</body>
+</html>

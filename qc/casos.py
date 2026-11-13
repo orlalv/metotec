@@ -224,6 +224,35 @@ def prueba_ema_episodio():
         FALLAS.append(f"episodio: debía terminar al no verse → {fin}")
 
 
+def prueba_productos_extremas_y_lluvia():
+    import productos as PR, tempfile, gzip, json
+    from datetime import datetime, timezone
+    d = Path(tempfile.mkdtemp())
+    ahora = datetime(2026, 11, 13, 20, 5, tzinfo=timezone.utc)           # 17:05 en Santiago (UTC-3)
+    filas = ["codigo,momento,T,fx10,rr1m"]
+    for h in range(3, 20):                                                 # 00:00 local = 03:00 UTC
+        for m in range(0, 60, 10):
+            t = f"2026-11-13 {h:02d}:{m:02d}:00"
+            filas += [f"A,{t},{15 + (h - 3) / 2},20,0", f"B,{t},10,,0", f"C,{t},{40 if (h, m) == (12, 30) else 12},,0"]   # C: pico aislado de 40 °C
+    for h in range(3, 20):
+        g = d / "ema" / f"2026/11/13/{h:02d}.csv.gz"; g.parent.mkdir(parents=True, exist_ok=True)
+        g.write_bytes(gzip.compress(("\n".join([filas[0]] + [x for x in filas[1:] if f",2026-11-13 {h:02d}:" in x]) + "\n").encode()))
+    r = PR.extremas_dia(str(d), ahora)["hoy"]
+    if [x["cod"] for x in r["tx"]][:1] != ["A"] or r["tx"][0]["valor"] != 23.0:
+        FALLAS.append(f"productos: la máxima debía ser A 23.0 → {r['tx'][:2]}")
+    if any(x["cod"] == "C" and x["valor"] > 20 for x in r["tx"]):
+        FALLAS.append("productos: el pico aislado de 40 °C no debía entrar al ranking")
+    if not r["racha"] or r["racha"][0]["cod"] != "A":
+        FALLAS.append(f"productos: la racha debía ser de A → {r['racha']}")
+    sen = {"A": {h: {"RRR6": {"RRR6": v, "Traza": 0}} for h, v in (("18", 0.0), ("00", 1.2), ("06", 0.0), ("12", 0.4))}}
+    for dia, hs in (("2026/11/12", ("18",)), ("2026/11/13", ("00", "06", "12"))):
+        (d / "sensorial" / dia).parent.mkdir(parents=True, exist_ok=True)
+        (d / "sensorial" / (dia + ".json.gz")).write_bytes(gzip.compress(json.dumps({"A": {h: sen["A"][h] for h in hs}}).encode()))
+    l = PR.lluvia_observador(str(d), ahora)
+    if len(l["filas"]) != 1 or l["filas"][0]["total"] != 1.6 or l["filas"][0]["estado"] != "sin referencia":
+        FALLAS.append(f"productos: lluvia con observador debía sumar 1.6 mm sin referencia → {l['filas']}")
+
+
 if __name__ == "__main__":
     pruebas = [f for k, f in sorted(globals().items()) if k.startswith("prueba_")]
     for f in pruebas:
