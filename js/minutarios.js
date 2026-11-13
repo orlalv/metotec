@@ -302,9 +302,33 @@ function pintar(){
     ${bloque("vec", "Estaciones cercanas", `<div class="htools"><input id="mAgr" list="mLista" placeholder="Agregar otra estación…" style="min-width:260px"><span style="color:var(--mu);font-size:12.5px">Marque hasta 2 para compararlas minuto a minuto con ${esc(M.nombre)}.</span></div>
     <div id="mVec"><p style="color:var(--mu)">Buscando las más cercanas…</p></div>`)}
     ${bloque("graf", "Gráfico", `<div class="htools">${vars.filter(v => !["rr6", "rr24", "Tn12", "Tx12"].includes(v[0])).map(v => `<button data-mv="${v[0]}" ${v[0] === mVar ? 'style="border-color:var(--oro);color:var(--oro)"' : ""}>${v[1]}</button>`).join("")}</div><div id="mGraf"></div>`)}<div id="mCompTab"></div>
-    ${bloque("datos", "Datos minutarios", `<div style="max-height:60vh;overflow:auto;border:1px solid var(--bd);border-radius:8px"><table class="mtab"><tr><th>UTC</th><th>Local</th>${vars.map(v => `<th>${v[1]}<br><small>${v[2]}</small></th>`).join("")}</tr>
+    ${bloque("datos", "Datos minutarios", `<div class="htools" id="mFil" style="font-size:12.5px;gap:8px;flex-wrap:wrap;align-items:center">
+      <button data-q="tn" title="Resaltar y llevar a los minutos de la temperatura mínima del día">Tmín</button><button data-q="tx" title="Resaltar y llevar a los minutos de la temperatura máxima del día">Tmáx</button><button data-q="rr" title="Mostrar solo los minutos con agua caída mayor que 0">Agua caída &gt; 0</button>
+      <span style="color:var(--mu)">Filtrar:</span><select id="mFV">${vars.map(v => `<option value="${v[0]}">${v[1]}</option>`).join("")}</select><select id="mFO"><option value="&gt;">&gt;</option><option value="&gt;=">≥</option><option value="&lt;">&lt;</option><option value="&lt;=">≤</option><option value="=">=</option></select><input id="mFN" type="number" step="any" style="width:90px" placeholder="valor"><button data-q="f">Filtrar</button><button data-q="x">Quitar filtro</button><span id="mFR" style="color:var(--mu)"></span></div>
+    <div style="max-height:60vh;overflow:auto;border:1px solid var(--bd);border-radius:8px"><table class="mtab"><tr><th>UTC</th><th>Local</th>${vars.map(v => `<th>${v[1]}<br><small>${v[2]}</small></th>`).join("")}</tr>
     ${M.F.map(o => `<tr id="m${o.t}"><td>${hhmm(o.t)}</td><td>${loc(o.t)}</td>${vars.map(v => { const n = (mal[o.t] || {})[v[0]]; return `<td${n ? ` style="background:${n === 2 ? "#5a1f1f" : "#4a3f12"}"` : ""}>${o[v[0]] ?? ""}</td>`; }).join("")}</tr>`).join("")}</table></div>`)}`;
-  grafico(); vecinas();
+  grafico(); vecinas(); filtros();
+}
+/* buscar en la tabla de datos minutarios: Tmín, Tmáx, agua caída > 0 o cualquier variable con un umbral */
+function filtros(){
+  const bar = $("#mFil"); if (!bar) return;
+  const filas = () => [...document.querySelectorAll("#minu table.mtab:not(.mcomp) tr[id^='m']")];
+  let ties = [], pos = 0;
+  const limpiar = () => { filas().forEach(r => { r.style.display = ""; r.classList.remove("mhit"); }); $("#mFR").textContent = ""; };
+  const valido = (o, v) => { const L = VAL[v] || [-Infinity, Infinity]; return o[v] != null && o[v] >= L[0] && o[v] <= L[1] && !o["_p" + v]; };
+  const filtrar = f => { limpiar(); let n = 0; filas().forEach((r, i) => { const o = M.F[i], ok = o && o[f.v] != null && f.f(o[f.v]); r.style.display = ok ? "" : "none"; if (ok) n++; });
+    $("#mFR").textContent = `${n} de ${M.F.length} minutos`; };
+  const extrema = min => { limpiar(); const L = M.F.map((o, i) => [o, i]).filter(([o]) => valido(o, "T")); if (!L.length){ $("#mFR").textContent = "sin datos de temperatura"; return; }
+    const ex = min ? Math.min(...L.map(([o]) => o.T)) : Math.max(...L.map(([o]) => o.T));
+    const igual = L.filter(([o]) => o.T === ex), fs = filas(); igual.forEach(([, i]) => fs[i] && fs[i].classList.add("mhit"));
+    if (!ties.length || ties.key !== (min ? "tn" : "tx")){ ties = igual.map(([o, i]) => i); ties.key = min ? "tn" : "tx"; pos = 0; } else pos = (pos + 1) % ties.length;
+    const f = fs[ties[pos]]; if (f) f.scrollIntoView({block: "center"});
+    $("#mFR").textContent = `${min ? "Tmín" : "Tmáx"} ${f1(ex)} °C · ${igual.length} minuto${igual.length > 1 ? "s" : ""}: ${igual.slice(0, 8).map(([o]) => hhmm(o.t)).join(", ")}${igual.length > 8 ? "…" : ""}` + (igual.length > 1 ? " (clic otra vez para ir al siguiente)" : ""); };
+  bar.addEventListener("click", ev => { const b = ev.target.closest("button[data-q]"); if (!b) return; const q = b.dataset.q;
+    if (q === "tn") extrema(true); else if (q === "tx") extrema(false); else if (q === "x") limpiar();
+    else if (q === "rr") filtrar({v: "rr1m", f: x => x > 0});
+    else if (q === "f"){ const n = parseFloat($("#mFN").value); if (isNaN(n)){ $("#mFR").textContent = "escriba un valor"; return; }
+      const op = $("#mFO").value, F = {">": x => x > n, ">=": x => x >= n, "<": x => x < n, "<=": x => x <= n, "=": x => Math.abs(x - n) < 1e-9}[op]; filtrar({v: $("#mFV").value, f: F}); } });
 }
 /* bloques que se pliegan: se recuerda cuáles cerró el usuario */
 const CERR = new Set();
