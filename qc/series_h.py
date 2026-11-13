@@ -184,7 +184,7 @@ def revisar_estacion(cod, S, E):
         if v in ("Ts", "Td", "QFE", "QFF", "HR"):
             b = (x != x.shift()).cumsum()
             largo = x.groupby(b).transform("size")
-            umbral = {"Ts": 8, "Td": 10, "HR": 12, "QFE": 8, "QFF": 8}[v]
+            umbral = {"Ts": 8, "Td": 10, "HR": 10, "QFE": 8, "QFF": 8}[v]
             ini = x[(largo >= umbral) & (b != b.shift())].dropna()
             if v == "HR":
                 ini = ini[ini < 97]          # 100 % por horas es normal con niebla o lluvia

@@ -157,12 +157,47 @@ def prueba_visibilidad_y_nubes():
 
 
 def prueba_traza():
-    si_alerta(S.codificacion(obs(N=0, rr6=0.4, traza=1)), "C42", "traza con RRR6 0.4", nivel=2)
+    si_alerta(S.codificacion(obs(N=0, rr6=0.4, traza=1)), "C42", "traza con RRR6 0.4", nivel=1)
     A = minutario(T, lluvia={T - pd.Timedelta(hours=2, minutes=k): 0.1 for k in range(3)})
-    si_alerta(S.frente_sensor(T, obs(N=0, rr6=0, traza=1), A), "SRRR6", "traza con 0.3 mm en el pluviómetro", nivel=2)
+    si_alerta(S.frente_sensor(T, obs(N=0, rr6=0, traza=1), A), "SRRR6", "traza con 0.3 mm en el pluviómetro", nivel=1)
     h = {T - pd.Timedelta(hours=k): obs(ww=2, N=2) for k in range(1, 6)}
     h[T] = obs(ww=2, N=2, rr6=0, traza=1)
     si_alerta(S.evolucion(T, h[T], h, minutario(T)), "E21", "traza sin fenómenos", nivel=0)
+
+
+# ----------------------------------------------------------------- estaciones automáticas
+def _ema(horas, **cols):
+    m = pd.date_range(T - pd.Timedelta(hours=horas) + pd.Timedelta(minutes=1), T, freq="1min")
+    base = dict(codigo="1", momento=m, T=15.0, Td=5.0, HR=50.0, P_est=955.0, rr1m=0.0, ff10=5.0, dd10=180.0, Rad=0.0)
+    base.update(cols)
+    D = pd.DataFrame(base)
+    D["T"] = D["T"] + (D.index % 7) * 0.1; D["Td"] = D["Td"] + (D.index % 5) * 0.1; D["P_est"] = D["P_est"] + (D.index % 3) * 0.1
+    return D
+
+
+def prueba_ema_hr_pegada():
+    import pruebas as P
+    no_alerta([("", a["prueba"], a["nivel"]) for a in P.pegados(_ema(9)) if a["var"] == "HR"], "pegado", "HR quieta 9 h")
+    si_alerta([("", a["prueba"], a["nivel"]) for a in P.pegados(_ema(11)) if a["var"] == "HR"], "pegado", "HR quieta 11 h")
+
+
+def prueba_ema_rango_zona():
+    import pruebas as P
+    E = pd.DataFrame([dict(codigo="1", lat=-20.5, alt=10)])            # norte costero: 5 a 38 °C
+    si_alerta([("", a["prueba"], a["nivel"]) for a in P.rango_zona(_ema(1, T=2.0, P_est=1010.0), E)], "rango", "Ts 2 °C en el norte costero", nivel=1)
+    no_alerta([("", a["prueba"], a["nivel"]) for a in P.rango_zona(_ema(1, P_est=1010.0), E)], "rango", "Ts 15 °C en el norte costero")
+
+
+def prueba_ema_episodio():
+    import episodios as EP, tempfile
+    d = tempfile.mkdtemp()
+    al = [dict(codigo="1", prueba="rango", var=v, nivel=2, momento=str(T), valor=1, ref=None, msg="x") for v in ("T", "HR")]
+    r, _ = EP.agrupar(al, d, T)
+    if len(r) != 1 or "termohigrómetro" not in r[0]["msg"]:
+        FALLAS.append(f"episodio: Ts y HR debían ir en un solo aviso del termohigrómetro → {r}")
+    _, fin = EP.agrupar([], d, T + pd.Timedelta(hours=2))
+    if len(fin) != 1 or fin[0]["episodio"]["sigue"]:
+        FALLAS.append(f"episodio: debía terminar al no verse → {fin}")
 
 
 if __name__ == "__main__":

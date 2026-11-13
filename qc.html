@@ -213,6 +213,7 @@ const NOM = {0: "Bien", 1: "Sospechoso", 2: "Erróneo", 3: "Sin datos"};
 const PR = {incendio: "Incendio cercano", rango: "Rango", salto: "Salto", pegado: "Valor pegado", coherencia: "Coherencia", vecinas: "Vecinas", modelo: "Open-Meteo", wrf: "WRF-DMC", lluvia: "Lluvia", satelite: "Satélite", completitud: "Completitud", extremas: "Extremas"};
 const VARGR = [["T", "Temperatura", ["T"]], ["EXT", "Extremas (Tn12, Tx12)", ["Tn12", "Tx12"]], ["Td", "Punto de rocío", ["Td"]], ["HR", "Humedad", ["HR"]], ["P", "Presión", ["P_est", "P_mar", "P_std"]],
   ["V", "Viento", ["ff10", "dd10", "ff2", "dd2", "fx10"]], ["RR", "Precipitación", ["rr1m", "rr1h", "rr3h", "rr6", "rr24"]], ["Rad", "Radiación", ["Rad"]], ["C", "Completitud", ["registros"]]];
+const nomVar = v => String(v).split("+").map(x => VAR[x] || x).join(" + ");
 const VAR2G = Object.fromEntries(VARGR.flatMap(([k, , vs]) => vs.map(v => [v, k])));
 let VSEL = new Set(VARGR.map(g => g[0]));
 const GRUPOS = {todas: null, basicas: ["rango", "salto", "pegado", "coherencia", "completitud", "extremas"], vecinas: ["vecinas"], modelos: ["modelo", "wrf"], lluvia: ["lluvia"], satelite: ["satelite"], incendio: ["incendio"]};
@@ -286,7 +287,7 @@ document.addEventListener("click", ev => {
   P.innerHTML = `<div class="sghead"><div><b>${esc(nom)}</b> <small>${esc(cod)} · ${esc(regla)} · obs. ${esc(hora.slice(8, 10))}/${esc(hora.slice(5, 7))} ${esc(hora.slice(11, 16))} UTC</small><p>${esc(msg)}</p></div><button class="sgx" title="Cerrar (Esc)">✕</button></div><div class="sgcuerpo"></div>`;
   SGRAF.abrir(P.querySelector(".sgcuerpo"), cod, hora, regla, msg);
 });
-function filtrar(e){ const G = GRUPOS[grupo]; let al = G ? e.alertas.filter(a => G.includes(a.prueba)) : e.alertas; if (VSEL.size < VARGR.length) al = al.filter(a => VSEL.has(VAR2G[a.var])); const nivel = e.nivel === 3 ? 3 : Math.max(0, ...al.map(a => a.nivel)); return {...e, alertas: al, nivel}; }
+function filtrar(e){ const G = GRUPOS[grupo]; let al = G ? e.alertas.filter(a => G.includes(a.prueba)) : e.alertas; if (VSEL.size < VARGR.length) al = al.filter(a => String(a.var).split("+").some(x => VSEL.has(VAR2G[x]))); const nivel = e.nivel === 3 ? 3 : Math.max(0, ...al.map(a => a.nivel)); return {...e, alertas: al, nivel}; }
 const VAR = {T: "Ts (temp. seca)", Td: "Td (punto de rocío)", HR: "HR (humedad)", P_est: "QFE", P_mar: "QFF", P_std: "QNH", Tn12: "Tmín 12 h", Tx12: "Tmáx 12 h", ff10: "ff (viento 10 min)", ff2: "ff (viento 2 min)", dd10: "dd (dirección 10 min)", dd2: "dd (dirección 2 min)", fx10: "fx (racha)", rr1m: "RR (agua caída 1 min)", rr6: "RRR6", rr24: "RRR24", rr3h: "RR 3 h", Rad: "Radiación", registros: "Registros"};
 const ZONAS = {todo: [-90, 0], norte: [-27.5, 0], centro: [-38, -27.5], sur: [-46, -38], austral: [-90, -46]};
 let R = null, zona = "todo", ver = {0: true, 1: true, 2: true, 3: true}, sel = null, marcas = {};
@@ -342,7 +343,7 @@ function pintar(){
   const L2 = [...V].sort((a, b) => ((b.nivel % 3 ? b.nivel : -1) - (a.nivel % 3 ? a.nivel : -1)) || (b.alertas.length - a.alertas.length) || a.lat - b.lat);
   $("#lista").innerHTML = L2.map(e => `<div class="it ${sel === e.codigo ? "sel" : ""}" data-c="${e.codigo}"><span class="p" style="background:${COL[e.nivel]}"></span>
     <div><b>${esc(e.nombre)}</b><small>${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.alt ?? "—"} m${e.aislada ? " · aislada" : ""}</small>
-    ${e.alertas.length ? `<div class="al">${e.alertas.slice(0, 4).map(a => `<span style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba} ${VAR[a.var] || a.var}</span>`).join("")}</div>` : ""}</div>
+    ${e.alertas.length ? `<div class="al">${e.alertas.slice(0, 4).map(a => `<span style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba} ${nomVar(a.var)}</span>`).join("")}</div>` : ""}</div>
     <div class="v">${e.valores.T != null ? e.valores.T + " °C" : ""}<br>${e.valores.P_mar != null ? e.valores.P_mar + " hPa" : ""}</div></div>`).join("") || `<p style="padding:14px;color:var(--mu)">Sin estaciones con ese filtro.</p>`;
   if (sel) detalle(sel, false);
 }
@@ -360,7 +361,7 @@ function detalle(c, mover = true){
    <table><tr><th>Variable</th><th>Estación</th><th>WRF-DMC${m.n_wrf ? " (" + m.n_wrf + " corridas)" : ""}</th><th>Open-Meteo</th></tr>${fila("Temperatura", "T", "°C")}${fila("Punto de rocío", "Td", "°C")}${fila("Humedad", "HR", "%")}${fila("QFF", "P_mar", "hPa")}
    <tr><td>Viento 10 min</td><td>${v.dd10 ?? "—"}° ${v.ff10 ?? "—"} kt</td><td>${c3(m.ff10_wrf, "kt")}</td><td></td></tr><tr><td>Lluvia última hora</td><td>${c3(v.rr1h, "mm")}</td><td></td><td></td></tr></table>
    <h3 style="font-size:14px;margin:14px 0 6px">Alertas</h3>
-   ${e.alertas.length ? `<table><tr><th>Prueba</th><th>Variable</th><th>Valor</th><th>Referencia</th><th>Detalle</th></tr>${e.alertas.map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba}</td><td>${VAR[a.var] || a.var}</td><td>${a.valor ?? "—"}</td><td>${a.ref ?? "—"}</td><td>${esc(a.msg)}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin alertas.</p>`}
+   ${e.alertas.length ? `<table><tr><th>Prueba</th><th>Variable</th><th>Valor</th><th>Referencia</th><th>Detalle</th></tr>${e.alertas.map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba}</td><td>${nomVar(a.var)}</td><td>${a.valor ?? "—"}</td><td>${a.ref ?? "—"}</td><td>${esc(a.msg)}${a.detalle && a.detalle.length ? `<details><summary style="cursor:pointer;color:var(--mu)">detalle técnico</summary><small>${a.detalle.map(esc).join("<br>")}</small></details>` : ""}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin alertas.</p>`}
    <p style="color:var(--mu);font-size:12.5px;margin-top:10px">${e.aislada ? "Estación aislada: tiene menos de 3 vecinas comparables; la principal referencia es el modelo." : "Vecinas: " + esc(vec)}</p>`;
 }
 document.addEventListener("click", ev => {
@@ -486,7 +487,7 @@ function detalleMod(c, mover = true){
    ${grafico(e, v)}
    <table style="margin-top:10px"><tr><th>Variable</th><th>Estación</th><th>WRF-DMC</th><th>Open-Meteo</th><th>Est. − Open-Meteo</th></tr>${filas}</table>
    ${verifTxt(e)}
-   ${al.length ? `<h3 style="font-size:14px;margin:12px 0 6px">Avisos frente al modelo</h3><table>${al.map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba]}</td><td>${VAR[a.var] || a.var}</td><td>${esc(a.msg)}</td></tr>`).join("")}</table>` : ""}`;
+   ${al.length ? `<h3 style="font-size:14px;margin:12px 0 6px">Avisos frente al modelo</h3><table>${al.map(a => `<tr><td style="color:${HEX[a.nivel]}">${PR[a.prueba]}</td><td>${nomVar(a.var)}</td><td>${esc(a.msg)}</td></tr>`).join("")}</table>` : ""}`;
 }
 $("#mvar").addEventListener("change", () => { leyenda(true); R && pintar(); });
 $("#mref").addEventListener("change", () => R && pintar());

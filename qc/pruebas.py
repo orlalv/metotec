@@ -63,6 +63,61 @@ def rango(D):
     return out
 
 
+# ------------------------------------------------------------------ 1a. rango por zona (dudoso)
+# T (°C) por zona; Td: la misma zona, 10 °C más abajo en el mínimo y 5 °C en el máximo.
+ZONAS_T = {"norte costero": (5, 38), "norte interior": (-5, 40), "centro": (-8, 42), "sur": (-12, 38), "austral": (-20, 32),
+           "cordillera/altiplano": (-30, 30), "Antártica": (-45, 15)}
+
+
+def zona(lat, alt):
+    lat, alt = float(lat), float(alt or 0)
+    if lat < -60:
+        return "Antártica"
+    if alt > 2000:
+        return "cordillera/altiplano"
+    if lat > -27:
+        return "norte costero" if alt < 500 else "norte interior"
+    if lat > -38:
+        return "centro"
+    if lat > -44:
+        return "sur"
+    return "austral"
+
+
+def p_esperada(alt):
+    """Presión de la atmósfera estándar a esa altura (hPa)."""
+    return 1013.25 * (1 - 2.25577e-5 * float(alt)) ** 5.25588
+
+
+def rango_zona(D, E):
+    """Valores posibles físicamente pero muy raros para la zona de la estación (dudoso, nivel 1)."""
+    out = []
+    if D is None or D.empty or E is None:
+        return out
+    meta = E.set_index("codigo")[["lat", "alt"]].to_dict("index")
+    for cod, g in D.groupby("codigo"):
+        m = meta.get(cod)
+        if not m or pd.isna(m["lat"]):
+            continue
+        z = zona(m["lat"], 0 if pd.isna(m["alt"]) else m["alt"])
+        tl, th = ZONAS_T[z]
+        lim = {"T": (tl, th), "Td": (tl - 10, th - 5), "rr1m": (0, 3), "ff10": (0, 100 if z in ("austral", "Antártica") else 80)}
+        if not pd.isna(m["alt"]):
+            pe = p_esperada(m["alt"])
+            lim["P_est"] = (pe - 40, pe + 40)
+        for v, (lo, hi) in lim.items():
+            if v not in g:
+                continue
+            fis = LIM.get(v, (-1e9, 1e9))
+            x = g[v]
+            malo = g[((x < lo) | (x > hi)) & (x >= fis[0]) & (x <= fis[1])]      # lo físicamente imposible ya lo avisa rango()
+            if len(malo):
+                r = malo.iloc[-1]
+                out.append(alerta(cod, "rango", v, 1, r.momento, r[v], None,
+                                  f"{len(malo)} valores fuera de lo habitual para la zona {z} [{lo:.0f}, {hi:.0f}]"))
+    return out
+
+
 # ------------------------------------------------------------------ 1b. extremas de la estación (Tn12 / Tx12)
 LIM_EXT = (-35, 45)
 
@@ -127,22 +182,26 @@ def saltos(D):
 
 
 # ------------------------------------------------------------------ 3. valor pegado
-def pegados(D, horas=3):
+HORAS_PEGADO = {"T": 3, "Td": 3, "P_est": 3, "HR": 10}     # la HR puede quedar quieta varias horas: se avisa desde 10 h
+
+
+def pegados(D, horas=None):
+    """D debe traer al menos 10 h de minutario para revisar la HR (con menos, solo T, Td y P_est)."""
     out = []
     fin = D["momento"].max()
-    W = D[D["momento"] > fin - pd.Timedelta(hours=horas)]
-    for cod, g in W.groupby("codigo"):
-        if g["momento"].nunique() < 6 or (g["momento"].max() - g["momento"].min()) < pd.Timedelta(hours=horas - 0.5):
-            continue
-        for v, tol in (("T", 0.0), ("HR", 0.0), ("P_est", 0.0), ("Td", 0.0)):
+    for v, hv in (horas or HORAS_PEGADO).items():
+        W = D[D["momento"] > fin - pd.Timedelta(hours=hv)]
+        for cod, g in W.groupby("codigo"):
+            if g["momento"].nunique() < 6 or (g["momento"].max() - g["momento"].min()) < pd.Timedelta(hours=hv - 0.5):
+                continue
             s = g[v].dropna()
             if len(s) < 6:
                 continue
             if v == "HR" and s.min() >= 99:
                 continue          # saturación sostenida es posible (niebla)
-            if s.max() - s.min() <= tol:
+            if s.max() == s.min():
                 out.append(alerta(cod, "pegado", v, 1 if v == "P_est" else 2, g["momento"].max(), s.iloc[-1], None,
-                                  f"sin cambio durante {horas} h"))
+                                  f"sin cambio durante {hv} h"))
     return out
 
 
@@ -234,11 +293,26 @@ MOD = {"T": (7, 12), "Td": (9, 15), "P_mar": (5, 10)}
 PISOS = {"T": (2, 4), "Td": (3, 6), "HR": (10, 20), "P_mar": (1.5, 3), "ff10": (5, 10)}
 
 
-def modelo(H, M, aisladas=(), cal=None):
+ALT_PMAR = 1500         # sobre esta altura la presión reducida al nivel del mar no se compara con el modelo
+ALT_AISLADA = 2000      # estación de altura aislada: el modelo la representa mal, se le da más tolerancia
+FACTOR_ALTURA = 1.5
+
+
+def _altura(E):
+    return {} if E is None else {c: (None if pd.isna(z) else float(z)) for c, z in E.set_index("codigo")["alt"].items()}
+
+
+def _tol_altura(cod, alt, aisladas):
+    z = alt.get(cod)
+    return FACTOR_ALTURA if z is not None and z >= ALT_AISLADA and cod in aisladas else 1.0
+
+
+def modelo(H, M, aisladas=(), cal=None, E=None):
     import calibrar as CAL
     out = []
     if M is None or M.empty:
         return out
+    alt = _altura(E)
     X = H.merge(M, on=["codigo", "momento"], suffixes=("", "_m"))
     X = X.sort_values("momento").groupby("codigo").tail(1)
     for _, r in X.iterrows():
@@ -246,8 +320,12 @@ def modelo(H, M, aisladas=(), cal=None):
             o, m = r[v], r[v + "_m"]
             if pd.isna(o) or pd.isna(m):
                 continue
+            if v == "P_mar" and (alt.get(r.codigo) or 0) > ALT_PMAR:
+                continue
             u = CAL.umbral(cal, r.codigo, v, "om", r.momento.hour, PISOS.get(v, (s1 / 2, s2 / 2)))
             b, t1, t2, cal_txt = (u[0], u[1], u[2], f" (calibrado: sesgo habitual {u[0]:+.1f})") if u else (0, s1, s2, "")
+            f_ = _tol_altura(r.codigo, alt, aisladas)
+            t1, t2 = t1 * f_, t2 * f_
             d = abs(o - m - b)
             if d > t1:
                 extra = " (estación aislada: el modelo es su principal referencia)" if r.codigo in aisladas else ""
@@ -309,11 +387,12 @@ def completitud(D, E):
 
 
 # ------------------------------------------------------------------ 6b. modelo WRF-DMC (varias corridas)
-def modelo_dmc(H, W, aisladas=(), cal=None):
+def modelo_dmc(H, W, aisladas=(), cal=None, E=None):
     """Compara con la mediana de las últimas corridas del WRF-DMC; el umbral crece con la dispersión entre corridas."""
     out = []
     if W is None or W.empty or H.empty:
         return out
+    alt = _altura(E)
     X = H.merge(W, on=["codigo", "momento"]).sort_values("momento").groupby("codigo").tail(1)
     for r in X.to_dict("records"):
         extra = " (estación aislada)" if r["codigo"] in aisladas else ""
@@ -328,6 +407,8 @@ def modelo_dmc(H, W, aisladas=(), cal=None):
             b, cal_txt = (u[0], f", calibrado: sesgo habitual {u[0]:+.1f}") if u else (0, "")
             if u:
                 s1, s2 = max(u[1], k * sd), max(u[2], (k + 2) * sd)
+            f_ = _tol_altura(r["codigo"], alt, aisladas)
+            s1, s2 = s1 * f_, s2 * f_
             d = abs(o - m - b)
             if d > s1:
                 out.append(alerta(r["codigo"], "wrf", v, 2 if d > s2 else 1, r["momento"], o, m,

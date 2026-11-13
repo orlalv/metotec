@@ -391,7 +391,7 @@ def codificacion(o):
         add("C27", 2, f"W1 {W1} menor que W2 {W2}")
     rr_, tz_ = v(o, "RRR6", "RRR6"), v(o, "RRR6", "Traza")
     if tz_ == 1 and rr_ not in (None, 0):
-        add("C42", 2, f"RRR6 {rr_:g} mm marcado además como traza: la traza va con RRR6 0.0. Debería ir: RRR6 {rr_:g} sin traza, o 0.0 con traza")
+        add("C42", 1, f"RRR6 {rr_:g} mm marcado además como traza: la traza va con RRR6 0.0. Debería ir: RRR6 {rr_:g} sin traza, o 0.0 con traza")
     return out
 
 
@@ -817,7 +817,7 @@ def frente_sensor(t, o, A, sesgo=None):
             d = round(abs(suma - r6), 1)
             if traza:
                 if suma >= 0.2:
-                    add("SRRR6", 2, f"RRR6 anotado como traza y el pluviómetro automático sumó {suma:.1f} mm en 6 h. Debería ir: RRR6 {suma:.1f}")
+                    add("SRRR6", 1, f"RRR6 anotado como traza y el pluviómetro automático sumó {suma:.1f} mm en 6 h. Debería ir: RRR6 {suma:.1f}")
             elif d >= 0.1:
                 add("SRRR6", 2 if d > max(1.0, 0.3 * max(suma, r6)) else 1,
                     f"RRR6 anotado {r6:g} mm y el pluviómetro automático sumó {suma:.1f} mm en las 6 h cerradas a las {t:%H}:00 (diferencia {d:.1f} mm; la precipitación debe calzar exacta)")

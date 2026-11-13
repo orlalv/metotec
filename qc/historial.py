@@ -57,10 +57,13 @@ def actualizar(raiz, ahora, sensorial=None, revisadas=None, alertas=None, nombre
     for a in alertas or []:
         dia = str(a["momento"])[:10]
         D = _cargar(raiz, dia, cache)
-        k = f"a|{a['codigo']}|{str(a['momento'])[:16]}|{a['prueba']}|{a['var']}"
+        ep = a.get("episodio")
+        k = f"a|{a['codigo']}|{ep['inicio']}|episodio|{ep['sensor']}" if ep else f"a|{a['codigo']}|{str(a['momento'])[:16]}|{a['prueba']}|{a['var']}"
         r = D["ema"].get(k)
         if r is None:
             r = D["ema"][k] = dict(codigo=a["codigo"], nombre=nombres.get(a["codigo"]), momento=str(a["momento"])[:16], prueba=a["prueba"], var=a["var"], primera=ahora, n=0)
+        if ep:
+            r.update(var=a["var"], episodio=ep, detalle=a.get("detalle"), estado="sigue" if ep["sigue"] else "resuelta")
         r.update(nivel=max(r.get("nivel", 0), a["nivel"]), msg=a["msg"], valor=a.get("valor"), ref=a.get("ref"), ultima=ahora, n=r["n"] + 1)
         tocados.add(dia)
 

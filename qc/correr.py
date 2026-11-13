@@ -217,9 +217,10 @@ def main():
     except Exception:
         estado["errores"].append(f"calibración: {traceback.format_exc(limit=2)}")
     alertas = []
-    for nombre, f in [("rango", lambda: P.rango(A)), ("salto", lambda: P.saltos(A)), ("pegado", lambda: P.pegados(A)),
+    A10 = leer_archivo(a.datos, fin, horas=10)     # la HR pegada se avisa desde 10 h
+    for nombre, f in [("rango", lambda: P.rango(A)), ("rango_zona", lambda: P.rango_zona(A, E)), ("salto", lambda: P.saltos(A)), ("pegado", lambda: P.pegados(A10)),
                       ("coherencia", lambda: P.coherencia(H.groupby("codigo").tail(1), E)), ("vecinas", lambda: P.vecinas(H, E, V)),
-                      ("modelo", lambda: P.modelo(H, M, aisladas, cal)), ("wrf", lambda: P.modelo_dmc(H, W, aisladas, cal)), ("lluvia", lambda: P.lluvia(H, M, V)),
+                      ("modelo", lambda: P.modelo(H, M, aisladas, cal, E)), ("wrf", lambda: P.modelo_dmc(H, W, aisladas, cal, E)), ("lluvia", lambda: P.lluvia(H, M, V)),
                       ("satelite", lambda: SAT.ema(H, A, E, sat)), ("extremas", lambda: P.extremas(leer_archivo(a.datos, fin, horas=48)))]:
         try:
             alertas += f()
@@ -231,6 +232,13 @@ def main():
         n0 = len(alertas); alertas = P.consenso(alertas, H, M, W); estado["consenso_quitados"] = n0 - len(alertas)
     except Exception:
         estado["errores"].append(f"consenso: {traceback.format_exc(limit=2)}")
+
+    terminados = []
+    try:   # fallas de sensor (rango, salto, pegado) agrupadas por episodio
+        import episodios as EP
+        alertas, terminados = EP.agrupar(alertas, a.datos)
+    except Exception:
+        estado["errores"].append(f"episodios: {traceback.format_exc(limit=2)}")
 
     # resumen por estación
     ult = H.sort_values("momento").groupby("codigo").tail(1).set_index("codigo") if len(H) else pd.DataFrame()
@@ -323,7 +331,7 @@ def main():
         except Exception:
             estado["errores"].append(f"sensorial: {traceback.format_exc(limit=2)}")
     try:   # historial: nada se borra; lo corregido queda marcado
-        dias = HIS.actualizar(a.datos, datetime.now(timezone.utc), sen_res, sen_rev, [x for x in alertas if x["prueba"] != "completitud"],
+        dias = HIS.actualizar(a.datos, datetime.now(timezone.utc), sen_res, sen_rev, [x for x in alertas if x["prueba"] != "completitud"] + terminados,
                               E.set_index("codigo")["nombre"].to_dict())
         estado["historial"] = {d: subir_kv(f"qc/hist/{d}", t) for d, t in dias.items()}
     except Exception:
