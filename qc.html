@@ -225,7 +225,7 @@ main[hidden]{display:none}
 <script src="js/boletin.js?v=202611101108"></script>
 <script src="js/series.js?v=202611101600"></script>
 <script src="js/reglas.js?v=202611131000"></script>
-<script src="js/fallas.js?v=202611131000"></script>
+<script src="js/fallas.js?v=202611131300"></script>
 <script src="js/equipo.js?v=202611131200"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script>
@@ -617,9 +617,9 @@ $("#mref").addEventListener("change", () => R && pintar());
 
 /* ---------- informe general de la red EMA (texto para copiar + Excel) ---------- */
 function datosInf(){
-  const zonaDe = e => Object.entries(ZONAS).find(([k, [lo, hi]]) => k !== "todo" && e.lat >= lo && e.lat < hi)?.[0] || "—";
-  const ZN = {norte: "Norte", centro: "Centro", sur: "Sur", austral: "Austral", "—": "Sin ubicación"};
-  const E = [...R.estaciones].sort((a, b) => (b.lat ?? -99) - (a.lat ?? -99)).map(e => ({...e, zona: ZN[zonaDe(e)]}));
+  const zonaDe = e => e.lon != null && e.lon < -75 && e.lat > -40 ? "insular" : Object.entries(ZONAS).find(([k, [lo, hi]]) => k !== "todo" && e.lat >= lo && e.lat < hi)?.[0] || "—";
+  const ZN = {norte: "Norte", centro: "Centro", sur: "Sur", austral: "Austral", insular: "Insular", "—": "Sin ubicación"};
+  const E = [...R.estaciones].sort((a, b) => (b.lat ?? -99) - (a.lat ?? -99)).map(e => ({...e, nombre: String(e.nombre || "").replace(/\s+/g, " ").trim(), zona: ZN[zonaDe(e)]}));
   const hoy = new Date().toLocaleDateString("sv-SE", {timeZone: "America/Santiago"});
   const act = E.flatMap(e => FALLAS.episodios(e, R).map(p => ({...p, zona: e.zona})));
   const res = Object.values(R.informados || {}).filter(r => r.fin && new Date(Date.parse(r.fin.replace(" ", "T") + ":00Z")).toLocaleDateString("sv-SE", {timeZone: "America/Santiago"}) === hoy);
@@ -629,7 +629,7 @@ function datosInf(){
 function pintarInf(){
   if (!R) return;
   const {E, act, res, sin, inc, hoy} = datosInf(), cnt = R.resumen || {};
-  const porZona = (L, f) => { const g = {}; L.forEach(x => (g[x.zona || "—"] ||= []).push(f(x))); return Object.entries(g).map(([z, l]) => `  ${z}:\n` + l.map(t => "   - " + t).join("\n")).join("\n") || "  (ninguna)"; };
+  const porZona = (L, f) => { const g = {}; L.forEach(x => (g[x.zona || "—"] ||= []).push(f(x))); const O = ["Norte", "Centro", "Sur", "Austral", "Insular"]; return Object.entries(g).sort((a, b) => (O.indexOf(a[0]) + 99) % 99 - (O.indexOf(b[0]) + 99) % 99).map(([z, l]) => `  ${z}:\n` + l.map(t => "   - " + t).join("\n")).join("\n") || "  (ninguna)"; };
   const mn = r => (Date.parse(r.fin.replace(" ", "T") + ":00Z") - Date.parse(r.inicio.replace(" ", "T") + ":00Z")) / 60e3 + 1;
   const zonaCod = c => (E.find(e => e.codigo === c) || {}).zona;
   const txt = [
@@ -641,7 +641,7 @@ function pintarInf(){
     `- ${act.length} fallas de sensor activas (${act.filter(p => p.informado).length} ya informadas) · ${res.length} resueltas hoy · ${inc.length} estaciones con datos incompletos.`,
     ``,
     `FALLAS ACTIVAS`,
-    porZona(act, p => `${p.nombre} (${p.codigo}): ${FALLAS.sensor(p)}, ${FALLAS.que(p)} desde ${FALLAS.utc(p.inicio).slice(5)} UTC (${FALLAS.dur(p.minutos)})${p.informado ? " [informada]" : ""}`),
+    porZona(act, p => `${p.nombre} (${p.codigo}): ${FALLAS.sensor(p)}, ${FALLAS.que(p)} desde ${FALLAS.utc(p.inicio).slice(5)} UTC (${p.sigue ? "sigue, lleva " : ""}${FALLAS.dur(p.minutos)})${p.informado ? " [informada]" : ""}`),
     ``,
     `RESUELTAS HOY`,
     porZona(res.map(r => ({...r, zona: zonaCod(r.codigo)})), r => `${r.nombre} (${r.codigo}): ${FALLAS.sensor(r)}, ${FALLAS.dur(mn(r))} (${r.inicio.slice(5)} a ${r.fin.slice(11)} UTC)`),

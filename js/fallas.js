@@ -29,12 +29,17 @@ function episodios(e, R){
     const pr = [...new Set((a.detalle || []).map(d => (d.match(/ · (\w+):/) || [])[1]).filter(Boolean))];
     out.push({codigo: e.codigo, nombre: e.nombre, prueba: a.prueba, pruebas: pr.length ? pr : [a.prueba], var: a.var, sensor: ep.sensor, alertas: [a], nivel: a.nivel,
       inicio: ms(ep.inicio), ultima: ms(ep.fin), sigue: ep.sigue, minutos: ep.minutos, informado: I ? I[0] : null, base, msg: a.msg, detalle: a.detalle || []}); });
+  // sin «episodio» del servidor: se agrupa aquí por estación y sensor (Ts, Td y HR = termohigrómetro), igual que qc/episodios.py
+  const SEN = {T: "termohigrómetro", HR: "termohigrómetro", Td: "termohigrómetro", P_est: "barómetro", P_mar: "barómetro", P_std: "barómetro",
+    ff10: "anemómetro", ff2: "anemómetro", fx10: "anemómetro", dd10: "veleta", dd2: "veleta", rr1m: "pluviómetro", Rad: "piranómetro (radiación)"};
   const g = {};
-  (e.alertas || []).filter(a => !a.episodio && FALLA.has(a.prueba)).forEach(a => { const k = a.prueba + "|" + a.var; (g[k] ||= []).push(a); });
-  Object.entries(g).forEach(([k, L]) => {
-    const t = L.map(a => ms(a.momento)).filter(x => !isNaN(x)).sort((a, b) => a - b), [prueba, v] = k.split("|"), base = e.codigo + "|" + k, I = inf(base);
-    out.push({codigo: e.codigo, nombre: e.nombre, prueba, var: v, alertas: L, nivel: Math.max(...L.map(a => a.nivel)), inicio: t[0], ultima: t[t.length - 1],
-      sigue: hasta - t[t.length - 1] <= 70 * 60e3, minutos: (t[t.length - 1] - t[0]) / 60e3, informado: I ? I[0] : null, base, msg: L[L.length - 1].msg, detalle: []});
+  (e.alertas || []).filter(a => !a.episodio && FALLA.has(a.prueba)).forEach(a => { const k = SEN[a.var] || a.var; (g[k] ||= []).push(a); });
+  Object.entries(g).forEach(([sen, L]) => {
+    const t = L.map(a => ms(a.momento)).filter(x => !isNaN(x)).sort((a, b) => a - b), base = e.codigo + "|" + sen, I = inf(base);
+    const vs = [...new Set(L.flatMap(a => String(a.var).split("+")))], pr = [...new Set(L.map(a => a.prueba))];
+    const sigue = true, fin = hasta;      // está en la pasada actual: sigue activa
+    out.push({codigo: e.codigo, nombre: e.nombre, prueba: pr[0], pruebas: pr, var: vs.join("+"), sensor: SEN[vs[0]] ? sen : null, alertas: L, nivel: Math.max(...L.map(a => a.nivel)),
+      inicio: t[0], ultima: fin, sigue, minutos: (fin - t[0]) / 60e3, informado: I ? I[0] : null, base, msg: L.map(a => a.msg).join(" · "), detalle: L.map(a => `${utc(ms(a.momento))} · ${a.prueba}: ${a.msg}`)});
   });
   return out.sort((a, b) => b.nivel - a.nivel || b.ultima - a.ultima);
 }
