@@ -289,7 +289,7 @@ def codificacion(o):
             add("C34", 2, f"el METAR informa {'/'.join(f for f in fm if f in ('DZ', 'RA'))} y el SYNOP ww {ww:02d} no tiene precipitación")
         if "BR" in fm and ww not in (10,) and ww < 10:
             add("C35", 1, f"el METAR informa BR (neblina) y el SYNOP ww {ww:02d}: correspondería ww 10 si no hay otro fenómeno más importante")
-        if "FG" in fm and not 40 <= ww <= 49 and ww not in (11, 12, 28):
+        if "FG" in fm and ww < 40 and ww not in (11, 12, 28):     # ww 50–99 (precipitación) tiene prioridad sobre la niebla
             add("C36", 2, f"el METAR informa FG (niebla) y el SYNOP ww {ww:02d} no es niebla (40–49)")
         if "HZ" in fm and ww < 4:
             add("C37", 1, f"el METAR informa HZ (calima) y el SYNOP ww {ww:02d}: correspondería ww 05")
