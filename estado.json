@@ -1,15 +1,14 @@
 {
  "version": "0.1",
- "inicio": "2026-11-13T05:15:34+00:00",
- "errores": [
-  "modelo: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=120)"
- ],
+ "inicio": "2026-11-13T05:45:49+00:00",
+ "errores": [],
  "estaciones": 137,
- "con_datos": 124,
- "registros": 4815,
- "desde": "2026-11-13 04:16:00",
- "hasta": "2026-11-13 05:05:00",
+ "con_datos": 120,
+ "registros": 4800,
+ "desde": "2026-11-13 04:46:00",
+ "hasta": "2026-11-13 05:35:00",
  "horas_archivadas": 2,
+ "modelo": 6576,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026111200_ecmwf",
@@ -20,7 +19,7 @@
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 69,
-  "ultima": "2026-11-13T05:00Z"
+  "ultima": "2026-11-13T05:30Z"
  },
  "calibracion": {
   "dias": 6,
@@ -30,10 +29,10 @@
  "consenso_quitados": 0,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 3739,
+ "ob_filas": 3856,
  "sensorial": {
   "estaciones": 33,
-  "observaciones": 377,
+  "observaciones": 375,
   "fallas": 0,
   "hallazgos": 284,
   "kv": "200"
@@ -47,12 +46,12 @@
  },
  "boletin": "fuera de horario",
  "kv": "200",
- "alertas": 31,
+ "alertas": 30,
  "resumen": {
   "bien": 106,
   "sospechoso": 11,
   "erróneo": 10,
   "sin datos": 10
  },
- "fin": "2026-11-13T05:20:02+00:00"
+ "fin": "2026-11-13T05:47:50+00:00"
 }
