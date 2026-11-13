@@ -111,12 +111,13 @@ def ultimos_valores(obs, n=6):
 CASILLAS = ("WWSINOP", "W1W2", "N", "Nubes", "CapaNube", "VVSINOP", "WWMETAR", "VTO", "RRR6", "Ts", "Td", "HR", "QFE", "QFF", "QNH", "TxAM", "TnAM", "TxPM", "TnPM")
 
 
-def casillas(obs, n=12):
+def casillas(obs, n=30):
     """Casillas ingresadas por el observador en las últimas n observaciones (para la tabla «ver casillas» de la página)."""
     out = {}
     for t in sorted(obs)[-n:]:
         o = obs[t]
-        d = {el: {c: x for c, x in (o.get(el) or {}).items() if not isinstance(x, set)} for el in CASILLAS if el in o}
+        d = {el: {c: x for c, x in (o.get(el) or {}).items() if not isinstance(x, set) and x is not None and x != "SD"} for el in CASILLAS if el in o}
+        d = {el: c for el, c in d.items() if c}
         out[t.strftime("%Y-%m-%d %H:%M")] = d
     return out
 

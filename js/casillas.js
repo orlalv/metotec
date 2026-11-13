@@ -28,19 +28,33 @@ const SIG = {
 const NOMBRE = {WWSINOP: "ww", W1W2: "", VVSINOP: "VV", WWMETAR: "", N: "N", Nubes: "", CapaNube: "Capa"};
 const ORDEN = ["WWSINOP", "W1W2", "N", "Nubes", "CapaNube", "VVSINOP", "WWMETAR", "Ts", "Td", "HR", "QFE", "QFF", "QNH", "VTO", "RRR6", "TxAM", "TnAM", "TxPM", "TnPM"];
 const tiene = (e, hora) => !!(e && e.cas && Object.keys(e.cas).length);
-function tabla(cas, hora, msg){
-  const clave = hora.slice(0, 16).replace("T", " "), ts = Object.keys(cas).sort();
+// casillas que intervienen en cada regla (columnas que se señalan); si no está en la lista se buscan nombres de casilla en el mensaje
+const POR_REGLA = [[/^S?B?Ts$|^STs/, ["Ts"]], [/^S?B?Td$/, ["Td"]], [/^S?B?HR$/, ["HR"]], [/QFE/, ["QFE"]], [/QFF/, ["QFF"]], [/QNH/, ["QNH"]], [/^Sff|^Sracha/, ["ff"]], [/^Sdd/, ["dd", "ff"]],
+  [/^C41/, ["Ts", "Td", "HR"]], [/^SRRR6$|^E1[237]$/, ["RRR6", "Traza", "ww"]], [/^SPRE$/, ["ww"]], [/^C0[147]$|^C35$/, ["ww", "VV", "FEN1", "FEN12", "FEN13"]], [/^C11$/, ["ww", "Cl"]], [/^C15$|^C19$/, ["N", "Ns", "Ns2", "Ns3", "Ns4"]],
+  [/^C27$/, ["W1", "W2"]], [/^C32$|^C40$/, ["Cl", "C", "C2", "C3"]], [/^E01$|^E05$/, ["ww", "VV"]], [/^E09$/, ["QFE"]]];
+function involucradas(regla, msg){
+  const r = POR_REGLA.find(([re]) => re.test(regla)), s = new Set(r ? r[1] : []);
+  if (/^SEX/.test(regla)){ const m = (msg || "").match(/T(min|max) (AM|PM)/); if (m) s.add((m[1] === "min" ? "Tn" : "Tx") + m[2]); else ["TxAM", "TnAM", "TxPM", "TnPM"].forEach(x => s.add(x)); }
+  [["ww", /\bww\b/], ["W1", /\bW1\b/], ["W2", /\bW2\b/], ["Cl", /\bCL\b/], ["Cm", /\bCM\b/], ["Ch", /\bCH\b/], ["N", /\bN\b/], ["VV", /visibilidad/i], ["RRR6", /RRR6/]].forEach(([c, re]) => { if (re.test(msg || "")) s.add(c); });
+  return s;
+}
+function tabla(cas, hora, msg, regla){
+  const clave = hora.slice(0, 16).replace("T", " "), todos = Object.keys(cas).sort();
+  let i = todos.indexOf(clave); if (i < 0) i = todos.filter(t => t <= clave).length - 1;
+  if (i < 0 || todos[i] > clave && false) return `<p class="sgnota">La observación de ${clave.slice(8, 10)}/${clave.slice(5, 7)} ${clave.slice(11, 16)} ya no está en las casillas guardadas (se guardan las últimas ${todos.length} observaciones).</p>`;
+  const exacta = todos[i] === clave, ts = todos.slice(Math.max(0, i - 8), i + 4), mal = involucradas(regla || "", msg);
   const cols = []; ORDEN.forEach(el => { const s = new Set(); ts.forEach(t => Object.keys((cas[t] || {})[el] || {}).forEach(c => s.add(c))); [...s].sort().forEach(c => cols.push([el, c])); });
   if (!cols.length) return "";
   const rot = (el, c) => (NOMBRE[el] ? NOMBRE[el] + (/^(ww|VV|N)$/.test(c) ? "" : " ") : "") + (/^(ww|VV|N)$/.test(c) && NOMBRE[el] === c ? "" : c);
-  const usado = (el, c) => (msg || "").includes(c) || (el === "WWSINOP" && /\bww\b/.test(msg || ""));
+  const usado = (el, c) => (c.length > 2 && (msg || "").includes(c)) || (el === "WWSINOP" && /\bww\b/.test(msg || ""));
   const filas = ts.map(t => `<tr${t === clave ? ' class="sgalerta"' : ""}><td style="white-space:nowrap"><b>${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}</b>${t === clave ? " ◀" : ""}</td>${cols.map(([el, c]) => {
     const x = ((cas[t] || {})[el] || {})[c], k = comp(c), f = SIG[k];
     const tt = x == null ? "" : typeof x === "number" && f ? (f(x) || "") : "";
-    return `<td${tt ? ` title="${esc(tt)}" style="cursor:help;text-decoration:underline dotted"` : ""}>${x == null ? "—" : esc(x)}</td>`; }).join("")}</tr>`).join("");
-  return `<div class="sgcas"><h4 style="margin:10px 0 4px">Casillas ingresadas por el observador (últimas ${ts.length} observaciones)</h4>
-    <div style="overflow-x:auto"><table class="sgtab"><tr><th>Hora UTC</th>${cols.map(([el, c]) => `<th title="${esc(el)} · ${esc(c)}"${usado(el, c) ? ' style="color:var(--oro)"' : ""}>${esc(rot(el, c))}</th>`).join("")}</tr>${filas}</table></div>
-    <p class="sgnota">La fila de la alerta va resaltada. Pase el mouse sobre un número subrayado para ver qué significa.</p></div>`;
+    const falla = t === clave && mal.has(c), est = (tt ? "cursor:help;text-decoration:underline dotted;" : "") + (falla ? "background:var(--err);color:#fff;font-weight:800;outline:2px solid var(--err);" : "");
+    return `<td${tt ? ` title="${esc(tt)}"` : ""}${est ? ` style="${est}"` : ""}>${x == null ? "—" : esc(x)}${falla ? " ◀" : ""}</td>`; }).join("")}</tr>`).join("");
+  return `<div class="sgcas"><h4 style="margin:10px 0 4px">Casillas ingresadas por el observador · ${ts.length} observaciones alrededor de la alerta</h4>
+    <div style="overflow-x:auto"><table class="sgtab"><tr><th>Hora UTC</th>${cols.map(([el, c]) => `<th title="${esc(el)} · ${esc(c)}"${usado(el, c) || mal.has(c) ? ' style="color:var(--oro)"' : ""}>${esc(rot(el, c))}</th>`).join("")}</tr>${filas}</table></div>
+    <p class="sgnota">La fila de la alerta va resaltada y la casilla con el problema en rojo (◀). Se ocultan las casillas vacías. Pase el mouse sobre un número subrayado para ver qué significa.</p></div>`;
 }
 const f2 = t => t ? `${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}` : "";
 function cambios(e, hora){
@@ -50,8 +64,8 @@ function cambios(e, hora){
     `<tr${x.hora === clave ? ' class="sgalerta"' : ""}><td>${f2(x.visto)}</td><td>${f2(x.hora)}</td><td>${esc(x.el)} · ${esc(x.c)}</td><td>${x.antes == null ? "—" : esc(x.antes)}</td><td>${x.despues == null ? "(borrado)" : esc(x.despues)}</td></tr>`).join("")}</table>
     <p class="sgnota">Si la alerta es de una observación que aparece aquí, la corrección ya se leyó; la alerta se recalcula en la misma pasada.</p>`;
 }
-function abrir(cont, e, hora, msg){
-  const d = document.createElement("div"); d.innerHTML = (e && e.cas ? tabla(e.cas, hora, msg) : "") + (e ? cambios(e, hora) : "");
+function abrir(cont, e, hora, msg, regla){
+  const d = document.createElement("div"); d.innerHTML = (e && e.cas ? tabla(e.cas, hora, msg, regla) : "") + (e ? cambios(e, hora) : "");
   if (!e || !e.cas) d.innerHTML = `<p class="sgnota">No hay casillas guardadas para esta estación (se llenan en la próxima pasada del control).</p>`;
   cont.appendChild(d);
 }

@@ -134,6 +134,6 @@ async function calculadora(cont, cod, hora){
 const CALC = /^(S|SB)(Ts|Td|HR)$|^C41H?$/;
 window.SGRAF = {abrir: async (cont, cod, hora, regla, msg) => {
   if (VARS[regla]) await abrir(cont, cod, hora, regla, msg); else cont.innerHTML = "";
-  if (window.CAS){ const e = (typeof R !== "undefined" && R && R.observaciones && R.observaciones.estaciones || []).find(x => x.codigo === cod); CAS.abrir(cont, e, hora, msg); }
+  if (window.CAS){ const e = (typeof R !== "undefined" && R && R.observaciones && R.observaciones.estaciones || []).find(x => x.codigo === cod); CAS.abrir(cont, e, hora, msg, regla); }
   if (CALC.test(regla)) calculadora(cont, cod, hora); }, tiene, etiqueta};
 })();
