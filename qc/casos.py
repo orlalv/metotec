@@ -12,7 +12,7 @@ import sensorial as S
 
 
 # ----------------------------------------------------------------- ayudas
-def obs(ww=None, metar=(), CL=None, capas=(), N=None, VV=None, rr6=None, traza=None, W=None):
+def obs(ww=None, metar=(), CL=None, capas=(), N=None, VV=None, rr6=None, traza=None, W=None, **otros):
     """Observación mínima en el formato de sensorial.leer. metar: códigos FEN (2 RA, 9 BR, 10 FG…).
     capas: [(octas, tipo C, altura m)]."""
     o = {}
@@ -35,13 +35,15 @@ def obs(ww=None, metar=(), CL=None, capas=(), N=None, VV=None, rr6=None, traza=N
         o["RRR6"] = {"RRR6": rr6 if rr6 is not None else 0, "Traza": traza or 0}
     if W is not None:
         o["W1W2"] = {"W1": W[0], "W2": W[1]}
+    for k, x in otros.items():            # QFF=1001, Ts=15.2, VTO=(dd, ff)
+        o[k] = {"dd": x[0], "ff": x[1]} if k == "VTO" else {k: x}
     return o
 
 
-def minutario(t, horas=6, lluvia=None):
-    """Minutario de la automática: horas previas a t, sin lluvia salvo {minuto (Timestamp): mm}."""
+def minutario(t, horas=6, lluvia=None, **cols):
+    """Minutario de la automática: horas previas a t, sin lluvia salvo {minuto (Timestamp): mm}; cols: valor fijo (P_mar=1001.2)."""
     m = pd.date_range(t - pd.Timedelta(hours=horas) + pd.Timedelta(minutes=1), t, freq="1min")
-    A = pd.DataFrame({"momento": m, "rr1m": 0.0})
+    A = pd.DataFrame({"momento": m, "rr1m": 0.0, **cols})
     for k, mm in (lluvia or {}).items():
         A.loc[A["momento"] == k, "rr1m"] = mm
     return A
@@ -106,6 +108,61 @@ def prueba_cl8_solo_sc():
     """CL 8 (Cu y Sc a distinta altura) con solo la capa de Sc en los grupos 8 → no C40."""
     no_alerta(S.codificacion(obs(CL=8, N=5, capas=[(5, 6, 1200)])), "C40", "CL 8 con solo Sc")
     si_alerta(S.codificacion(obs(CL=8, N=5, capas=[(5, 3, 3000)])), "C40", "CL 8 sin Cu ni Sc")
+
+
+# ----------------------------------------------------------------- etapa 1 (menos ruido)
+def _serie(el, valores, **kw):
+    """Horas t-k … t+k con los valores dados (el del medio es la hora revisada)."""
+    n = len(valores) // 2
+    return {T + pd.Timedelta(hours=i - n): obs(**{el: x}, **kw) for i, x in enumerate(valores)}
+
+
+def prueba_digitacion_presion():
+    """1001, 1001, 1010, 1001 → probable 1001; si el sensor también marcó 1010, fue real."""
+    h = _serie("QFF", [1001.0, 1001.2, 1001.1, 1001.0, 1010.0, 1001.0, 1001.1, 1001.2, 1001.0])
+    si_alerta(S.digitacion(T, h[T], h, minutario(T, P_mar=1001.1)), "E20", "QFF 1010 entre 1001", nivel=2)
+    no_alerta(S.digitacion(T, h[T], h, minutario(T, P_mar=1010.0)), "E20", "QFF 1010 que el sensor confirma")
+
+
+def prueba_digitacion_direccion():
+    h = {T + pd.Timedelta(hours=k): obs(VTO=(200, 12)) for k in (-2, -1, 1, 2)}
+    h[T] = obs(VTO=(20, 12))
+    si_alerta(S.evolucion(T, h[T], h, minutario(T, dd10=200.0, ff10=12.0)), "E20", "dirección 020 entre 200")
+    no_alerta(S.evolucion(T, h[T], h, minutario(T, dd10=20.0, ff10=12.0)), "E20", "giro que el sensor confirma")
+
+
+def prueba_frente_sensor_solo_grande():
+    A = minutario(T, P_mar=1001.0, T=15.0)
+    no_alerta(S.frente_sensor(T, obs(QFF=1002.5), A, {"QFF": 0.0}), "SQFF", "QFF 1.5 hPa sobre el sensor")
+    si_alerta(S.frente_sensor(T, obs(QFF=1004.0), A, {"QFF": 0.0}), "SQFF", "QFF 3 hPa sobre el sensor")
+    no_alerta(S.frente_sensor(T, obs(QFF=1004.0), A, {"QFF": 3.0}), "SQFF", "QFF con diferencia propia de 3 hPa")
+    no_alerta(S.frente_sensor(T, obs(Ts=16.2), A), "STs", "Ts 1.2 °C sobre el sensor")
+    si_alerta(S.frente_sensor(T, obs(Ts=18), A), "STs", "Ts entera 3 °C sobre el sensor", nivel=1)
+    # valor que aparece en algún minuto de la hora previa
+    A2 = A.copy(); A2.loc[A2["momento"] == T - pd.Timedelta(minutes=40), "T"] = 18.4
+    no_alerta(S.frente_sensor(T, obs(Ts=18.4), A2), "STs", "Ts que marcó el sensor a los 40 min")
+
+
+def prueba_viento_kmh():
+    A = minutario(T, ff10=10.0, dd10=180.0)
+    si_alerta(S.frente_sensor(T, obs(VTO=(180, 19)), A), "Sffkmh", "19 km/h con 10 kt en el sensor")
+    no_alerta(S.frente_sensor(T, obs(VTO=(180, 12)), A), "Sffkmh", "12 kt con 10 kt en el sensor")
+    no_alerta(S.frente_sensor(T, obs(VTO=(180, 18)), A), "Sff", "8 kt de diferencia")
+
+
+def prueba_visibilidad_y_nubes():
+    no_alerta(S.codificacion(obs(ww=10, VV=7000, N=0)), "C02", "neblina con 7 km")
+    si_alerta(S.codificacion(obs(ww=5, VV=10000, N=0)), "C03", "calima con 10 km")
+    no_alerta(S.codificacion(obs(CL=1, N=3, capas=[(3, 7, 400)])), "C40", "CL 1 con capa de St")
+
+
+def prueba_traza():
+    si_alerta(S.codificacion(obs(N=0, rr6=0.4, traza=1)), "C42", "traza con RRR6 0.4", nivel=2)
+    A = minutario(T, lluvia={T - pd.Timedelta(hours=2, minutes=k): 0.1 for k in range(3)})
+    si_alerta(S.frente_sensor(T, obs(N=0, rr6=0, traza=1), A), "SRRR6", "traza con 0.3 mm en el pluviómetro", nivel=2)
+    h = {T - pd.Timedelta(hours=k): obs(ww=2, N=2) for k in range(1, 6)}
+    h[T] = obs(ww=2, N=2, rr6=0, traza=1)
+    si_alerta(S.evolucion(T, h[T], h, minutario(T)), "E21", "traza sin fenómenos", nivel=0)
 
 
 if __name__ == "__main__":

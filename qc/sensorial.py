@@ -249,6 +249,7 @@ def fen_metar(o):
     return out
 
 
+VV_FEN = 8000                     # humo, calima, polvo, neblina: se avisa solo sobre esta visibilidad (m)
 PRECIP = set(range(50, 100)) - {76, 77, 78}           # precipitación en la estación (ww 76 cristales: no siempre se mide)
 VIS_SYNOP = set(range(0, 5001, 100)) | set(range(6000, 30001, 1000)) | set(range(35000, 70001, 5000)) | {70000, 75000, 80000, 90000}
 
@@ -272,10 +273,10 @@ def codificacion(o):
             add("C01", 2, f"niebla en la estación (ww {ww}) con visibilidad de {VV} m: la niebla exige menos de 1000 m")
         if ww == 10 and VV < 1000:
             add("C02", 2, f"neblina (ww 10) con visibilidad de {VV} m: con menos de 1000 m es niebla")
-        if ww == 10 and VV > 5000:
+        if ww == 10 and VV > VV_FEN:
             add("C02", 1, f"neblina (ww 10) con visibilidad de {VV} m: la neblina se informa hasta 5000 m")
-        if ww in (4, 5) and VV > 5000:
-            add("C03", 1, f"humo o calima (ww {ww:02d}) con visibilidad de {VV} m: se informa con 5000 m o menos")
+        if ww in (4, 5, 6, 7) and VV > VV_FEN:     # humo, calima, polvo: con más de 8 km casi seguro es un error
+            add("C03", 1, f"humo, calima o polvo (ww {ww:02d}) con visibilidad de {VV} m: se informa con 5000 m o menos")
         if ww in (11, 12) and VV < 1000:
             add("C04", 1, f"niebla baja (ww {ww}) con visibilidad de {VV} m: si la visibilidad es menor de 1000 m es niebla (40–49)")
         if VV < 1000 and ww < 40 and ww not in PRECIP and ww not in (4, 6, 7, 8, 9, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39):
@@ -354,12 +355,9 @@ def codificacion(o):
     # CL con Cu o Cb (1, 2, 3, 8, 9) pero ningún grupo 8NsChshs con C = 8 (Cu) o 9 (Cb)
     # CL 8 = Cu y Sc a distinta altura: el Cu puede no ir en los grupos 8 si no es la capa más baja y cubre menos de 3/8
     # (2.ª capa ≥ 3/8, 3.ª ≥ 5/8; solo el Cb va siempre), así que basta con que esté la capa de Sc
-    if CL in CL_CONV and (capas or (N or 0) > 0) and not any(c[1] in (8, 9, 10) for c in capas):
-        if CL == 8:
-            if not any(c[1] == 6 for c in capas):
-                add("C40", 1, "CL 8 (Cu y Sc a distinta altura) sin capa de Cu ni de Sc en los grupos 8")
-        else:
-            add("C40", 1, f"CL {CL} indica " + ("Cb" if CL in (3, 9) else "Cu") + " pero falta su capa en los grupos 8")
+    # Solo se avisa si no hay ninguna capa de nube baja (Sc, St, Cu, Cb, TCu): con alguna, puede ser la que se informó
+    if CL in CL_CONV and (capas or (N or 0) > 0) and not any(c[1] in (6, 7, 8, 9, 10) for c in capas):
+        add("C40", 1, f"CL {CL} indica " + ("Cb" if CL in (3, 9) else "Cu") + " pero no hay ninguna capa de nube baja en los grupos 8")
     if CL in (3, 9) and capas and not any(c[1] == 9 for c in capas):
         add("C21", 1, f"CL {CL} (cumulonimbo) sin una capa de Cb")
     if any(c[1] == 9 for c in capas) and CL not in (3, 9):
@@ -391,6 +389,9 @@ def codificacion(o):
     W1, W2 = v(o, "W1W2", "W1"), v(o, "W1W2", "W2")
     if W1 is not None and W2 is not None and W1 < W2:
         add("C27", 2, f"W1 {W1} menor que W2 {W2}")
+    rr_, tz_ = v(o, "RRR6", "RRR6"), v(o, "RRR6", "Traza")
+    if tz_ == 1 and rr_ not in (None, 0):
+        add("C42", 2, f"RRR6 {rr_:g} mm marcado además como traza: la traza va con RRR6 0.0. Debería ir: RRR6 {rr_:g} sin traza, o 0.0 con traza")
     return out
 
 
@@ -419,7 +420,7 @@ def inusuales(t, o, hist, A=None):
         if x is None or xa is None:
             continue
         xs = v(sig, el) if sig else None
-        if abs(x - xa) > lim and xs is None:          # con la hora siguiente disponible, lo revisa digitacion() con toda la secuencia
+        if abs(x - xa) > lim and xs is None and not _sensor_marco(A, t, COL_SENSOR.get(el), x, TOL_BASE.get(el, 0)):
             add("E19", 1, f"{el} {x}: pasó de {xa} a {x} en una hora")
     return out + digitacion(t, o, hist, A)
 
@@ -456,6 +457,18 @@ def _variantes(x):
     return res
 
 
+TOL_BASE = {"Ts": 0.3, "Td": 0.3, "HR": 3, "QFE": 0.5, "QFF": 0.5, "QNH": 0.5, "ff": 2}   # tolerancias base acordadas
+
+
+def _sensor_marco(A, t, col, x, tol, minutos=60, b=0.0):
+    """¿La estación automática marcó x (± tol, descontada la diferencia propia b) en algún minuto de la hora previa?
+    Si el sensor también tuvo el valor (o el salto), el dato del observador es real: no se alerta."""
+    if A is None or not len(A) or not col or col not in A:
+        return False
+    w = A[(A["momento"] > t - pd.Timedelta(minutes=minutos)) & (A["momento"] <= t)][col].dropna()
+    return bool(len(w)) and float((w + b - x).abs().min()) <= tol + 1e-9
+
+
 COL_SENSOR = {"Ts": "T", "Td": "Td", "HR": "HR", "QFE": "P_est", "QFF": "P_mar", "QNH": "P_std", "ff": "ff10"}
 
 
@@ -487,9 +500,10 @@ def digitacion(t, o, hist, A=None):
         if dev <= umbral:
             continue
         col = COL_SENSOR.get(el)
-        if W is not None and col in W and W[col].notna().any():   # si la estación automática marcó ese valor, fue real
-            if (W[col] - x).abs().min() <= lim / 3 or (el in ("QFE", "QFF", "QNH") and abs(x - float(W[col].median())) <= 1.5):
-                continue
+        if _sensor_marco(A, t, col, x, max(TOL_BASE[el], lim / 3)):      # la estación automática también lo marcó: fue real
+            continue
+        if W is not None and col in W and W[col].notna().any() and el in ("QFE", "QFF", "QNH") and abs(x - float(W[col].median())) <= 1.5:
+            continue
         ref = esp if abs(x - esp) < abs(x - lin) else lin
         tol = max(lim / 2, 2 * sd)
         cand = [(abs(y - ref), y, tipo) for y, tipo in _variantes(x) if abs(y - ref) <= tol]
@@ -503,7 +517,35 @@ def digitacion(t, o, hist, A=None):
         elif dev > 2 * umbral:
             add("E20", 1, f"{el} {x} {u}: se sale de la secuencia de las horas vecinas (esperado ~{fmt(ref)} {u}, "
                 f"{len(antes)} horas antes y {len(desp)} después); no lo explica un error de tecla simple")
+    out += _digitacion_dd(t, o, hist, A)
     return out
+
+
+def _digitacion_dd(t, o, hist, A=None):
+    """Dirección del viento que se sale de la de las horas vecinas (las dos de antes y las dos de después parecidas entre sí),
+    con viento de al menos 6 kt, y que la estación automática no marcó."""
+    dd, ff = v(o, "VTO", "dd"), v(o, "VTO", "ff")
+    if not dd or (ff or 0) < 6 or dd > 360:
+        return []
+    ang = lambda a, b: abs((a - b + 180) % 360 - 180)
+    vec = []
+    for k in (-2, -1, 1, 2):
+        h = hist.get(t + pd.Timedelta(hours=k))
+        d_, f_ = (v(h, "VTO", "dd"), v(h, "VTO", "ff")) if h else (None, None)
+        if d_ and (f_ or 0) >= 6:
+            vec.append(d_)
+    if len(vec) < 3 or max(ang(a, b) for a in vec for b in vec) > 60:       # sin una dirección estable alrededor no se puede decir
+        return []
+    ref = vec[0]
+    if ang(dd, ref) <= 90:
+        return []
+    if A is not None and len(A) and "dd10" in A:
+        w = A[(A["momento"] > t - pd.Timedelta(minutes=60)) & (A["momento"] <= t)]["dd10"].dropna()
+        if len(w) and min(ang(dd, float(a)) for a in w) <= 30:              # la automática también giró: fue real
+            return []
+    cand = [y for y, _ in _variantes(dd) if 0 < y <= 360 and ang(y, ref) <= 30]
+    msg = f"dirección {dd}°: las horas vecinas tienen viento estable de ~{ref}° y la estación automática no marcó ese giro"
+    return [("evolucion", "E20", 2 if cand else 1, msg + (f". Parece error de tecla. Debería ir: {cand[0]:.0f}°" if cand else ""))]
 
 
 # ======================================================================= evolución (con las horas anteriores)
@@ -606,6 +648,12 @@ def evolucion(t, o, hist, A=None):
                     add("E13", 1, f"RRR6 {rr} mm y el pluviómetro automático marcó {suma:.1f} mm en las 6 h, pero ninguna hora informó precipitación (ww, W1W2 ni METAR): "
                         f"faltó informar el tiempo presente o reciente")
                 # estación sin SYNOP (solo METAR): la lluvia que paró antes de la hora no queda en el METAR que entrega SACLIM; el pluviómetro la confirma
+    if traza == 1 and not importada(o) and A is not None and len(A) and "rr1m" in A:
+        w6 = A[(A["momento"] > t - pd.Timedelta(hours=6)) & (A["momento"] <= t)]
+        fen = any(v(h, "WWSINOP", "ww") is not None and (v(h, "WWSINOP", "ww") in PRECIP or 10 <= v(h, "WWSINOP", "ww") <= 49)
+                  or fen_metar(h) for h in [o] + disponibles)
+        if len(w6) >= 300 and float(w6["rr1m"].sum()) == 0 and not fen:
+            add("E21", 0, "RRR6 traza sin ningún fenómeno informado en las 6 h (ni precipitación, neblina ni niebla) y el pluviómetro en 0: confirmar la traza")
     # tendencia barométrica
     a, ppp = v(o, "a", "a"), v(o, "a", "ppp")
     h3 = hist.get(t - pd.Timedelta(hours=3))
@@ -629,7 +677,9 @@ def evolucion(t, o, hist, A=None):
 
 
 # ======================================================================= frente a la estación automática
-SENSOR = (("Ts", "T", 1.5, 3, "°C"), ("Td", "Td", 2.5, 5, "°C"), ("HR", "HR", 12, 25, "%"), ("QFE", "P_est", 0.8, 2, "hPa"), ("QFF", "P_mar", 1.5, 3, "hPa"), ("QNH", "P_std", 1.5, 3, "hPa"))
+# (elemento, columna de la automática, diferencia grande para avisar, para nivel 2, unidad)
+SENSOR = (("Ts", "T", 1.5, 3, "°C"), ("Td", "Td", 2.5, 5, "°C"), ("HR", "HR", 12, 25, "%"), ("QFE", "P_est", 2, 4, "hPa"), ("QFF", "P_mar", 2, 4, "hPa"), ("QNH", "P_std", 2, 4, "hPa"))
+DIF_FF = 10                        # viento: diferencia grande con la automática (kt)
 PRES = ("QFE", "QFF", "QNH")
 TOL_SIN_SESGO = 2.0                # presión sin horas suficientes del observador para conocer su diferencia habitual
 
@@ -680,43 +730,34 @@ def frente_sensor(t, o, A, sesgo=None):
     # la hora, y SACLIM no guarda la hora de ingreso. Por eso lo anotado debe estar entre lo que marcó la automática de HH−15 a
     # HH:00, con una tolerancia que solo cubre el redondeo de la pantalla (sin descontar sesgos). Si además el valor no existió
     # en toda la hora previa, no salió de la estación (error de digitación, dato copiado o inventado): nivel alto.
+    # El observador toma los datos de la estación automática en los minutos previos a la hora (SACLIM no guarda la hora de
+    # ingreso). Si lo anotado aparece en algún minuto de la hora previa (tolerancia base, descontada la diferencia propia de la
+    # estación en presión), no se alerta. Si no, solo se avisa con diferencias grandes (SENSOR): lo fino lo ve la serie.
     W = A[(A["momento"] > t - pd.Timedelta(minutes=VENTANA)) & (A["momento"] <= t)]
-    WH = A[(A["momento"] > t - pd.Timedelta(minutes=60)) & (A["momento"] <= t)]
     for el, col, s1, s2, u in SENSOR:
         x, y = v(o, el), r.get(col)
         if x is None or y is None or pd.isna(y):
             continue
+        # presión: lo que muestra la estación puede estar referido a otra altura (umbral de pista); esa diferencia constante se descuenta
+        b = sesgo.get(el, 0.0) if el in PRES and abs(sesgo.get(el, 0.0)) >= 0.3 else 0.0
+        if _sensor_marco(A, t, col, x, TOL_BASE[el], 60, b):
+            continue
         serie = W[col].dropna() if col in W else pd.Series(dtype=float)
-        if len(serie) >= 2:
-            tol = TOL_PANTALLA[el]
-            # presión: el QFE/QFF que muestra la estación puede estar referido a otra altura (umbral de pista) que la presión
-            # que guarda el minutario; esa diferencia constante de cada estación se descuenta. En temperatura y humedad no.
-            b = sesgo.get(el, 0.0) if el in PRES and abs(sesgo.get(el, 0.0)) >= 0.3 else 0.0
-            lo, hi = float(serie.min()) + b, float(serie.max()) + b
-            if el in PRES and el not in sesgo:   # aún sin diferencia habitual (inicio del turno): se aceptan hasta 2 hPa
-                tol = TOL_SIN_SESGO
-            if el in PRES and float(x).is_integer():   # presión ingresada en hPa enteros: vale truncada o redondeada
-                lo, hi = math.floor(lo), math.ceil(hi)
-            d = 0.0 if lo <= x <= hi else min(abs(x - lo), abs(x - hi))
-            if d > tol + 1e-9:
-                sh = WH[col].dropna()
-                hlo, hhi = (float(sh.min()) + b, float(sh.max()) + b) if len(sh) else (lo, hi)
-                nunca = not (hlo - tol <= x <= hhi + tol)
-                rango_txt = (f"entre {lo:g} y {hi:g} {u}" if hi > lo else f"{lo:g} {u}") + f" de {(t - pd.Timedelta(minutes=VENTANA)):%H:%M} a {t:%H:%M}"
-                if nunca:
-                    add("S" + el, 2, f"{el} anotado {x} {u}: la estación automática nunca marcó ese valor en toda la hora previa "
-                        f"(estuvo entre {hlo:g} y {hhi:g} {u}; de {(t - pd.Timedelta(minutes=VENTANA)):%H:%M} a {t:%H:%M}, {('entre ' + f'{lo:g} y {hi:g}') if hi > lo else f'{lo:g}'} {u}). "
-                        f"El dato no proviene de la estación (diferencia {d:.1f} {u}" + (f"; descontada la diferencia habitual de la estación, {b:+.1f}" if b else "") + ")")
-                else:
-                    add("S" + el, 1, f"{el} anotado {x} {u} y la estación automática marcó {rango_txt} (diferencia {d:.1f} {u}); "
-                        f"ese valor sí aparece antes en la hora, pero no en los minutos en que se observa")
-        else:
-            # sin minutario en la ventana: se compara con el dato único más cercano, con los umbrales amplios de antes
-            b = sesgo.get(el, 0.0) if el in PRES and abs(sesgo.get(el, 0.0)) >= 0.3 else 0.0
-            d = abs(x - float(y) - b)
-            if d > s1:
-                add("S" + el, 2 if d > s2 else 1, f"{el} anotado {x} {u} y la estación automática marcó {float(y):g} {u} "
-                    f"(sin minutario en la ventana: dato único de las {r['momento']:%H:%M}; diferencia {d:.1f})")
+        if not len(serie):
+            serie = pd.Series([float(y)])
+        lo, hi = float(serie.min()) + b, float(serie.max()) + b
+        if el in PRES and float(x).is_integer():   # presión ingresada en hPa enteros: vale truncada o redondeada
+            lo, hi = math.floor(lo), math.ceil(hi)
+        d = 0.0 if lo <= x <= hi else min(abs(x - lo), abs(x - hi))
+        if d <= s1 + 1e-9:
+            continue
+        niv = 2 if d > s2 else 1
+        extra = ""
+        if el == "Ts" and float(x).is_integer():
+            niv, extra = 1, " Ts anotada sin decimal: revisar si se omitió el decimal"
+        rango_txt = (f"entre {lo:g} y {hi:g} {u}" if hi > lo else f"{lo:g} {u}") + f" de {(t - pd.Timedelta(minutes=VENTANA)):%H:%M} a {t:%H:%M}"
+        add("S" + el, niv, f"{el} anotado {x} {u} y la estación automática marcó {rango_txt} (diferencia {d:.1f} {u}"
+            + (f", descontada la diferencia propia de la estación {b:+.1f}" if b else "") + "); el valor no aparece en ningún minuto de la hora previa." + extra)
     ff = v(o, "VTO", "ff")
     sff = W["ff10"].dropna() if "ff10" in W else pd.Series(dtype=float)
     if not len(sff) and pd.notna(r.get("ff10")):
@@ -725,11 +766,12 @@ def frente_sensor(t, o, A, sesgo=None):
         lo, hi = float(sff.min()), float(sff.max())
         d = 0 if lo <= ff <= hi else min(abs(ff - lo), abs(ff - hi))
         kmh = ff / 1.852
-        if ff >= 6 and not (lo - 1 <= ff <= hi + 1) and lo - 1.5 <= kmh <= hi + 1.5:
+        dk = 0 if lo <= kmh <= hi else min(abs(kmh - lo), abs(kmh - hi))
+        if d >= 3 and dk < d and dk <= 1.5:
             add("Sffkmh", 2, f"viento anotado {ff} kt y la estación automática marcó " + (f"entre {lo:.0f} y {hi:.0f} kt" if round(hi) > round(lo) else f"{lo:.0f} kt")
                 + f": {ff} km/h son {kmh:.0f} kt, justo lo de la estación. Parece anotado en km/h en vez de nudos (correspondería {round(kmh)} kt)")
-        elif d > 6:
-            add("Sff", 1, f"viento anotado {ff} kt y la estación automática marcó " + (f"entre {lo:.0f} y {hi:.0f} kt en los {VENTANA} min previos" if hi > lo else f"{lo:.0f} kt"))
+        elif d > DIF_FF and not _sensor_marco(A, t, "ff10", ff, TOL_BASE["ff"]):
+            add("Sff", 2 if d > 2 * DIF_FF else 1, f"viento anotado {ff} kt y la estación automática marcó " + (f"entre {lo:.0f} y {hi:.0f} kt en los {VENTANA} min previos" if hi > lo else f"{lo:.0f} kt"))
     ffa = r.get("ff10")
     dd, dda = v(o, "VTO", "dd"), r.get("dd10")
     if dd and dda is not None and pd.notna(dda) and (ff or 0) >= 6 and (ffa or 0) >= 6:
@@ -775,7 +817,7 @@ def frente_sensor(t, o, A, sesgo=None):
             d = round(abs(suma - r6), 1)
             if traza:
                 if suma >= 0.2:
-                    add("SRRR6", 1, f"RRR6 anotado como traza y el pluviómetro automático sumó {suma:.1f} mm en 6 h")
+                    add("SRRR6", 2, f"RRR6 anotado como traza y el pluviómetro automático sumó {suma:.1f} mm en 6 h. Debería ir: RRR6 {suma:.1f}")
             elif d >= 0.1:
                 add("SRRR6", 2 if d > max(1.0, 0.3 * max(suma, r6)) else 1,
                     f"RRR6 anotado {r6:g} mm y el pluviómetro automático sumó {suma:.1f} mm en las 6 h cerradas a las {t:%H}:00 (diferencia {d:.1f} mm; la precipitación debe calzar exacta)")
@@ -964,10 +1006,10 @@ def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None):
     out = []
     from satelite import sensorial as satelital
     sg = sesgos(obs, A)
-    for el, col, s1, s2, u in SENSOR:            # diferencia constante con la automática: se informa una vez (última hora)
-        if abs(sg.get(el, 0)) > s1:
-            out.append(dict(codigo=str(codigo), hora=str(ts[-1]), tipo="sensor", regla="SB" + el, nivel=1, revisado="no",
-                            msg=f"{el} del observador difiere en forma constante {sg[el]:+.1f} {u} de la estación automática (revisar calibración o altura del sensor)"))
+    for el in PRES:                               # diferencia constante con la automática: informativo, una vez por estación y día
+        if abs(sg.get(el, 0)) >= 0.5:
+            out.append(dict(codigo=str(codigo), hora=str(ts[-1].normalize()), tipo="sensor", regla="SB" + el, nivel=0, revisado="no",
+                            msg=f"{el} del observador difiere en forma constante {sg[el]:+.1f} hPa de la estación automática (diferencia propia: altura del sensor o de pista; ya se descuenta al comparar)"))
     for t in sel:
         o = obs[t]
         for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs) + satelital(t, o, sat):
