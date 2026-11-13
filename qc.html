@@ -677,7 +677,9 @@ let turnoH = (() => { try { return +localStorage.getItem("qcTurnoH") || 8; } cat
 const setTurnoH = h => { turnoH = Math.min(72, Math.max(1, Math.round(h) || 8)); try { localStorage.setItem("qcTurnoH", turnoH); } catch (e) {} pintarInf(); };
 function pintarInf(){
   if (!R) return;
-  const {E, act, res, sin, inc, hoy} = datosInf(), cnt = R.resumen || {};
+  const {E, act, res: resHoy, sin, inc, hoy} = datosInf(), cnt = R.resumen || {};
+  const t1 = Date.now(), t0 = t1 - turnoH * 3600e3;
+  const res = Object.values(R.informados || {}).filter(r => { if (!r.fin) return false; const m = Date.parse(r.fin.replace(" ", "T") + ":00Z"); return m >= t0 && m <= t1; });
   const porZona = (L, f) => { const g = {}; L.forEach(x => (g[x.zona || "—"] ||= []).push(f(x))); const O = ["Norte", "Centro", "Sur", "Austral", "Insular"]; return Object.entries(g).sort((a, b) => (O.indexOf(a[0]) + 99) % 99 - (O.indexOf(b[0]) + 99) % 99).map(([z, l]) => `  ${z}:\n` + l.map(t => "   - " + t).join("\n")).join("\n") || "  (ninguna)"; };
   const mn = r => (Date.parse(r.fin.replace(" ", "T") + ":00Z") - Date.parse(r.inicio.replace(" ", "T") + ":00Z")) / 60e3 + 1;
   const zonaCod = c => (E.find(e => e.codigo === c) || {}).zona;
@@ -687,12 +689,12 @@ function pintarInf(){
     ``,
     `RESUMEN`,
     `- ${E.length} estaciones: ${cnt.bien ?? 0} sin problemas, ${cnt.sospechoso ?? 0} con datos dudosos, ${cnt["erróneo"] ?? 0} con datos erróneos y ${sin.length} sin datos.`,
-    `- ${act.length} fallas de sensor activas (${act.filter(p => p.informado).length} ya informadas) · ${res.length} resueltas hoy · ${inc.length} estaciones con datos incompletos.`,
+    `- ${act.length} fallas de sensor activas (${act.filter(p => p.informado).length} ya informadas) · ${res.length} resueltas en las últimas ${turnoH} h · ${inc.length} estaciones con datos incompletos.`,
     ``,
     `FALLAS ACTIVAS`,
     porZona(act, p => `${p.nombre} (${p.codigo}): ${FALLAS.sensor(p)}, ${FALLAS.que(p)} desde ${FALLAS.utc(p.inicio).slice(5)} UTC (${p.sigue ? "sigue, lleva " : ""}${FALLAS.dur(p.minutos)})${p.informado ? " [informada]" : ""}`),
     ``,
-    `RESUELTAS HOY`,
+    `RESUELTAS EN LAS ÚLTIMAS ${turnoH} h`,
     porZona(res.map(r => ({...r, zona: zonaCod(r.codigo)})), r => `${r.nombre} (${r.codigo}): ${FALLAS.sensor(r)}, ${FALLAS.dur(mn(r))} (${r.inicio.slice(5)} a ${r.fin.slice(11)} UTC)`),
     ``,
     `SIN DATOS`,
@@ -708,9 +710,9 @@ function pintarInf(){
   $("#iXlsx").onclick = () => {
     if (!window.XLSX) return alert("No se pudo cargar la librería de Excel; revise la conexión.");
     const wb = XLSX.utils.book_new(), hoja = (n, F) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(F.length ? F : [{"(sin registros)": ""}]), n);
-    hoja("Resumen", [{Fecha: hoy, "Datos hasta (UTC)": (R.datos_hasta || "").slice(0, 16), Estaciones: E.length, "Sin problemas": cnt.bien ?? 0, Dudosos: cnt.sospechoso ?? 0, "Erróneos": cnt["erróneo"] ?? 0, "Sin datos": sin.length, "Fallas activas": act.length, Informadas: act.filter(p => p.informado).length, "Resueltas hoy": res.length, Incompletas: inc.length}]);
+    hoja("Resumen", [{Fecha: hoy, "Datos hasta (UTC)": (R.datos_hasta || "").slice(0, 16), Estaciones: E.length, "Sin problemas": cnt.bien ?? 0, Dudosos: cnt.sospechoso ?? 0, "Erróneos": cnt["erróneo"] ?? 0, "Sin datos": sin.length, "Fallas activas": act.length, Informadas: act.filter(p => p.informado).length, "Resueltas ventana": res.length, Incompletas: inc.length}]);
     hoja("Fallas activas", act.map(p => ({Zona: p.zona, "Estación": p.nombre, "Código": p.codigo, Sensor: FALLAS.sensor(p), Falla: FALLAS.que(p), "Inicio UTC": FALLAS.utc(p.inicio), "Última UTC": FALLAS.utc(p.ultima), "Duración (min)": Math.round(p.minutos), Sigue: p.sigue ? "sí" : "no", Informada: p.informado ? "sí" : "no", Detalle: p.msg})));
-    hoja("Resueltas hoy", res.map(r => ({Zona: zonaCod(r.codigo), "Estación": r.nombre, "Código": r.codigo, Sensor: FALLAS.sensor(r), Falla: FALLAS.que(r), "Inicio UTC": r.inicio, "Fin UTC": r.fin, "Duración (min)": Math.round(mn(r))})));
+    hoja("Resueltas en la ventana", res.map(r => ({Zona: zonaCod(r.codigo), "Estación": r.nombre, "Código": r.codigo, Sensor: FALLAS.sensor(r), Falla: FALLAS.que(r), "Inicio UTC": r.inicio, "Fin UTC": r.fin, "Duración (min)": Math.round(mn(r))})));
     hoja("Sin datos", sin.map(e => ({Zona: e.zona, "Estación": e.nombre, "Código": e.codigo})));
     hoja("Incompletos", inc.map(e => ({Zona: e.zona, "Estación": e.nombre, "Código": e.codigo, "Completitud %": e.completitud})));
     XLSX.writeFile(wb, `informe_red_ema_${hoy}.xlsx`);
