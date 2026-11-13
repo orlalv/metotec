@@ -73,7 +73,7 @@ aside{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(
 #sgPanel .sghead{display:flex;gap:12px;align-items:flex-start;margin-bottom:8px}#sgPanel .sghead>div{flex:1}#sgPanel .sghead b{font:600 16px var(--titulo)}#sgPanel .sghead small{color:var(--mu)}#sgPanel .sghead p{margin:6px 0 0;font-size:13px;color:var(--tx)}
 #sgPanel .sgx{background:none;border:1px solid var(--bd);color:var(--tx);border-radius:8px;font-size:16px;padding:2px 10px;cursor:pointer}#sgPanel .sgx:hover{border-color:var(--oro);color:var(--oro)}
 @media (max-width:900px){#sgPanel{width:100vw}}
-tr.sgsel td{background:color-mix(in srgb,var(--oro) 22%,transparent)!important;box-shadow:inset 0 2px 0 var(--oro),inset 0 -2px 0 var(--oro)}tr.sgsel td:first-child{box-shadow:inset 5px 0 0 var(--oro),inset 0 2px 0 var(--oro),inset 0 -2px 0 var(--oro)}#sgPanel .sgalmsg{margin:8px 0 0;border:1px solid var(--oro);border-left-width:5px;border-radius:8px;padding:6px 10px;background:color-mix(in srgb,var(--oro) 10%,transparent)}#sgPanel .sgalmsg span{display:block;font:700 10.5px inherit;letter-spacing:.6px;text-transform:uppercase;color:var(--oro)}#minu tr.mhit td{background:color-mix(in srgb,var(--oro) 30%,transparent)!important;font-weight:700}#minu #mFil button,#minu #mFil select,#minu #mFil input{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:7px;padding:4px 9px;font:600 12.5px inherit;cursor:pointer}#minu #mFil button:hover{border-color:var(--oro);color:var(--oro)}.sgbtn{white-space:nowrap;margin-left:6px;background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer}.sgbtn:hover{border-color:var(--oro)}
+tr.sgsel td{background:color-mix(in srgb,var(--oro) 22%,transparent)!important;box-shadow:inset 0 2px 0 var(--oro),inset 0 -2px 0 var(--oro)}tr.sgsel td:first-child{box-shadow:inset 5px 0 0 var(--oro),inset 0 2px 0 var(--oro),inset 0 -2px 0 var(--oro)}#sgPanel .sgalmsg{margin:8px 0 0;border:1px solid var(--oro);border-left-width:5px;border-radius:8px;padding:6px 10px;background:color-mix(in srgb,var(--oro) 10%,transparent)}#sgPanel .sgalmsg span{display:block;font:700 10.5px inherit;letter-spacing:.6px;text-transform:uppercase;color:var(--oro)}#minu tr.mhit td{background:color-mix(in srgb,var(--oro) 30%,transparent)!important;font-weight:700}#minu #mFil button,#minu #mFil select,#minu #mFil input{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:7px;padding:4px 9px;font:600 12.5px inherit;cursor:pointer}#minu #mFil button:hover{border-color:var(--oro);color:var(--oro)}.sgsub{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}.sgsub button{background:none;border:1px solid var(--bd);color:var(--mu);font:700 11.5px inherit;padding:2px 10px;border-radius:6px;cursor:pointer}.sgsub button.on{border-color:var(--oro);color:var(--oro)}.sgbtn{white-space:nowrap;margin-left:6px;background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 7px;font:600 12px inherit;cursor:pointer}.sgbtn:hover{border-color:var(--oro)}
 .sgraf{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin:4px 0}.sgtop{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:13px}
 .sgtop input{width:64px;background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:3px 6px;font:600 13px var(--mono)}.sgval{font-family:var(--mono);font-size:12.5px}
 .sgley{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mu);margin:4px 0 6px}.sgley i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
@@ -333,8 +333,60 @@ function detalleSup(c, mover = true){
   $("#det").style.display = "block"; $("#det").dataset.cod = e.codigo;
   $("#det").innerHTML = `<h2>${esc(e.nombre)}</h2><div class="sub">${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.alt != null ? e.alt + " m · " : ""}<span style="color:${COL[e.nivel]}">${NOM[e.nivel]}</span> · estación sin observador · <a class="vlink" href="https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/${encodeURIComponent(e.codigo)}" target="_blank" rel="noopener">↗ en línea</a></div>
    <div class="hres" style="margin:8px 0"><div><b>${e.ultima ? e.ultima.slice(11, 16) : "—"}</b><span>último dato UTC${e.ultima ? " · " + e.ultima.slice(8, 10) + "/" + e.ultima.slice(5, 7) : ""}</span></div><div><b style="color:${at != null && at > 60 ? "var(--err)" : at != null && at > 20 ? "var(--sos)" : "var(--ok)"}">${esc(estado)}</b><span>estado del dato (respecto de la revisión)</span></div><div><b>${H.length}</b><span>hallazgos</span></div></div>
-   ${H.length ? `<table><tr><th>Dato UTC</th><th>Variable</th><th>Regla</th><th>Detalle</th><th></th></tr>${H.map(h => `<tr><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td>${esc((SUPC.find(x => x[0] === h.tipo) || [0, h.tipo])[1])}</td><td style="color:${HEX[h.nivel]}">${REGLAS.html(h.regla, esc)}</td><td>${esc(h.msg)}${MARCA.estado(e.codigo, h) === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${MARCA.botones(e.codigo, h)}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin hallazgos en las últimas 24 horas.</p>`}`;
+   ${H.length ? `<table><tr><th>Dato UTC</th><th>Variable</th><th>Regla</th><th>Detalle</th><th></th></tr>${H.map(h => `<tr data-hh="${esc(h.hora)}" data-tp="${esc(h.tipo)}" style="cursor:pointer" title="Ver el dato minuto a minuto"><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td>${esc((SUPC.find(x => x[0] === h.tipo) || [0, h.tipo])[1])}</td><td style="color:${HEX[h.nivel]}">${REGLAS.html(h.regla, esc)}</td><td>${esc(h.msg)}${MARCA.estado(e.codigo, h) === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${MARCA.botones(e.codigo, h)}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin hallazgos en las últimas 24 horas.</p>`}
+   <div id="supDat" data-c="${e.codigo}"></div>`;
+  supDatos(e, H);
 }
+// gráficos y tabla del minutario de la estación (últimas 24 h) con las alertas marcadas
+const SUPG = {tem: ["Temperaturas", [["T", "Td"], ["HR"]]], pre: ["Presiones", [["P_est"], ["P_mar"]]], vie: ["Viento", [["ff10", "fx10"], ["dd10"]]], pp: ["Precipitación", [["rr1m"], ["rr6"]]], ext: ["Extremas", [["T", "Tn12", "Tx12"]]]};
+const SUPV = {T: ["Ts", "°C", "#e7b03b"], Td: ["Td", "°C", "#5aa9e6"], HR: ["HR", "%", "#5aa9e6"], P_est: ["QFE", "hPa", "#e7b03b"], P_mar: ["QFF", "hPa", "#5aa9e6"], ff10: ["Viento 10 min", "kt", "#e7b03b"], fx10: ["Racha", "kt", "#e5534b"],
+  dd10: ["Dirección", "°", "#5aa9e6"], rr1m: ["Agua caída 1 min", "mm", "#5aa9e6"], rr6: ["RRR6 informada", "mm", "#e7b03b"], Tn12: ["Tn12", "°C", "#5aa9e6"], Tx12: ["Tx12", "°C", "#e5534b"]};
+const SUPD = {};      // código → filas [{t, ...}]
+async function supFilas(cod){
+  if (SUPD[cod]) return SUPD[cod];
+  const S = R.super || {}, fin = Date.parse((S.generado || new Date().toISOString().slice(0, 19)) + "Z"), iso = t => new Date(t).toISOString().slice(0, 13);
+  const r = await fetch(`/api/minutarios?cod=${cod}&desde=${iso(fin - 25 * 3600e3)}&hasta=${iso(fin)}`, {cache: "no-store"}); if (!r.ok) throw new Error(r.status);
+  const j = await r.json(), cab = (j.cab || "").split(",");
+  const F = (j.filas || []).map(l => { const v = l.split(","), o = {t: Date.parse(v[1].replace(" ", "T") + "Z")}; cab.forEach((c, i) => { if (i > 1) o[c] = v[i] === "" ? null : +v[i]; }); return o; }).sort((a, b) => a.t - b.t);
+  return SUPD[cod] = F.filter(o => o.t > fin - 24 * 3600e3);
+}
+async function supDatos(e, H){
+  const box = $("#supDat"); if (!box) return;
+  const grp = box.dataset.g = box.dataset.g || (H[0] && SUPG[H[0].tipo] ? H[0].tipo : "tem");
+  box.innerHTML = `<h3 style="margin:14px 0 6px;font:600 15px var(--titulo)">Datos de las últimas 24 h</h3><div class="sgsub">${Object.entries(SUPG).map(([k, [n]]) => `<button data-sg2="${k}" class="${k === grp ? "on" : ""}">${n}</button>`).join("")}</div><div id="supDatC" style="color:var(--mu)">Cargando…</div>`;
+  let F; try { F = await supFilas(e.codigo); } catch (x) { $("#supDatC").textContent = "No se pudieron leer los datos (" + x.message + ")."; return; }
+  if (!$("#supDat") || $("#supDat").dataset.c !== e.codigo) return;
+  if (!F.length){ $("#supDatC").textContent = "Sin datos minutarios en las últimas 24 h."; return; }
+  const sel = box.dataset.h || "", ms = sel ? Date.parse(sel + ":00Z") : null, marcas = H.filter(h => h.tipo === grp).map(h => Date.parse(h.hora + ":00Z"));
+  const t0 = F[0].t, t1 = F[F.length - 1].t, W = 760, Ht = 170, mi = 46, md = 10, ms0 = 10, mb = 20;
+  const x = t => mi + (t - t0) / ((t1 - t0) || 1) * (W - mi - md);
+  const charts = SUPG[grp][1].map(vs => {
+    const V = F.flatMap(o => vs.map(v => o[v]).filter(y => y != null)); if (!V.length) return "";
+    let lo = Math.min(...V), hi = Math.max(...V); if (hi - lo < 1e-6){ lo -= 1; hi += 1; } const pad = (hi - lo) * .08; lo -= pad; hi += pad;
+    const y = v => ms0 + (1 - (v - lo) / (hi - lo)) * (Ht - ms0 - mb);
+    const lin = vs.map(v => { const pts = F.filter(o => o[v] != null).map(o => `${x(o.t).toFixed(1)},${y(o[v]).toFixed(1)}`); return pts.length ? `<polyline fill="none" stroke="${SUPV[v][2]}" stroke-width="1.4" points="${pts.join(" ")}"/>` : ""; }).join("");
+    const ejes = [0, .5, 1].map(f => { const v = lo + (hi - lo) * f; return `<line x1="${mi}" x2="${W - md}" y1="${y(v)}" y2="${y(v)}" stroke="var(--bd)" stroke-width=".6"/><text x="${mi - 4}" y="${y(v) + 3}" text-anchor="end" font-size="10" fill="var(--mu)">${v.toFixed(Math.abs(hi - lo) < 5 ? 1 : 0)}</text>`; }).join("");
+    const hs = []; for (let t = Math.ceil(t0 / 3600e3) * 3600e3; t <= t1; t += 3 * 3600e3) hs.push(t);
+    const eje = hs.map(t => `<text x="${x(t)}" y="${Ht - 5}" text-anchor="middle" font-size="10" fill="var(--mu)">${new Date(t).toISOString().slice(11, 13)}</text>`).join("");
+    const mk = marcas.filter(t => t >= t0 && t <= t1).map(t => `<line x1="${x(t)}" x2="${x(t)}" y1="${ms0}" y2="${Ht - mb}" stroke="#e5534b" stroke-width="1.2" stroke-dasharray="3 3"/>`).join("") + (ms && ms >= t0 && ms <= t1 ? `<line x1="${x(ms)}" x2="${x(ms)}" y1="${ms0}" y2="${Ht - mb}" stroke="var(--oro)" stroke-width="2"/>` : "");
+    return `<div style="margin-bottom:6px"><div style="font-size:12px;color:var(--mu)">${vs.map(v => `<b style="color:${SUPV[v][2]}">━</b> ${SUPV[v][0]} (${SUPV[v][1]})`).join(" &nbsp; ")} · hora UTC · <span style="color:#e5534b">┆ alerta</span></div>
+      <svg viewBox="0 0 ${W} ${Ht}" style="width:100%;max-width:${W}px;height:auto;background:var(--sf, transparent)">${ejes}${eje}${lin}${mk}</svg></div>`;
+  }).join("");
+  // tabla: cada 30 min; si se eligió una alerta (clic en su fila), minuto a minuto ±30 min
+  const cols = SUPG[grp][1].flat().filter((v, i, a) => a.indexOf(v) === i);
+  const filas = ms ? F.filter(o => Math.abs(o.t - ms) <= 30 * 60e3) : F.filter(o => new Date(o.t).getUTCMinutes() % 30 === 0).reverse();
+  const f1 = v => v == null ? "—" : (Math.round(v * 100) / 100).toString();
+  $("#supDatC").style.color = "";
+  $("#supDatC").innerHTML = charts + `<div style="font-size:12px;color:var(--mu);margin:4px 0">${ms ? `Minuto a minuto, ±30 min de la alerta ${esc(sel.slice(8, 10) + "/" + sel.slice(5, 7) + " " + sel.slice(11, 16))} UTC · <a href="#" data-sg2h="">volver a cada 30 min</a>` : "Cada 30 min (haga clic en un hallazgo para ver minuto a minuto)"}</div>
+    <div style="max-height:260px;overflow:auto"><table class="xtab"><tr><th>UTC</th>${cols.map(v => `<th>${SUPV[v][0]}</th>`).join("")}</tr>${filas.map(o => `<tr${ms && o.t === ms ? ' style="background:color-mix(in srgb,var(--oro) 18%,transparent)"' : ""}><td>${new Date(o.t).toISOString().slice(5, 16).replace("T", " ")}</td>${cols.map(v => `<td class="n">${f1(o[v])}</td>`).join("")}</tr>`).join("")}</table></div>`;
+}
+document.addEventListener("click", ev => {
+  const b = ev.target.closest("button[data-sg2]"), a = ev.target.closest("a[data-sg2h]"), tr = ev.target.closest(".mk") ? null : ev.target.closest("#det table tr[data-hh]");
+  if (!b && !a && !tr) return; const box = $("#supDat"); if (!box || modo !== "sup") return;
+  if (b) box.dataset.g = b.dataset.sg2; if (a){ ev.preventDefault(); box.dataset.h = ""; }
+  if (tr){ box.dataset.h = tr.dataset.hh; box.dataset.g = tr.dataset.tp; document.querySelectorAll("#det tr[data-hh]").forEach(x => x.classList.toggle("sgsel", x === tr)); }
+  const e = supFiltradas().find(x => x.codigo === box.dataset.c); if (e) supDatos(e, e.hallazgos);
+});
 function detalleObs(c, mover = true){
   const e = obsFiltradas().find(x => x.codigo === c); if (!e) return; sel = c; guardarVista();
   document.querySelectorAll(".it").forEach(x => x.classList.toggle("sel", x.dataset.c === c));
