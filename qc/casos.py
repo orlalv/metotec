@@ -224,6 +224,28 @@ def prueba_ema_episodio():
         FALLAS.append(f"episodio: debía terminar al no verse → {fin}")
 
 
+def prueba_completar_huecos():
+    import numpy as np, completar as CP
+    ix = pd.date_range("2020-01-01", periods=24 * 365 * 3, freq="h")
+    ciclo = 15 + 6 * np.sin((ix.hour - 9) / 24 * 2 * np.pi)
+    S = pd.DataFrame({"Ts": ciclo, "Td": ciclo - 5, "HR": 60.0, "QFE": 1000.0, "QFF": 1010.0, "ff": 5.0, "RRR6": 0.0}, index=ix)
+    i = 24 * 200 + 8
+    S.iloc[i:i + 6] = np.nan                       # hueco de 6 h: se completa
+    S.iloc[i + 100:i + 115] = np.nan               # hueco de 15 h: no se completa
+    D = CP.completar(S)
+    d = D[D.fecha < ix[i + 50]]
+    if sorted(d["var"].unique()) != ["HR", "QFE", "QFF", "Td", "Ts"] or len(d) != 30:
+        FALLAS.append(f"completar: hueco de 6 h debía dar Ts, Td, HR, QFE y QFF (sin ff ni RRR6) → {d['var'].value_counts().to_dict()}")
+    ts = d[d["var"] == "Ts"].set_index("fecha")["valor"]
+    if np.abs(ts.to_numpy() - np.asarray(ciclo[i:i + 6])).max() > 0.3:
+        FALLAS.append("completar: Ts debía seguir el ciclo diario")
+    if D.fecha.between(ix[i + 100], ix[i + 114]).any():
+        FALLAS.append("completar: un hueco de 15 h no debe completarse")
+    S2 = S.copy(); S2.iloc[:5] = np.nan
+    if len(CP.completar(S2)[lambda x: x.fecha < ix[5]]):
+        FALLAS.append("completar: sin dato antes del hueco no se completa")
+
+
 if __name__ == "__main__":
     pruebas = [f for k, f in sorted(globals().items()) if k.startswith("prueba_")]
     for f in pruebas:

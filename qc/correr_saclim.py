@@ -2,7 +2,8 @@
   --modo piloto  años faltantes de --cods (por omisión, unas pocas estaciones)
   --modo actual  año en curso y anterior (semanal)
   --modo todo    vuelve a bajar todo lo guardado (mensual: detecta correcciones)
-  --modo revisar solo revisa lo guardado"""
+  --modo revisar solo revisa lo guardado
+  --modo completar completa huecos ≤ 10 h (completar.py) y los guarda en saclim/completado/"""
 import argparse, json, sys
 from datetime import date
 from pathlib import Path
@@ -21,7 +22,7 @@ def guardadas(datos):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--datos", default="datos")
-    ap.add_argument("--modo", default="piloto", choices=["piloto", "actual", "todo", "revisar"])
+    ap.add_argument("--modo", default="piloto", choices=["piloto", "actual", "todo", "revisar", "completar"])
     ap.add_argument("--cods", default="")
     ap.add_argument("--desde", type=int, default=1995)
     ap.add_argument("--hasta", type=int, default=date.today().year)
@@ -36,6 +37,10 @@ def main():
         print(SH.actualizar(a.datos, cods, hoy - 1, hoy))
     elif a.modo == "todo":
         print(SH.actualizar(a.datos, cods, a.desde, hoy))
+    if a.modo == "completar":
+        import completar as CP
+        CP.completar_todo(a.datos, cods if a.cods else guardadas(a.datos))
+        return
     E = {e["codigo"]: e for e in json.loads((Path(a.datos) / "estaciones.json").read_text())}
     todas = sorted(set(cods) | set(guardadas(a.datos)))
     for r in SH.revisar_todo(a.datos, todas, E):
