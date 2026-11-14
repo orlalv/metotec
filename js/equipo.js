@@ -127,6 +127,13 @@ function vigTxt(r){
   const per_ = r.desde || r.hasta ? `${r.desde ? "desde " + f(r.desde) : ""}${r.desde && r.hasta ? " " : ""}${r.hasta ? "hasta " + f(r.hasta) : ""}` : "sin límite";
   return `<b style="color:${COLV[e] || "inherit"}">${e}</b><br><small>${per_}</small>`;
 }
+const FEN_SYN = {chubasco: "Chubascos", nieve: "Nieve", tormenta: "Tormenta", granizo: "Granizo", engelante: "Engelante", ventisca: "Ventisca", lluvia: "Lluvia", llovizna: "Llovizna", niebla: "Niebla", neblina: "Neblina", calima: "Calima", polvo: "Polvo o arena"};
+const FEN_DESC = {MI: "poco profundo (MI)", BC: "bancos (BC)", DR: "ventisca baja (DR)", BL: "ventisca alta (BL)", SH: "chubasco (SH)", TS: "tormenta (TS)", FZ: "engelante (FZ)", PR: "parcial (PR)"};
+const FEN_MET = {DZ: "llovizna", RA: "lluvia", SN: "nieve", SG: "nieve granulada", IC: "cristales de hielo", PL: "gránulos de hielo", GR: "granizo", GS: "granizo pequeño", BR: "neblina", FG: "niebla", FU: "humo", VA: "ceniza volcánica", DU: "polvo", SA: "arena", HZ: "calima"};
+function fenLista(valor){
+  const sel = new Set(String(valor || "").split(",").map(t => t.trim().toLowerCase()).filter(Boolean)), ch = (k, t) => `<label class="mchk"><input type="checkbox" data-fen="${k}"${sel.has(k.toLowerCase()) ? " checked" : ""}> ${t}</label>`;
+  return `<b>Tiempo presente (SYNOP ww o METAR)</b><br>${Object.entries(FEN_SYN).map(([k, t]) => ch(k, t)).join("")}<br><b>Descriptores METAR</b><br>${Object.entries(FEN_DESC).map(([k, t]) => ch(k, t)).join("")}<br><b>Fenómenos METAR</b><br>${Object.entries(FEN_MET).map(([k, t]) => ch(k, `${t} (${k})`)).join("")}`;
+}
 function pagMis(){
   const S = $("#mis"), p = per(yo()), A = activas();
   const form = r => `<div class="mform"><input id="mNom" placeholder="Nombre de la alerta" value="${esc(r.nombre || "")}">
@@ -134,8 +141,9 @@ function pagMis(){
     <select id="mDon">${Object.entries(DONDE).map(([k, v]) => `<option value="${k}"${r.donde === k ? " selected" : ""}>${v}</option>`).join("")}</select>
     <input id="mCods" placeholder="Códigos, ej. 180005, 200006" value="${esc((r.cods || []).join(", "))}" ${r.donde === "cods" ? "" : "hidden"}>
     <select id="mVar">${Object.entries(VARS[r.fuente || "ema"]).map(([k, v]) => `<option value="${k}"${r.var === k ? " selected" : ""}>${v}</option>`).join("")}</select>
-    <select id="mOp">${Object.entries(OPS).map(([k, v]) => `<option value="${k}"${r.op === k ? " selected" : ""}>${v}</option>`).join("")}</select>
-    <input id="mVal" placeholder="Valor (ej. 0, 07-09,30-35 o, para fenómeno: chubasco, nieve, tormenta, granizo, engelante, ventisca, niebla, SHSN…)" value="${esc(r.valor || "")}" style="width:170px">
+    <select id="mOp"${r.var === "fen" ? " hidden" : ""}>${Object.entries(OPS).map(([k, v]) => `<option value="${k}"${r.op === k ? " selected" : ""}>${v}</option>`).join("")}</select>
+    <input id="mVal" placeholder="Valor (ej. 0, 07-09,30-35)" value="${esc(r.valor || "")}" style="width:170px"${r.var === "fen" ? " hidden" : ""}>
+    <span id="mFen" class="mfen"${r.var === "fen" ? "" : " hidden"}>${fenLista(r.valor)}</span>
     <label class="mvig">Vigente desde <input type="date" id="mDes" value="${esc(r.desde || "")}"></label><label class="mvig">hasta <input type="date" id="mHas" value="${esc(r.hasta || "")}"></label>
     <button class="mk" id="mGuardar">${r.id ? "Guardar cambios" : "+ Agregar alerta"}</button>${r.id ? `<button class="mk" id="mCancelar">Cancelar</button>` : ""}</div>`;
   const ed = S._ed || {fuente: "ema", donde: "mias", op: ">"};
@@ -216,7 +224,11 @@ document.addEventListener("change", async ev => {
   } catch (e){ const m = $("#eqMsg") || $("#mMsg"); if (m) m.textContent = "No se pudo guardar: " + e.message; }
 });
 document.addEventListener("input", ev => { if (ev.target.id === "eqQ"){ const S = $("#equ"); S.dataset.q = ev.target.value; const pos = ev.target.selectionStart; pagEqu(); const i = $("#eqQ"); i.focus(); i.setSelectionRange(pos, pos); } });
-document.addEventListener("change", ev => { if (ev.target.id === "mVar" && ev.target.value === "fen" && $("#mOp")) $("#mOp").value = "hay"; });
+document.addEventListener("change", ev => {
+  const t = ev.target;
+  if (t.id === "mVar" && $("#mOp")){ const f = t.value === "fen"; if (f) $("#mOp").value = "hay"; $("#mOp").hidden = f; $("#mFen").hidden = !f; $("#mVal").hidden = f; }
+  if (t.dataset && t.dataset.fen) $("#mVal").value = [...document.querySelectorAll("#mFen input:checked")].map(x => x.dataset.fen).join(",");
+});
 function leerForm(){ return {nombre: $("#mNom").value.trim(), fuente: $("#mFue").value, donde: $("#mDon").value, cods: $("#mCods").value.split(/[,\s]+/).filter(Boolean),
   var: $("#mVar").value, op: $("#mOp").value, valor: $("#mVal").value.trim(), desde: $("#mDes").value || "", hasta: $("#mHas").value || "", id: ($("#mis")._ed || {}).id}; }
 document.addEventListener("click", async ev => {
