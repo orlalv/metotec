@@ -150,7 +150,8 @@ function pagMis(){
     <select id="mOp"${r.var === "fen" ? " hidden" : ""}>${Object.entries(OPS).map(([k, v]) => `<option value="${k}"${r.op === k ? " selected" : ""}>${v}</option>`).join("")}</select>
     <input id="mVal" placeholder="Valor (ej. 0, 07-09,30-35)" value="${esc(r.valor || "")}" style="width:170px"${r.var === "fen" ? " hidden" : ""}>
     <span id="mFen" class="mfen"${r.var === "fen" ? "" : " hidden"}>${fenLista(r.valor)}</span>
-    <label class="mvig">Vigente desde <input type="date" id="mDes" value="${esc(r.desde || "")}"></label><label class="mvig">hasta <input type="date" id="mHas" value="${esc(r.hasta || "")}"></label>
+    <select id="mVig">${[["vig", "Vigente"], ["per", "Vigente desde / hasta…"], ["off", "Desactivada"]].map(([k, v]) => `<option value="${k}"${(r.activa === false ? "off" : r.desde || r.hasta ? "per" : "vig") === k ? " selected" : ""}>${v}</option>`).join("")}</select>
+    <span id="mPer"${r.activa !== false && (r.desde || r.hasta) ? "" : " hidden"}><label class="mvig">desde <input type="date" id="mDes" value="${esc(r.desde || "")}"></label> <label class="mvig">hasta <input type="date" id="mHas" value="${esc(r.hasta || "")}"></label></span>
     <button class="mk" id="mGuardar">${r.id ? "Guardar cambios" : "+ Agregar alerta"}</button>${r.id ? `<button class="mk" id="mCancelar">Cancelar</button>` : ""}</div>`;
   const ed = S._ed || {fuente: "ema", donde: "mias", op: ">"};
   S.innerHTML = `<h2 style="margin:0 0 4px;font:600 20px var(--titulo)">Mis alertas ${p ? `· ${esc(p.nombre)}` : "· todo el equipo"}</h2>
@@ -233,11 +234,12 @@ document.addEventListener("input", ev => { if (ev.target.id === "eqQ"){ const S 
 document.addEventListener("change", ev => {
   const t = ev.target;
   if (t.id === "mVar" && $("#mOp")){ const f = t.value === "fen"; if (f) $("#mOp").value = "hay"; $("#mOp").hidden = f; $("#mFen").hidden = !f; $("#mVal").hidden = f; }
+  if (t.id === "mVig") $("#mPer").hidden = t.value !== "per";
   if (t.dataset && t.dataset.est) $("#mCods").value = [...document.querySelectorAll("#mEst input:checked")].map(x => x.dataset.est).join(",");
   if (t.dataset && t.dataset.fen) $("#mVal").value = [...document.querySelectorAll("#mFen input:checked")].map(x => x.dataset.fen).join(",");
 });
 function leerForm(){ return {nombre: $("#mNom").value.trim(), fuente: $("#mFue").value, donde: $("#mDon").value, cods: $("#mCods").value.split(/[,\s]+/).filter(Boolean),
-  var: $("#mVar").value, op: $("#mOp").value, valor: $("#mVal").value.trim(), desde: $("#mDes").value || "", hasta: $("#mHas").value || "", id: ($("#mis")._ed || {}).id}; }
+  var: $("#mVar").value, op: $("#mOp").value, valor: $("#mVal").value.trim(), activa: $("#mVig").value !== "off", desde: $("#mVig").value === "per" ? $("#mDes").value || "" : "", hasta: $("#mVig").value === "per" ? $("#mHas").value || "" : "", id: ($("#mis")._ed || {}).id}; }
 document.addEventListener("click", async ev => {
   if (ev.target.id === "mEstVer"){ ev.preventDefault(); const S = $("#mis"); S._verTodas = !S._verTodas; S._ed = leerForm(); return pagMis(); }
   const b = ev.target.closest("button"); if (!b) return;
@@ -258,7 +260,7 @@ document.addEventListener("click", async ev => {
       await guardar({...p, estaciones: [...s]}); window.EQ.alCambiar && window.EQ.alCambiar(); return pagEqu(); }
     if (b.id === "mGuardar"){ const p = per(yo()), r = leerForm(); if (r.op !== "sin" && r.valor === "") throw new Error("falta el valor"); if (r.donde === "cods" && !r.cods.length) throw new Error("elija al menos una estación");
       if (!r.nombre) r.nombre = reglaTxt(r).replace(/<[^>]+>/g, "");
-      const L = p.alertas || []; const ant = L.find(x => x.id === r.id); r.id ||= Date.now().toString(36); r.activa = ant ? ant.activa !== false : true;
+      const L = p.alertas || []; const ant = L.find(x => x.id === r.id); r.id ||= Date.now().toString(36); 
       if (r.desde && r.hasta && r.hasta < r.desde) throw new Error("la fecha «hasta» es anterior a «desde»");
       await guardar({...p, alertas: L.some(x => x.id === r.id) ? L.map(x => x.id === r.id ? r : x) : [...L, r]}); $("#mis")._ed = null; return pagMis(); }
     if (b.dataset.quit){ const p = per(yo()); await guardar({...p, alertas: p.alertas.filter(r => r.id !== b.dataset.quit)}); return pagMis(); }
