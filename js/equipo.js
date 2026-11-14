@@ -10,7 +10,7 @@ const ZNOM = {norte: "Norte", centro: "Centro", sur: "Sur", austral: "Austral"};
 const VARS = {ema: {T: "Ts (°C)", Td: "Td (°C)", HR: "HR (%)", P_mar: "QFF (hPa)", ff10: "Viento (kt)", dd10: "Dirección (°)", rr1h: "Lluvia 1 h (mm)"},
               obs: {Ts: "Ts (°C)", Td: "Td (°C)", HR: "HR (%)", ff: "Viento (kt)", VV: "Visibilidad (m)", ww: "ww (tiempo presente)", RRR6: "RRR6 (mm)", QFE: "QFE (hPa)", fen: "Fenómeno (ww o METAR)"}};
 const OPS = {">": "mayor que", ">=": "mayor o igual", "<": "menor que", "<=": "menor o igual", "=": "igual a", en: "está en (códigos/rangos)", sin: "sin dato", hay: "hay (fenómeno)"};
-const DONDE = {mias: "Mis estaciones", todas: "Todas", norte: "Norte", centro: "Centro", sur: "Sur", austral: "Austral", cods: "Estaciones elegidas"};
+const DONDE = {mias: "Mis estaciones", todas: "Todas", norte: "Norte", centro: "Centro", sur: "Sur", austral: "Austral", cods: "Estaciones"};
 const PRESETS = [
   {nombre: "Arica: RRR6 > 0", fuente: "obs", donde: "cods", cods: ["180005"], var: "RRR6", op: ">", valor: "0"},
   {nombre: "Chubascos (ww o METAR)", fuente: "obs", donde: "todas", var: "fen", op: "hay", valor: "chubasco"},
@@ -134,12 +134,18 @@ function fenLista(valor){
   const sel = new Set(String(valor || "").split(",").map(t => t.trim().toLowerCase()).filter(Boolean)), ch = (k, t) => `<label class="mchk"><input type="checkbox" data-fen="${k}"${sel.has(k.toLowerCase()) ? " checked" : ""}> ${t}</label>`;
   return `<b>Tiempo presente (SYNOP ww o METAR)</b><br>${Object.entries(FEN_SYN).map(([k, t]) => ch(k, t)).join("")}<br><b>Descriptores METAR</b><br>${Object.entries(FEN_DESC).map(([k, t]) => ch(k, t)).join("")}<br><b>Fenómenos METAR</b><br>${Object.entries(FEN_MET).map(([k, t]) => ch(k, `${t} (${k})`)).join("")}`;
 }
+function estLista(sel, p){
+  const S = $("#mis"), mias = new Set((p && p.estaciones) || []), todas = estacionesTodas(), verTodas = (S && S._verTodas) || !mias.size, q = new Set(sel.map(String));
+  const L = todas.filter(e => verTodas || mias.has(e.codigo) || q.has(e.codigo));
+  return `<b>${verTodas ? "Todas las estaciones" : "Mis estaciones"}</b> · <a href="#" id="mEstVer">${verTodas && mias.size ? "ver solo las mías" : mias.size ? "ver todas" : ""}</a><br>${L.map(e => `<label class="mchk"><input type="checkbox" data-est="${esc(e.codigo)}"${q.has(e.codigo) ? " checked" : ""}> ${esc(e.nombre)} <small>${esc(e.codigo)}</small></label>`).join("") || "<i>sin estaciones cargadas</i>"}`;
+}
 function pagMis(){
   const S = $("#mis"), p = per(yo()), A = activas();
   const form = r => `<div class="mform"><input id="mNom" placeholder="Nombre de la alerta" value="${esc(r.nombre || "")}">
     <select id="mFue">${["ema", "obs"].map(f => `<option value="${f}"${r.fuente === f ? " selected" : ""}>${f === "ema" ? "Estación automática" : "Observación (SACLIM)"}</option>`).join("")}</select>
     <select id="mDon">${Object.entries(DONDE).map(([k, v]) => `<option value="${k}"${r.donde === k ? " selected" : ""}>${v}</option>`).join("")}</select>
-    <input id="mCods" placeholder="Códigos, ej. 180005, 200006" value="${esc((r.cods || []).join(", "))}" ${r.donde === "cods" ? "" : "hidden"}>
+    <input id="mCods" value="${esc((r.cods || []).join(","))}" hidden>
+    <div id="mEst" class="mfen"${r.donde === "cods" ? "" : " hidden"}>${estLista(r.cods || [], p)}</div>
     <select id="mVar">${Object.entries(VARS[r.fuente || "ema"]).map(([k, v]) => `<option value="${k}"${r.var === k ? " selected" : ""}>${v}</option>`).join("")}</select>
     <select id="mOp"${r.var === "fen" ? " hidden" : ""}>${Object.entries(OPS).map(([k, v]) => `<option value="${k}"${r.op === k ? " selected" : ""}>${v}</option>`).join("")}</select>
     <input id="mVal" placeholder="Valor (ej. 0, 07-09,30-35)" value="${esc(r.valor || "")}" style="width:170px"${r.var === "fen" ? " hidden" : ""}>
@@ -213,7 +219,7 @@ document.addEventListener("change", async ev => {
   if (t.id === "eqZ"){ $("#equ").dataset.z = t.value; return pagEqu(); }
   if (t.id === "cDia"){ $("#comp").dataset.dia = t.value; return pagComp(); }
   if (t.id === "mFue"){ const S = $("#mis"); S._ed = {...leerForm(), fuente: t.value, var: ""}; return pagMis(); }
-  if (t.id === "mDon"){ $("#mCods").hidden = t.value !== "cods"; return; }
+  if (t.id === "mDon"){ $("#mEst").hidden = t.value !== "cods"; return; }
   try {
     if (t.dataset.pes){ const p = per(yo()), todas = [...document.querySelectorAll(".modos button")].map(b => b.dataset.m).filter(m => m !== "equ");
       const s = new Set((p.pestanas || []).length ? p.pestanas : todas); t.checked ? s.add(t.dataset.pes) : s.delete(t.dataset.pes);
@@ -227,11 +233,13 @@ document.addEventListener("input", ev => { if (ev.target.id === "eqQ"){ const S 
 document.addEventListener("change", ev => {
   const t = ev.target;
   if (t.id === "mVar" && $("#mOp")){ const f = t.value === "fen"; if (f) $("#mOp").value = "hay"; $("#mOp").hidden = f; $("#mFen").hidden = !f; $("#mVal").hidden = f; }
+  if (t.dataset && t.dataset.est) $("#mCods").value = [...document.querySelectorAll("#mEst input:checked")].map(x => x.dataset.est).join(",");
   if (t.dataset && t.dataset.fen) $("#mVal").value = [...document.querySelectorAll("#mFen input:checked")].map(x => x.dataset.fen).join(",");
 });
 function leerForm(){ return {nombre: $("#mNom").value.trim(), fuente: $("#mFue").value, donde: $("#mDon").value, cods: $("#mCods").value.split(/[,\s]+/).filter(Boolean),
   var: $("#mVar").value, op: $("#mOp").value, valor: $("#mVal").value.trim(), desde: $("#mDes").value || "", hasta: $("#mHas").value || "", id: ($("#mis")._ed || {}).id}; }
 document.addEventListener("click", async ev => {
+  if (ev.target.id === "mEstVer"){ ev.preventDefault(); const S = $("#mis"); S._verTodas = !S._verTodas; S._ed = leerForm(); return pagMis(); }
   const b = ev.target.closest("button"); if (!b) return;
   if (b.id === "soloMias"){ try { localStorage.setItem("qcSoloMias", soloMias() ? "0" : "1"); } catch (e){} selector(); window.EQ.alCambiar && window.EQ.alCambiar(); if (modoAct === "comp") pagComp(); return; }
   if (b.id === "pesTodas"){ const p = per(yo()); if (p){ try { await guardar({...p, pestanas: []}); } catch (e){} pagEqu(); } return; }
@@ -248,7 +256,7 @@ document.addEventListener("click", async ev => {
     if (b.dataset.del){ if (!confirm(`¿Quitar a ${b.dataset.del} del equipo? Se borran sus estaciones y reglas.`)) return; await guardar(null, b.dataset.del); return pagEqu(); }
     if (b.id === "eqTodas" || b.id === "eqNinguna"){ const p = per(yo()), s = new Set(p.estaciones || []); document.querySelectorAll("#equ input[data-est]").forEach(i => b.id === "eqTodas" ? s.add(i.dataset.est) : s.delete(i.dataset.est));
       await guardar({...p, estaciones: [...s]}); window.EQ.alCambiar && window.EQ.alCambiar(); return pagEqu(); }
-    if (b.id === "mGuardar"){ const p = per(yo()), r = leerForm(); if (r.op !== "sin" && r.valor === "") throw new Error("falta el valor"); if (r.donde === "cods" && !r.cods.length) throw new Error("faltan los códigos");
+    if (b.id === "mGuardar"){ const p = per(yo()), r = leerForm(); if (r.op !== "sin" && r.valor === "") throw new Error("falta el valor"); if (r.donde === "cods" && !r.cods.length) throw new Error("elija al menos una estación");
       if (!r.nombre) r.nombre = reglaTxt(r).replace(/<[^>]+>/g, "");
       const L = p.alertas || []; const ant = L.find(x => x.id === r.id); r.id ||= Date.now().toString(36); r.activa = ant ? ant.activa !== false : true;
       if (r.desde && r.hasta && r.hasta < r.desde) throw new Error("la fecha «hasta» es anterior a «desde»");
