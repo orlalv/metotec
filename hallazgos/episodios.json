@@ -11,10 +11,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-15 15:00",
-"visto": "2026-11-15 15:21",
+"fin": "2026-11-15 15:30",
+"visto": "2026-11-15 15:46",
 "detalle": [
-"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -30,10 +30,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-15 14:45",
-"visto": "2026-11-15 15:21",
+"fin": "2026-11-15 15:30",
+"visto": "2026-11-15 15:46",
 "detalle": [
-"HR · rango: 346 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -51,7 +51,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 14:50",
-"visto": "2026-11-15 15:21",
+"visto": "2026-11-15 15:46",
 "detalle": [
 "QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 550.2)",
 "QFE · rango: 5 valores fuera de lo habitual para la zona centro [886, 966] (valor 503.8)",
@@ -72,10 +72,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 13:28",
-"visto": "2026-11-15 15:21",
+"visto": "2026-11-15 15:46",
 "detalle": [
-"QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 522.8)",
-"QFE · rango: 8 valores fuera de lo habitual para la zona centro [936, 1016] (valor 503.6)",
+"QFF · rango: 9 valores fuera de rango físico [920, 1060] (valor 522.8)",
+"QFE · rango: 9 valores fuera de lo habitual para la zona centro [936, 1016] (valor 503.6)",
 "QFE · salto: cambio de 477.4 en 1 min (valor 503.0)"
 ]
 },
@@ -93,10 +93,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 09:59",
-"visto": "2026-11-15 15:21",
+"visto": "2026-11-15 15:46",
 "detalle": [
-"QFF · rango: 355 valores fuera de rango físico [920, 1060] (valor 503.9)",
-"QFE · rango: 355 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.8)"
+"QFF · rango: 385 valores fuera de rango físico [920, 1060] (valor 503.9)",
+"QFE · rango: 385 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.8)"
 ]
 },
 "370036|piranómetro (radiación)": {
@@ -111,9 +111,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 09:50",
-"visto": "2026-11-15 15:21",
+"visto": "2026-11-15 15:46",
 "detalle": [
-"radiación · rango: 221 valores fuera de rango físico [0, 1600] (valor 10841.9)"
+"radiación · rango: 251 valores fuera de rango físico [0, 1600] (valor 10841.9)"
 ]
 },
 "550001|piranómetro (radiación)": {
@@ -148,7 +148,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 10:27",
-"visto": "2026-11-15 15:21",
+"visto": "2026-11-15 15:46",
 "detalle": [
 "Ts · rango: 2 valores fuera de rango físico [-40, 45] (valor -47.5)",
 "HR · rango: 49 valores fuera de rango físico [1, 100] (valor 0.0)",
@@ -173,7 +173,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 10:38",
-"visto": "2026-11-15 15:21",
+"visto": "2026-11-15 15:46",
 "detalle": [
 "Ts · rango: 4 valores fuera de rango físico [-40, 45] (valor -49.0)",
 "HR · rango: 101 valores fuera de rango físico [1, 100] (valor 0.0)",
@@ -198,7 +198,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 09:14",
-"visto": "2026-11-15 15:21",
+"visto": "2026-11-15 15:46",
 "detalle": [
 "Ts · rango: 1 valores fuera de rango físico [-40, 45] (valor -48.5)",
 "HR · rango: 13 valores fuera de rango físico [1, 100] (valor 0.0)",
@@ -221,7 +221,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 14:42",
-"visto": "2026-11-15 15:21",
+"visto": "2026-11-15 15:46",
 "detalle": [
 "HR · rango: 13 valores fuera de rango físico [1, 100] (valor 0.0)",
 "Ts · rango: 1 valores fuera de lo habitual para la zona cordillera/altiplano [-30, 30] (valor -36.3)",
@@ -239,11 +239,12 @@
 "pruebas": [
 "rango"
 ],
-"nivel": 1,
-"fin": "2026-11-15 14:59",
-"visto": "2026-11-15 15:21",
+"nivel": 2,
+"fin": "2026-11-15 15:20",
+"visto": "2026-11-15 15:46",
 "detalle": [
-"radiación · rango: 44 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1431.36)"
+"radiación · rango: 1 valores fuera de rango físico [0, 1600] (valor 1634.3)",
+"radiación · rango: 58 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1431.36)"
 ]
 }
 }
