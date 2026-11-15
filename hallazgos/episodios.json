@@ -12,9 +12,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-14 23:59",
-"visto": "2026-11-15 05:21",
+"visto": "2026-11-15 05:51",
 "detalle": [
-"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)"
+"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)"
 ]
 },
 "330071|termohigrómetro": {
@@ -29,10 +29,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-15 05:00",
-"visto": "2026-11-15 05:21",
+"fin": "2026-11-15 05:15",
+"visto": "2026-11-15 05:51",
 "detalle": [
-"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 376 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -49,12 +49,12 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-15 03:44",
-"visto": "2026-11-15 05:21",
+"fin": "2026-11-15 04:59",
+"visto": "2026-11-15 05:51",
 "detalle": [
-"QFF · rango: 4 valores fuera de rango físico [920, 1060] (valor 550.0)",
-"QFE · rango: 4 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.3)",
-"QFE · salto: cambio de 423.7 en 1 min (valor 504.0)"
+"QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 550.0)",
+"QFE · rango: 5 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.3)",
+"QFE · salto: cambio de 424.1 en 1 min (valor 927.9)"
 ]
 },
 "340048|barómetro": {
@@ -70,12 +70,12 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-15 04:11",
-"visto": "2026-11-15 05:21",
+"fin": "2026-11-15 05:11",
+"visto": "2026-11-15 05:51",
 "detalle": [
-"QFF · rango: 6 valores fuera de rango físico [920, 1060] (valor 522.2)",
-"QFE · rango: 6 valores fuera de lo habitual para la zona centro [936, 1016] (valor 503.2)",
-"QFE · salto: cambio de 475.1 en 1 min (valor 503.4)"
+"QFF · rango: 7 valores fuera de rango físico [920, 1060] (valor 522.2)",
+"QFE · rango: 7 valores fuera de lo habitual para la zona centro [936, 1016] (valor 503.2)",
+"QFE · salto: cambio de 475.4 en 1 min (valor 503.5)"
 ]
 },
 "400013|barómetro": {
@@ -92,10 +92,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-14 23:59",
-"visto": "2026-11-15 05:21",
+"visto": "2026-11-15 05:51",
 "detalle": [
-"QFF · rango: 340 valores fuera de rango físico [920, 1060] (valor 503.6)",
-"QFE · rango: 340 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.5)"
+"QFF · rango: 384 valores fuera de rango físico [920, 1060] (valor 503.6)",
+"QFE · rango: 384 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.5)"
 ]
 },
 "370036|piranómetro (radiación)": {
@@ -110,9 +110,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-14 23:59",
-"visto": "2026-11-15 05:21",
+"visto": "2026-11-15 05:51",
 "detalle": [
-"radiación · rango: 321 valores fuera de rango físico [0, 1600] (valor 6392.94)"
+"radiación · rango: 345 valores fuera de rango físico [0, 1600] (valor 6392.94)"
 ]
 },
 "550001|piranómetro (radiación)": {
@@ -127,9 +127,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 00:59",
-"visto": "2026-11-15 05:21",
+"visto": "2026-11-15 05:51",
 "detalle": [
-"radiación · rango: 278 valores fuera de rango físico [0, 1600] (valor -0.9)"
+"radiación · rango: 308 valores fuera de rango físico [0, 1600] (valor -0.9)"
 ]
 },
 "330077|barómetro": {
@@ -146,7 +146,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 01:37",
-"visto": "2026-11-15 05:21",
+"visto": "2026-11-15 05:51",
 "detalle": [
 "QFF · rango: 1 valores fuera de rango físico [920, 1060] (valor 698.9)",
 "QFE · rango: 1 valores fuera de lo habitual para la zona cordillera/altiplano [684, 764] (valor 503.1)",
@@ -168,7 +168,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 04:48",
-"visto": "2026-11-15 05:21",
+"visto": "2026-11-15 05:51",
 "detalle": [
 "Ts · rango: 1 valores fuera de rango físico [-40, 45] (valor -47.4)",
 "HR · rango: 127 valores fuera de rango físico [1, 100] (valor 0.0)",
@@ -192,10 +192,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-15 04:59",
-"visto": "2026-11-15 05:21",
+"visto": "2026-11-15 05:51",
 "detalle": [
 "Ts · rango: 1 valores fuera de rango físico [-40, 45] (valor -47.7)",
-"HR · rango: 40 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 70 valores fuera de rango físico [1, 100] (valor 0.0)",
 "Td · rango: 1 valores fuera de lo habitual para la zona centro [-18, 37] (valor -47.7)",
 "Ts · salto: cambio de 63.1 en 1 min (valor -47.7)",
 "HR · salto: cambio de 100.0 en 1 min (valor 0.0)"
