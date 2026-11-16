@@ -13,6 +13,20 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 import pandas as pd
 import requests
+_OFI = {}
+
+
+def oficiales(ce):
+    """Extremas oficiales (getEmaResumenDiario, con todos los decimales y su minuto exacto) de la estación automática «ce»."""
+    if ce not in _OFI:
+        try:
+            import sys
+            sys.path.insert(0, str(Path(__file__).parent))
+            import dmc
+            _OFI[ce] = dmc.extremas_oficiales(dmc.descargar(f"getEmaResumenDiario/{ce}", timeout=60))
+        except Exception:
+            _OFI[ce] = []
+    return _OFI[ce]
 
 URL = "https://climatologia.meteochile.gob.cl/application/diario/boletinClimatologicoDiario//{:%Y/%m/%d}"
 COLS = ["tn", "tn_h", "tx", "tx_h", "rr24", "acum", "ant", "normal_f", "defsup", "normal_a"]
@@ -179,12 +193,20 @@ def revisar_dia(dia, bol, raiz, ayer=None):
                     # minutos en que la automática estuvo en su extremo (empates a 1 decimal): cualquiera de esas horas vale
                     ext = w[(w["T"] - ref).abs() <= 0.05]["momento"]
                     horas_ok = [f"{loc(x):%H:%M}" for x in ext]
-                    en_ext = any(abs((pd.Timestamp(c).tz_localize(Z).tz_convert("UTC").tz_localize(None) - x).total_seconds()) <= 60
+                    # con el resumen diario de la estación (2 decimales) se sabe cuál de los minutos empatados fue el extremo
+                    of = [x for x in oficiales(ce) if x["tipo"] == ("min" if minimo else "max") and abs(x["valor"] - ref) <= 0.1
+                          and loc(ini) <= x["momento"] <= loc(fin)]
+                    if of:
+                        mo = of[0]["momento"]
+                        ext = pd.Series([mo.tz_localize(Z).tz_convert("UTC").tz_localize(None)])
+                        horas_ok = [f"{mo:%H:%M}"]
+                    en_ext = any(abs((pd.Timestamp(c).tz_localize(Z).tz_convert("UTC").tz_localize(None) - x).total_seconds()) <= (120 if of else 60)
                                  for c in cand for x in ext)
                     if best is not None and abs(best - val) <= 1.0 and not en_ext and col + "_h" not in marcas:
                         marca(col + "_h", "warn", f"EMA {ref:.1f} · {', '.join(horas_ok[:3])}",
                               f"Hora de la {nombre} {hora_txt}: a esa hora la automática marcaba {best:.1f} °C; su {('mínimo' if minimo else 'máximo')} "
-                              f"({ref:.1f} °C) fue a las {', '.join(horas_ok[:3])}. Debería ir: {horas_ok[0]}", dict(real, hora=horas_ok[0]))
+                              f"({ref:.1f} °C) fue a las {', '.join(horas_ok[:3])}" + (" según el resumen diario de la estación (con todos sus decimales)" if of else "")
+                              + f". Debería ir: {horas_ok[0]}", dict(real, hora=horas_ok[0]))
                     if best is not None and abs(best - val) > 1.0:
                         marca(col + "_h", "warn", f"EMA {ref:.1f} · {loc(tref):%H:%M}",
                               f"Hora de la {nombre} {hora_txt}: a esa hora la automática marcaba {best:.1f} °C; su {('mínimo' if minimo else 'máximo')} ({ref:.1f} °C) fue a las {loc(tref):%H:%M}.", real)
