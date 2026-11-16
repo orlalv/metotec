@@ -200,7 +200,7 @@ def revisar_dia(dia, bol, raiz, ayer=None):
                         mo = of[0]["momento"]
                         ext = pd.Series([mo.tz_localize(Z).tz_convert("UTC").tz_localize(None)])
                         horas_ok = [f"{mo:%H:%M}"]
-                    en_ext = any(abs((pd.Timestamp(c).tz_localize(Z).tz_convert("UTC").tz_localize(None) - x).total_seconds()) <= (30 if of else 60)
+                    en_ext = any(abs((pd.Timestamp(c).tz_localize(Z).tz_convert("UTC").tz_localize(None) - x).total_seconds()) <= 30
                                  for c in cand for x in ext)
                     if best is not None and abs(best - val) <= 1.0 and not en_ext and col + "_h" not in marcas:
                         marca(col + "_h", "warn", f"EMA {ref:.1f} · {', '.join(horas_ok[:3])}",
