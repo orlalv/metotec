@@ -202,6 +202,15 @@ NOMBRES_OBS = {"340116": "Independencia, Rancagua Ad.", "350007": "Punta Carranz
                "560002": "Islas Diego Ramírez", "200910": "Centro Meteorológico Marítimo de Iquique", "260007": "Isla San Félix", "290005": "Punta Tortuga, faro",
                "330002": "Punta Ángeles, faro", "330028": "Punta Panul, faro", "950002": "Arturo Prat, Base Antártica",
                "950003": "Bernardo O'Higgins, Base Antártica", "950006": "Antártica, Bahía Fildes Gobernación Marítima"}
+# coordenadas aproximadas (lat, lon) de las estaciones con observador que no vienen en el catastro de EMA
+COORD_OBS = {"200910": (-20.21, -70.15), "260007": (-26.29, -80.10), "290005": (-29.93, -71.35), "330002": (-33.02, -71.65),
+             "330028": (-33.57, -71.62), "340116": (-34.17, -70.78), "350007": (-35.60, -72.63), "360015": (-36.62, -73.06),
+             "360020": (-36.75, -73.18), "360969": (-36.72, -73.11), "380004": (-38.37, -73.91), "400009": (-40.61, -73.06),
+             "410007": (-41.78, -73.88), "410932": (-41.48, -72.94), "420014": (-42.34, -73.72), "430003": (-43.57, -74.83),
+             "430004": (-43.61, -71.80), "460001": (-46.58, -71.69), "460002": (-46.80, -75.62), "470001": (-47.24, -72.59),
+             "470002": (-47.72, -74.89), "520002": (-52.40, -68.43), "520003": (-52.40, -75.10), "530907": (-53.16, -70.91),
+             "550002": (-55.97, -67.27), "560002": (-56.48, -68.72), "950002": (-62.48, -59.66), "950003": (-63.32, -57.90),
+             "950006": (-62.20, -58.96)}
 ESTACIONES_OBS = ["180005", "200006", "200910", "220002", "230001", "260007", "270001", "270008",
                   "290004", "290005", "320041", "330002", "330007", "330019", "330020",
                   "330021", "330028", "330030", "330031", "330066", "330163",
@@ -279,7 +288,9 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
         cambios_nuevos[cod] = nuevos
         for t, o in obs.items():
             archivo.setdefault(t.strftime("%Y/%m/%d"), {}).setdefault(cod, {})[t.strftime("%H")] = {k: x for k, x in o.items() if k != "_qa"}
-        m = nombres.get(cod) or {"nombre": NOMBRES_OBS.get(cod, cod)}
+        m = dict(nombres.get(cod) or {"nombre": NOMBRES_OBS.get(cod, cod)})
+        if m.get("lat") is None and cod in COORD_OBS:
+            m["lat"], m["lon"] = COORD_OBS[cod]
         resultado.append(dict(codigo=cod, nombre=m.get("nombre"), oaci=m.get("oaci"), lat=m.get("lat"), lon=m.get("lon"),
                               ultima=str(max(obs)) if obs else None, horas=len(obs), hallazgos=hall, ult=ultimos_valores(obs), cas=casillas(todas), cambios=[],
                               nivel=max([h["nivel"] for h in hall], default=0)))

@@ -469,7 +469,7 @@ async function cargar(){
   const primera = !R; R = await r.json(); $("#login").style.display = "none"; cerrarInformados(); FALSAS.clear(); Object.entries(R.marcas || {}).forEach(([k, m]) => m.v === "falsa" && k.startsWith("a|") && FALSAS.add(k)); pintar(); EQ.contador(); SERV.pintar(R);
   if (primera){ const V = visibles().filter(e => e.lat != null); if (V.length) mapa.fitBounds(V.map(e => [e.lat, e.lon]), {padding: [20, 20]}); }
 }
-function enZona(e){ const [lo, hi] = ZONAS[zona]; return e.lat != null && e.lat >= lo && e.lat < hi; }
+function enZona(e){ const [lo, hi] = ZONAS[zona]; return e.lat == null ? zona === "todo" : e.lat >= lo && e.lat < hi; }   // sin coordenadas: solo en «Todo»
 function visibles(){
   const q = $("#buscar").value.trim().toLowerCase();
   return R.estaciones.map(filtrar).filter(e => enZona(e) && ver[e.nivel] && EQ.filtra(e.codigo) && (sub === "pend" || e.alertas.length) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
