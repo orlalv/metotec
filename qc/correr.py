@@ -192,6 +192,10 @@ def completitud_obs(raiz, cods, nombres, dias=40, base=14):
 
 
 # estaciones con observador (listas de la DMC: 57 + 63 con horarios, unidas)
+# nombres de estaciones con observador que no están en el catastro de EMA
+NOMBRES_OBS = {"200910": "Centro Meteorológico Marítimo de Iquique", "260007": "Isla San Félix", "290005": "Punta Tortuga, faro",
+               "330002": "Punta Ángeles, faro", "330028": "Punta Panul, faro", "950002": "Arturo Prat, Base Antártica",
+               "950003": "Bernardo O'Higgins, Base Antártica", "950006": "Antártica, Bahía Fildes Gobernación Marítima"}
 ESTACIONES_OBS = ["180005", "200006", "200910", "220002", "230001", "260007", "270001", "270008",
                   "290004", "290005", "320041", "330002", "330007", "330019", "330020",
                   "330021", "330028", "330030", "330031", "330066", "330163",
@@ -269,7 +273,7 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
         cambios_nuevos[cod] = nuevos
         for t, o in obs.items():
             archivo.setdefault(t.strftime("%Y/%m/%d"), {}).setdefault(cod, {})[t.strftime("%H")] = {k: x for k, x in o.items() if k != "_qa"}
-        m = nombres.get(cod, {})
+        m = nombres.get(cod) or {"nombre": NOMBRES_OBS.get(cod, cod)}
         resultado.append(dict(codigo=cod, nombre=m.get("nombre"), oaci=m.get("oaci"), lat=m.get("lat"), lon=m.get("lon"),
                               ultima=str(max(obs)) if obs else None, horas=len(obs), hallazgos=hall, ult=ultimos_valores(obs), cas=casillas(todas), cambios=[],
                               nivel=max([h["nivel"] for h in hall], default=0)))
