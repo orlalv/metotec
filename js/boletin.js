@@ -28,25 +28,26 @@ function init(fclave){
     if (mk){
       ev.stopPropagation(); if (mk.disabled) return; mk.disabled = true;
       const id = `b|${B.dia}|${mk.dataset.est}|${mk.dataset.col}`;
-      let valor = null;
-      if (mk.dataset.bm === "resuelto"){   // se pregunta qué valor quedó: la página lo muestra al tiro y lo confirma con el portal
-        const fila = (B.filas || []).find(x => x.nombre === mk.dataset.est), antes = fila && fila.v ? fila.v[mk.dataset.col] : "";
-        valor = prompt(`${mk.dataset.est} · ${NCOL[mk.dataset.col] || mk.dataset.col}\n\n¿Qué valor quedó corregido en el portal? (ahora dice ${antes || "—"})\n\nDeje vacío si el valor original era correcto.`, "");
-        if (valor === null){ mk.disabled = false; return; }
-        valor = valor.trim().replace(",", ".");
-        if (!valor) mk.dataset.bm = "omitir";
+      let valor = null, accion = mk.dataset.bm;
+      if (accion === "guardar"){           // valor u hora correctos escritos en el campo de la tarjeta
+        const inp = mk.parentElement.querySelector(".bv"), er = mk.parentElement.querySelector(".berr");
+        valor = normalizar(mk.dataset.col, inp.value);
+        if (valor == null){ er.textContent = /_h$/.test(mk.dataset.col) ? "Escriba la hora como hh:mm" : "Escriba un número (o S/P)"; inp.focus(); mk.disabled = false; return; }
+        accion = "resuelto";
       }
       try {
         const r = await fetch("/api/revision", {method: "POST", headers: {"x-clave": clave(), "content-type": "application/json"},
-          body: JSON.stringify({dia: B.dia, id, v: mk.dataset.bm, msg: mk.dataset.msg, valor})});
+          body: JSON.stringify({dia: B.dia, id, v: accion, msg: mk.dataset.msg, valor})});
         if (!r.ok) throw new Error(r.status);
       } catch (e){ mk.disabled = false; mk.textContent = "No se pudo guardar"; return; }
       cargar(false, true); return;
     }
+    if (ev.target.closest(".bm")) return;                         // clic en el campo o entre los botones: no cambiar la fila elegida
     const f = ev.target.closest("[data-f]"); if (!f) return;
     selFila = selFila === f.dataset.f ? null : f.dataset.f; pintar();
     const t = document.querySelector(`#bol tbody tr[data-f="${CSS.escape(selFila || "")}"]`); t && t.scrollIntoView({block: "nearest"});
   });
+  s.addEventListener("keydown", ev => { if (ev.key === "Enter" && ev.target.classList.contains("bv")){ ev.preventDefault(); const g = ev.target.parentElement.querySelector('button[data-bm="guardar"]'); g && g.click(); } });
   cargar(true);
 }
 
@@ -60,6 +61,21 @@ async function cargar(ultimo, mantener){
   if (!mantener) selFila = null; pintar();
 }
 
+// Valor u hora escritos por la persona → texto normalizado para guardar, o null si no es válido.
+const COLS_NUM = ["tn", "tx", "acum", "ant", "normal_f", "normal_a", "defsup", "rr24"];
+function normalizar(col, t){
+  t = String(t ?? "").trim().replace(",", "."); if (!t) return null;
+  if (/_h$/.test(col)){ const m = /^(\d{1,2})[:h]?(\d{2})$/i.exec(t); return m && +m[1] < 24 && +m[2] < 60 ? `${m[1].padStart(2, "0")}:${m[2]}` : null; }
+  if ((col === "rr24" || col === "ant") && /^s\/?p$/i.test(t)) return "S/P";
+  if (!/^-?\d+(\.\d+)?$/.test(t) || !COLS_NUM.includes(col)) return null;
+  return parseFloat(t).toFixed(1);
+}
+// valor sugerido por el control (el «real probable» o «debería ir» del aviso), listo para el campo
+function sugerido(x){
+  const r = x.real; if (!r) return "";
+  if (/_h$/.test(x.col)) return r.hora || (typeof r.valor === "string" && /:/.test(r.valor) ? r.valor : "");
+  return typeof r.valor === "number" ? r.valor.toFixed(1) : r.valor == null ? "" : String(r.valor);
+}
 function marcasFila(f){ return Object.entries(f.marcas || {}).filter(([, m]) => m.nivel !== "info" || m.msg); }
 function pintar(){
   if (!B || B.vacio){
@@ -95,9 +111,9 @@ function pintar(){
     <div class="lado"><h4>Inconsistencias${selFila ? " · " + esc(selFila) + ` <a data-f="${esc(selFila)}" style="color:var(--mu);font-size:12px;cursor:pointer">(ver todas)</a>` : ""}</h4>
       <div class="ley"><span><i style="background:#f8d7da;border:1px solid #dc3545"></i>dudoso</span><span><i style="background:#fff3cd"></i>revisar</span><span><i style="background:#e7f1ff"></i>informativo</span></div>
       ${items.length ? items.map(x => `<div class="bit ${x.nivel}" data-f="${esc(x.estacion)}"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b><p>${esc(x.msg).replace(/(Debería ir|Probable): ([^(]+)/, "<br>$1: <em>$2</em>")}</p>
-          <div class="bm"><button class="mk" data-bm="omitir" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="La marca no corresponde (p. ej. el dato era correcto): se quita y no vuelve, y queda registrada">✓ Correcto / sin efecto</button><button class="mk" data-bm="resuelto" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="Ya se corrigió: se quita la marca y queda registrada">✓ Resuelto</button></div></div>`).join("")
+          <div class="bm"><input class="bv" value="${esc(sugerido(x))}" placeholder="${/_h$/.test(x.col) ? "hh:mm" : "valor"}" size="6" title="${/_h$/.test(x.col) ? "Hora correcta (hh:mm)" : "Valor correcto"}"><button class="mk ok" data-bm="guardar" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="Guarda el valor u hora correctos y quita la marca; el boletín lo muestra en azul hasta que el portal lo traiga">Guardar ${/_h$/.test(x.col) ? "hora" : "valor"} correcto</button><span class="berr" style="color:#eb5757;font-size:11.5px"></span><br><button class="mk" data-bm="omitir" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="La marca no corresponde (p. ej. el dato era correcto): se quita y no vuelve, y queda registrada">✓ Correcto / sin efecto</button><button class="mk" data-bm="resuelto" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="Ya está corregido en el portal: se quita la marca y queda registrada">✓ Resuelto</button></div></div>`).join("")
         : `<p style="color:#6fcf97;margin:0">${selFila ? "Esta estación no tiene" : "El boletín no tiene"} inconsistencias.</p>`}
-      ${(B.revisados || []).filter(x => !selFila || x.estacion === selFila).length ? `<h4 style="margin-top:14px">Quitadas a mano</h4>${B.revisados.filter(x => !selFila || x.estacion === selFila).map(x => `<div class="bit info"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b> <small style="color:var(--mu)">${x.v === "omitir" ? "correcto / sin efecto" : "resuelto"}${x.quien ? " · " + esc(x.quien) : ""}${x.t ? " · " + esc(x.t.slice(0, 16).replace("T", " ")) : ""}</small><p>${esc(x.msg)}</p></div>`).join("")}` : ""}
+      ${(B.revisados || []).filter(x => !selFila || x.estacion === selFila).length ? `<h4 style="margin-top:14px">Quitadas a mano</h4>${B.revisados.filter(x => !selFila || x.estacion === selFila).map(x => `<div class="bit info"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b> <small style="color:var(--mu)">${x.v === "omitir" ? "correcto / sin efecto" : "resuelto" + (x.valor ? " → <b>" + esc(x.valor) + "</b>" : "")}${x.quien ? " · " + esc(x.quien) : ""}${x.t ? " · " + esc(x.t.slice(0, 16).replace("T", " ")) : ""}</small><p>${esc(x.msg)}</p></div>`).join("")}` : ""}
       ${cambios.length ? `<h4 style="margin-top:14px">Cambios entre pasadas</h4>${cambios.map(c => `<div class="bit info"><b>${esc(c.estacion)} · ${esc(NCOL[c.col] || c.col)}</b><p>A las ${esc(c.hora)} pasó de <em>${esc(c.antes)}</em> a <em>${esc(c.ahora)}</em>.</p></div>`).join("")}` : ""}
       <p class="nota" style="margin:10px 0 0;color:var(--mu);font-size:12px">Se compara con la estación automática (mínima 00–12 UTC, máxima de ayer 12–24 UTC o el día local completo, agua caída 12–12 UTC), con lo que ingresó el observador (Tmin AM, Tmax PM y los cuatro RRR6) y con el boletín de ayer (A la fecha = ayer + 24 h). Pase el mouse por una celda marcada para ver el detalle.</p></div></div>`;
 }

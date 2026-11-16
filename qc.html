@@ -142,7 +142,7 @@ main[hidden]{display:none}
 #bol td.corr{background:color-mix(in srgb,#2f80ed 22%,transparent)!important;box-shadow:inset 0 0 0 1px #2f80ed;color:#9cc8ea}#bol td.corr small{color:#9cc8ea}#bol td[title]{cursor:help}#bol td.bq{cursor:pointer}#bol .bx{margin-left:5px;padding:0 5px;line-height:15px;font:700 11px inherit;background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:4px;cursor:pointer;vertical-align:middle}#bol .bx:hover{background:var(--err)}#bol td.rv{text-align:center;min-width:92px}#bol .ok{color:var(--ok);font-weight:700}#bol .bb{display:inline-block;margin:1px 0;font-size:11px;border-radius:4px;padding:1px 6px;font-weight:700}#bol .bb{border-radius:20px}#bol .bb.err{background:color-mix(in srgb,var(--err) 18%,transparent);color:var(--err);border:1px solid var(--err)}#bol .bb.warn{background:color-mix(in srgb,var(--sos) 16%,transparent);color:var(--sos);border:1px solid var(--sos)}
 #bol tr.sel td{background:color-mix(in srgb,var(--oro) 10%,transparent)!important}#bol tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--oro)}#bol tbody tr{cursor:pointer}
 #bol .lado{background:var(--panel);box-shadow:var(--sombra);border:1px solid var(--bd);border-radius:10px;padding:12px 14px}#bol .lado h4{margin:0 0 8px;font-size:15px}
-#bol .bit{border:1px solid var(--bd);border-left:3px solid var(--err);background:var(--panel);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-size:13px;cursor:pointer}#bol .bit.warn{border-color:var(--sos)}#bol .bit.info{border-color:var(--info)}#bol .bit p{margin:3px 0 0;color:var(--mu)}#bol .bit em{font-family:var(--mono);font-size:12px}#bol .bit em{font-style:normal;color:var(--oro);font-weight:700}
+#bol .bit{border:1px solid var(--bd);border-left:3px solid var(--err);background:var(--panel);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-size:13px;cursor:pointer}#bol .bit.warn{border-color:var(--sos)}#bol .bit.info{border-color:var(--info)}#bol .bit p{margin:3px 0 0;color:var(--mu)}#bol .bv{width:74px;font:inherit;font-size:12px;padding:1px 6px;margin:1px 4px 1px 0;border:1px solid var(--bd);border-radius:6px;background:transparent;color:inherit}#bol .bv:focus{outline:none;border-color:var(--oro)}#bol .bit em{font-family:var(--mono);font-size:12px}#bol .bit em{font-style:normal;color:var(--oro);font-weight:700}
 #bol .ley{display:flex;gap:14px;font-size:12px;color:var(--mu);margin:0 0 8px}#bol .ley i{display:inline-block;width:14px;height:12px;vertical-align:middle;margin-right:4px;border-radius:2px}
 #minu .hres .encurso{position:relative;border:1.5px dashed #f2c94c!important;background:color-mix(in srgb,#f2c94c 7%,var(--panel))!important}#minu .hres .tagc{display:inline-block;align-self:flex-start;margin-bottom:3px;padding:1px 7px;border-radius:20px;background:color-mix(in srgb,#f2c94c 18%,transparent);font:700 10px var(--mono);letter-spacing:.6px;color:#f2c94c;font-style:normal}:root[data-tema="claro"] #minu .hres .encurso{border-color:#B07D0A!important}:root[data-tema="claro"] #minu .hres .tagc{color:#B07D0A}
 #rell{flex:1;overflow:auto;padding:14px 20px}#rell[hidden]{display:none}
@@ -215,7 +215,6 @@ main[hidden]{display:none}
  <aside>
   <div class="tools">
    <span id="sub" class="sub2"><button data-s="pend" class="on">Pendientes</button><button data-s="inf">Informados</button></span>
-   <button data-z="todo" class="on">Todo</button><button data-z="norte">Norte</button><button data-z="centro">Centro</button><button data-z="sur">Sur</button><button data-z="austral">Austral</button>
    <select id="grupo" title="Pruebas"><option value="todas">Todas las pruebas</option><option value="basicas">Solo básicas</option><option value="vecinas">Solo vecinas</option><option value="modelos">Solo modelos</option><option value="lluvia">Solo lluvia</option><option value="satelite">Solo satélite</option><option value="incendio">Solo incendios cercanos</option></select>
    <details class="vsel" id="vars"><summary id="varsT">Variables: todas ▾</summary><div class="vbox" id="vbox"></div></details>
    <select id="gobs" title="Tipo de revisión" hidden><option value="todas">Todas las revisiones</option><option value="sistema">Reglas del sistema</option><option value="codificacion">Codificación</option><option value="evolucion">Evolución</option><option value="sensor">Frente al sensor</option><option value="satelite">Frente al satélite</option></select>
@@ -580,8 +579,6 @@ document.addEventListener("click", ev => {
   const mb = ev.target.closest(".modos button"); if (mb) return cambiarModo(mb.dataset.m);
   const sb = ev.target.closest("#sub button"); if (sb){ sub = sb.dataset.s; sel = null; $("#det").style.display = "none"; guardarVista(); return pintar(); }
   const ch = ev.target.closest(".chip"); if (ch){ const n = +ch.dataset.n; ver[n] = !ver[n]; pintar(); }
-  const b = ev.target.closest(".tools button[data-z]"); if (b){ zona = b.dataset.z; document.querySelectorAll(".tools button[data-z]").forEach(x => x.classList.toggle("on", x === b)); guardarVista(); pintar();
-    const V = visibles(); if (V.length) mapa.fitBounds(V.map(e => [e.lat, e.lon]), {padding: [20, 20], maxZoom: 8}); }
 });
 // pestañas que ve la persona elegida (Equipo → «Pestañas que ve»); sin lista ve todas
 function aplicarPestanas(){
@@ -919,8 +916,8 @@ function hCsv(){
 $("#fl").addEventListener("submit", ev => { ev.preventDefault(); const c = $("#clave").value; try { sessionStorage.setItem("qcClave", c); } catch (e) { window._qc = c; } $("#lerr").textContent = ""; cargar(); });
 // metotec.cl/modelo: solo el contraste con modelos (para presentar)
 const VISTA0 = new URLSearchParams(location.search).get("vista"), VG = leerVista();
-if (VG){ zona = VG.zona || "todo"; sub = VG.sub || "pend"; grupo = VG.grupo || "todas"; gobs = VG.gobs || "todas"; $("#buscar").value = VG.q || "";
-  $("#grupo").value = grupo; $("#gobs").value = gobs; document.querySelectorAll(".tools button[data-z]").forEach(x => x.classList.toggle("on", x.dataset.z === zona)); }
+if (VG){ sub = VG.sub || "pend"; grupo = VG.grupo || "todas"; gobs = VG.gobs || "todas"; $("#buscar").value = VG.q || "";
+  $("#grupo").value = grupo; $("#gobs").value = gobs; }
 const HASH0 = decodeURIComponent((location.hash || "").slice(1));
 if (VISTA0 && VISTA0 !== "modelo") cambiarModo(VISTA0);
 else if (HASH0 && document.querySelector(`.modos button[data-m="${CSS.escape(HASH0)}"]`)) cambiarModo(HASH0);     // la dirección manda sobre lo guardado

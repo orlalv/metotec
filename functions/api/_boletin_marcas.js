@@ -2,6 +2,15 @@
 // Se guardan con /api/revision en qc/rev/<día del boletín> con id  b|<día>|<estación>|<columna>.
 // Quitan la marca del boletín (tabla, lista de inconsistencias y versión pública) y quedan registradas en «revisados».
 // «omitir» no vuelve nunca; «resuelto» vuelve solo si el aviso cambió de texto.
+// ¿el valor que dejó la persona ya es el que muestra el portal? Las horas se comparan como hh:mm (no como número: 04:04 y 04:30 darían 4).
+export function igual(a, b){
+  a = String(a ?? "").trim(); b = String(b ?? "").trim();
+  if (a === b) return true;
+  const h = /^\d{1,2}:\d{2}$/;
+  if (h.test(a) || h.test(b)) return h.test(a) && h.test(b) && a.padStart(5, "0") === b.padStart(5, "0");
+  const x = parseFloat(a), y = parseFloat(b);
+  return !isNaN(x) && !isNaN(y) && x === y;
+}
 export const idB = (dia, estacion, col) => `b|${dia}|${estacion}|${col}`;
 
 export async function aplicar(env, b){
@@ -17,7 +26,7 @@ export async function aplicar(env, b){
   const items = (b.items || []).filter(x => {
     if (!oculta(x.estacion, x.col, x.msg)) return true;
     const m = R[idB(b.dia, x.estacion, x.col)];
-    revisados.push({ estacion: x.estacion, col: x.col, msg: x.msg, v: m.v, t: m.t, quien: m.quien });
+    revisados.push({ estacion: x.estacion, col: x.col, msg: x.msg, v: m.v, t: m.t, quien: m.quien, valor: m.valor });
     return false;
   });
   // «Resuelto» con el valor corregido: se muestra el valor nuevo (azul) hasta que el portal lo traiga; si el portal sigue con el
@@ -30,7 +39,7 @@ export async function aplicar(env, b){
       const m = R[idB(b.dia, f.nombre, c)];
       if (!m || m.v !== "resuelto" || m.valor == null) continue;
       const portal = String(f.v[c] ?? "").trim();
-      if (portal === m.valor || parseFloat(portal) === parseFloat(m.valor)){
+      if (igual(portal, m.valor)){
         marcas[c] = { nivel: "corr", sub: "corregido", msg: `Corregido a ${m.valor}${m.quien ? " por " + m.quien : ""} y confirmado en el portal` };
       } else {
         v[c] = m.valor;
