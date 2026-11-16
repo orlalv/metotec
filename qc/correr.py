@@ -193,7 +193,13 @@ def completitud_obs(raiz, cods, nombres, dias=40, base=14):
 
 # estaciones con observador (listas de la DMC: 57 + 63 con horarios, unidas)
 # nombres de estaciones con observador que no están en el catastro de EMA
-NOMBRES_OBS = {"200910": "Centro Meteorológico Marítimo de Iquique", "260007": "Isla San Félix", "290005": "Punta Tortuga, faro",
+NOMBRES_OBS = {"340116": "Independencia, Rancagua Ad.", "350007": "Punta Carranza, faro", "360015": "Isla Quiriquina, faro",
+               "360020": "Punta Hualpén, faro", "360969": "Centro Meteorológico Marítimo de Talcahuano", "380004": "Isla Mocha",
+               "400009": "Cañal Bajo, Osorno Ad.", "410007": "Punta Corona, faro", "410932": "Centro Meteorológico Marítimo de Puerto Montt",
+               "420014": "Mocopulli Ad.", "430003": "Isla Guafo, faro", "430004": "Alto Palena Ad.", "460001": "Chile Chico Ad.",
+               "460002": "Cabo Raper, faro", "470001": "Lord Cochrane Ad.", "470002": "Isla San Pedro, faro", "520002": "Punta Dungeness, faro",
+               "520003": "Evangelistas, faro", "530907": "Centro Meteorológico Marítimo de Punta Arenas", "550002": "Cabo de Hornos",
+               "560002": "Islas Diego Ramírez", "200910": "Centro Meteorológico Marítimo de Iquique", "260007": "Isla San Félix", "290005": "Punta Tortuga, faro",
                "330002": "Punta Ángeles, faro", "330028": "Punta Panul, faro", "950002": "Arturo Prat, Base Antártica",
                "950003": "Bernardo O'Higgins, Base Antártica", "950006": "Antártica, Bahía Fildes Gobernación Marítima"}
 ESTACIONES_OBS = ["180005", "200006", "200910", "220002", "230001", "260007", "270001", "270008",
