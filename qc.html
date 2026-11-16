@@ -505,7 +505,7 @@ function pintar(){
   $("#lista").innerHTML = L2.map(e => `<div class="it ${sel === e.codigo ? "sel" : ""}" data-c="${e.codigo}"><span class="p" style="background:${COL[e.nivel]}"></span>
     <div><b>${esc(e.nombre)}</b><small>${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · ${e.alt ?? "—"} m${e.aislada ? " · aislada" : ""}</small>
     ${e.alertas.length ? `<div class="al">${e.alertas.slice(0, 4).map(a => `<span style="color:${HEX[a.nivel]}">${PR[a.prueba] || a.prueba} ${nomVar(a.var)}</span>`).join("")}</div>` : ""}</div>
-    <div class="v">${e.valores.T != null ? e.valores.T + " °C" : ""}<br>${e.valores.P_mar != null ? e.valores.P_mar + " hPa" : ""}</div></div>`).join("") || `<p style="padding:14px;color:var(--mu)">Sin estaciones con ese filtro.</p>`;
+    <div class="v">${e.valores.T != null ? e.valores.T + " °C" : ""}<br>${e.valores.P_mar != null ? e.valores.P_mar + " hPa" : ""}</div></div>`).join("") || `<p style="padding:14px;color:var(--mu)">${EQ.red && EQ.red() === "armada" ? "La red Armada no tiene estaciones automáticas: sus estaciones están en <b>Observaciones</b> (y en Precipitación, Temperaturas y Extremas)." : "Sin estaciones con ese filtro."}</p>`;
   if (sel) detalle(sel, false);
 }
 function detalle(c, mover = true){
