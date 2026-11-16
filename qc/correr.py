@@ -162,10 +162,18 @@ def registrar_cambios(raiz, nuevos_por_cod, ahora, dias=7):
     return reg
 
 
+SONDEO_NOM = {}
+
+
 def completitud_obs(raiz, cods, nombres, dias=40, base=14):
     """Etapa 3 · completitud de observaciones: horas con mensaje por estación y día (últimos «dias» días, UTC)
     y programa de cada estación (horas cubiertas al menos la mitad de los últimos «base» días). Sube qc/completitud."""
     import gzip
+    global SONDEO_NOM
+    try:
+        SONDEO_NOM = {x["codigo"]: x["nombre"].strip() for x in json.loads((Path(raiz) / "sensoriales.json").read_text())["estaciones"] if x.get("nombre")}
+    except Exception:
+        SONDEO_NOM = {}
     hoy = datetime.now(timezone.utc).date()
     H = {c: {} for c in cods}
     for k in range(dias):
@@ -185,8 +193,10 @@ def completitud_obs(raiz, cods, nombres, dias=40, base=14):
         D = H[c]
         ult = [D[x] for x in sorted(D)[-base - 1:-1]] or list(D.values())     # sin contar hoy (día incompleto)
         prog = [h for h in range(24) if ult and sum(s[h] == "1" for s in ult) >= max(1, len(ult) / 2)]
-        m = nombres.get(c, {})
-        est.append(dict(codigo=c, nombre=m.get("nombre"), lat=m.get("lat"), programa=prog, dias=D))
+        m = nombres.get(c) or {}
+        nom = m.get("nombre") or NOMBRES_OBS.get(c) or SONDEO_NOM.get(c)
+        lat = m.get("lat") if m.get("lat") is not None else (COORD_OBS.get(c) or (None,))[0]
+        est.append(dict(codigo=c, nombre=nom, lat=lat, programa=prog, dias=D))
     txt = json.dumps(dict(generado=datetime.now(timezone.utc).isoformat(timespec="seconds"), estaciones=est), ensure_ascii=False, default=str)
     return subir_kv("qc/completitud", txt)
 
