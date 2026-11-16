@@ -45,18 +45,32 @@ async function cargar(cod, ini, fin){
 
 /* ---------------- valor esperado con las vecinas ---------------- */
 const mediana = a => { a = a.slice().sort((x, y) => x - y); const n = a.length; return n ? (n % 2 ? a[(n - 1) / 2] : (a[n / 2 - 1] + a[n / 2]) / 2) : 0; };
+function mco(X, Y){ const n = X.length; let mx = 0, my = 0; for (let i = 0; i < n; i++){ mx += X[i]; my += Y[i]; } mx /= n; my /= n;
+  let sxy = 0, sxx = 0; for (let i = 0; i < n; i++){ sxy += (X[i] - mx) * (Y[i] - my); sxx += (X[i] - mx) * (X[i] - mx); }
+  const b = sxx > 1e-9 ? sxy / sxx : 0; return {a: my - b * mx, b}; }
+function ajusta(X, Y){                                   // regresión de la estación contra una vecina, sin los puntos que se alejan (así el error no la tuerce)
+  let f = mco(X, Y); const r = Y.map((y, i) => y - (f.a + f.b * X[i])), s = 1.4826 * mediana(r.map(Math.abs)) || 0;
+  const k = X.map((_, i) => Math.abs(r[i]) <= 3 * Math.max(s, 1e-6)); const X2 = X.filter((_, i) => k[i]), Y2 = Y.filter((_, i) => k[i]);
+  if (X2.length >= 8) f = mco(X2, Y2);
+  const r2 = Y.map((y, i) => y - (f.a + f.b * X[i])); f.s = 1.4826 * mediana(r2.map(Math.abs)); return f; }
+const CACHE_E = new Map();
 function esperado(p, v){
-  const out = new Map(); if (SIN_ESPERADO.has(v)) return out;
+  const key = p + "|" + v; if (CACHE_E.has(key)) return CACHE_E.get(key);
+  const out = new Map(); out.sigma = 0; CACHE_E.set(key, out); if (SIN_ESPERADO.has(v)) return out;
   const P = S.d[p]; if (!P) return out;
   const otras = S.cods.filter(c => c !== p && S.d[c]).map(c => {
-    const dif = []; P.filas.forEach(o => { const q = S.d[c].por.get(o.t); if (o[v] != null && q && q[v] != null) dif.push(o[v] - q[v]); });
-    return {c, off: dif.length >= 6 ? mediana(dif) : null, w: 1 / Math.pow(Math.max(1, km(S.e[p], S.e[c])), 2)};
-  }).filter(x => x.off != null);
+    const X = [], Y = []; P.filas.forEach(o => { const q = S.d[c].por.get(o.t); if (o[v] != null && q && q[v] != null){ X.push(q[v]); Y.push(o[v]); } });
+    if (X.length < 12) return null; const f = ajusta(X, Y), s = Math.max(f.s, 0.05 * (UMBRAL[v] || 1));
+    return {c, a: f.a, b: f.b, w: 1 / (s * s) / Math.sqrt(Math.max(1, km(S.e[p], S.e[c])))};
+  }).filter(Boolean);
+  const dif = [];
   P.filas.forEach(o => { let sw = 0, sv = 0, n = 0;
-    otras.forEach(x => { const q = S.d[x.c].por.get(o.t); if (q && q[v] != null){ sw += x.w; sv += x.w * (q[v] + x.off); n++; } });
-    if (n >= 2) out.set(o.t, sv / sw); });
+    otras.forEach(x => { const q = S.d[x.c].por.get(o.t); if (q && q[v] != null){ sw += x.w; sv += x.w * (x.a + x.b * q[v]); n++; } });
+    if (n >= 2){ const e = sv / sw; out.set(o.t, e); if (o[v] != null) dif.push(Math.abs(o[v] - e)); } });
+  out.sigma = 1.4826 * mediana(dif);
   return out;
 }
+const umbral = (v, E) => UMBRAL[v] ? Math.max(UMBRAL[v] / 2, 4 * (E.sigma || 0)) : null;       // diferencia que se marca: nunca menos de la mitad del umbral ni de 4 veces lo normal de ese día
 
 /* ---------------- gráfico ---------------- */
 function rango(v){
@@ -78,8 +92,8 @@ function pintar(){
     cierra(); return s; };
   let i = 0; S.cods.forEach(c => { if (c !== p) g += linea(c, PAL[i++ % PAL.length], 1.2); });
   g += linea(p, "#1688D4", 2.6);
-  const E = esperado(p, v), U = UMBRAL[v];
-  S.d[p].filas.forEach(o => { const e = E.get(o.t); if (o[v] != null && e != null && U && Math.abs(o[v] - e) > U) g += `<circle cx="${x(o.t)}" cy="${y(o[v])}" r="5" fill="none" stroke="#c0392b" stroke-width="2"/>`; });
+  const E = esperado(p, v), U = umbral(v, E); let ultimo = -1e15;
+  S.d[p].filas.forEach(o => { const e = E.get(o.t); if (o[v] != null && e != null && U && Math.abs(o[v] - e) > U && o.t - ultimo >= 600e3){ ultimo = o.t; g += `<circle cx="${x(o.t)}" cy="${y(o[v])}" r="5" fill="none" stroke="#c0392b" stroke-width="2"/>`; } });
   if (S.sel != null) g += `<line x1="${x(S.sel)}" x2="${x(S.sel)}" y1="${T}" y2="${H - B}" stroke="#C9A54C" stroke-width="2"/>`;
   g += `<rect id="cap" x="${L}" y="${T}" width="${W - L - Rr}" height="${H - T - B}" fill="transparent"/></svg>`;
   const lg = [`<span style="color:#1688D4">● ${esc(S.e[p].nombre)}</span>`]; i = 0; S.cods.forEach(c => { if (c !== p) lg.push(`<span style="color:${PAL[i++ % PAL.length]}">● ${esc(S.e[c].nombre)} (${Math.round(km(S.e[p], S.e[c]))} km)</span>`); });
@@ -91,7 +105,7 @@ function pintar(){
   pintarTabla();
 }
 function pintarTabla(){
-  const v = S.v, p = S.vista, E = esperado(p, v), U = UMBRAL[v], F = S.d[p].filas;
+  const v = S.v, p = S.vista, E = esperado(p, v), U = umbral(v, E);
   let h = `<tr><th>UTC</th><th>Local</th><th>Valor</th><th>Esperado</th><th>Dif.</th><th class="l">Estado</th></tr>`;
   for (let t = S.ini + HP; t <= S.fin; t += HP){
     const o = S.d[p].por.get(t), val = o ? o[v] : null, e = E.get(t), d = val != null && e != null ? val - e : null;
@@ -185,12 +199,12 @@ async function ver(){
   res.forEach((r, i) => { if (r.status === "fulfilled") d[cods[i]] = r.value; else falla++; });
   $("#go").disabled = false;
   if (!d[e.codigo]){ $("#msg").textContent = "No se pudo cargar la estación: " + (res[0].reason && res[0].reason.message || "error"); return; }
-  const vivas = cods.filter(c => d[c]); S = {ini, fin, cods: vivas, e: E, d, vista: e.codigo, v: S ? S.v : "T", sel: null};
+  const vivas = cods.filter(c => d[c]); CACHE_E.clear(); S = {ini, fin, cods: vivas, e: E, d, vista: e.codigo, v: S ? S.v : "T", sel: null};
   const hay = d[e.codigo].filas.length;
   $("#msg").textContent = hay ? `${hay} datos de ${E[e.codigo].nombre}${falla ? " · " + falla + " vecina(s) sin cargar" : ""}${d[e.codigo].faltan ? " · " + d[e.codigo].faltan + " hora(s) sin archivo" : ""}` : "Sin datos archivados ese día (el archivo parte el 8-11-2026)";
   pestanas(); pintarMarcas();
-  const E0 = esperado(e.codigo, S.v), U = UMBRAL[S.v]; let primero = null;
-  d[e.codigo].filas.forEach(o => { const z = E0.get(o.t); if (primero == null && o[S.v] != null && z != null && U && Math.abs(o[S.v] - z) > U) primero = o.t; });
+  CACHE_E.clear(); const E0 = esperado(e.codigo, S.v), U = umbral(S.v, E0); let primero = null, mx = 0;
+  d[e.codigo].filas.forEach(o => { const z = E0.get(o.t); if (o[S.v] != null && z != null && U && Math.abs(o[S.v] - z) > U && Math.abs(o[S.v] - z) > mx){ mx = Math.abs(o[S.v] - z); primero = Math.round(o.t / HP) * HP; } });
   elegir(primero != null ? primero : ini + 12 * 3600e3);
 }
 $("#go").addEventListener("click", ver);
