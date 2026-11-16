@@ -176,6 +176,15 @@ def revisar_dia(dia, bol, raiz, ayer=None):
                             x = float(cerca["T"].iloc[(cerca["momento"] - cu).abs().argmin()])
                             if best is None or abs(x - val) < abs(best - val):
                                 best = x
+                    # minutos en que la automática estuvo en su extremo (empates a 1 decimal): cualquiera de esas horas vale
+                    ext = w[(w["T"] - ref).abs() <= 0.05]["momento"]
+                    horas_ok = [f"{loc(x):%H:%M}" for x in ext]
+                    en_ext = any(abs((pd.Timestamp(c).tz_localize(Z).tz_convert("UTC").tz_localize(None) - x).total_seconds()) <= 60
+                                 for c in cand for x in ext)
+                    if best is not None and abs(best - val) <= 1.0 and not en_ext and col + "_h" not in marcas:
+                        marca(col + "_h", "warn", f"EMA {ref:.1f} · {', '.join(horas_ok[:3])}",
+                              f"Hora de la {nombre} {hora_txt}: a esa hora la automática marcaba {best:.1f} °C; su {('mínimo' if minimo else 'máximo')} "
+                              f"({ref:.1f} °C) fue a las {', '.join(horas_ok[:3])}. Debería ir: {horas_ok[0]}", dict(real, hora=horas_ok[0]))
                     if best is not None and abs(best - val) > 1.0:
                         marca(col + "_h", "warn", f"EMA {ref:.1f} · {loc(tref):%H:%M}",
                               f"Hora de la {nombre} {hora_txt}: a esa hora la automática marcaba {best:.1f} °C; su {('mínimo' if minimo else 'máximo')} ({ref:.1f} °C) fue a las {loc(tref):%H:%M}.", real)
