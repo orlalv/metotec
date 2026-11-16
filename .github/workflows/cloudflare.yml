@@ -24,3 +24,13 @@ jobs:
         env:
           CLAVE: ${{ secrets.CLAVE_DOCENTE }}
         run: if [ -n "$CLAVE" ]; then echo "$CLAVE" | npx -y wrangler@3 pages secret put CLAVE_DOCENTE --project-name=metotec; else echo "Sin CLAVE_DOCENTE"; fi
+      # Usuario y token de la DMC para /api/aguacaida (precipitación histórica): se consultan del lado del servidor, nunca en la página.
+      - name: Credenciales DMC
+        env:
+          DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
+          DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
+        run: |
+          if [ -n "$DMC_USUARIO" ] && [ -n "$DMC_TOKEN" ]; then
+            echo "$DMC_USUARIO" | npx -y wrangler@3 pages secret put DMC_USUARIO --project-name=metotec
+            echo "$DMC_TOKEN" | npx -y wrangler@3 pages secret put DMC_TOKEN --project-name=metotec
+          else echo "Sin DMC_USUARIO o DMC_TOKEN"; fi

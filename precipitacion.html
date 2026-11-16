@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Precipitación histórica · METOTEC</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<style>
+:root{--noche:#0A1F44;--marino:#082B5C;--azul:#1688D4;--oro:#C9A54C;--fondo:#F5F6F8;--tx:#16202E;--mu:#6B7686;--bd:#E3E7EC}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tx);font:16px/1.5 Inter,system-ui,"Segoe UI",Roboto,Arial,sans-serif}
+.w{max-width:1280px;margin:0 auto;padding:0 clamp(16px,4vw,56px)}
+header{background:radial-gradient(1100px 380px at 85% 0%,#163a73 0%,var(--noche) 62%);color:#fff;padding:22px 0}
+header .w{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+header .logo img{display:block;height:40px;width:auto}
+header nav{display:flex;gap:26px;font-size:14.5px;font-weight:500}
+header nav a{color:#c8d2e2;text-decoration:none;padding-bottom:4px;border-bottom:2px solid transparent}
+header nav a:hover,header nav a.on{color:#fff;border-bottom-color:var(--oro)}
+.rule{height:3px;background:linear-gradient(90deg,var(--oro),rgba(201,165,76,0) 70%)}
+main.w{padding-top:24px;padding-bottom:20px}
+h1{margin:0 0 2px;font-size:26px}h2{margin:26px 0 8px;font-size:18px;color:var(--marino)}
+.mu{color:var(--mu);font-size:14px}.err{color:#b23a3a}
+.barra{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:14px 0;background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px 14px}
+.barra label{font-size:14px;display:flex;align-items:center;gap:6px}
+.barra input,.barra select,.bt{font:inherit;font-size:14px;padding:6px 10px;border:1px solid #c9d2dd;border-radius:8px;background:#fff}
+.barra input[type=number]{width:70px}.barra #est{width:min(380px,100%)}
+.bt{cursor:pointer;color:var(--tx)}.bt.p{background:var(--marino);color:#fff;border-color:var(--marino);font-weight:600}.bt:disabled{opacity:.5;cursor:wait}
+.tarjetas{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:6px 0}
+.tj{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px 14px}.tj b{display:block;font-size:22px;color:var(--marino)}.tj span{font-size:12.5px;color:var(--mu)}
+.sc{overflow-x:auto;background:#fff;border:1px solid var(--bd);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{background:#eef2f8;color:var(--marino);text-align:right;padding:8px 10px;font-size:12.5px;white-space:nowrap}th:first-child,td:first-child,th.l{text-align:left}
+td{padding:6px 10px;border-top:1px solid #eef1f5;text-align:right;white-space:nowrap}td.n{white-space:normal;text-align:left}
+.err2{background:#fbe3e3;color:#8f1d1d;font-weight:600}.warn2{background:#fff3cd;color:#7a5b00;font-weight:600}.inf2{color:#8a94a6}.ok{color:#2a7d4f}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.chips button{font:inherit;font-size:13px;padding:4px 11px;border:1px solid #c9d2dd;border-radius:999px;background:#fff;cursor:pointer}.chips button.on{background:var(--marino);color:#fff;border-color:var(--marino)}
+.hm td{text-align:center;padding:5px 4px;font-size:12px;min-width:40px;border:1px solid #fff}.hm th{text-align:center}.hm td:first-child{text-align:left;font-weight:600;padding-left:10px;background:#fff}
+.aviso{font-size:13px;color:var(--mu);margin-top:14px}
+details{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:10px 14px;margin-top:18px}summary{cursor:pointer;font-weight:600;color:var(--marino)}
+details li{margin:6px 0;font-size:14px}
+#login[hidden]{display:none}
+#login{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:14px;margin:14px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#login input{font:inherit;padding:6px 10px;border:1px solid #c9d2dd;border-radius:8px}
+footer{margin-top:30px;background:var(--noche);color:#9fb0c8;font-size:13px;padding:22px 0}
+footer .w{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer img{height:26px;width:auto;filter:brightness(0) invert(1);opacity:.8;margin-right:12px;vertical-align:middle}footer a{color:#9fb0c8}
+@media (max-width:760px){header{padding:16px 0}header .logo img{height:30px}header nav{width:100%;gap:18px;overflow-x:auto;font-size:14px}header nav a{white-space:nowrap}}
+</style>
+</head>
+<body>
+<header><div class="w">
+ <a href="index.html" class="logo"><img src="img/logo_blanco.svg" alt="METOTEC"></a>
+ <nav><a href="index.html#datos">Datos</a><a href="mapas.html">Mapas</a><a href="productos.html">Productos</a><a href="index.html#control" class="on">Control de calidad</a><a href="acerca.html">Acerca</a></nav>
+</div></header>
+<div class="rule"></div>
+<main class="w">
+ <h1>Precipitación histórica</h1>
+ <div class="mu">Completitud y control de calidad del agua caída diaria · servicio de la DMC · requiere clave</div>
+ <form id="login" hidden><b>Clave</b><input id="clave" type="password" autocomplete="current-password" placeholder="Clave del control de calidad"><button class="bt p" type="submit">Entrar</button><span class="err" id="lerr"></span></form>
+ <div class="barra">
+  <input id="est" list="lst" placeholder="Estación: nombre o código" autocomplete="off"><datalist id="lst"></datalist>
+  <label>Desde <select id="a0"></select></label><label>hasta <select id="a1"></select></label>
+  <label><input type="checkbox" id="vec" checked> comparar con vecinas</label>
+  <label>Valor alto desde <input type="number" id="umb" value="5" min="1" step="1"> mm</label>
+  <label>Racha mínima <input type="number" id="rach" value="3" min="1" step="1"> días</label>
+  <button class="bt p" id="go">Analizar</button>
+ </div>
+ <div id="out"><p class="mu">Elija una estación y pulse «Analizar». La serie se descarga una vez; después puede cambiar el período y las opciones sin volver a descargar.</p></div>
+ <details><summary>Cómo se clasifica cada día y qué revisa cada regla</summary>
+  <ul>
+   <li><b>Sin dato:</b> el día no trae parcial ni total (o el día no existe en la respuesta del servicio). Es distinto de <b>cero</b> (total 0, observado y seco) y de <b>traza</b> (lluvia inapreciable). <b>Solo parcial</b>: trae parcial pero no total; no cuenta como completo.</li>
+   <li><b>Completitud</b> = días con total (cero, traza o valor) sobre los días del período.</li>
+   <li id="reglas"></li>
+  </ul>
+  <p class="mu">Son reglas fijas, sin IA: señalan días para revisar, no corrigen nada. «Valor probable» es una sugerencia que hay que confirmar con la observación original. Información de apoyo, no oficial.</p>
+ </details>
+</main>
+<footer><div class="w"><div><img src="img/isotipo.svg" alt="">© 2026 O. Álvarez B. · Herramientas educativas y de apoyo, no oficiales.</div><a href="index.html">Portada</a></div></footer>
+<script type="module">
+import { analizar, km, NOMBRES, EXPLICA } from "./js/pluvio.js";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
+const fmt = v => v == null ? "—" : (Math.round(v * 10) / 10).toFixed(1);
+const dmy = f => f.split("-").reverse().join("-");
+const MES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const clave = () => { try { return sessionStorage.getItem("qcClave") || ""; } catch (e) { return window._qc || ""; } };
+let cat = [], series = {}, A = null, info = null, filtro = {nivel: 0, cod: ""}, codAct = null;
+
+$("#reglas").innerHTML = "<b>Reglas:</b><ul>" + Object.keys(NOMBRES).map(k => `<li><b>${esc(NOMBRES[k])}</b> <small>(${k})</small>: ${esc(EXPLICA[k])}</li>`).join("") + "</ul>";
+
+// ---- catálogo de estaciones (código, nombre, coordenadas)
+fetch("/api/minutarios?estaciones").then(r => r.json()).then(c => {
+  cat = c; $("#lst").innerHTML = cat.map(x => `<option value="${esc(x.nombre.replace(/\s{2,}/g, " "))} — ${x.codigo}">`).join("");
+  const d = cat.find(x => x.codigo === "270008"); if (d && !$("#est").value) $("#est").value = d.nombre.replace(/\s{2,}/g, " ") + " — " + d.codigo;
+}).catch(() => {});
+function codigoElegido(){
+  const t = $("#est").value.trim(), m = /(\d{4,7})\s*$/.exec(t) || /\b(\d{4,7})\b/.exec(t);
+  if (m) return m[1];
+  const n = norm(t).replace(/\s+/g, " "), x = cat.find(e => norm(e.nombre).replace(/\s+/g, " ").includes(n));
+  return t && x ? x.codigo : null;
+}
+const nombreDe = cod => { const x = cat.find(e => e.codigo === cod); return x ? x.nombre.replace(/\s{2,}/g, " ") : cod; };
+
+// ---- descarga
+async function traer(cod){
+  if (series[cod]) return series[cod];
+  const r = await fetch("/api/aguacaida?cod=" + cod, {headers: {"x-clave": clave()}});
+  if (r.status === 401) throw Object.assign(new Error("Clave incorrecta"), {clave: true});
+  const j = await r.json().catch(() => ({error: "respuesta inválida del servidor"}));
+  if (!r.ok) throw new Error(j.error || "el servidor respondió " + r.status);
+  return series[cod] = j;
+}
+function pedirClave(msg){ $("#login").hidden = false; $("#lerr").textContent = msg || ""; $("#clave").focus(); }
+$("#login").addEventListener("submit", e => { e.preventDefault(); const c = $("#clave").value; try { sessionStorage.setItem("qcClave", c); } catch (x) { window._qc = c; } $("#login").hidden = true; ejecutar(true); });
+
+// ---- ejecución
+async function ejecutar(nueva){
+  const cod = codigoElegido();
+  if (!cod){ $("#out").innerHTML = `<p class="err">Elija una estación de la lista o escriba su código.</p>`; return; }
+  if (!clave()){ pedirClave(); return; }
+  if (cod !== codAct) nueva = true;
+  $("#go").disabled = true; $("#out").innerHTML = `<p class="mu">Descargando la serie de ${esc(nombreDe(cod))}… (puede tardar unos segundos)</p>`;
+  try {
+    const main = await traer(cod);
+    if (nueva){
+      codAct = cod; filtro = {nivel: 0, cod: ""};
+      const y0 = +main.desde.slice(0, 4), y1 = +main.hasta.slice(0, 4), ops = [];
+      for (let y = y0; y <= y1; y++) ops.push(`<option>${y}</option>`);
+      $("#a0").innerHTML = $("#a1").innerHTML = ops.join(""); $("#a0").value = y0; $("#a1").value = y1;
+    }
+    const a0 = Math.min(+$("#a0").value, +$("#a1").value), a1 = Math.max(+$("#a0").value, +$("#a1").value);
+    $("#a0").value = a0; $("#a1").value = a1;
+    let vecinas = [], sin = [];
+    if ($("#vec").checked){
+      const yo = cat.find(e => e.codigo === cod);
+      if (yo){
+        const cand = cat.filter(e => e.codigo !== cod && e.lat != null).map(e => ({...e, km: km(yo, e)})).filter(e => e.km <= 300).sort((a, b) => a.km - b.km).slice(0, 6);
+        $("#out").innerHTML = `<p class="mu">Descargando ${cand.length} estaciones vecinas para comparar…</p>`;
+        const R = await Promise.allSettled(cand.map(c => traer(c.codigo)));
+        cand.forEach((c, i) => { if (R[i].status === "fulfilled" && R[i].value.n) vecinas.push({cod: c.codigo, nombre: c.nombre.replace(/\s{2,}/g, " "), km: Math.round(c.km), dias: R[i].value.dias}); else sin.push(c.nombre.replace(/\s{2,}/g, " ")); });
+        vecinas = vecinas.slice(0, 4);
+      }
+    }
+    const desde = `${a0}-01-01` > main.desde ? `${a0}-01-01` : main.desde, hasta = `${a1}-12-31` < main.hasta ? `${a1}-12-31` : main.hasta;
+    A = analizar(main.dias, {desde, hasta, epoca: "2011-01-01", umbralAlto: +$("#umb").value || 5, minRacha: +$("#rach").value || 3, vecinas});
+    info = {cod, nombre: nombreDe(cod), main, sinVecinas: sin, pedidas: $("#vec").checked};
+    pintar();
+  } catch (e){
+    if (e.clave){ $("#out").innerHTML = ""; pedirClave("Clave incorrecta"); }
+    else $("#out").innerHTML = `<p class="err">No se pudo cargar: ${esc(e.message)}</p><p class="mu">Si el servicio responde pero la página no entiende el formato, abra <code>/api/aguacaida?cod=${esc(cod)}&amp;crudo=1</code> (con la clave) y guarde el resultado para revisarlo.</p>`;
+  } finally { $("#go").disabled = false; }
+}
+$("#go").onclick = () => ejecutar(false);
+$("#est").addEventListener("change", () => ejecutar(true));
+
+// ---- pantalla
+function pintar(){
+  const c = A.cont, lluvia = c.valor, n2 = A.marcas.filter(m => m.nivel === 2).length;
+  const T = (v, t) => `<div class="tj"><b>${v}</b><span>${t}</span></div>`;
+  const E = A.epocas, pc = (a, b) => b ? (100 * a / b).toFixed(1) + " %" : "—";
+  const fila = (nm, e) => `<tr><td>${nm}</td><td>${e.dias}</td><td>${pc(e.falta, e.dias)}</td><td>${pc(e.traza, e.dias)}</td><td>${e.valor}</td><td>${e.pt}</td><td>${pc(e.enteros, e.valor)}</td></tr>`;
+  const tiene = Object.keys(NOMBRES).filter(k => A.marcas.some(m => m.cod === k));
+  const vis = A.marcas.filter(m => (!filtro.nivel || m.nivel === filtro.nivel) && (!filtro.cod || m.cod === filtro.cod));
+  $("#out").innerHTML = `
+   <p class="mu"><b>${esc(info.nombre)}</b> (${info.cod}) · ${dmy(A.desde)} a ${dmy(A.hasta)} · serie disponible en el servicio: ${dmy(info.main.desde)} a ${dmy(info.main.hasta)}</p>
+   <div class="tarjetas">${T(A.completitud.toFixed(1) + " %", "completitud (días con total)")}${T(A.dias, "días del período")}${T(c.falta, `sin dato${c.sinFila ? ` (${c.sinFila} sin fila)` : ""}`)}${T(c.parcial, "solo parcial")}${T(c.cero, "ceros")}${T(c.traza, "trazas")}${T(lluvia, "días con lluvia ≥ 0.1")}${T(A.marcas.length, `días marcados (${n2} probables errores)`)}</div>
+   <h2>Por año</h2>
+   <div class="sc"><table><thead><tr><th>Año</th><th>Días</th><th>Completitud</th><th>Sin dato</th><th>Solo parcial</th><th>Ceros</th><th>Trazas</th><th>Con lluvia</th><th>Total mm</th><th>Parcial≠total</th><th>Marcados</th></tr></thead><tbody>${
+     A.anios.map(a => `<tr><td>${a.anio}</td><td>${a.dias}</td><td class="${a.completitud < 90 ? "err2" : a.completitud < 98 ? "warn2" : ""}">${a.completitud.toFixed(1)} %</td><td>${a.falta}</td><td>${a.parcial}</td><td>${a.cero}</td><td>${a.traza}</td><td>${a.valor}</td><td>${fmt(a.mm)}</td><td>${a.pt}</td><td>${a.marcas}</td></tr>`).join("")}</tbody></table></div>
+   <h2>Completitud por mes <small class="mu">(% de días con total)</small></h2>
+   <div class="sc"><table class="hm"><thead><tr><th>Año</th>${MES.map(m => `<th>${m}</th>`).join("")}</tr></thead><tbody>${
+     A.anios.map(a => `<tr><td>${a.anio}</td>${A.meses[a.anio].map((k, i) => { if (!k.esp) return `<td style="background:#f0f0f0"></td>`; const p = 100 * k.con / k.esp; return `<td style="background:hsl(${Math.round(p * 1.2)},62%,${p === 100 ? 82 : 74}%)" title="${MES[i]} ${a.anio}: ${k.con} de ${k.esp} días con total">${p === 100 ? "" : Math.round(p)}</td>`; }).join("")}</tr>`).join("")}</tbody></table></div>
+   <h2>Antes y después del cambio a digitación <small class="mu">(SACLIM desde 2011)</small></h2>
+   <div class="sc"><table><thead><tr><th>Época</th><th>Días</th><th>Sin dato</th><th>Trazas</th><th>Días con lluvia</th><th>Parcial≠total</th><th>Totales enteros</th></tr></thead><tbody>${fila("Antes de 2011 (formulario)", E.antes)}${fila("Desde 2011 (digitación)", E.despues)}</tbody></table></div>
+   <p class="aviso">«Totales enteros» es el porcentaje de días con lluvia cuyo total no tiene décimas; un valor muy distinto entre épocas sugiere otro criterio de registro.</p>
+   <h2>Rachas sin dato <small class="mu">(${A.rachas.length ? `${A.rachas.length} de ${$("#rach").value || 3} días o más; la mayor, ${A.maxRacha} días` : "ninguna"})</small></h2>
+   ${A.rachas.length ? `<div class="sc"><table><thead><tr><th>Desde</th><th>Hasta</th><th>Días</th></tr></thead><tbody>${A.rachas.slice(0, 30).map(r => `<tr><td>${dmy(r.desde)}</td><td>${dmy(r.hasta)}</td><td>${r.dias}</td></tr>`).join("")}</tbody></table></div>${A.rachas.length > 30 ? `<p class="aviso">Se muestran las 30 más largas.</p>` : ""}` : ""}
+   <h2>Vecinas usadas</h2>
+   <p class="mu">${A.vecinas.length ? A.vecinas.map(v => `${esc(v.nombre)} (${v.km} km, ${v.n} días)`).join(" · ") : info.pedidas ? "Ninguna estación vecina a menos de 300 km con serie disponible: no se aplican las reglas con vecinas." : "No se compara con vecinas (casilla desmarcada)."}${info.sinVecinas.length ? ` <small>Sin serie en el servicio: ${esc(info.sinVecinas.join(", "))}.</small>` : ""}</p>
+   <h2>Días para revisar <small class="mu">(${vis.length} de ${A.marcas.length})</small></h2>
+   <div class="chips" id="fn"><button data-n="0" class="${!filtro.nivel ? "on" : ""}">Todos</button><button data-n="2" class="${filtro.nivel === 2 ? "on" : ""}">Probables errores</button><button data-n="1" class="${filtro.nivel === 1 ? "on" : ""}">Dudosos</button></div>
+   <div class="chips" id="fc"><button data-c="" class="${!filtro.cod ? "on" : ""}">Todas las reglas</button>${tiene.map(k => `<button data-c="${k}" class="${filtro.cod === k ? "on" : ""}" title="${esc(EXPLICA[k])}">${esc(NOMBRES[k])} (${A.marcas.filter(m => m.cod === k).length})</button>`).join("")}</div>
+   <div class="sc"><table><thead><tr><th>Fecha</th><th>Parcial</th><th>Total</th><th class="l">Regla</th><th class="l">Detalle</th><th>Valor probable</th></tr></thead><tbody>${
+     vis.slice(0, 400).map(m => `<tr><td>${dmy(m.f)}</td><td>${fmt(m.p)}</td><td>${fmt(m.v)}${m.z ? " <small>(traza)</small>" : ""}</td><td class="${m.nivel === 2 ? "err2" : "warn2"}" title="${esc(EXPLICA[m.cod])}">${esc(NOMBRES[m.cod])}</td><td class="n">${esc(m.texto)}</td><td>${m.probable != null ? "<b>" + fmt(m.probable) + "</b>" : "—"}</td></tr>`).join("") || `<tr><td colspan="6" class="mu" style="text-align:left">Ningún día con este filtro.</td></tr>`}</tbody></table></div>
+   ${vis.length > 400 ? `<p class="aviso">Se muestran los primeros 400; descargue el CSV para ver todos.</p>` : ""}
+   <p style="margin-top:12px"><button class="bt" id="csvM">⬇ Días marcados (CSV)</button> <button class="bt" id="csvS">⬇ Serie completa con estado (CSV)</button></p>`;
+  $("#fn").onclick = e => { const b = e.target.closest("button"); if (b){ filtro.nivel = +b.dataset.n; pintar(); } };
+  $("#fc").onclick = e => { const b = e.target.closest("button"); if (b){ filtro.cod = b.dataset.c; pintar(); } };
+  $("#csvM").onclick = () => bajar(`precipitacion_${info.cod}_marcados.csv`, ["fecha,parcial,total,traza,regla,nivel,detalle,valor_probable", ...A.marcas.map(m => [m.f, m.p ?? "", m.v ?? "", m.z, m.cod, m.nivel, '"' + m.texto.replace(/"/g, '""') + '"', m.probable ?? ""].join(","))]);
+  $("#csvS").onclick = () => bajar(`precipitacion_${info.cod}_serie.csv`, ["fecha,parcial,total,traza,estado,reglas", ...A.reg.map(r => [r.f, r.p ?? "", r.v ?? "", r.z, r.e, r.m.map(x => x.cod).join(" ")].join(","))]);
+}
+function bajar(nombre, lineas){
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + lineas.join("\n")], {type: "text/csv;charset=utf-8"})); a.download = nombre; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+</script>
+</body>
+</html>
