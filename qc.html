@@ -39,7 +39,7 @@ header img{height:32px}
 header h1{margin:0;font:600 18px var(--titulo);letter-spacing:.2px}
 header h1 small{display:block;color:var(--mu);font-weight:500;font-size:12.5px}
 .chips{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
-.salto{flex-basis:100%;height:0;margin:-18px 0 0}.bloques{display:flex;flex-direction:column;gap:5px}.grupos{display:flex;gap:4px}.grupos button{background:none;border:1px solid var(--bd);color:var(--mu);font:700 11.5px inherit;letter-spacing:.5px;text-transform:uppercase;padding:2px 10px;border-radius:6px;cursor:pointer}.grupos button.on{border-color:var(--oro);color:var(--oro)}.modos button[hidden]{display:none}.nove{display:none!important}
+.salto{flex-basis:100%;height:0;margin:-18px 0 0}.bloques{display:flex;flex-direction:column;gap:5px}.grupos{display:flex;gap:4px}.grupos button{background:none;border:1px solid var(--bd);color:var(--mu);font:700 11.5px inherit;letter-spacing:.5px;text-transform:uppercase;padding:2px 10px;border-radius:6px;cursor:pointer}.grupos button.on{border-color:var(--oro);color:var(--oro)}.modos button[hidden]{display:none}.subg{display:flex;gap:4px}.subg button{background:rgba(255,255,255,.06);border:1px solid var(--bd);color:var(--mu);font:700 13px inherit;padding:5px 12px;border-radius:8px;cursor:pointer}.subg button.on{background:var(--oro);color:var(--on);border-color:var(--oro)}.subg.vacio,.modos.vacio{display:none}.nove{display:none!important}
 .modos{display:flex;flex-wrap:wrap;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:10px;padding:3px}
 .modos button{background:none;border:0;color:var(--mu);font:700 13.5px inherit;padding:6px 12px;border-radius:7px;cursor:pointer}
 .modos button.on{background:var(--oro);color:var(--on);box-shadow:0 0 16px color-mix(in srgb,var(--oro) 35%,transparent)}
@@ -207,7 +207,8 @@ main[hidden]{display:none}
  <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
  <div class="salto"></div>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="super">Super automático</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
- <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="sup" data-g="super" hidden>Estaciones</button><button data-m="sup_pp" data-g="super" hidden>Agua caída</button><button data-m="sup_prc" data-g="super" hidden>Precipitación</button><button data-m="sup_ext" data-g="super" hidden>Extremas</button><button data-m="sup_pre" data-g="super" hidden>Presiones</button><button data-m="sup_tem" data-g="super" hidden>Temperaturas</button><button data-m="sup_vie" data-g="super" hidden>Viento</button><button data-m="sup_est" data-g="super" hidden>Estación</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
+ <div class="subg"><button data-s="ema" class="on">Estaciones automáticas<b class="cnt"></b></button><button data-s="obs">Observaciones<b class="cnt"></b></button><button data-s="bol">Boletín diario<b class="cnt"></b></button></div>
+ <div class="modos"><button data-m="ema" data-g="real" data-s="ema" class="on">Resumen</button><button data-m="mod" data-g="real" data-s="ema">Contraste con modelos</button><button data-m="minu" data-g="real" data-s="ema">Datos minutarios</button><button data-m="obs" data-g="real" data-s="obs" hidden>Resumen<b class="cnt"></b></button><button data-m="pp" data-g="real" data-s="obs" hidden>Precipitación<b class="cnt"></b></button><button data-m="tem" data-g="real" data-s="obs" hidden>Temperaturas<b class="cnt"></b></button><button data-m="ext" data-g="real" data-s="obs" hidden>Extremas<b class="cnt"></b></button><button data-m="comp" data-g="real" data-s="obs" hidden>Completitud obs.</button><button data-m="bol" data-g="real" data-s="bol" hidden>Boletín diario</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="sup" data-g="super" hidden>Estaciones</button><button data-m="sup_pp" data-g="super" hidden>Agua caída</button><button data-m="sup_prc" data-g="super" hidden>Precipitación</button><button data-m="sup_ext" data-g="super" hidden>Extremas</button><button data-m="sup_pre" data-g="super" hidden>Presiones</button><button data-m="sup_tem" data-g="super" hidden>Temperaturas</button><button data-m="sup_vie" data-g="super" hidden>Viento</button><button data-m="sup_est" data-g="super" hidden>Estación</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -394,8 +395,9 @@ document.addEventListener("click", async ev => {
   pintar();
 });
 document.addEventListener("click", ev => {
-  const gb = ev.target.closest(".grupos button"); if (gb){ const g = gb.dataset.g; document.querySelectorAll(".grupos button").forEach(x => x.classList.toggle("on", x === gb));
-    document.querySelectorAll(".modos button").forEach(x => x.hidden = x.dataset.g !== g); const act = document.querySelector(`.modos button.on[data-g="${g}"]:not(.nove)`) || document.querySelector(`.modos button[data-g="${g}"]:not(.nove)`); act && cambiarModo(act.dataset.m); return; }
+  const sgb = ev.target.closest(".subg button"); if (sgb){ const m = ULT[sgb.dataset.s] || document.querySelector(`.modos button[data-s="${sgb.dataset.s}"]:not(.nove)`).dataset.m; return cambiarModo(m); }
+  const gb = ev.target.closest(".grupos button"); if (gb){ const g = gb.dataset.g;
+    const act = (g === "real" && ULT[SUB] && document.querySelector(`.modos button[data-m="${ULT[SUB]}"]:not(.nove)`)) || document.querySelector(`.modos button.on[data-g="${g}"]:not(.nove)`) || document.querySelector(`.modos button[data-g="${g}"]:not(.nove)`); act && cambiarModo(act.dataset.m); return; }
   const bt = ev.target.closest(".sgbtn"); if (!bt) return;
   // el gráfico se abre en un panel lateral a la izquierda (sobre el mapa), así la lista y los hallazgos siguen a la vista
   const [hora, regla, cod0] = bt.dataset.sg.split("|"), h = DETH.find(x => x.hora === hora && x.regla === regla);
@@ -421,7 +423,7 @@ let R = null, zona = "todo", ver = {0: true, 1: true, 2: true, 3: true}, sel = n
 const $ = s => document.querySelector(s);
 $("#gear").addEventListener("click", () => {
   document.querySelectorAll(".grupos button").forEach(x => x.classList.remove("on")); $("#gear").classList.add("on");
-  document.querySelectorAll(".modos button").forEach(x => x.hidden = x.dataset.g !== "gestion");
+  navPintar("gestion");
   const act = document.querySelector('.modos button.on[data-g="gestion"]') || document.querySelector('.modos button[data-g="gestion"]'); cambiarModo(act.dataset.m);
 });
 new MutationObserver(() => { $("#gearN").textContent = $("#misN").textContent; }).observe($("#misN"), {childList: true, characterData: true, subtree: true});
@@ -474,6 +476,7 @@ function visibles(){
   return R.estaciones.map(filtrar).filter(e => enZona(e) && ver[e.nivel] && EQ.filtra(e.codigo) && (sub === "pend" || e.alertas.length) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
 function pintar(){
+  try { navCuentas(); } catch (e) {}
   if (modo === "hist" || modo === "reg" || modo === "minu" || modo === "bol") return;
   if (modo === "equ" || modo === "mis" || modo === "comp") return EQ.pagina(modo);
   if (modo === "ext" || modo === "pp" || modo === "tem") return EXT.init(() => R, modo);
@@ -585,15 +588,33 @@ function aplicarPestanas(){
   if (!window.EQ || !EQ.ve) return;
   document.querySelectorAll(".modos button").forEach(b => b.classList.toggle("nove", !EQ.ve(b.dataset.m)));
   document.querySelectorAll(".grupos button").forEach(g => g.classList.toggle("nove", ![...document.querySelectorAll(`.modos button[data-g="${g.dataset.g}"]`)].some(b => !b.classList.contains("nove"))));
+  document.querySelectorAll(".subg button").forEach(g => g.classList.toggle("nove", ![...document.querySelectorAll(`.modos button[data-s="${g.dataset.s}"]`)].some(b => !b.classList.contains("nove"))));
   const on = document.querySelector(`.modos button[data-m="${modo}"]`);
   if (on && on.classList.contains("nove")){ const b = document.querySelector('.modos button:not(.nove):not([data-g="gestion"])'); b && cambiarModo(b.dataset.m); }
 }
 window.aplicarPestanas = aplicarPestanas;
+// segunda fila (Tiempo real: Estaciones automáticas / Observaciones / Boletín) y casillas hijas
+let SUB = "ema"; const ULT = {};
+function navPintar(g){
+  document.querySelector(".subg").classList.toggle("vacio", g !== "real");
+  document.querySelectorAll(".subg button").forEach(x => x.classList.toggle("on", x.dataset.s === SUB));
+  document.querySelectorAll(".modos button").forEach(x => x.hidden = x.dataset.g !== g || (g === "real" && x.dataset.s !== SUB));
+  document.querySelector(".modos").classList.toggle("vacio", g === "real" && SUB === "bol");
+}
+// contador de pendientes por casilla (hallazgos visibles de Observaciones)
+function navCuentas(){
+  if (!R || !window.REGLAS || !window.MARCA) return;
+  const n = {obs: 0, pp: 0, tem: 0, ext: 0};
+  (R.estaciones || []).filter(e => !window.EQ || EQ.filtra(e.codigo)).forEach(e => (e.hallazgos || []).forEach(h => { const p = REGLAS.pestana(h.regla); if (p in n && MARCA.estado(e.codigo, h) !== "oculta") n[p]++; }));
+  const put = (el, v) => { const c = el && el.querySelector(".cnt"); if (c) c.textContent = v || ""; };
+  for (const k in n) put(document.querySelector(`.modos button[data-m="${k}"]`), n[k]);
+  put(document.querySelector('.subg button[data-s="obs"]'), n.obs + n.pp + n.tem + n.ext);
+}
 const MAPA_MODOS = new Set(["ema", "obs", "mod", "sup"]);
 function cambiarModo(m){
   const mb = document.querySelector(`.modos button[data-m="${m}"]`); if (!mb) return;
   $("#gear").classList.toggle("on", mb.dataset.g === "gestion");
-  if (mb.hidden){ const g = mb.dataset.g; document.querySelectorAll(".grupos button").forEach(x => x.classList.toggle("on", x.dataset.g === g)); document.querySelectorAll(".modos button").forEach(x => x.hidden = x.dataset.g !== g); }
+  { const g = mb.dataset.g; if (mb.dataset.s){ SUB = mb.dataset.s; ULT[SUB] = m; } document.querySelectorAll(".grupos button").forEach(x => x.classList.toggle("on", x.dataset.g === g)); navPintar(g); }
   if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
   modo = m; $("#det").style.display = "none";
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
@@ -924,7 +945,7 @@ else if (HASH0 && document.querySelector(`.modos button[data-m="${CSS.escape(HAS
 else if (VG && VG.modo) cambiarModo(VG.modo);
 if (VG && VG.sel && !VISTA0 && (!HASH0 || HASH0 === VG.modo)) sel = VG.sel;
 if (/^\/modelo/.test(location.pathname) || new URLSearchParams(location.search).get("vista") === "modelo"){
-  document.querySelector('.modos button[data-m="mod"]').click(); document.querySelector(".modos").style.display = "none";
+  document.querySelector('.modos button[data-m="mod"]').click(); document.querySelector(".modos").style.display = "none"; document.querySelector(".subg").style.display = "none";
   document.querySelector("header h1").firstChild.textContent = "Control de calidad · contraste con modelos"; document.title = "Contraste con modelos · METOTEC";
 }
 EQ.alCambiar = () => R && pintar(); EQ.init(() => R, clave);
