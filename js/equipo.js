@@ -41,7 +41,7 @@ window.fetch = (u, o) => {
 
 async function cargar(){
   try { const r = await fetch("/api/equipo", {headers: {"x-clave": clave()}, cache: "no-store"}); if (r.ok){ EQP = await r.json(); cargado = true; } } catch (e){}
-  selector(); contador();
+  selector(); selRed(); contador();
 }
 async function guardar(p, antes){
   const r = await fetch("/api/equipo", {method: "POST", headers: {"x-clave": clave(), "content-type": "application/json"}, body: JSON.stringify(p ? {persona: p, antes} : {borrar: antes})});
@@ -59,7 +59,18 @@ function selector(){
 // filtro de las listas (EMA y Observaciones): con un perfil elegido que tiene estaciones y «Mis estaciones» activo
 // Pestañas que ve cada persona (vacío = todas). Es solo para ordenar la pantalla: la clave sigue siendo una sola. «Equipo» siempre se ve.
 const ve = m => { const p = per(yo()); return !p || !(p.pestanas || []).length || m === "equ" || p.pestanas.includes(m); };
-function filtra(cod){ const p = per(yo()); return !p || !soloMias() || !(p.estaciones || []).length || p.estaciones.includes(String(cod)); }
+// red: DMC · Antártica · Armada (Bahía Fildes es de la Armada y antártica)
+const ARMADA = new Set(["200910", "260007", "290005", "330002", "330028", "350007", "360015", "360020", "360969", "380004", "410007", "410932",
+  "430003", "460002", "470002", "520002", "520003", "530907", "550002", "560002", "950006"]);
+const ANTARTICA = new Set(["950001", "950002", "950003", "950006"]);
+const red = () => { try { return localStorage.getItem("qcRed") || "todas"; } catch (e) { return "todas"; } };
+const enRed = cod => { const c = String(cod), r = red(); return r === "todas" || (r === "armada" ? ARMADA.has(c) : r === "antartica" ? ANTARTICA.has(c) : !ARMADA.has(c) && !ANTARTICA.has(c)); };
+function selRed(){
+  const s = $("#red"); if (!s) return;
+  s.innerHTML = [["todas", "Todas"], ["dmc", "DMC"], ["antartica", `Antártica (${ANTARTICA.size})`], ["armada", `Armada (${ARMADA.size})`]]
+    .map(([k, t]) => `<button data-red="${k}" class="${red() === k ? "on" : ""}">${t}</button>`).join("");
+}
+function filtra(cod){ if (!enRed(cod)) return false; const p = per(yo()); return !p || !soloMias() || !(p.estaciones || []).length || p.estaciones.includes(String(cod)); }
 
 // --------------------------------------------------------------- evaluación (módulo común js/alertas_core.js)
 let CORE = null;
@@ -243,6 +254,7 @@ function leerForm(){ return {nombre: $("#mNom").value.trim(), fuente: $("#mFue")
 document.addEventListener("click", async ev => {
   if (ev.target.id === "mEstVer"){ ev.preventDefault(); const S = $("#mis"); S._verTodas = !S._verTodas; S._ed = leerForm(); return pagMis(); }
   const b = ev.target.closest("button"); if (!b) return;
+  if (b.dataset.red){ try { localStorage.setItem("qcRed", b.dataset.red); } catch (e){} selRed(); window.EQ.alCambiar && window.EQ.alCambiar(); if (typeof modoAct !== "undefined" && modoAct === "comp") pagComp(); return; }
   if (b.id === "soloMias"){ try { localStorage.setItem("qcSoloMias", soloMias() ? "0" : "1"); } catch (e){} selector(); window.EQ.alCambiar && window.EQ.alCambiar(); if (modoAct === "comp") pagComp(); return; }
   if (b.id === "pesTodas"){ const p = per(yo()); if (p){ try { await guardar({...p, pestanas: []}); } catch (e){} pagEqu(); } return; }
   if (b.dataset.cv){ $("#comp").dataset.v = b.dataset.cv; return pagComp(); }
@@ -268,5 +280,5 @@ document.addEventListener("click", async ev => {
   } catch (e){ const m = $("#eqMsg") || $("#mMsg"); if (m){ m.style.color = "var(--err)"; m.textContent = "No se pudo guardar: " + e.message; } }
 });
 
-window.EQ = {ve, init: (fR, fClave) => { R0 = fR; clave = fClave; return cargar(); }, filtra, contador, pagina, yo, evaluar, alCambiar: null};
+window.EQ = {ve, red, enRed, init: (fR, fClave) => { R0 = fR; clave = fClave; return cargar(); }, filtra, contador, pagina, yo, evaluar, alCambiar: null};
 })();

@@ -30,7 +30,7 @@ function pintar(){
   const R = getR(), O = (R && R.observaciones) || {};
   if (!$("#ext") || !$("#ext").dataset.ok) return;
   const filas = [];
-  (O.estaciones || []).forEach(e => (e.hallazgos || []).forEach(h => { if (REGLAS.pestana(h.regla) === tipo){ const st = MARCA.estado(e.codigo, h); if (st !== "oculta") filas.push({...h, e, st}); } }));
+  (O.estaciones || []).filter(e => !window.EQ || EQ.filtra(e.codigo)).forEach(e => (e.hallazgos || []).forEach(h => { if (REGLAS.pestana(h.regla) === tipo){ const st = MARCA.estado(e.codigo, h); if (st !== "oculta") filas.push({...h, e, st}); } }));
   const cnt = {}; filas.forEach(f => cnt[f.regla] = (cnt[f.regla] || 0) + 1);
   const est = new Set(filas.map(f => f.e.codigo));
   const g = O.generado ? new Date(O.generado) : null;

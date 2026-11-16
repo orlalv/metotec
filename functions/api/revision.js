@@ -8,7 +8,8 @@ export async function onRequestPost({ request, env }){
   let b; try { b = await request.json(); } catch (e) { return new Response("JSON inválido", { status: 400 }); }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(b.dia || "") || !b.id || !["real", "falsa", "resuelto", "omitir", ""].includes(b.v)) return new Response("Datos inválidos", { status: 400 });
   const k = "qc/rev/" + b.dia, R = (await env.DATOS.get(k, "json")) || {};
-  if (b.v) R[b.id] = { v: b.v, t: new Date().toISOString().slice(0, 19), msg: String(b.msg || "").slice(0, 400), quien: String(b.quien || "").slice(0, 40) || undefined };
+  if (b.v) R[b.id] = { v: b.v, t: new Date().toISOString().slice(0, 19), msg: String(b.msg || "").slice(0, 400), quien: String(b.quien || "").slice(0, 40) || undefined,
+    valor: b.valor != null && String(b.valor).trim() !== "" ? String(b.valor).trim().slice(0, 12) : undefined };
   else delete R[b.id];
   await env.DATOS.put(k, JSON.stringify(R));
   return json({ ok: true, marca: R[b.id] || null });

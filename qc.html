@@ -109,6 +109,7 @@ main[hidden]{display:none}
 #minu details.mblo{margin:12px 0;border:1px solid var(--bd);border-radius:12px;background:var(--panel2);box-shadow:var(--sombra)}#minu details.mblo>summary{cursor:pointer;padding:8px 12px;font-weight:700;font-size:15px;list-style:none;display:flex;align-items:center;gap:8px}#minu details.mblo>summary::-webkit-details-marker{display:none}#minu details.mblo>summary::before{content:"▸";color:var(--oro);transition:transform .15s}#minu details.mblo[open]>summary::before{transform:rotate(90deg)}#minu details.mblo>summary:hover{color:var(--oro)}#minu .mcont{padding:0 12px 12px}
 #minu tr.inc:hover{background:var(--hover)}#minu tr.vis{outline:2px solid var(--oro)}
 #equ,#mis,#comp{flex:1;overflow:auto;padding:14px 20px}#equ[hidden],#mis[hidden],#comp[hidden]{display:none}
+.red{display:flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden}.red button{background:none;border:0;border-right:1px solid var(--bd);color:#cfd6dc;padding:4px 9px;font:600 12px inherit;cursor:pointer}.red button:last-child{border-right:0}.red button.on{background:var(--oro);color:#111}
 .perfil{display:flex;align-items:center;gap:4px;font-size:13px}.perfil select{background:rgba(255,255,255,.06);color:#ECEFF1;border:1px solid var(--bd);border-radius:8px;padding:4px 8px;font:600 13px inherit}.perfil option{color:#111}
 .cnt{display:inline-block;margin-left:5px;background:var(--err);color:#fff;border-radius:20px;padding:0 6px;font-size:11px}.cnt:empty{display:none}
 .eqcols{display:grid;grid-template-columns:minmax(300px,420px) 1fr;gap:20px;align-items:start}@media (max-width:1000px){.eqcols{grid-template-columns:1fr}}
@@ -138,7 +139,7 @@ main[hidden]{display:none}
 #bol table{border-collapse:collapse;width:100%;font-size:12.5px}#bol th,#bol td{border-bottom:1px solid color-mix(in srgb,var(--bd) 70%,transparent);padding:4px 7px}#bol th{background:var(--hover);color:var(--oro2);font-weight:600;font-size:11px;letter-spacing:.5px;text-transform:uppercase;text-align:center}#bol tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--panel2) 60%,transparent)}
 #bol td.n{text-align:right;white-space:nowrap;font-family:var(--mono);font-size:12px}#bol td.tn{color:#62B6E8}#bol td.tx{color:#F07A5A}:root[data-tema="claro"] #bol td.tn{color:#1F7FB8}:root[data-tema="claro"] #bol td.tx{color:#C8432A}#bol td.nom{white-space:nowrap}#bol td small{display:block;font:600 10.5px var(--mono)}
 #bol td.err{background:color-mix(in srgb,var(--err) 16%,transparent)!important;box-shadow:inset 0 0 0 1px var(--err)}#bol td.err small{color:var(--err)}#bol td.warn{background:color-mix(in srgb,var(--sos) 14%,transparent)!important}#bol td.warn small{color:var(--sos)}#bol td.info{background:color-mix(in srgb,var(--info) 12%,transparent)!important}#bol td.info small{color:var(--info)}
-#bol td[title]{cursor:help}#bol td.bq{cursor:pointer}#bol .bx{margin-left:5px;padding:0 5px;line-height:15px;font:700 11px inherit;background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:4px;cursor:pointer;vertical-align:middle}#bol .bx:hover{background:var(--err)}#bol td.rv{text-align:center;min-width:92px}#bol .ok{color:var(--ok);font-weight:700}#bol .bb{display:inline-block;margin:1px 0;font-size:11px;border-radius:4px;padding:1px 6px;font-weight:700}#bol .bb{border-radius:20px}#bol .bb.err{background:color-mix(in srgb,var(--err) 18%,transparent);color:var(--err);border:1px solid var(--err)}#bol .bb.warn{background:color-mix(in srgb,var(--sos) 16%,transparent);color:var(--sos);border:1px solid var(--sos)}
+#bol td.corr{background:color-mix(in srgb,#2f80ed 22%,transparent)!important;box-shadow:inset 0 0 0 1px #2f80ed;color:#9cc8ea}#bol td.corr small{color:#9cc8ea}#bol td[title]{cursor:help}#bol td.bq{cursor:pointer}#bol .bx{margin-left:5px;padding:0 5px;line-height:15px;font:700 11px inherit;background:rgba(0,0,0,.35);color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:4px;cursor:pointer;vertical-align:middle}#bol .bx:hover{background:var(--err)}#bol td.rv{text-align:center;min-width:92px}#bol .ok{color:var(--ok);font-weight:700}#bol .bb{display:inline-block;margin:1px 0;font-size:11px;border-radius:4px;padding:1px 6px;font-weight:700}#bol .bb{border-radius:20px}#bol .bb.err{background:color-mix(in srgb,var(--err) 18%,transparent);color:var(--err);border:1px solid var(--err)}#bol .bb.warn{background:color-mix(in srgb,var(--sos) 16%,transparent);color:var(--sos);border:1px solid var(--sos)}
 #bol tr.sel td{background:color-mix(in srgb,var(--oro) 10%,transparent)!important}#bol tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--oro)}#bol tbody tr{cursor:pointer}
 #bol .lado{background:var(--panel);box-shadow:var(--sombra);border:1px solid var(--bd);border-radius:10px;padding:12px 14px}#bol .lado h4{margin:0 0 8px;font-size:15px}
 #bol .bit{border:1px solid var(--bd);border-left:3px solid var(--err);background:var(--panel);border-radius:6px;padding:7px 10px;margin-bottom:8px;font-size:13px;cursor:pointer}#bol .bit.warn{border-color:var(--sos)}#bol .bit.info{border-color:var(--info)}#bol .bit p{margin:3px 0 0;color:var(--mu)}#bol .bit em{font-family:var(--mono);font-size:12px}#bol .bit em{font-style:normal;color:var(--oro);font-weight:700}
@@ -200,6 +201,7 @@ main[hidden]{display:none}
  <div class="marca"><a href="index.html"><img src="img/logo_blanco.svg" alt="METOTEC"></a><div style="display:flex;align-items:center;gap:6px"><div id="relojUTC" title="Hora UTC (hora local entre paréntesis)">— UTC</div><button id="tema" title="Cambiar entre tema oscuro y claro">☀</button></div></div>
  <h1>Control de calidad en vivo<small id="hora">—</small></h1>
  <label class="perfil" title="Su nombre: filtra sus estaciones y las marcas quedan con este nombre">👤 <select id="persona"><option value="">Todos</option></select></label>
+ <div id="red" class="red" title="Red de estaciones: filtra todas las pestañas"></div>
  <div id="horasCL" title="Hora oficial de Chile (referencia: horaoficial.cl)"></div>
  <button id="gear" title="Gestión: equipo y mis alertas">⚙<b id="gearN" class="cnt"></b></button>
  <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
@@ -244,12 +246,12 @@ main[hidden]{display:none}
 <script src="js/minutarios.js?v=202611132010"></script>
 <script src="js/supgraf.js?v=202611131625"></script>
 <script src="js/superauto.js?v=202611131815"></script>
-<script src="js/extremas.js?v=202611131540"></script>
-<script src="js/boletin.js?v=202611131940"></script>
+<script src="js/extremas.js?v=202611161000"></script>
+<script src="js/boletin.js?v=202611161000"></script>
 <script src="js/series.js?v=202611101600"></script>
 <script src="js/reglas.js?v=202611132150"></script>
 <script src="js/fallas.js?v=202611131300"></script>
-<script src="js/equipo.js?v=202611132155"></script>
+<script src="js/equipo.js?v=202611161000"></script>
 <script src="js/servicios.js?v=202611131500"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script>

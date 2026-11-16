@@ -20,10 +20,25 @@ export async function aplicar(env, b){
     revisados.push({ estacion: x.estacion, col: x.col, msg: x.msg, v: m.v, t: m.t, quien: m.quien });
     return false;
   });
+  // «Resuelto» con el valor corregido: se muestra el valor nuevo (azul) hasta que el portal lo traiga; si el portal sigue con el
+  // valor anterior, se avisa
+  const corr = [];
   const filas = b.filas.map(f => {
-    const marcas = {};
+    const marcas = {}, v = { ...f.v };
     for (const [c, m] of Object.entries(f.marcas || {})) if (!oculta(f.nombre, c, m && m.msg)) marcas[c] = m;
-    return { ...f, marcas };
+    for (const c of Object.keys(f.v || {})){
+      const m = R[idB(b.dia, f.nombre, c)];
+      if (!m || m.v !== "resuelto" || m.valor == null) continue;
+      const portal = String(f.v[c] ?? "").trim();
+      if (portal === m.valor || parseFloat(portal) === parseFloat(m.valor)){
+        marcas[c] = { nivel: "corr", sub: "corregido", msg: `Corregido a ${m.valor}${m.quien ? " por " + m.quien : ""} y confirmado en el portal` };
+      } else {
+        v[c] = m.valor;
+        marcas[c] = { nivel: "corr", sub: "antes " + portal, msg: `Marcado como corregido a ${m.valor}${m.quien ? " por " + m.quien : ""} (${m.t} UTC), pero el portal aún muestra ${portal}. Se confirmará en la próxima revisión del boletín.` };
+        corr.push({ estacion: f.nombre, col: c, antes: portal, ahora: m.valor, t: m.t, quien: m.quien });
+      }
+    }
+    return { ...f, v, marcas };
   });
-  return { ...b, items, filas, revisados };
+  return { ...b, items, filas, revisados, pendientes_portal: corr };
 }

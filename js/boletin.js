@@ -28,9 +28,17 @@ function init(fclave){
     if (mk){
       ev.stopPropagation(); if (mk.disabled) return; mk.disabled = true;
       const id = `b|${B.dia}|${mk.dataset.est}|${mk.dataset.col}`;
+      let valor = null;
+      if (mk.dataset.bm === "resuelto"){   // se pregunta qué valor quedó: la página lo muestra al tiro y lo confirma con el portal
+        const fila = (B.filas || []).find(x => x.nombre === mk.dataset.est), antes = fila && fila.v ? fila.v[mk.dataset.col] : "";
+        valor = prompt(`${mk.dataset.est} · ${NCOL[mk.dataset.col] || mk.dataset.col}\n\n¿Qué valor quedó corregido en el portal? (ahora dice ${antes || "—"})\n\nDeje vacío si el valor original era correcto.`, "");
+        if (valor === null){ mk.disabled = false; return; }
+        valor = valor.trim().replace(",", ".");
+        if (!valor) mk.dataset.bm = "omitir";
+      }
       try {
         const r = await fetch("/api/revision", {method: "POST", headers: {"x-clave": clave(), "content-type": "application/json"},
-          body: JSON.stringify({dia: B.dia, id, v: mk.dataset.bm, msg: mk.dataset.msg})});
+          body: JSON.stringify({dia: B.dia, id, v: mk.dataset.bm, msg: mk.dataset.msg, valor})});
         if (!r.ok) throw new Error(r.status);
       } catch (e){ mk.disabled = false; mk.textContent = "No se pudo guardar"; return; }
       cargar(false, true); return;
