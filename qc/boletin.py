@@ -206,7 +206,8 @@ def revisar_dia(dia, bol, raiz, ayer=None):
                         marca(col + "_h", "warn", f"EMA {ref:.1f} · {', '.join(horas_ok[:3])}",
                               f"Hora de la {nombre} {hora_txt}: a esa hora la automática marcaba {best:.1f} °C; su {('mínimo' if minimo else 'máximo')} "
                               f"({ref:.1f} °C) fue a las {', '.join(horas_ok[:3])}" + (" según el resumen diario de la estación (con todos sus decimales)" if of else "")
-                              + f". Debería ir: {horas_ok[0]}", dict(real, hora=horas_ok[0]))
+                              + ("." if (real or {}).get("valor") is not None else f". Debería ir: {horas_ok[0]}"),   # con valor, «Debería ir: hh:mm» lo agrega marca()
+                              dict(real, hora=horas_ok[0]))
                     if best is not None and abs(best - val) > 1.0:
                         marca(col + "_h", "warn", f"EMA {ref:.1f} · {loc(tref):%H:%M}",
                               f"Hora de la {nombre} {hora_txt}: a esa hora la automática marcaba {best:.1f} °C; su {('mínimo' if minimo else 'máximo')} ({ref:.1f} °C) fue a las {loc(tref):%H:%M}.", real)

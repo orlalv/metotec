@@ -22,9 +22,13 @@ function init(fclave){
   $("#bDia").addEventListener("change", cargar); $("#bXls").addEventListener("click", excel);
   s.addEventListener("click", async ev => {
     let mk = ev.target.closest("button[data-bm]");           // «Correcto / sin efecto» y «Resuelto»: quitan la marca y quedan registradas
-    const tq = !mk && ev.target.closest("td[data-bq]");        // clic en la celda marcada: pide confirmar y la quita
-    if (tq && confirm(`¿Quitar la marca de ${tq.dataset.est} (${NCOL[tq.dataset.col] || tq.dataset.col})?\n\n${tq.dataset.msg}\n\nSe quita como «correcto / sin efecto», queda registrada en «Quitadas a mano» y no vuelve a salir.`))
-      mk = {dataset: {bm: "omitir", est: tq.dataset.est, col: tq.dataset.col, msg: tq.dataset.msg}};
+    const tq = !mk && ev.target.closest("td[data-bq]");        // clic en la celda marcada: abre la tarjeta de esa marca y deja el cursor en el campo del valor u hora
+    if (tq){
+      selFila = tq.dataset.est; pintar();
+      const inp = document.querySelector(`#bol .bv[data-est="${CSS.escape(tq.dataset.est)}"][data-col="${CSS.escape(tq.dataset.col)}"]`);
+      if (inp){ inp.scrollIntoView({block: "nearest"}); inp.focus(); inp.select(); }
+      return;
+    }
     if (mk){
       ev.stopPropagation(); if (mk.disabled) return; mk.disabled = true;
       const id = `b|${B.dia}|${mk.dataset.est}|${mk.dataset.col}`;
@@ -76,6 +80,9 @@ function sugerido(x){
   if (/_h$/.test(x.col)) return r.hora || (typeof r.valor === "string" && /:/.test(r.valor) ? r.valor : "");
   return typeof r.valor === "number" ? r.valor.toFixed(1) : r.valor == null ? "" : String(r.valor);
 }
+// Texto para mostrar: los boletines guardados antes de la corrección traen «Debería ir: x Debería ir: x». El texto original
+// (data-msg) no se toca: es el que se guarda en la marca y con el que se reconoce el aviso.
+const limpio = t => String(t ?? "").replace(/(Debería ir|Probable): ([^()]*?) \1: /g, "$1: ");
 function marcasFila(f){ return Object.entries(f.marcas || {}).filter(([, m]) => m.nivel !== "info" || m.msg); }
 function pintar(){
   if (!B || B.vacio){
@@ -91,7 +98,7 @@ function pintar(){
     const m = (f.marcas || {})[c], val = f.v[c], cls = ["n"]; if (c === "tn") cls.push("tn"); if (c === "tx") cls.push("tx");
     if (m) cls.push(m.nivel);
     const quitable = m && (m.nivel === "err" || m.nivel === "warn");
-    return `<td class="${cls.join(" ")}${quitable ? " bq" : ""}"${m && m.msg ? ` title="${esc(m.msg)}${quitable ? "\n(Clic en la celda: quitar esta marca si no es un error)" : ""}"` : ""}${quitable ? ` data-bq="1" data-est="${esc(f.nombre)}" data-col="${esc(c)}" data-msg="${esc(m.msg || "")}"` : ""}>${esc(val)}${m && m.sub ? `<small>${esc(m.sub)}</small>` : ""}</td>`;
+    return `<td class="${cls.join(" ")}${quitable ? " bq" : ""}"${m && m.msg ? ` title="${esc(limpio(m.msg))}${quitable ? "\n(Clic en la celda: escribir el valor u hora correctos, o quitar la marca)" : ""}"` : ""}${quitable ? ` data-bq="1" data-est="${esc(f.nombre)}" data-col="${esc(c)}" data-msg="${esc(m.msg || "")}"` : ""}>${esc(val)}${m && m.sub ? `<small>${esc(m.sub)}</small>` : ""}</td>`;
   };
   const filas = B.filas.map(f => {
     const m = marcasFila(f), e = m.filter(x => x[1].nivel === "err").length, w = m.filter(x => x[1].nivel === "warn").length;
@@ -110,10 +117,10 @@ function pintar(){
       <tbody>${filas}</tbody></table></div>
     <div class="lado"><h4>Inconsistencias${selFila ? " · " + esc(selFila) + ` <a data-f="${esc(selFila)}" style="color:var(--mu);font-size:12px;cursor:pointer">(ver todas)</a>` : ""}</h4>
       <div class="ley"><span><i style="background:#f8d7da;border:1px solid #dc3545"></i>dudoso</span><span><i style="background:#fff3cd"></i>revisar</span><span><i style="background:#e7f1ff"></i>informativo</span></div>
-      ${items.length ? items.map(x => `<div class="bit ${x.nivel}" data-f="${esc(x.estacion)}"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b><p>${esc(x.msg).replace(/(Debería ir|Probable): ([^(]+)/, "<br>$1: <em>$2</em>")}</p>
-          <div class="bm"><input class="bv" value="${esc(sugerido(x))}" placeholder="${/_h$/.test(x.col) ? "hh:mm" : "valor"}" size="6" title="${/_h$/.test(x.col) ? "Hora correcta (hh:mm)" : "Valor correcto"}"><button class="mk ok" data-bm="guardar" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="Guarda el valor u hora correctos y quita la marca; el boletín lo muestra en azul hasta que el portal lo traiga">Guardar ${/_h$/.test(x.col) ? "hora" : "valor"} correcto</button><span class="berr" style="color:#eb5757;font-size:11.5px"></span><br><button class="mk" data-bm="omitir" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="La marca no corresponde (p. ej. el dato era correcto): se quita y no vuelve, y queda registrada">✓ Correcto / sin efecto</button><button class="mk" data-bm="resuelto" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="Ya está corregido en el portal: se quita la marca y queda registrada">✓ Resuelto</button></div></div>`).join("")
+      ${items.length ? items.map(x => `<div class="bit ${x.nivel}" data-f="${esc(x.estacion)}"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b><p>${esc(limpio(x.msg)).replace(/(Debería ir|Probable): ([^(]+)/, "<br>$1: <em>$2</em>")}</p>
+          <div class="bm"><input class="bv" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" value="${esc(sugerido(x))}" placeholder="${/_h$/.test(x.col) ? "hh:mm" : "valor"}" size="6" title="${/_h$/.test(x.col) ? "Hora correcta (hh:mm)" : "Valor correcto"}"><button class="mk ok" data-bm="guardar" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="Guarda el valor u hora correctos y quita la marca; el boletín lo muestra en azul hasta que el portal lo traiga">Guardar ${/_h$/.test(x.col) ? "hora" : "valor"} correcto</button><span class="berr" style="color:#eb5757;font-size:11.5px"></span><br><button class="mk" data-bm="omitir" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="La marca no corresponde (p. ej. el dato era correcto): se quita y no vuelve, y queda registrada">✓ Correcto / sin efecto</button><button class="mk" data-bm="resuelto" data-est="${esc(x.estacion)}" data-col="${esc(x.col)}" data-msg="${esc(x.msg)}" title="Ya está corregido en el portal: se quita la marca y queda registrada">✓ Resuelto</button></div></div>`).join("")
         : `<p style="color:#6fcf97;margin:0">${selFila ? "Esta estación no tiene" : "El boletín no tiene"} inconsistencias.</p>`}
-      ${(B.revisados || []).filter(x => !selFila || x.estacion === selFila).length ? `<h4 style="margin-top:14px">Quitadas a mano</h4>${B.revisados.filter(x => !selFila || x.estacion === selFila).map(x => `<div class="bit info"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b> <small style="color:var(--mu)">${x.v === "omitir" ? "correcto / sin efecto" : "resuelto" + (x.valor ? " → <b>" + esc(x.valor) + "</b>" : "")}${x.quien ? " · " + esc(x.quien) : ""}${x.t ? " · " + esc(x.t.slice(0, 16).replace("T", " ")) : ""}</small><p>${esc(x.msg)}</p></div>`).join("")}` : ""}
+      ${(B.revisados || []).filter(x => !selFila || x.estacion === selFila).length ? `<h4 style="margin-top:14px">Quitadas a mano</h4>${B.revisados.filter(x => !selFila || x.estacion === selFila).map(x => `<div class="bit info"><b>${esc(x.estacion)} · ${esc(NCOL[x.col] || x.col)}</b> <small style="color:var(--mu)">${x.v === "omitir" ? "correcto / sin efecto" : "resuelto" + (x.valor ? " → <b>" + esc(x.valor) + "</b>" : "")}${x.quien ? " · " + esc(x.quien) : ""}${x.t ? " · " + esc(x.t.slice(0, 16).replace("T", " ")) : ""}</small><p>${esc(limpio(x.msg))}</p></div>`).join("")}` : ""}
       ${cambios.length ? `<h4 style="margin-top:14px">Cambios entre pasadas</h4>${cambios.map(c => `<div class="bit info"><b>${esc(c.estacion)} · ${esc(NCOL[c.col] || c.col)}</b><p>A las ${esc(c.hora)} pasó de <em>${esc(c.antes)}</em> a <em>${esc(c.ahora)}</em>.</p></div>`).join("")}` : ""}
       <p class="nota" style="margin:10px 0 0;color:var(--mu);font-size:12px">Se compara con la estación automática (mínima 00–12 UTC, máxima de ayer 12–24 UTC o el día local completo, agua caída 12–12 UTC), con lo que ingresó el observador (Tmin AM, Tmax PM y los cuatro RRR6) y con el boletín de ayer (A la fecha = ayer + 24 h). Pase el mouse por una celda marcada para ver el detalle.</p></div></div>`;
 }
@@ -125,7 +132,7 @@ function excel(){
     <tr>${["Nombre de la Estación", "T. Mín", "Hora", "T. Máx ayer", "Hora", "24 Horas", "A la Fecha", "Año Pasado", "Normal a la Fecha", "Déf/Sup (%)", "Normal Anual", "Observación"].map(x => `<td style="${b}background:#84A7A1;font-weight:bold">${x}</td>`).join("")}</tr>`;
   const filas = B.filas.map(f => `<tr><td style="${b}">${esc(f.nombre)}</td>${COLS.map(c => { const m = (f.marcas || {})[c];
       return `<td style="${b}text-align:right;mso-number-format:'\\@';${c === "tn" ? "color:#0A9FBD;" : c === "tx" ? "color:#DC3545;" : ""}${m ? "background:" + color[m.nivel] + ";" : ""}">${esc(f.v[c])}${m && m.sub ? " (" + esc(m.sub) + ")" : ""}</td>`; }).join("")}
-      <td style="${b}">${esc((B.items || []).filter(x => x.estacion === f.nombre).map(x => x.msg).join(" | "))}</td></tr>`).join("");
+      <td style="${b}">${esc((B.items || []).filter(x => x.estacion === f.nombre).map(x => limpio(x.msg)).join(" | "))}</td></tr>`).join("");
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><table style="font-family:Arial;font-size:10pt">${cab}${filas}</table></body></html>`;
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + html], {type: "application/vnd.ms-excel"}));
   a.download = `boletin_revisado_${B.dia}.xls`; a.click();
