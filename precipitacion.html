@@ -89,6 +89,13 @@ let cat = [], series = {}, A = null, info = null, filtro = {nivel: 0, cod: ""}, 
 
 $("#reglas").innerHTML = "<b>Reglas:</b><ul>" + Object.keys(NOMBRES).map(k => `<li><b>${esc(NOMBRES[k])}</b> <small>(${k})</small>: ${esc(EXPLICA[k])}</li>`).join("") + "</ul>";
 
+// ---- selectores de año: desde el inicio con 2000–2020; al cargar la serie se ajustan a lo disponible
+function anios(y0, y1, v0, v1){
+  const ops = []; for (let y = y0; y <= y1; y++) ops.push(`<option>${y}</option>`);
+  $("#a0").innerHTML = $("#a1").innerHTML = ops.join(""); $("#a0").value = v0; $("#a1").value = v1;
+}
+anios(1990, new Date().getFullYear(), 2000, 2020);
+
 // ---- catálogo de estaciones (código, nombre, coordenadas)
 fetch("/api/minutarios?estaciones").then(r => r.json()).then(c => {
   cat = c; $("#lst").innerHTML = cat.map(x => `<option value="${esc(x.nombre.replace(/\s{2,}/g, " "))} — ${x.codigo}">`).join("");
@@ -125,9 +132,8 @@ async function ejecutar(nueva){
     const main = await traer(cod);
     if (nueva){
       codAct = cod; filtro = {nivel: 0, cod: ""};
-      const y0 = +main.desde.slice(0, 4), y1 = +main.hasta.slice(0, 4), ops = [];
-      for (let y = y0; y <= y1; y++) ops.push(`<option>${y}</option>`);
-      $("#a0").innerHTML = $("#a1").innerHTML = ops.join(""); $("#a0").value = y0; $("#a1").value = y1;
+      const y0 = +main.desde.slice(0, 4), y1 = +main.hasta.slice(0, 4), cl = v => Math.min(y1, Math.max(y0, v));
+      anios(y0, y1, cl(+$("#a0").value || y0), cl(+$("#a1").value || y1));   // conserva lo elegido, dentro de lo que trae el servicio
     }
     const a0 = Math.min(+$("#a0").value, +$("#a1").value), a1 = Math.max(+$("#a0").value, +$("#a1").value);
     $("#a0").value = a0; $("#a1").value = a1;
