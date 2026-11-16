@@ -1,0 +1,21 @@
+name: Sondeo temporal agua caida
+on: workflow_dispatch
+jobs:
+  s:
+    runs-on: ubuntu-latest
+    env:
+      DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
+      DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
+    steps:
+      - run: |
+          python3 - <<'P'
+          import os, json, urllib.request, urllib.parse
+          q = urllib.parse.urlencode({"usuario": os.environ["DMC_USUARIO"], "token": os.environ["DMC_TOKEN"]})
+          B = "https://climatologia.meteochile.gob.cl/application/servicios/"
+          for s in ("getAguaCaidaDiaria/330020", "getAguaCaidaDiaria/270008", "getAguaCaidaDiaria/270001", "getAguaCaidaDiariaEstacion/270008"):
+              try:
+                  r = urllib.request.urlopen(B + s + "?" + q, timeout=180); t = r.read()
+                  print("==", s, r.status, len(t)); print(t[:2500].decode("utf-8", "replace"))
+              except Exception as e:
+                  print("==", s, "ERROR", e)
+          P
