@@ -228,7 +228,10 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
     """Baja las observaciones de las estaciones con observador, las archiva y las revisa. Sube el resultado al KV (qc/sensorial)."""
     import time, gzip
     p = Path(raiz) / "sensoriales.json"
-    cods = [x["codigo"] for x in json.loads(p.read_text())["estaciones"] if x["horas"] > 0] if p.exists() else ESTACIONES_OBS
+    # las del sondeo (que solo recorrió la lista de EMA) más la lista fija de estaciones con observador:
+    # Prat, O'Higgins y otras no tienen EMA en el catastro y el sondeo nunca las probó
+    cods = [x["codigo"] for x in json.loads(p.read_text())["estaciones"] if x["horas"] > 0] if p.exists() else []
+    cods += [c for c in ESTACIONES_OBS if c not in cods]
     nombres = E.set_index("codigo")[["nombre", "oaci", "lat", "lon"]].to_dict("index")
     resultado, n_obs, fallas = [], 0, 0
     archivo, revisadas, cambios_nuevos = {}, {}, {}
@@ -479,7 +482,8 @@ def main():
             estado["errores"].append(f"sensorial: {traceback.format_exc(limit=2)}")
     try:   # Super automático: control estricto de las estaciones sin observador
         sj = Path(a.datos) / "sensoriales.json"
-        cods_obs = [x["codigo"] for x in json.loads(sj.read_text())["estaciones"] if x["horas"] > 0] if sj.exists() else ESTACIONES_OBS
+        cods_obs = [x["codigo"] for x in json.loads(sj.read_text())["estaciones"] if x["horas"] > 0] if sj.exists() else []
+        cods_obs += [c for c in ESTACIONES_OBS if c not in cods_obs]
         sup = SUP.correr(a.datos, E, set(cods_obs) | set(ESTACIONES_OBS), leer_archivo, V=V, M=M, aisladas=aisladas)
         estado["diario"] = SUP.diario(a.datos)
         estado["super"] = dict(estaciones=len(sup["estaciones"]), hallazgos=sum(len(e["hallazgos"]) for e in sup["estaciones"]),
