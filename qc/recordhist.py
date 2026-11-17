@@ -30,8 +30,8 @@ def calcular(datos, estaciones=None):
                 except Exception:
                     continue
                 for md, x in S.items():
-                    if not isinstance(x, (int, float)) or x != x:
-                        continue
+                    if not isinstance(x, (int, float)) or x != x or not (-60 <= x <= 50):
+                        continue            # fuera del rango físico (p. ej. 121 °C en una serie antigua): no puede ser récord
                     n += 1
                     fecha = f"{anio}-{md}"
                     mes = str(int(md[:2]))

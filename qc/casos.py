@@ -423,6 +423,19 @@ def prueba_records_pp_viento():
         FALLAS.append("récords pp/viento: sin serie no debía alertar")
 
 
+def prueba_records_fuera_de_rango():
+    """Un valor imposible (121 °C) en una serie antigua no puede quedar como récord."""
+    import tempfile, json as _j
+    import recordhist as RC
+    from pathlib import Path as _P
+    with tempfile.TemporaryDirectory() as d:
+        for v, vals in (("tx", {"02-17": 121.0, "02-18": 26.1}), ("tn", {"07-01": -80.0, "07-02": -3.0})):
+            q = _P(d) / "series" / v / "550001"; q.mkdir(parents=True); (q / "1979.json").write_text(_j.dumps(vals))
+        R = RC.calcular(d, [{"codigo": "550001", "nombre": "X"}])
+        if R["550001"]["tx"]["max"][0] != 26.1 or R["550001"]["tn"]["min"][0] != -3.0:
+            FALLAS.append(f"récords: un valor fuera de rango físico no debía contar ({R['550001']['tx']['max']}, {R['550001']['tn']['min']})")
+
+
 def prueba_records_uno_por_dia():
     h = lambda hr, cod="RHM", msg="Tmax PM 25.0 °C": dict(hora=f"2026-11-17 {hr}:00", regla=cod, msg=msg, nivel=0)
     r = S.una_por_dia([h("12"), h("13", msg="Tmax PM 26.0 °C"), h("14", msg="Tmax PM 26.5 °C")])
