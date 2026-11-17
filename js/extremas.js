@@ -39,11 +39,17 @@ function pintar(){
   $("#xHora").textContent = g ? `Observaciones revisadas a las ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})} (${tipo === "tem" ? "últimas 24 h" : "últimos 4 días"})` : "Sin revisión de observaciones";
   const V = filas.filter(f => !q || (f.e.nombre || "").toLowerCase().includes(q) || f.e.codigo.includes(q))
     .sort((a, b) => b.hora.localeCompare(a.hora) || b.nivel - a.nivel || (a.e.nombre || "").localeCompare(b.e.nombre || ""));
+  if (tipo !== "rec"){                          // una sola celda de estación; sus alertas, una debajo de otra
+    const G = new Map(); V.forEach(f => { if (!G.has(f.e.codigo)) G.set(f.e.codigo, []); G.get(f.e.codigo).push(f); });
+    const orden = [...G.values()].sort((a, b) => Math.max(...b.map(x => x.nivel)) - Math.max(...a.map(x => x.nivel)) || b[0].hora.localeCompare(a[0].hora) || (a[0].e.nombre || "").localeCompare(b[0].e.nombre || ""));
+    V.length = 0; orden.forEach(g => g.forEach((f, i) => { f._ini = i === 0; f._n = g.length; V.push(f); }));
+  }
+  const cel = f => `<td class="nom"${f._n > 1 ? ` rowspan="${f._n}"` : ""}><b>${esc(f.e.nombre)}</b><br><small>${f.e.codigo}</small><br><a class="vlink" style="display:inline-block;margin-top:4px" href="https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/${encodeURIComponent(f.e.codigo)}" target="_blank" rel="noopener" title="Abrir la estación en línea en el portal de climatología">↗ en línea</a></td>`;
   const kpi = (n, t, c) => `<div><b style="color:${c}">${n}</b><span>${esc(t)}</span></div>`;
   const porRegla = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([k, n]) => kpi(n, REGLAS.nombre(k), "var(--tx)")).join("");
   $("#xOut").innerHTML = `<div class="hres">${kpi(est.size, "estaciones con alertas", "var(--oro)")}${porRegla}</div>
     ${V.length ? `<div class="bcard" style="padding:0"><table class="xtab"><tr><th>Estación</th><th>Obs. UTC</th><th>Alerta</th><th>Ingresado</th><th>${tipo === "rec" ? "Récord anterior" : "Debería ir"}</th><th>Detalle</th><th></th></tr>
-      ${V.map(f => `<tr><td class="nom"><b>${esc(f.e.nombre)}</b><br><small>${f.e.codigo}</small><br><a class="vlink" style="display:inline-block;margin-top:4px" href="https://climatologia.meteochile.gob.cl/application/diariob/visorDeDatosEma/${encodeURIComponent(f.e.codigo)}" target="_blank" rel="noopener" title="Abrir la estación en línea en el portal de climatología">↗ en línea</a></td><td style="white-space:nowrap">${f.hora.slice(8, 10)}/${f.hora.slice(5, 7)} ${f.hora.slice(11, 16)}</td>
+      ${V.map(f => `<tr${f._ini ? ' class="gini"' : ""}>${f._ini || tipo === "rec" ? cel(f) : ""}<td style="white-space:nowrap">${f.hora.slice(8, 10)}/${f.hora.slice(5, 7)} ${f.hora.slice(11, 16)}</td>
         <td style="color:${NIVC[f.nivel] || "inherit"};font-weight:600">${REGLAS.html(f.regla, esc)}</td><td class="n">${esc(f.ingresado || ing(f) || (f.regla === "SEXF" ? "No ingresada" : "—"))}</td><td class="n" style="color:var(--oro)">${esc(tipo === "rec" ? recAnt(f.msg) : (f.deberia || deb(f.msg)))}</td>
         <td>${esc(f.msg)}${f.st === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${MARCA.botones(f.e.codigo, f)}<br>${SGRAF.tiene(f.regla) ? `<button class="sgbtn" data-sg="${esc(f.hora)}|${esc(f.regla)}|${esc(f.e.codigo)}" data-msg="${esc(f.msg)}">${SGRAF.etiqueta(f.regla)}</button>` : ""}</td></tr>`).join("")}</table></div>`
       : `<p style="color:var(--ok)">Sin alertas de ${TIT[tipo]}${q ? " con ese filtro" : ""}.</p>`}
