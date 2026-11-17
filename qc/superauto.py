@@ -21,6 +21,7 @@ SALTO_FF10 = (15, 25)      # kt: cambio del viento medio entre dos ventanas de 1
 TOL_EXT = (1.0, 1.5)      # °C (sospechoso, erróneo): la extrema sale de muestras de segundos y puede pasar ~1 °C al valor por minuto; la normal acepta 1.5
 TOL_HR = (6, 12)           # % entre HR informada y la calculada con Ts y Td
 TOL_QFF = (3.0, 6.0)       # hPa entre QFF informado y el reducido desde QFE
+TOL_QNH = (1.0, 2.5)       # hPa: cuánto se aleja la relación QNH − QFE de lo habitual de la estación (queda casi fija: depende solo de la altura)
 PEGADO_H = {"T": 3, "Td": 3, "P_est": 3, "HR": 8}      # horas sin cambio (la normal: 3, 3, 3, 10)
 VAR3H_P = 10.0             # hPa en 3 h
 PP_MIN_HR = 55             # % : lluvia con aire más seco que esto es dudosa
@@ -130,6 +131,17 @@ def _estacion(g, m):
                 if d[i] > TOL_QFF[0]:
                     out.append(_h(None, "ZP05", 2 if d[i] > TOL_QFF[1] else 1, "pre", Hq.at[i, "momento"],
                                   f"QFF {Hq.at[i, 'P_mar']:.1f} no calza con el QFE {Hq.at[i, 'P_est']:.1f} a {alt:.0f} m (daría {calc[i]:.1f}, diferencia {d[i]:.1f} hPa)"))
+
+        if alt is not None and "P_std" in g24:     # ZP06: el QNH sale del QFE con la atmósfera estándar; la diferencia de cada estación casi no cambia
+            Hn = g24[g24["momento"].dt.minute == 0].dropna(subset=["P_est", "P_std"])
+            if len(Hn) >= 12:
+                dq = Hn["P_std"] - Hn["P_est"] * (1 - 0.0065 * alt / 288.15) ** -5.255
+                dev = dq - dq.median()
+                i = dev.iloc[-6:].abs().idxmax()      # solo las últimas 6 horas: lo que sigue pasando
+                if abs(dev[i]) > TOL_QNH[0]:
+                    x = float(dev[i])
+                    out.append(_h(None, "ZP06", 2 if abs(x) > TOL_QNH[1] else 1, "pre", Hn.at[i, "momento"],
+                                  f"QNH {Hn.at[i, 'P_std']:.1f} hPa no calza con el QFE {Hn.at[i, 'P_est']:.1f} a {alt:.0f} m: la diferencia se alejó {abs(x):.1f} hPa de la habitual de la estación (si el QFE y el QFF están bien, el QNH es el que falla)"))
 
     # ---------------- viento
     if "ff10" in g24:
@@ -241,6 +253,30 @@ def _zr05(bl, tol=(0.3, 0.1)):
                      ingresado=f"RRR6 {inf:.1f} mm", deberia=f"{suma:.1f} mm")
             out.append(x)
     return out
+
+
+def _zr06(g, tol=(0.3, 0.1)):
+    """Lluvia de 24 h de la estación (se reinicia a las 12 UTC) frente a la suma de los minutos desde ese reinicio."""
+    if "rr24" not in g or "rr1m" not in g or g.empty:
+        return []
+    fin = g["momento"].max()
+    ini = fin.normalize() + pd.Timedelta(hours=12)
+    if ini > fin:
+        ini -= pd.Timedelta(days=1)
+    esp = (fin - ini).total_seconds() / 60
+    W = g[(g["momento"] > ini) & (g["momento"] <= fin)]
+    if esp < 60 or W["rr1m"].notna().sum() < 0.95 * esp or (g["momento"].min() > ini):
+        return []
+    near = g[(g["momento"] <= fin) & (g["momento"] > fin - pd.Timedelta(minutes=15))]
+    inf = near["rr24"].dropna()
+    if inf.empty:
+        return []
+    inf, suma = float(inf.iloc[-1]), float(W["rr1m"].sum())
+    if abs(inf - suma) <= tol[0] + tol[1] * suma:
+        return []
+    return [dict(hora=_f(fin), regla="ZR06", nivel=1 if abs(inf - suma) < 1.0 + 0.3 * suma else 2, tipo="pp",
+                 msg=f"La estación informa {inf:.1f} mm de lluvia de 24 h (desde las 12 UTC de {ini:%d-%m}), pero la suma del agua caída por minuto da {suma:.1f} mm.",
+                 ingresado=f"RRR24 {inf:.1f} mm", deberia=f"{suma:.1f} mm")]
 
 
 def _resumen(g):
@@ -447,7 +483,7 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
                 fila["res"] = {}
             try:
                 fila["hallazgos"] = _estacion(g, m)
-                fila["hallazgos"] += cmp_al.get(cod, []) + _zr05(bl)
+                fila["hallazgos"] += cmp_al.get(cod, []) + _zr05(bl) + _zr06(g.sort_values("momento"))
             except Exception as e:      # una estación mala no tumba a las demás
                 fila["hallazgos"] = [dict(hora=fila["ultima"], regla="ZERR", nivel=0, tipo="tem", msg=f"No se pudo revisar: {e}")][:0]
             fila["nivel"] = max([h["nivel"] for h in fila["hallazgos"]], default=0)

@@ -24,14 +24,14 @@ const N = {
   SBQFF: "Diferencia constante del QFF", SBQNH: "Diferencia constante del QNH",
   ZT01: "Salto brusco de Ts", ZT02: "Salto brusco de Td", ZT03: "Salto brusco de HR", ZT04: "Td mayor que Ts", ZT05: "HR no calza con Ts y Td",
   ZT06: "Ts sin cambio (sensor pegado)", ZT07: "Td sin cambio (sensor pegado)", ZT08: "HR sin cambio (sensor pegado)", ZT09: "Ts fuera de lo habitual para la zona",
-  ZP01: "Salto brusco de QFE", ZP02: "QFE sin cambio (sensor pegado)", ZP03: "QFE lejos de lo esperado por la altura", ZP04: "QFE cambia demasiado en 3 h", ZP05: "QFF no calza con el QFE",
+  ZP01: "Salto brusco de QFE", ZP02: "QFE sin cambio (sensor pegado)", ZP03: "QFE lejos de lo esperado por la altura", ZP04: "QFE cambia demasiado en 3 h", ZP05: "QFF no calza con el QFE", ZP06: "QNH no calza con el QFE",
   ZV01: "Cambio fuerte del viento en 10 min", ZV02: "Viento sin cambio (sensor pegado)", ZV03: "Dirección sin cambio (sensor pegado)", ZV05: "Dirección fuera de 0–360", ZV06: "Racha menor que el viento medio",
-  ZR01: "Lluvia con aire seco", ZR02: "Lluvia con Ts − Td muy alta", ZR03: "Demasiada lluvia en un minuto", ZR04: "Pluviómetro pegado (mismo valor repetido)", ZR05: "Lluvia de 6 h no calza con los minutos",
+  ZR01: "Lluvia con aire seco", ZR02: "Lluvia con Ts − Td muy alta", ZR03: "Demasiada lluvia en un minuto", ZR04: "Pluviómetro pegado (mismo valor repetido)", ZR05: "Lluvia de 6 h no calza con los minutos", ZR06: "Lluvia de 24 h no calza con los minutos",
   ZC01: "Ts muy distinta de sus vecinas", ZC02: "Td muy distinto de sus vecinas", ZC03: "HR muy distinta de sus vecinas", ZC04: "QFF muy distinto de sus vecinas", ZC05: "Viento medio muy distinto de sus vecinas", ZC06: "Lluvia muy distinta de sus vecinas",
   ZM01: "Ts muy distinta del modelo", ZM02: "Td muy distinto del modelo", ZM03: "HR muy distinta del modelo", ZM04: "QFF muy distinto del modelo", ZM05: "Viento muy distinto del modelo",
   ZE01: "Mínima o máxima de 12 h no coincide con la temperatura por minuto", ZE03: "Mínima de 12 h mayor que la máxima de 12 h",
   SEXT: "Extrema: valor", SEXH: "Extrema: hora", SEXF: "Extrema fuera de bloque sin ingresar", SRRR6: "RRR6 frente al pluviómetro",
-  SPRE: "Pluviómetro y tiempo presente", SinDato: "Sin dato", St: "Satélite: nubosidad", Sc: "Satélite: nubes", SD: "Satélite"
+  SPRE: "Pluviómetro y tiempo presente", SNie: "Niebla o poca visibilidad con aire seco (sensor)", SinDato: "Sin dato", St: "Satélite: nubosidad", Sc: "Satélite: nubes", SD: "Satélite"
 };
 // Controles Definidos de SACLIM (qc/reglas_sistema.json): su código es un número; el texto del aviso es el propio mensaje del sistema
 const esSaclim = c => /^\d+$/.test(String(c));
@@ -48,6 +48,7 @@ const pestana = c => PESTANA[c] || (/^Z[TPVRECM]\d\d$/.test(c) ? "super" : "obs"
 /* Registro de cambios de reglas. Al cambiar una regla o umbral en qc/, agregar una fila ARRIBA: [fecha AAAA-MM-DD, códigos, qué cambió, por qué].
    Lo que se vea aquí debe coincidir con lo que dicen las pruebas fijas (qc/casos.py). */
 const CAMBIOS = [
+  ["2026-11-17", "ZP06, ZR06, SNie", "Controles nuevos. ZP06: el QNH debe mantener la diferencia habitual de la estación con el QFE (solo depende de la altura); avisa si se aleja más de 1 hPa (sospechoso) o 2,5 hPa (erróneo) en las últimas 6 h. ZR06: la lluvia de 24 h de la estación (se reinicia a las 12 UTC) debe calzar con la suma de los minutos desde ese reinicio (tolerancia 0,3 mm + 10 %). SNie: niebla (ww 42–49) con humedad del sensor bajo 85 % (bajo 70 % erróneo), o visibilidad bajo 1000 m sin otro fenómeno y humedad bajo 80 %.", "Probados con 3 días de datos reales: ZP06 y ZR06 casi sin falsos avisos. No se agregó «calma con dirección»: el 37 % de los minutos en calma las estaciones conservan la última dirección."],
   ["2026-11-13", "2972, 3102, C02", "Neblina (BR METAR o ww 10) con visibilidad entre 1000 y 5000 m: ya no se avisa por el control de SACLIM 2972 / 3102 (la visibilidad se ingresa tal cual). Solo avisa con menos de 1000 m (es niebla) o con más de 8000 m. Se agregó el chequeo para el METAR (C02).", "En SACLIM esa regla no existe; la visibilidad se ingresa como se mide."],
   ["2026-11-13", "Resuelto", "«Resuelto» ya no devuelve la alerta si en la pasada siguiente el dato sigue igual (observaciones y Super automático); solo vuelve si el mensaje o el valor cambian.", "El servicio de observaciones no refleja las correcciones hechas en SACLIM, así que la etiqueta «el dato sigue igual» era una falsa alarma permanente."],
   ["2026-11-13", "ZT01–ZT09, ZP01–ZP05, ZV01–ZV06, ZR01–ZR05, ZE01, ZE03", "Nuevo grupo «Super automático»: estaciones automáticas sin observador. Compara Ts, Td, HR y QFF con la mediana de las vecinas (≥ 3, con corrección por altura) y con el modelo, con diferencias sostenidas en 2 de las últimas 3 horas; además saltos groseros, valores pegados 3 h y consistencia interna.", "Detectar errores groseros de sensor (temperaturas malas, vientos raros, presiones) sin avisar por el ruido normal minuto a minuto."],
@@ -87,12 +88,14 @@ const UMBRALES = [
     "Se aplican las reglas propias del sistema de ingreso (qc/reglas_sistema.json) sobre lo grabado por el observador; se avisan como «Control de SACLIM» con el número de la regla y su mensaje.",
     "Solo se evalúan cuando todos los elementos de la regla están en la observación; en nivel erróneo si el sistema la exige, y dudoso si no."]],
   ["Codificación y visibilidad", [
+    "Niebla (ww 42–49) con la humedad de la estación automática bajo 85 % (erróneo bajo 70 %), o visibilidad bajo 1000 m sin otro fenómeno y humedad bajo 80 % (SNie).",
     "Fenómenos que reducen la visibilidad (humo, calima, polvo, neblina): se avisa solo con VV > 8000 m.",
     "C40 (CL sin su capa): solo si no hay ninguna capa baja."]],
   ["Estaciones automáticas", [
     "HR pegada: solo si el mismo valor dura 10 h o más.",
     "Modelos: no se compara QFF sobre 1500 m; más tolerancia en estaciones de altura aisladas. Temperatura 6 °C, humedad 35 %, viento 15 kt, QFF 5 hPa, Td 9 °C.",
-    "Fallas de sensor (rango, salto, valor pegado, radiación) se agrupan por episodio: inicio, fin y duración."]],
+    "Fallas de sensor (rango, salto, valor pegado, radiación) se agrupan por episodio: inicio, fin y duración.",
+    "QNH (ZP06): se mide contra la diferencia habitual de la estación con el QFE; avisa sobre 1 hPa (erróneo sobre 2,5). Lluvia de 24 h (ZR06): se compara con los minutos desde las 12 UTC; tolerancia 0,3 mm + 10 %."]],
 ];
 function pagina(cont, esc){
   const filas = Object.keys(N).sort().map(c => `<tr><td style="font-family:var(--mono)">${esc(c)}</td><td>${esc(N[c])}</td><td>${({ext: "Extremas", pp: "Precipitación", tem: "Temperaturas", obs: "Observaciones", super: "Super automático"})[pestana(c)]}</td></tr>`).join("");

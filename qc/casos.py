@@ -383,6 +383,47 @@ def prueba_metar_nieve_respalda_w1():
         FALLAS.append("METAR: SN→7, RA→6, TSRA→9")
 
 
+def prueba_niebla_frente_sensor():
+    A = minutario(T, HR=60.0)
+    si_alerta(S.frente_sensor(T, obs(ww=45, VV=300), minutario(T, HR=78.0)), "SNie", "niebla con HR 78 % en la estación", nivel=1)
+    si_alerta(S.frente_sensor(T, obs(ww=45, VV=300), minutario(T, HR=50.0)), "SNie", "niebla con HR 50 %", nivel=2)
+    no_alerta(S.frente_sensor(T, obs(ww=45, VV=300), minutario(T, HR=97.0)), "SNie", "niebla con HR 97 %")
+    si_alerta(S.frente_sensor(T, obs(ww=0, VV=600), A), "SNie", "visibilidad de 600 m con HR 60 %")
+    no_alerta(S.frente_sensor(T, obs(ww=61, VV=600), A), "SNie", "visibilidad baja por lluvia")
+    no_alerta(S.frente_sensor(T, obs(ww=5, VV=600), A), "SNie", "visibilidad baja por calima")
+    no_alerta(S.frente_sensor(T, obs(ww=0, VV=4000), A), "SNie", "visibilidad de 4000 m con HR 60 %")
+
+
+def _ema_p(**cols):
+    return _ema(26, **cols)
+
+
+def prueba_super_qnh_y_lluvia24():
+    import superauto as SU
+    alt = 500.0
+    qnh = lambda qfe: qfe * (1 - 0.0065 * alt / 288.15) ** -5.255
+    D = _ema_p(P_est=950.0)
+    D["P_std"] = qnh(D["P_est"]) + 0.3
+    m = dict(lat=-33.0, alt=alt)
+    hay = lambda L, r: [h for h in L if h["regla"] == r]
+    assert not hay(SU._estacion(D, m), "ZP06"), "QNH con diferencia fija no debía alertar"
+    D2 = D.copy(); D2.loc[D2["momento"] > T - pd.Timedelta(hours=3), "P_std"] += 4.0
+    r = hay(SU._estacion(D2, m), "ZP06")
+    if not r:
+        FALLAS.append("ZP06: QNH que se aleja 4 hPa debía alertar")
+    # lluvia de 24 h: se reinicia a las 12 UTC; T = 12:00, así que se prueba con las 18:00 (6 h desde el reinicio)
+    f = pd.Timestamp("2026-11-10 18:00")
+    m6 = pd.date_range(f - pd.Timedelta(hours=26) + pd.Timedelta(minutes=1), f, freq="1min")
+    G = pd.DataFrame(dict(codigo="1", momento=m6, rr1m=0.0, rr24=0.0))
+    G.loc[G["momento"] == f - pd.Timedelta(hours=2), "rr1m"] = 2.0
+    G.loc[G["momento"] >= f - pd.Timedelta(hours=2), "rr24"] = 2.0
+    if SU._zr06(G):
+        FALLAS.append("ZR06: rr24 igual a la suma de los minutos no debía alertar")
+    G["rr24"] = 0.0
+    if not SU._zr06(G):
+        FALLAS.append("ZR06: rr24 en 0 con 2 mm en los minutos debía alertar")
+
+
 def prueba_super_vecinas_viento_lluvia():
     """Super automático: Ts, viento y lluvia contra las vecinas (≥ 3). Cubre el fallo que dejó sin alertas de comparación (_hc sin ingresado/deberia)."""
     import pandas as pd, superauto as SUP

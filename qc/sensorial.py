@@ -946,6 +946,18 @@ def frente_sensor(t, o, A, sesgo=None):
                 + f": {ff} km/h son {kmh:.0f} kt, justo lo de la estación. Parece anotado en km/h en vez de nudos (correspondería {round(kmh)} kt)")
         elif d > DIF_FF and not _sensor_marco(A, t, "ff10", ff, TOL_BASE["ff"]):
             add("Sff", 2 if d > 2 * DIF_FF else 1, f"viento anotado {ff} kt y la estación automática marcó " + (f"entre {lo:.0f} y {hi:.0f} kt en los {VENTANA} min previos" if hi > lo else f"{lo:.0f} kt"))
+    # niebla o visibilidad bajo 1000 m con aire que la estación automática marca seco: la niebla exige aire casi saturado
+    ww_, vv_ = v(o, "WWSINOP", "ww"), v(o, "VVSINOP", "VV")
+    hrs = W["HR"].dropna() if "HR" in W else pd.Series(dtype=float)
+    if len(hrs) >= 5:
+        hrm = float(hrs.mean())
+        niebla = ww_ is not None and 42 <= ww_ <= 49
+        # sin otro fenómeno que reduzca la visibilidad (precipitación, humo, calima, polvo, tormenta de polvo o arena)
+        sin_otro = ww_ is None or not (ww_ in PRECIP or 4 <= ww_ <= 9 or 30 <= ww_ <= 39 or 70 <= ww_ <= 79)
+        if niebla and hrm < 85:
+            add("SNie", 2 if hrm < 70 else 1, f"niebla en la estación (ww {ww_}) y la humedad de la estación automática fue de {hrm:.0f} % (promedio de {W['momento'].min():%H:%M} a {t:%H:%M}): la niebla exige aire casi saturado (90 % o más)")
+        elif not niebla and vv_ is not None and vv_ < 1000 and sin_otro and hrm < 80:
+            add("SNie", 1, f"visibilidad de {vv_:g} m sin precipitación ni otro fenómeno que la explique y la humedad de la estación automática fue de {hrm:.0f} %: con menos de 1000 m y aire tan seco no corresponde niebla; revisar la visibilidad o el fenómeno")
     ffa = r.get("ff10")
     dd, dda = v(o, "VTO", "dd"), r.get("dd10")
     if dd and dda is not None and pd.notna(dda) and (ff or 0) >= 6 and (ffa or 0) >= 6:
