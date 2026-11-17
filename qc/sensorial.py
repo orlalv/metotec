@@ -1200,7 +1200,7 @@ def extremas(t, o, A, codigo, hist=None, oficial=None):
     return [(a, b, c, nombre_ext(d)) for a, b, c, d in _extremas(t, o, A, codigo, hist, oficial)]
 
 
-TOL_TS_EXT = 0.6            # un Ts por hora no puede quedar más allá de la extrema real (la estación usa muestras de segundos: hasta ~0,6 °C)
+TOL_TS_EXT = 0.05           # sin margen: un Ts por hora no puede quedar más allá de la extrema real (solo el redondeo a 1 decimal)
 
 
 def ts_fuera_extremas(t, o, A, hist):
