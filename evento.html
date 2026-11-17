@@ -93,7 +93,7 @@ table.c tr.clave td.sel{background:#dcebf7}
  <div class="mu" id="sub">Cargando datos…</div>
  <div class="barra" style="margin-top:12px"><span class="seg" id="zonas"></span><span class="seg" id="vars"></span><span class="seg" id="sub1" hidden></span></div>
  <div class="cuerpo"><div style="min-width:0"><div id="mapa"></div>
- <div class="leyenda"><div><div class="esc" id="esc"></div><div class="ln" id="ln"></div></div><span id="un"></span><span style="margin-left:auto"><span class="ins" style="margin:0">estación clave</span> círculo grande · aledañas, círculo pequeño</span></div></div>
+ <div class="leyenda"><div><div class="esc" id="esc"></div><div class="ln" id="ln"></div></div><span id="un"></span><span class="sat"><label><input type="checkbox" id="satOn"> Satélite NASA (IMERG, mm/h)</label> <input type="range" id="satOp" min="30" max="100" value="70" style="width:90px;vertical-align:middle" disabled> <span id="satT" class="mu"></span></span><span style="margin-left:auto"><span class="ins" style="margin:0">estación clave</span> círculo grande · aledañas, círculo pequeño</span></div></div>
  <aside id="panel" class="caja"></aside></div>
 
  <div class="sec"><h2>Resumen de la zona</h2><div class="k" id="kpis"></div></div>
@@ -281,6 +281,30 @@ function todo(reenc){ botones(); leyenda(VARS[vcur]); mapa(reenc); kpis(); barra
   map = L.map("mapa", {zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false, boxZoom: false, keyboard: false, zoomSnap: 0, attributionControl: true}).setView([-33.5, -70.7], 9);
   map.createPane("base").style.zIndex = 150; map.createPane("mascara").style.zIndex = 250; map.createPane("lineas").style.zIndex = 300;
   L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", {maxZoom: 12, opacity: 0.55, attribution: "Relieve © Esri"}).addTo(map);
+
+/* Capa satélite NASA GIBS (IMERG Early, ~4-6 h de atraso). Opcional: apagada por defecto. */
+(function(){
+  const pane = map.createPane("sat"); pane.style.zIndex = 200; pane.style.pointerEvents = "none";
+  const U = (t, z, y, x) => `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/IMERG_Precipitation_Rate/default/${t}/GoogleMapsCompatible_Level6/${z}/${y}/${x}.png`;
+  const iso = d => d.toISOString().slice(0, 19) + "Z";
+  let capa = null;
+  function probar(i, fin){ // busca la imagen más reciente disponible (de -4 h hacia atrás)
+    const d = new Date(Date.now() - (4 * 3600e3 + i * 1800e3)); d.setUTCMinutes(d.getUTCMinutes() < 30 ? 0 : 30, 0, 0);
+    if (i > 16) return fin(null);
+    const im = new Image(); im.onload = () => fin(iso(d)); im.onerror = () => probar(i + 1, fin); im.src = U(iso(d), 3, 4, 2);
+  }
+  $("satOn").onchange = function(){
+    if (!this.checked){ if (capa) map.removeLayer(capa); capa = null; $("satOp").disabled = true; $("satT").textContent = ""; return; }
+    $("satT").textContent = "buscando…";
+    probar(0, t => {
+      if (!$("satOn").checked) return;
+      if (!t){ $("satT").textContent = "no disponible"; $("satOn").checked = false; return; }
+      capa = L.tileLayer(U(t, "{z}", "{y}", "{x}"), {pane: "sat", maxNativeZoom: 6, maxZoom: 14, opacity: $("satOp").value / 100, attribution: "Lluvia satelital: NASA GIBS / IMERG"}).addTo(map);
+      $("satOp").disabled = false; $("satT").textContent = t.replace("T", " ").slice(0, 16) + " UTC";
+    });
+  };
+  $("satOp").oninput = function(){ if (capa) capa.setOpacity(this.value / 100); };
+})();
   const nom = () => $("mapa").classList.toggle("zalto", map.getZoom() >= 10); map.on("zoomend", nom); nom();
   try {
     const [c, d] = await Promise.all([fetch("/api/minutarios?estaciones").then(r => r.json()), fetch("/api/mapa").then(r => { if (!r.ok) throw 0; return r.json(); })]);
