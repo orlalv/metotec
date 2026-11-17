@@ -4,7 +4,7 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
 const NIVC = ["var(--ok)", "var(--sos)", "var(--err)"];
-const TIT = {pp: "precipitación", tem: "temperatura y humedad", ext: "extremas"};
+const TIT = {pp: "precipitación", tem: "temperatura y humedad", ext: "extremas", rec: "récords históricos"};
 let getR = () => null, tipo = "pp", q = "";
 
 function init(fR, t){
@@ -47,7 +47,28 @@ function pintar(){
       : `<p style="color:var(--ok)">Sin alertas de ${TIT[tipo]}${q ? " con ese filtro" : ""}.</p>`}
     <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">${tipo === "ext" ? "Extremas: Tmin AM y Tmax AM (00–12 UTC) y Tmin PM y Tmax PM (12–00 UTC), comparadas con la extrema oficial de la estación automática, en valor y hora (la hora del observador es local)."
       : tipo === "pp" ? "Precipitación: el RRR6 debe calzar exacto con la suma del pluviómetro en las 6 h que cierran a las 00, 06, 12 y 18 UTC."
-      : "Ts, Td y HR del observador frente al sensor de la estación automática, y las diferencias constantes."} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
+      : tipo === "rec" ? "Récord histórico: Tmin y Tmax AM/PM ingresadas por el observador frente a la máxima y mínima diarias de la estación desde 1990. Rojo/naranja: supera el récord de toda la historia (confirmar que el dato es correcto). Gris: supera el récord del mes."
+      : "Ts, Td y HR del observador frente al sensor de la estación automática, y las diferencias constantes."} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>
+    ${tipo === "rec" ? `<h4 style="margin:18px 0 6px;font:600 14px var(--titulo)">Récords de temperatura por estación</h4><div id="xRec"><p style="color:var(--mu)">Cargando…</p></div>` : ""}`;
+  if (tipo === "rec") pintarRecords();
+}
+let RECS = null;
+async function pintarRecords(){
+  const el = $("#xRec"); if (!el) return;
+  try {
+    if (!RECS){ const r = await fetch("/api/productos?tipo=records"); if (!r.ok) throw new Error(r.status); RECS = await r.json(); }
+    const F = (x, u, d = 1) => x ? `<b>${x[0].toFixed(d)}</b> ${u}<br><small>${x[1].split("-").reverse().join("-")}</small>` : "—";
+    const O = ((getR() || {}).observaciones || {}).estaciones || [];
+    const nom = {}; O.forEach(e => nom[e.codigo] = e.nombre);
+    const T = RECS.t || {}, P = RECS.p || {}, V = RECS.v || {};
+    const cods = [...new Set([...Object.keys(T), ...Object.keys(P), ...Object.keys(V)])];
+    const filas = cods.map(c => ({c, n: (T[c] || {}).nombre || nom[c] || "Estación " + c})).filter(x => !q || x.n.toLowerCase().includes(q) || x.c.includes(q)).sort((a, b) => a.n.localeCompare(b.n));
+    const ser = (e, k) => e ? `${esc((e.desde || "").slice(0, 4))}–${esc((e.hasta || "").slice(0, 4))}` : "";
+    el.innerHTML = `<table class="xtab"><tr><th>Estación</th><th>Máxima más alta</th><th>Mínima más baja</th><th>Lluvia máx. diaria</th><th>Lluvia máx. mensual</th><th>Viento medio máx.</th></tr>${filas.map(({c, n}) => {
+      const t = T[c] || {}, p = P[c], v = V[c];
+      return `<tr><td class="nom"><b>${esc(n)}</b><br><small>${c}</small></td><td class="n">${F((t.tx || {}).max, "°C")}</td><td class="n">${F((t.tn || {}).min, "°C")}</td><td class="n">${p ? F(p.dia, "mm") : "—"}</td><td class="n">${p ? `<b>${p.mensual[0].toFixed(1)}</b> mm<br><small>${p.mensual[1].split("-").reverse().join("-")}</small>` : "—"}</td><td class="n">${v ? F(v.max, "kt", 0) : "—"}</td></tr>`;
+    }).join("")}</table><p style="color:var(--mu);font-size:12px;margin-top:6px">Temperatura: serie de 1990 en adelante. Lluvia: 1995 en adelante (2026 solo en las estaciones con archivo SACLIM). Viento: solo seis estaciones con archivo horario SACLIM (viento medio, no racha).</p>`;
+  } catch (err){ el.innerHTML = `<p style="color:var(--mu)">Aún no hay récords publicados (se generan en la próxima pasada del control).</p>`; }
 }
 window.EXT = {init, pintar};
 })();

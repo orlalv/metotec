@@ -383,6 +383,46 @@ def prueba_metar_nieve_respalda_w1():
         FALLAS.append("METAR: SN→7, RA→6, TSRA→9")
 
 
+def prueba_records_temperatura():
+    import recordhist as RC
+    R = {"330020": {"nombre": "Quinta Normal", "desde": "1990-01-01", "hasta": "2026-11-10", "n": 13000,
+                    "tx": {"max": [38.3, "2019-01-26"], "mes": {"1": [38.3, "2019-01-26"], "11": [34.0, "2015-11-30"]}},
+                    "tn": {"min": [-3.4, "2007-08-10"], "mes": {"8": [-3.4, "2007-08-10"], "11": [2.0, "2001-11-02"]}}}}
+    t = pd.Timestamp("2026-11-17 00:00")
+    ob = lambda el, x: {el: {el: x, "FechaHora": "2026-11-16 17:30"}}
+    si_alerta(S.extremas_records(t, ob("TxPM", 39.0), "330020", R), "RHA", "máxima sobre el récord de la historia", nivel=1)
+    si_alerta(S.extremas_records(t, ob("TxPM", 34.5), "330020", R), "RHM", "máxima sobre el récord del mes", nivel=0)
+    no_alerta(S.extremas_records(t, ob("TxPM", 34.5), "330020", R), "RHA", "récord del mes no es de la historia")
+    no_alerta(S.extremas_records(t, ob("TxPM", 34.0), "330020", R), "RHM", "igual al récord del mes")
+    no_alerta(S.extremas_records(t, ob("TxPM", 25.0), "330020", R), "RHA", "valor normal")
+    t2 = pd.Timestamp("2026-11-17 12:00")
+    si_alerta(S.extremas_records(t2, ob("TnAM", 1.5), "330020", R), "RHM", "mínima bajo el récord del mes", nivel=0)
+    si_alerta(S.extremas_records(t2, ob("TnAM", -4.0), "330020", R), "RHA", "mínima bajo el récord de la historia", nivel=1)
+    if S.extremas_records(t, ob("TxPM", 99.0), "999999", R):
+        FALLAS.append("récords: una estación sin serie no debía alertar")
+    if S.extremas_records(t, ob("TxPM", 99.0), "330020", None):
+        FALLAS.append("récords: sin archivo de récords no debía alertar")
+
+
+def prueba_records_pp_viento():
+    import recordhist as RC
+    P = {"330020": {"desde": "1995-01-01", "hasta": "2026-11-10", "dia": [111.1, "2002-06-03"], "mes": {"6": [111.1, "2002-06-03"], "11": [30.0, "2015-11-02"]}}}
+    V = {"520006": {"desde": "1995-01-01", "hasta": "2026-11-10", "max": [56.0, "2014-08-08"], "mes": {"11": [40.0, "2010-11-20"]}}}
+    R = {"p": P, "v": V}
+    t = pd.Timestamp("2026-11-17 12:00")
+    ob = lambda rr, ff=None: {"RRR6": {"RRR6": rr}, "VTO": {"ff": ff}}
+    si_alerta(S.records_pv(t, ob(120.0), "330020", R, {}), "RHP", "RRR6 sobre la máxima diaria", nivel=1)
+    si_alerta(S.records_pv(t, ob(35.0), "330020", R, {}), "RHPM", "RRR6 sobre el máximo diario del mes", nivel=0)
+    no_alerta(S.records_pv(t, ob(10.0), "330020", R, {}), "RHP", "lluvia normal")
+    hist = {t - pd.Timedelta(hours=6 * k): ob(20.0) for k in (1, 2, 3)}
+    si_alerta(S.records_pv(t, ob(20.0), "330020", R, hist), "RHPM", "acumulado de 24 h sobre el récord del mes", nivel=0)
+    si_alerta(S.records_pv(t, ob(0.0, 60.0), "520006", R, {}), "RHV", "viento sobre el máximo", nivel=1)
+    si_alerta(S.records_pv(t, ob(0.0, 45.0), "520006", R, {}), "RHVM", "viento sobre el máximo del mes", nivel=0)
+    no_alerta(S.records_pv(t, ob(0.0, 30.0), "520006", R, {}), "RHV", "viento normal")
+    if S.records_pv(t, ob(500.0, 500.0), "999999", R, {}) or S.records_pv(t, ob(500.0, 500.0), "330020", None, {}):
+        FALLAS.append("récords pp/viento: sin serie no debía alertar")
+
+
 def prueba_extremas_repetidas():
     t0 = pd.Timestamp("2026-11-12 12:00")
     def dia(k, val, hm):
