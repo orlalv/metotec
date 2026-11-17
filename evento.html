@@ -130,9 +130,13 @@ const esc_ = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "
 let datos = null, cat = {}, zona = new URLSearchParams(location.search).get("zona") || "rm", vcur = "prec", opc = {prec: "rr24", vien: "ff10"}, map, capa, contorno, CONT = null, SERIES = {};
 if (!ZONAS[zona]) zona = "rm";
 const val = (k, s) => VARS[k].v(s, opc[k]);
+const dentro = (lat, lon) => { if (!CONT) return true; let ok = false;
+  CONT.region.features.forEach(f => { const g = f.geometry, polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates;
+    polys.forEach(pl => { const r = pl[0]; let d = false; for (let i = 0, j = r.length - 1; i < r.length; j = i++){ const [xi, yi] = r[i], [xj, yj] = r[j]; if ((yi > lat) !== (yj > lat) && lon < (xj - xi) * (lat - yi) / (yj - yi) + xi) d = !d; } if (d) ok = true; }); });
+  return ok; };
 const lista = () => { const Z = ZONAS[zona], [s, o, n, e] = Z.caja; const out = [];
   for (const [c, s_] of Object.entries(datos.estaciones)){ const E = cat[c]; if (!E) continue; const clave = Z.clave.includes(c);
-    if (clave || (E.lat >= s && E.lat <= n && E.lon >= o && E.lon <= e && (zona !== "ant" || c.startsWith("95")))) out.push({c, E, s: s_, clave}); }
+    if (clave || (E.lat >= s && E.lat <= n && E.lon >= o && E.lon <= e && (zona !== "ant" || c.startsWith("95")) && (!Z.contorno || dentro(E.lat, E.lon)))) out.push({c, E, s: s_, clave}); }
   return out.sort((a, b) => (b.clave - a.clave) || (Z.clave.indexOf(a.c) - Z.clave.indexOf(b.c)) || a.E.nombre.localeCompare(b.E.nombre)); };
 
 function botones(){
@@ -169,9 +173,10 @@ function mapa(reencuadrar){
       return `<span class="bx" style="background:${css(col)};color:${tx}">${fmt(x, V.d)}${fl}</span>`; }).join("");
     const ic = L.divIcon({className: "", iconSize: [0, 0], html: `<div class="pil${clave ? " cl" : ""}"${clave ? ` style="transform:${["translate(-50%,45%)", "translate(-100%,-50%)", "translate(0,-50%)", "translate(-50%,-145%)"][Z.clave.indexOf(c) % 4]}"` : ""}><span class="nm">${esc_(E.nombre.trim().split(",")[0].slice(0, 22))}</span>${bx}</div>`});
     const mk = L.marker([E.lat, E.lon], {icon: ic, zIndexOffset: clave ? 1000 : 0}).addTo(capa);
+    if (!clave) mk.bindTooltip(esc_(E.nombre.trim()), {direction: "top", offset: [0, -12]});
     mk.bindPopup(`<div class="pop"><b>${esc_(E.nombre)}</b><div class="mu">${c} · ${s.hora.replace("T", " ").replace("Z", " UTC")}</div><a href="estacion.html?cod=${c}">Ver ficha →</a></div>`);
   }
-  if (reencuadrar) map.fitBounds(Z.vista, {padding: [10, 10], animate: false});
+  if (reencuadrar){ const lim = Z.contorno && CONT ? L.geoJSON(CONT.region).getBounds() : L.latLngBounds(Z.vista); map.fitBounds(lim, {padding: [14, 14], animate: false}); }
 }
 function kpis(){
   const V = VARS[vcur], L_ = lista().map(x => ({...x, v: val(vcur, x.s)})).filter(x => x.v != null);
@@ -228,7 +233,7 @@ async function serie(){
 }
 function todo(reenc){ botones(); leyenda(VARS[vcur]); mapa(reenc); kpis(); barras(); tabla(); serie(); }
 (async function(){
-  map = L.map("mapa", {zoomControl: true, minZoom: 3}).setView([-33.5, -70.7], 9);
+  map = L.map("mapa", {zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false, boxZoom: false, keyboard: false, zoomSnap: 0, attributionControl: true}).setView([-33.5, -70.7], 9);
   map.createPane("base").style.zIndex = 150; map.createPane("mascara").style.zIndex = 250; map.createPane("lineas").style.zIndex = 300;
   L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", {maxZoom: 12, opacity: 0.55, attribution: "Relieve © Esri"}).addTo(map);
   const nom = () => $("mapa").classList.toggle("zalto", map.getZoom() >= 10); map.on("zoomend", nom); nom();
