@@ -66,6 +66,16 @@ table.c tr.clave td.sel{background:#dcebf7}
 .pil{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:stretch;border-radius:16px;background:#1f5fd0;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.45);white-space:nowrap;font:600 12px Inter,system-ui,Arial,sans-serif;padding:3px;gap:3px;align-items:center}
 .pil .nm{padding:0 7px 0 8px;display:none}.pil.cl .nm,.zalto .pil .nm{display:inline}.pil.cl{font-size:13px;padding:4px;border:2px solid #C9A54C}
 .pil .bx{min-width:28px;text-align:center;border-radius:10px;padding:2px 6px;font-variant-numeric:tabular-nums}
+.cuerpo{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:14px;align-items:start}
+@media (max-width:860px){.cuerpo{grid-template-columns:minmax(0,1fr)}}
+#panel{margin-top:0;max-height:min(78vh,820px);overflow:auto;padding:12px}
+#panel h3{margin:0 0 8px;font-size:16px}
+.cnt{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.cnt span{font-size:12.5px;padding:3px 9px;border-radius:10px}
+.al{border:1px solid var(--bd);border-radius:10px;padding:8px 10px;margin-bottom:8px;display:flex;gap:9px;cursor:default;background:#fff}
+.al:hover{border-color:#C9A54C;background:#fffaf0}
+.al .t1,.al .t2{flex:none;margin-top:1px}.al b{font-size:14px}.al .m{font-size:12.5px;color:#3d4a5c;margin-top:2px;line-height:1.4}.al .h{font-size:11.5px;color:var(--mu);margin-top:3px}
+.tri{position:absolute;left:-9px;top:-11px;width:19px;height:17px}
+.pil.res{outline:3px solid #fff;z-index:9999}
 .etq{font:600 12px Inter,system-ui,Arial,sans-serif;background:#fff;border:1px solid #C9A54C;padding:1px 6px}
 .gr text{font:12px Inter,system-ui,Arial,sans-serif;fill:#6B7686}
 .lg{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;margin-top:6px}.lg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
@@ -82,8 +92,9 @@ table.c tr.clave td.sel{background:#dcebf7}
  <h1>Monitoreo de evento por zona</h1>
  <div class="mu" id="sub">Cargando datos…</div>
  <div class="barra" style="margin-top:12px"><span class="seg" id="zonas"></span><span class="seg" id="vars"></span><span class="seg" id="sub1" hidden></span></div>
- <div id="mapa"></div>
- <div class="leyenda"><div><div class="esc" id="esc"></div><div class="ln" id="ln"></div></div><span id="un"></span><span style="margin-left:auto"><span class="ins" style="margin:0">estación clave</span> círculo grande · aledañas, círculo pequeño</span></div>
+ <div class="cuerpo"><div style="min-width:0"><div id="mapa"></div>
+ <div class="leyenda"><div><div class="esc" id="esc"></div><div class="ln" id="ln"></div></div><span id="un"></span><span style="margin-left:auto"><span class="ins" style="margin:0">estación clave</span> círculo grande · aledañas, círculo pequeño</span></div></div>
+ <aside id="panel" class="caja"></aside></div>
 
  <div class="sec"><h2>Resumen de la zona</h2><div class="k" id="kpis"></div></div>
  <div class="sec"><h2>Comparación entre estaciones</h2><div class="mu" id="tbarras"></div><div class="caja"><div id="barras"></div></div>
@@ -127,7 +138,7 @@ const colorDe = (esc, v) => { const P = ESC[esc]; if (v <= P[0][0]) return hex(P
 const css = c => "rgb(" + c.join(",") + ")", oscuro = c => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) < 150;
 const fmt = (v, d) => v == null ? "—" : v.toFixed(d).replace(".", ",");
 const esc_ = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
-let datos = null, cat = {}, zona = new URLSearchParams(location.search).get("zona") || "rm", vcur = "prec", opc = {prec: "rr24", vien: "ff10"}, map, capa, contorno, CONT = null, SERIES = {};
+let MK = {}, datos = null, cat = {}, zona = new URLSearchParams(location.search).get("zona") || "rm", vcur = "prec", opc = {prec: "rr24", vien: "ff10"}, map, capa, contorno, CONT = null, SERIES = {};
 if (!ZONAS[zona]) zona = "rm";
 const val = (k, s) => VARS[k].v(s, opc[k]);
 const dentro = (lat, lon) => { if (!CONT) return true; let ok = false;
@@ -165,14 +176,15 @@ function mapa(reencuadrar){
     L.geoJSON(CONT.comunas, {pane: "lineas", style: {color: "#ffffff", opacity: 0.35, weight: 0.8, fill: false}, onEachFeature: (f, l) => l.bindTooltip(f.properties.nombre, {sticky: true})}).addTo(contorno);
     L.geoJSON(CONT.region, {pane: "lineas", style: {color: "#ffffff", weight: 1.6, fill: false}, interactive: false}).addTo(contorno);
   }
+  MK = {}; const AL = {}; alarmas().forEach(a => AL[a.c] = a.hs[0].nivel);
   const cajas = vcur === "prec" ? [[opc.prec, V.u]] : vcur === "vien" ? [["ff10"], ["fx10"]] : [["Tn24"], ["Tx24"]];
   for (const {c, E, s, clave} of L_){
     const v = val(vcur, s); if (v == null) continue;
     const bx = cajas.map(([k]) => { const x = s[k]; if (x == null) return ""; const col = colorDe(V.e, x), tx = oscuro(col) ? "#fff" : "#16202E";
       const fl = vcur === "vien" && k === "ff10" && s.dd10 > 0 ? `<span style="display:inline-block;transform:rotate(${(s.dd10 + 180) % 360}deg);line-height:0;margin-left:3px">${FLECHA}</span>` : "";
       return `<span class="bx" style="background:${css(col)};color:${tx}">${fmt(x, V.d)}${fl}</span>`; }).join("");
-    const ic = L.divIcon({className: "", iconSize: [0, 0], html: `<div class="pil${clave ? " cl" : ""}"${clave ? ` style="transform:${["translate(-50%,45%)", "translate(-100%,-50%)", "translate(0,-50%)", "translate(-50%,-145%)"][Z.clave.indexOf(c) % 4]}"` : ""}><span class="nm">${esc_(E.nombre.trim().split(",")[0].slice(0, 22))}</span>${bx}</div>`});
-    const mk = L.marker([E.lat, E.lon], {icon: ic, zIndexOffset: clave ? 1000 : 0}).addTo(capa);
+    const ic = L.divIcon({className: "", iconSize: [0, 0], html: `<div class="pil${clave ? " cl" : ""}"${clave ? ` style="transform:${["translate(-50%,45%)", "translate(-100%,-50%)", "translate(0,-50%)", "translate(-50%,-145%)"][Z.clave.indexOf(c) % 4]}"` : ""}><span class="nm">${esc_(E.nombre.trim().split(",")[0].slice(0, 22))}</span>${bx}${AL[c] ? TRI(AL[c] === 2 ? 2 : 1).replace("<svg ", `<svg style="position:absolute;left:-9px;top:-11px" `) : ""}</div>`});
+    const mk = L.marker([E.lat, E.lon], {icon: ic, zIndexOffset: clave ? 1000 : 0}).addTo(capa); MK[c] = mk;
     if (!clave) mk.bindTooltip(esc_(E.nombre.trim()), {direction: "top", offset: [0, -12]});
     mk.bindPopup(`<div class="pop"><b>${esc_(E.nombre)}</b><div class="mu">${c} · ${s.hora.replace("T", " ").replace("Z", " UTC")}</div><a href="estacion.html?cod=${c}">Ver ficha →</a></div>`);
   }
@@ -231,7 +243,40 @@ async function serie(){
   $("serie").innerHTML = `<svg class="gr" viewBox="0 0 ${W} ${H}" style="width:100%">${g}<text x="${ml}" y="${mt + 8}" style="fill:#16202E">${u}</text></svg>`;
   $("lgs").innerHTML = lineas.map((l, i) => `<span><i style="background:${cols[i % 4]}"></i>${esc_((cat[l.c] || {nombre: l.c}).nombre.trim())}</span>`).join("");
 }
-function todo(reenc){ botones(); leyenda(VARS[vcur]); mapa(reenc); kpis(); barras(); tabla(); serie(); }
+let QC = null, QCERR = "";
+const clave = () => { try { return sessionStorage.getItem("qcClave") || ""; } catch (e) { return window._qc || ""; } };
+const TRI = n => `<svg viewBox="0 0 20 18" class="t${n}" width="18" height="16" aria-hidden="true"><path d="M10 1 L19 17 L1 17 Z" fill="${n === 2 ? "#f08a1c" : "#f5c518"}" stroke="#fff" stroke-width="1.2" stroke-linejoin="round"/><rect x="9" y="6.5" width="2" height="5.5" fill="#222"/><rect x="9" y="13" width="2" height="2" fill="#222"/></svg>`;
+function alarmas(){
+  if (!QC) return [];
+  const cods = new Set(lista().map(x => x.c)), M = QC.marcas || {}, out = [];
+  ((QC.observaciones || {}).estaciones || []).forEach(e => { if (!cods.has(e.codigo)) return;
+    const hs = (e.hallazgos || []).filter(h => h.nivel >= 1).filter(h => { const m = M[`o|${e.codigo}|${String(h.hora).slice(0, 16)}|${h.regla}`]; return !(m && m.v !== "real" && (m.v === "omitir" || !m.msg || m.msg === h.msg)); });
+    if (hs.length) out.push({c: e.codigo, nombre: e.nombre || (cat[e.codigo] || {}).nombre || e.codigo, hs: hs.sort((a, b) => b.nivel - a.nivel || String(b.hora).localeCompare(String(a.hora)))});
+  });
+  return out.sort((a, b) => b.hs[0].nivel - a.hs[0].nivel || String(b.hs[0].hora).localeCompare(String(a.hs[0].hora)));
+}
+function panel(){
+  const P = $("panel");
+  if (!QC){ P.innerHTML = `<h3>Alarmas</h3><p class="mu" style="margin:0 0 8px">${QCERR || "Escribe la clave del control de calidad para ver las alarmas de la zona."}</p>
+    <form id="fclave" style="display:flex;gap:6px"><input id="kclave" type="password" placeholder="Clave" style="flex:1;min-width:0;padding:7px 9px;border:1px solid #c9d2dd;border-radius:8px;font:inherit"><button class="btn" style="padding:7px 12px;border:1px solid #c9d2dd;border-radius:8px;background:#fff;font:inherit;cursor:pointer">Ver</button></form>`;
+    $("fclave").onsubmit = ev => { ev.preventDefault(); try { sessionStorage.setItem("qcClave", $("kclave").value); } catch (e) { window._qc = $("kclave").value; } cargarQC(); };
+    return; }
+  const A = alarmas(), err = A.filter(a => a.hs[0].nivel === 2).length, sos = A.length - err;
+  P.innerHTML = `<h3>Alarmas de ${ZONAS[zona].nom}</h3><div class="cnt"><span style="background:#fde3c4;color:#7a3f00">${err} con error</span><span style="background:#fbf0b8;color:#5f4b00">${sos} sospechosas</span></div>` +
+    (A.length ? A.map(a => { const h = a.hs[0], n = a.hs.length - 1;
+      return `<div class="al" data-c="${a.c}">${TRI(h.nivel === 2 ? 2 : 1)}<div style="min-width:0"><b>${esc_(String(a.nombre).trim().split(",")[0])}</b><div class="m">${esc_(String(h.msg).slice(0, 150))}${String(h.msg).length > 150 ? "…" : ""}</div><div class="h">${esc_(String(h.hora).slice(5, 16).replace("-", "/"))} UTC${n ? ` · y ${n} más` : ""}</div></div></div>`; }).join("")
+      : '<p class="mu">Sin alarmas abiertas en la zona.</p>') +
+    `<p class="mu" style="font-size:11.5px;margin:6px 0 0">Alarmas de observaciones (nivel sospechosa o error). Las informativas no se muestran.</p>`;
+  P.querySelectorAll(".al").forEach(el => { el.onmouseenter = () => { const m = MK[el.dataset.c]; if (m && m.getElement()) m.getElement().querySelector(".pil").classList.add("res"); };
+    el.onmouseleave = () => { const m = MK[el.dataset.c]; if (m && m.getElement()) m.getElement().querySelector(".pil").classList.remove("res"); }; });
+}
+async function cargarQC(){
+  const k = clave(); if (!k){ QC = null; panel(); return; }
+  try { const r = await fetch("/api/qc", {headers: {"x-clave": k}, cache: "no-store"}); if (r.status === 401){ QC = null; QCERR = "Clave incorrecta."; try { sessionStorage.removeItem("qcClave"); } catch (e) {} } else if (!r.ok) throw 0; else { QC = await r.json(); QCERR = ""; } }
+  catch (e){ QC = null; QCERR = "No se pudieron cargar las alarmas."; }
+  mapa(false); panel();
+}
+function todo(reenc){ botones(); leyenda(VARS[vcur]); mapa(reenc); kpis(); barras(); tabla(); serie(); panel(); }
 (async function(){
   map = L.map("mapa", {zoomControl: false, dragging: false, scrollWheelZoom: false, doubleClickZoom: false, touchZoom: false, boxZoom: false, keyboard: false, zoomSnap: 0, attributionControl: true}).setView([-33.5, -70.7], 9);
   map.createPane("base").style.zIndex = 150; map.createPane("mascara").style.zIndex = 250; map.createPane("lineas").style.zIndex = 300;
@@ -242,7 +287,7 @@ function todo(reenc){ botones(); leyenda(VARS[vcur]); mapa(reenc); kpis(); barra
     c.forEach(e => cat[e.codigo] = e); datos = d; for (const k in d.estaciones) d.estaciones[k] = limpiar(d.estaciones[k]);
     try { const r = await fetch("/api/productos?tipo=contorno"); if (r.ok) CONT = await r.json(); } catch (e) {}
     $("sub").textContent = `Datos hasta ${d.hasta.replace("T", " ").replace("Z", " UTC")} · se actualiza al recargar la página`;
-    todo(true);
+    todo(true); cargarQC(); setInterval(cargarQC, 300000);
   } catch (e){ $("sub").textContent = "No se pudieron cargar los datos. Intente de nuevo en unos minutos."; $("sub").className = "err"; }
 })();
 </script>
