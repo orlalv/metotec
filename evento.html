@@ -33,7 +33,7 @@ h1{margin:0 0 2px;font-size:26px}
 .seg{display:inline-flex;border:1px solid #c9d2dd;border-radius:9px;overflow:hidden;background:#fff}
 .seg button{font:inherit;font-size:14px;padding:6px 14px;border:0;background:#fff;cursor:pointer;color:var(--tx)}
 .seg button.on{background:var(--marino);color:#fff}
-#mapa{height:min(78vh,820px);min-height:420px;border:1px solid var(--bd);border-radius:12px;background:#dfe6ee}
+#mapa{height:min(78vh,820px);min-height:420px;border:1px solid var(--bd);border-radius:12px;background:#2b3541}
 .leyenda{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:var(--mu);flex-wrap:wrap}
 .leyenda .esc{flex:0 1 360px;height:12px;border-radius:6px;border:1px solid var(--bd)}
 .leyenda .ln{display:flex;justify-content:space-between;width:min(360px,100%)}
@@ -63,6 +63,9 @@ table.c th:first-child,table.c td:first-child{text-align:left}
 table.c tr.clave td{background:#fbf6e6}table.c td.sel,table.c th.sel{background:#e8f2fb;font-weight:600}
 table.c tr.clave td.sel{background:#dcebf7}
 .ins{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;background:#C9A54C;color:#fff;margin-left:6px;vertical-align:1px}
+.pil{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:stretch;border-radius:16px;background:#1f5fd0;color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.45);white-space:nowrap;font:600 12px Inter,system-ui,Arial,sans-serif;padding:3px;gap:3px;align-items:center}
+.pil .nm{padding:0 7px 0 8px;display:none}.pil.cl .nm,.zalto .pil .nm{display:inline}.pil.cl{font-size:13px;padding:4px;border:2px solid #C9A54C}
+.pil .bx{min-width:28px;text-align:center;border-radius:10px;padding:2px 6px;font-variant-numeric:tabular-nums}
 .etq{font:600 12px Inter,system-ui,Arial,sans-serif;background:#fff;border:1px solid #C9A54C;padding:1px 6px}
 .gr text{font:12px Inter,system-ui,Arial,sans-serif;fill:#6B7686}
 .lg{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;margin-top:6px}.lg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
@@ -152,18 +155,20 @@ function mapa(reencuadrar){
   if (contorno){ contorno.remove(); contorno = null; }
   if (Z.contorno && CONT){
     contorno = L.layerGroup().addTo(map);
-    L.geoJSON(CONT.comunas, {style: {color: "#9aa8ba", weight: 0.8, fill: false}, onEachFeature: (f, l) => l.bindTooltip(f.properties.nombre, {sticky: true})}).addTo(contorno);
-    L.geoJSON(CONT.region, {style: {color: "#082B5C", weight: 2.2, fill: false}, interactive: false}).addTo(contorno);
+    const anillos = []; CONT.region.features.forEach(f => { const g = f.geometry, polys = g.type === "Polygon" ? [g.coordinates] : g.coordinates; polys.forEach(pl => anillos.push(pl[0].map(([x, y]) => [y, x]))); });
+    L.geoJSON(CONT.region, {pane: "base", style: {stroke: false, fillColor: "#5f9c8b", fillOpacity: 1}, interactive: false}).addTo(contorno);
+    L.polygon([[[-90, -180], [-90, 180], [90, 180], [90, -180]], ...anillos], {pane: "mascara", stroke: false, fillColor: "#2b3541", fillOpacity: 1, interactive: false}).addTo(contorno);
+    L.geoJSON(CONT.comunas, {pane: "lineas", style: {color: "#ffffff", opacity: 0.35, weight: 0.8, fill: false}, onEachFeature: (f, l) => l.bindTooltip(f.properties.nombre, {sticky: true})}).addTo(contorno);
+    L.geoJSON(CONT.region, {pane: "lineas", style: {color: "#ffffff", weight: 1.6, fill: false}, interactive: false}).addTo(contorno);
   }
+  const cajas = vcur === "prec" ? [[opc.prec, V.u]] : vcur === "vien" ? [["ff10"], ["fx10"]] : [["Tn24"], ["Tx24"]];
   for (const {c, E, s, clave} of L_){
     const v = val(vcur, s); if (v == null) continue;
-    const col = colorDe(V.e, v), tx = oscuro(col) ? "#fff" : "#16202E", an = clave ? 48 : 36, al = clave ? 28 : 20;
-    const fl = V.flecha && s.dd10 > 0 ? `<span style="display:inline-block;transform:rotate(${(s.dd10 + 180) % 360}deg);line-height:0">${FLECHA}</span>` : "";
-    const bd = clave ? "border:3px solid #C9A54C;font-size:15px" : "font-size:11.5px";
-    const ic = L.divIcon({className: "", iconSize: [an, al], iconAnchor: [an / 2, al / 2],
-      html: `<div class="dato" style="background:${css(col)};color:${tx};min-width:${an}px;height:${al}px;border-radius:${al / 2}px;${bd}">${fmt(v, V.d)}${fl}</div>`});
+    const bx = cajas.map(([k]) => { const x = s[k]; if (x == null) return ""; const col = colorDe(V.e, x), tx = oscuro(col) ? "#fff" : "#16202E";
+      const fl = vcur === "vien" && k === "ff10" && s.dd10 > 0 ? `<span style="display:inline-block;transform:rotate(${(s.dd10 + 180) % 360}deg);line-height:0;margin-left:3px">${FLECHA}</span>` : "";
+      return `<span class="bx" style="background:${css(col)};color:${tx}">${fmt(x, V.d)}${fl}</span>`; }).join("");
+    const ic = L.divIcon({className: "", iconSize: [0, 0], html: `<div class="pil${clave ? " cl" : ""}"${clave ? ` style="transform:${["translate(-50%,45%)", "translate(-100%,-50%)", "translate(0,-50%)", "translate(-50%,-145%)"][Z.clave.indexOf(c) % 4]}"` : ""}><span class="nm">${esc_(E.nombre.trim().split(",")[0].slice(0, 22))}</span>${bx}</div>`});
     const mk = L.marker([E.lat, E.lon], {icon: ic, zIndexOffset: clave ? 1000 : 0}).addTo(capa);
-    if (clave) mk.bindTooltip(E.nombre.trim().split(",")[0], {permanent: true, direction: ["left", "top", "right", "bottom"][Z.clave.indexOf(c) % 4], offset: [["left", "right"].includes(["left", "top", "right", "bottom"][Z.clave.indexOf(c) % 4]) ? (Z.clave.indexOf(c) % 4 === 0 ? -an / 2 : an / 2) : 0, 0], className: "etq"});
     mk.bindPopup(`<div class="pop"><b>${esc_(E.nombre)}</b><div class="mu">${c} · ${s.hora.replace("T", " ").replace("Z", " UTC")}</div><a href="estacion.html?cod=${c}">Ver ficha →</a></div>`);
   }
   if (reencuadrar) map.fitBounds(Z.vista, {padding: [10, 10], animate: false});
@@ -224,7 +229,9 @@ async function serie(){
 function todo(reenc){ botones(); leyenda(VARS[vcur]); mapa(reenc); kpis(); barras(); tabla(); serie(); }
 (async function(){
   map = L.map("mapa", {zoomControl: true, minZoom: 3}).setView([-33.5, -70.7], 9);
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 12, attribution: "© OpenStreetMap"}).addTo(map);
+  map.createPane("base").style.zIndex = 150; map.createPane("mascara").style.zIndex = 250; map.createPane("lineas").style.zIndex = 300;
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}", {maxZoom: 12, opacity: 0.55, attribution: "Relieve © Esri"}).addTo(map);
+  const nom = () => $("mapa").classList.toggle("zalto", map.getZoom() >= 10); map.on("zoomend", nom); nom();
   try {
     const [c, d] = await Promise.all([fetch("/api/minutarios?estaciones").then(r => r.json()), fetch("/api/mapa").then(r => { if (!r.ok) throw 0; return r.json(); })]);
     c.forEach(e => cat[e.codigo] = e); datos = d; for (const k in d.estaciones) d.estaciones[k] = limpiar(d.estaciones[k]);
