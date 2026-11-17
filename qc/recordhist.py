@@ -72,9 +72,9 @@ def comparar(R, cod, fecha, minimo, x):
     peor = (lambda a, b: a < b - TOL) if minimo else (lambda a, b: a > b + TOL)
     pal = "mínima" if minimo else "máxima"
     if ab and peor(x, ab[0]):
-        return 1, f"{x:g} °C supera la {pal} más {'baja' if minimo else 'alta'} de la historia de la estación ({ab[0]:g} °C el {ab[1][8:10]}-{ab[1][5:7]}-{ab[1][:4]}; serie {e['desde'][:4]}–{e['hasta'][:4]}). Posible récord: confirmar que el dato es correcto"
+        return 1, f"{x:g} °C: RÉCORD DE LA ESTACIÓN, supera la {pal} más {'baja' if minimo else 'alta'} de su historia. Récord anterior: {ab[0]:g} °C el {ab[1][8:10]}-{ab[1][5:7]}-{ab[1][:4]} (serie {e['desde'][:4]}–{e['hasta'][:4]}). Confirmar que el dato es correcto"
     if m and peor(x, m[0]):
-        return 0, f"{x:g} °C supera la {pal} más {'baja' if minimo else 'alta'} registrada en ese mes ({m[0]:g} °C el {m[1][8:10]}-{m[1][5:7]}-{m[1][:4]}; serie {e['desde'][:4]}–{e['hasta'][:4]}). Récord del mes"
+        return 0, f"{x:g} °C: récord del mes, supera la {pal} más {'baja' if minimo else 'alta'} registrada en ese mes. Récord anterior: {m[0]:g} °C el {m[1][8:10]}-{m[1][5:7]}-{m[1][:4]} (serie {e['desde'][:4]}–{e['hasta'][:4]})"
     return None
 
 
@@ -207,9 +207,9 @@ def comparar_pp(R, cod, fecha, x):
         return None
     ab = e.get("dia"); m = (e.get("mes") or {}).get(str(int(fecha[5:7])))
     if ab and x > ab[0] + TOL:
-        return 1, f"{x:g} mm supera la máxima diaria de la historia de la estación ({ab[0]:g} mm el {_f(ab[1])}; serie {e['desde'][:4]}–{e['hasta'][:4]}). Posible récord: confirmar que el dato es correcto"
+        return 1, f"{x:g} mm: RÉCORD DE LA ESTACIÓN, supera la máxima diaria de su historia. Récord anterior: {ab[0]:g} mm el {_f(ab[1])} (serie {e['desde'][:4]}–{e['hasta'][:4]}). Confirmar que el dato es correcto"
     if m and x > m[0] + TOL:
-        return 0, f"{x:g} mm supera la máxima diaria registrada en ese mes ({m[0]:g} mm el {_f(m[1])}). Récord del mes"
+        return 0, f"{x:g} mm: récord del mes, supera la máxima diaria registrada en ese mes. Récord anterior: {m[0]:g} mm el {_f(m[1])}"
     return None
 
 
@@ -219,7 +219,7 @@ def comparar_viento(R, cod, fecha, x):
         return None
     ab = e.get("max"); m = (e.get("mes") or {}).get(str(int(fecha[5:7])))
     if ab and x > ab[0]:
-        return 1, f"viento medio {x:g} kt supera el máximo de la historia de la estación ({ab[0]:g} kt el {_f(ab[1])}; serie {e['desde'][:4]}–{e['hasta'][:4]}). Posible récord: confirmar que el dato es correcto"
+        return 1, f"viento medio {x:g} kt: RÉCORD DE LA ESTACIÓN, supera el máximo de su historia. Récord anterior: {ab[0]:g} kt el {_f(ab[1])} (serie {e['desde'][:4]}–{e['hasta'][:4]}). Confirmar que el dato es correcto"
     if m and x > m[0]:
-        return 0, f"viento medio {x:g} kt supera el máximo registrado en ese mes ({m[0]:g} kt el {_f(m[1])}). Récord del mes"
+        return 0, f"viento medio {x:g} kt: récord del mes, supera el máximo registrado en ese mes. Récord anterior: {m[0]:g} kt el {_f(m[1])}"
     return None
