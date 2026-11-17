@@ -423,6 +423,19 @@ def prueba_records_pp_viento():
         FALLAS.append("récords pp/viento: sin serie no debía alertar")
 
 
+def prueba_records_uno_por_dia():
+    h = lambda hr, cod="RHM", msg="Tmax PM 25.0 °C": dict(hora=f"2026-11-17 {hr}:00", regla=cod, msg=msg, nivel=0)
+    r = S.una_por_dia([h("12"), h("13", msg="Tmax PM 26.0 °C"), h("14", msg="Tmax PM 26.5 °C")])
+    if len(r) != 1 or not r[0]["msg"].endswith("26.5 °C"):
+        FALLAS.append(f"récords: debía quedar solo el de la última hora → {r}")
+    r = S.una_por_dia([h("12"), h("14", "RHA", "Tmax PM 40.0 °C")])
+    if [x["regla"] for x in r] != ["RHA"]:
+        FALLAS.append(f"récords: el de la historia debe reemplazar al del mes → {r}")
+    r = S.una_por_dia([h("12"), h("12", msg="Tmin AM 5.0 °C"), h("13", cod="E12", msg="otra")])
+    if len(r) != 3:
+        FALLAS.append(f"récords: elementos distintos y otras reglas se conservan → {r}")
+
+
 def prueba_extremas_repetidas():
     t0 = pd.Timestamp("2026-11-12 12:00")
     def dia(k, val, hm):

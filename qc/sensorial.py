@@ -1434,4 +1434,31 @@ def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None, oficial=N
         for tipo, cod, niv, msg in evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + extremas_repetidas(t, o, obs) + extremas_records(t, o, codigo, (records or {}).get("t")) + records_pv(t, o, codigo, records, obs):
             if cod in EXT_PP:
                 out.append(campos(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"), o, t, obs, A, sg))
-    return out
+    return una_por_dia(out)
+
+
+REC_COD = ("RHA", "RHM", "RHP", "RHPM", "RHV", "RHVM")
+
+
+def una_por_dia(out):
+    """Los récords se repiten hora a hora cuando el valor sigue subiendo: deja uno por estación, día, elemento y tipo (el de la última hora, que
+    es el valor más extremo), y si el día tiene récord de toda la historia no deja además el del mes del mismo elemento."""
+    def clave(h):
+        return (h["hora"][:10], " ".join(h["msg"].split(" ")[:2]))
+    ult = {}
+    for h in out:
+        if h["regla"] in REC_COD:
+            k = (h["regla"],) + clave(h)
+            if k not in ult or h["hora"] > ult[k]["hora"]:
+                ult[k] = h
+    graves = {k[1:] for k in ult if k[0] in ("RHA", "RHP", "RHV")}
+    res = []
+    for h in out:
+        if h["regla"] in REC_COD:
+            k = (h["regla"],) + clave(h)
+            if ult[k] is not h:
+                continue
+            if h["regla"] in ("RHM", "RHPM", "RHVM") and clave(h) in graves:
+                continue
+        res.append(h)
+    return res
