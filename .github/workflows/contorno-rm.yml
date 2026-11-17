@@ -1,0 +1,29 @@
+name: Contorno Región Metropolitana
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: contorno-rm
+  cancel-in-progress: false
+jobs:
+  contorno:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pyshp shapely pyproj requests
+      - name: Rama de datos
+        run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - name: Contorno de la RM (BCN)
+        run: python qc/contorno_rm.py datos
+      - name: Guardar
+        run: |
+          cd datos
+          git config user.name "qc-metotec"; git config user.email "contacto.metotec@gmail.com"
+          git add -A mapas
+          git commit -q -m "contorno RM (BCN) $(date -u +%F)" || exit 0
+          for i in 1 2 3; do git pull -q --rebase origin datos && git push -q origin datos && break; sleep 5; done
