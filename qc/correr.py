@@ -210,11 +210,11 @@ NOMBRES_OBS = {"340116": "Independencia, Rancagua Ad.", "350007": "Punta Carranz
                "460002": "Cabo Raper, faro", "470001": "Lord Cochrane Ad.", "470002": "Isla San Pedro, faro", "520002": "Punta Dungeness, faro",
                "520003": "Evangelistas, faro", "530907": "Centro Meteorológico Marítimo de Punta Arenas", "550002": "Cabo de Hornos",
                "560002": "Islas Diego Ramírez", "200910": "Centro Meteorológico Marítimo de Iquique", "260007": "Isla San Félix", "290005": "Punta Tortuga, faro",
-               "330002": "Punta Ángeles, faro", "330028": "Punta Panul, faro", "950002": "Arturo Prat, Base Antártica",
+               "330002": "Punta Ángeles, faro", "330028": "Punta Panul, faro", "330066": "La Punta, Juan Fernández Ad.", "950002": "Arturo Prat, Base Antártica",
                "950003": "Bernardo O'Higgins, Base Antártica", "950006": "Antártica, Bahía Fildes Gobernación Marítima"}
 # coordenadas aproximadas (lat, lon) de las estaciones con observador que no vienen en el catastro de EMA
 COORD_OBS = {"200910": (-20.21, -70.15), "260007": (-26.29, -80.10), "290005": (-29.93, -71.35), "330002": (-33.02, -71.65),
-             "330028": (-33.57, -71.62), "340116": (-34.17, -70.78), "350007": (-35.60, -72.63), "360015": (-36.62, -73.06),
+             "330028": (-33.57, -71.62), "330066": (-33.67, -78.93), "340116": (-34.17, -70.78), "350007": (-35.60, -72.63), "360015": (-36.62, -73.06),
              "360020": (-36.75, -73.18), "360969": (-36.72, -73.11), "380004": (-38.37, -73.91), "400009": (-40.61, -73.06),
              "410007": (-41.78, -73.88), "410932": (-41.48, -72.94), "420014": (-42.34, -73.72), "430003": (-43.57, -74.83),
              "430004": (-43.61, -71.80), "460001": (-46.58, -71.69), "460002": (-46.80, -75.62), "470001": (-47.24, -72.59),
