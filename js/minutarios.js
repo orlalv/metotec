@@ -302,12 +302,13 @@ function pintar(){
     ${bloque("vec", "Estaciones cercanas", `<div class="htools"><input id="mAgr" list="mLista" placeholder="Agregar otra estación…" style="min-width:260px"><span style="color:var(--mu);font-size:12.5px">Marque hasta 2 para compararlas minuto a minuto con ${esc(M.nombre)}.</span></div>
     <div id="mVec"><p style="color:var(--mu)">Buscando las más cercanas…</p></div>`)}
     ${bloque("graf", "Gráfico", `<div class="htools">${vars.filter(v => !["rr6", "rr24", "Tn12", "Tx12"].includes(v[0])).map(v => `<button data-mv="${v[0]}" ${v[0] === mVar ? 'style="border-color:var(--oro);color:var(--oro)"' : ""}>${v[1]}</button>`).join("")}</div><div id="mGraf"></div>`)}<div id="mCompTab"></div>
+    ${bloque("hue", "Completar huecos (estimar datos que faltan)", '<div id="mHue"></div>')}
     ${bloque("datos", "Datos minutarios", `<div class="htools" id="mFil" style="font-size:12.5px;gap:8px;flex-wrap:wrap;align-items:center">
       <button data-q="tn" title="Resaltar y llevar a los minutos de la temperatura mínima del día">Tmín</button><button data-q="tx" title="Resaltar y llevar a los minutos de la temperatura máxima del día">Tmáx</button><button data-q="rr" title="Mostrar solo los minutos con agua caída mayor que 0">Agua caída &gt; 0</button>
       <span style="color:var(--mu)">Filtrar:</span><select id="mFV">${vars.map(v => `<option value="${v[0]}">${v[1]}</option>`).join("")}</select><select id="mFO"><option value="&gt;">&gt;</option><option value="&gt;=">≥</option><option value="&lt;">&lt;</option><option value="&lt;=">≤</option><option value="=">=</option></select><input id="mFN" type="number" step="any" style="width:90px" placeholder="valor"><button data-q="f">Filtrar</button><button data-q="x">Quitar filtro</button><span id="mFR" style="color:var(--mu)"></span></div>
     <div style="max-height:60vh;overflow:auto;border:1px solid var(--bd);border-radius:8px"><table class="mtab"><tr><th>UTC</th><th>Local</th>${vars.map(v => `<th>${v[1]}<br><small>${v[2]}</small></th>`).join("")}</tr>
     ${M.F.map(o => `<tr id="m${o.t}"><td>${hhmm(o.t)}</td><td>${loc(o.t)}</td>${vars.map(v => { const n = (mal[o.t] || {})[v[0]]; return `<td${n ? ` style="background:${n === 2 ? "#5a1f1f" : "#4a3f12"}"` : ""}>${o[v[0]] ?? ""}</td>`; }).join("")}</tr>`).join("")}</table></div>`)}`;
-  grafico(); vecinas(); filtros();
+  grafico(); vecinas(); filtros(); if (window.HUECOS) HUECOS.render();
 }
 /* buscar en la tabla de datos minutarios: Tmín, Tmáx, agua caída > 0 o cualquier variable con un umbral */
 function filtros(){
@@ -344,9 +345,14 @@ async function otra(cod){
   if (!DC.has(k)) DC.set(k, cargar(cod, M.dia, M.local).then(D => { const e = EST.find(x => x.codigo === cod) || {}; D.nombre = e.nombre || cod; D.alt = e.alt ?? null; return D; }));
   return DC.get(k);
 }
-async function vecinas(){
+function initVec(){
   const yo = EST.find(e => e.codigo === M.cod);
   if (!M.vec){ M.vec = yo && yo.lat != null ? EST.filter(e => e.codigo !== M.cod && e.lat != null).map(e => ({c: e.codigo, d: km(yo, e)})).filter(x => x.d <= 60).sort((a, b) => a.d - b.d).slice(0, 5).map(x => x.c) : []; M.cmp = []; }
+}
+async function vecD(){ initVec(); return Promise.all(M.vec.map(otra)); }       // datos del día de las estaciones cercanas
+async function vecinas(){
+  const yo = EST.find(e => e.codigo === M.cod);
+  initVec();
   const Ds = await Promise.all(M.vec.map(otra));
   const fila = (D, yo2) => { const r = R(D), pct = Math.round(100 * D.F.length / Math.max(1, Math.round(Math.min(D.fin, Date.now() - 50 * 60e3) - D.ini) / cadencia(D.F))),
       cn = r.comp.find(c => c.v === "Tn12"), cx = r.comp.find(c => c.v === "Tx12"), d = yo && yo2 ? km(yo, yo2) : 0, i = M.cmp.indexOf(D.cod);
@@ -429,6 +435,6 @@ function csv(){
   const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + L.join("\n")], {type: "text/csv"}));
   a.download = `minutarios_${M.cod}_${M.dia}.csv`; a.click();
 }
-window.MINU = {init, cargar, inconsistencias, R, estaciones, buscarCod, leerArchivos, pintarSub, get EST(){ return EST; }, SUB, ARCH, VAL, VARS, NOM, UNI,
+window.MINU = {get M(){ return M; }, vecD, init, cargar, inconsistencias, R, estaciones, buscarCod, leerArchivos, pintarSub, get EST(){ return EST; }, SUB, ARCH, VAL, VARS, NOM, UNI,
   cadencia, f1, hhmm, loc, km, esc, fechaArchivo: () => { const ok = ARCH.filter(a => !a.error && a.n); return ok.length ? ok[ok.length - 1] : null; }};
 })();
