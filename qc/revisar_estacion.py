@@ -29,10 +29,15 @@ def main():
     A_todo = leer_archivo(a.datos, fin, horas=HORAS_EXT + 14)
     ahora = datetime.now(timezone.utc)
     hechos, revisadas, res = {}, {}, []
+    try:
+        import recordhist as RC
+        REC = RC.cargar(a.datos) or RC.calcular(a.datos)
+    except Exception:
+        REC = {}
     for cod in cods:
         obs = SEN.leer(dmc.descargar(f"getRecientesSaclim/{cod}", timeout=90))
         A = A_todo[A_todo["codigo"] == cod] if len(A_todo) else A_todo
-        hall = SEN.revisar(cod, {**obs_archivo(a.datos, cod, fin), **obs}, A, horas=HORAS, horas_ext=HORAS_EXT)
+        hall = SEN.revisar(cod, {**obs_archivo(a.datos, cod, fin), **obs}, A, horas=HORAS, horas_ext=HORAS_EXT, records=REC)
         e = por.get(cod, {"codigo": cod})
         e.update(ultima=str(max(obs)) if obs else None, horas=len(obs), hallazgos=hall, nivel=max([h["nivel"] for h in hall], default=0))
         por[cod] = e; res.append(e)

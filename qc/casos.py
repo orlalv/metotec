@@ -383,6 +383,27 @@ def prueba_metar_nieve_respalda_w1():
         FALLAS.append("METAR: SN→7, RA→6, TSRA→9")
 
 
+def prueba_records_temperatura():
+    import recordhist as RC
+    R = {"330020": {"nombre": "Quinta Normal", "desde": "1990-01-01", "hasta": "2026-11-10", "n": 13000,
+                    "tx": {"max": [38.3, "2019-01-26"], "mes": {"1": [38.3, "2019-01-26"], "11": [34.0, "2015-11-30"]}},
+                    "tn": {"min": [-3.4, "2007-08-10"], "mes": {"8": [-3.4, "2007-08-10"], "11": [2.0, "2001-11-02"]}}}}
+    t = pd.Timestamp("2026-11-17 00:00")
+    ob = lambda el, x: {el: {el: x, "FechaHora": "2026-11-16 17:30"}}
+    si_alerta(S.extremas_records(t, ob("TxPM", 39.0), "330020", R), "RHA", "máxima sobre el récord de la historia", nivel=1)
+    si_alerta(S.extremas_records(t, ob("TxPM", 34.5), "330020", R), "RHM", "máxima sobre el récord del mes", nivel=0)
+    no_alerta(S.extremas_records(t, ob("TxPM", 34.5), "330020", R), "RHA", "récord del mes no es de la historia")
+    no_alerta(S.extremas_records(t, ob("TxPM", 34.0), "330020", R), "RHM", "igual al récord del mes")
+    no_alerta(S.extremas_records(t, ob("TxPM", 25.0), "330020", R), "RHA", "valor normal")
+    t2 = pd.Timestamp("2026-11-17 12:00")
+    si_alerta(S.extremas_records(t2, ob("TnAM", 1.5), "330020", R), "RHM", "mínima bajo el récord del mes", nivel=0)
+    si_alerta(S.extremas_records(t2, ob("TnAM", -4.0), "330020", R), "RHA", "mínima bajo el récord de la historia", nivel=1)
+    if S.extremas_records(t, ob("TxPM", 99.0), "999999", R):
+        FALLAS.append("récords: una estación sin serie no debía alertar")
+    if S.extremas_records(t, ob("TxPM", 99.0), "330020", None):
+        FALLAS.append("récords: sin archivo de récords no debía alertar")
+
+
 def prueba_extremas_repetidas():
     t0 = pd.Timestamp("2026-11-12 12:00")
     def dia(k, val, hm):

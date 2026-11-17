@@ -6,7 +6,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&
 const NIVC = ["var(--ok)", "var(--sos)", "var(--err)"], NIVT = ["info", "revisar", "dudoso"];
 const NOM = {CMS: "METAR y SYNOP no coinciden", FALTA: "Mensaje que falta", STs: "Ts frente al sensor", STd: "Td frente al sensor", SQFE: "QFE frente al sensor",
   SQFF: "QFF frente al sensor", SQNH: "QNH frente al sensor", Sff: "Viento frente al sensor", Sffkmh: "Viento en km/h", Sdd: "Dirección frente al sensor",
-  Sracha: "Racha", SRRR6: "RRR6 frente al pluviómetro", SPRE: "Lluvia del pluviómetro y tiempo presente", SEXT: "Extrema: valor", SXRA: "Extrema repetida: valor y hora", SXRV: "Extrema repetida: valor", SXRH: "Extrema repetida: hora", SEXF: "Extrema fuera de bloque",
+  Sracha: "Racha", SRRR6: "RRR6 frente al pluviómetro", SPRE: "Lluvia del pluviómetro y tiempo presente", SEXT: "Extrema: valor", RHA: "Récord histórico de temperatura", RHM: "Récord del mes de temperatura", SXRA: "Extrema repetida: valor y hora", SXRV: "Extrema repetida: valor", SXRH: "Extrema repetida: hora", SEXF: "Extrema fuera de bloque",
   E10: "Tiempo pasado W1W2", E11: "W1 sin respaldo", E12: "Precipitación con RRR6 0", E13: "RRR6 sin precipitación", E14: "ppp y QFE", E15: "Tendencia a y QFE",
   E16: "Tendencia a y QFE", E17: "Precipitación sin traza", E19: "Valor inusual", E20: "Posible error de digitación", C41: "Td mayor que Ts", C41H: "HR no calza con Ts y Td"};
 let clave = () => "", getR = () => null, P = null, idAct = null, timer = null, filtro = "";

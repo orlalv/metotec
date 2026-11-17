@@ -1244,6 +1244,26 @@ def extremas_repetidas(t, o, hist):
     return [(a, b, c, nombre_ext(d)) for a, b, c, d in out]
 
 
+def extremas_records(t, o, codigo, records):
+    """La extrema ingresada (TnAM, TxAM, TnPM, TxPM) frente a los récords de la estación (qc/recordhist.py): RHA si supera la máxima o
+    mínima de toda su historia (sospechoso: confirmar), RHM si supera el récord de ese mes (informativo)."""
+    out = []
+    if not records or str(codigo) not in records:
+        return out
+    import recordhist as RC
+    for el, nom, minimo in EXTREMAS:
+        x = v(o, el)
+        if x is None:
+            continue
+        fh = (o.get(el) or {}).get("FechaHora")
+        fecha = fh[:10] if isinstance(fh, str) and re.match(r"\d{4}-\d\d-\d\d", fh) else str(t)[:10]
+        r = RC.comparar(records, codigo, fecha, minimo, x)
+        if r:
+            niv, txt = r
+            out.append(("sensor", "RHA" if niv else "RHM", niv, nombre_ext(f"{el} {txt}")))
+    return out
+
+
 def _agrupar(momentos, salto=10):
     """De una lista de minutos en que se repite un valor, deja el primero de cada racha (separadas por más de «salto» min)."""
     res, ant = [], None
@@ -1357,10 +1377,10 @@ def campos(h, o, t, hist, A, sg=None):
 
 
 # ======================================================================= ciclo
-EXT_PP = {"SEXT", "SEXH", "SEXF", "SXRA", "SXRV", "SXRH", "SRRR6", "SPRE", "E12", "E13", "E17"}     # extremas y precipitación
+EXT_PP = {"SEXT", "SEXH", "SEXF", "SXRA", "SXRV", "SXRH", "RHA", "RHM", "SRRR6", "SPRE", "E12", "E13", "E17"}     # extremas y precipitación
 
 
-def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None, oficial=None):
+def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None, oficial=None, records=None):
     """Revisa las horas indicadas (por defecto la última) de una estación. Devuelve lista de hallazgos.
     horas_ext: horas (contadas desde la última) en que se revisan además las extremas y la precipitación, más atrás de «horas»
     (para no perder lo de un fin de semana largo)."""
@@ -1378,11 +1398,11 @@ def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None, oficial=N
                             msg=f"{el} del observador difiere en forma constante {sg[el]:+.1f} hPa de la estación automática (diferencia propia: altura del sensor o de pista; ya se descuenta al comparar)"))
     for t in sel:
         o = obs[t]
-        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + extremas_repetidas(t, o, obs) + satelital(t, o, sat):
+        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + extremas_repetidas(t, o, obs) + extremas_records(t, o, codigo, records) + satelital(t, o, sat):
             out.append(campos(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"), o, t, obs, A, sg))
     for t in ext:
         o = obs[t]
-        for tipo, cod, niv, msg in evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + extremas_repetidas(t, o, obs):
+        for tipo, cod, niv, msg in evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + extremas_repetidas(t, o, obs) + extremas_records(t, o, codigo, records):
             if cod in EXT_PP:
                 out.append(campos(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"), o, t, obs, A, sg))
     return out

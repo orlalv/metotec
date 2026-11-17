@@ -267,6 +267,14 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
     # minutario de las últimas 26 h, leído una sola vez (las extremas necesitan el período de 12 h de cada observación)
     ahora = pd.Timestamp.utcnow().tz_localize(None)
     A_todo = leer_archivo(raiz, ahora, horas=HORAS_EXT + 14)
+    RECORDS = {}
+    try:   # récords históricos de temperatura (series de 1990 en adelante); se guardan para la pestaña «Récord histórico»
+        import recordhist as RC
+        RECORDS = RC.calcular(raiz, E.to_dict("records"))
+        if RECORDS and RECORDS != RC.cargar(raiz):
+            RC.guardar(raiz, RECORDS)
+    except Exception:
+        RECORDS = {}
     for cod in cods:
         try:
             obs = SEN.leer(dmc.descargar(f"getRecientesSaclim/{cod}", timeout=90))
@@ -293,7 +301,7 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
                 mu.write_text(json.dumps(js_r, ensure_ascii=False)[:200000], encoding="utf-8")
         except Exception:
             pass
-        hall = SEN.revisar(cod, todas, A, horas=HORAS, sat=(SAT or {}).get(cod), horas_ext=HORAS_EXT, oficial=oficial)
+        hall = SEN.revisar(cod, todas, A, horas=HORAS, sat=(SAT or {}).get(cod), horas_ext=HORAS_EXT, oficial=oficial, records=RECORDS)
         revisadas[cod] = [str(t) for t in sorted(obs)[-HORAS:]]
         cambios_nuevos[cod] = nuevos
         for t, o in obs.items():
