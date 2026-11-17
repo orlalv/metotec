@@ -11,10 +11,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-17 01:00",
-"visto": "2026-11-17 01:16",
+"fin": "2026-11-17 01:30",
+"visto": "2026-11-17 01:46",
 "detalle": [
-"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -30,10 +30,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-17 01:00",
-"visto": "2026-11-17 01:16",
+"fin": "2026-11-17 01:15",
+"visto": "2026-11-17 01:46",
 "detalle": [
-"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 376 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -51,7 +51,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-17 00:50",
-"visto": "2026-11-17 01:16",
+"visto": "2026-11-17 01:46",
 "detalle": [
 "QFF · rango: 6 valores fuera de rango físico [920, 1060] (valor 549.3)",
 "QFE · rango: 6 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.0)",
@@ -71,12 +71,12 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-17 00:02",
-"visto": "2026-11-17 01:16",
+"fin": "2026-11-17 01:02",
+"visto": "2026-11-17 01:46",
 "detalle": [
-"QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 524.3)",
-"QFE · rango: 8 valores fuera de lo habitual para la zona centro [936, 1016] (valor 505.6)",
-"QFE · salto: cambio de 477.9 en 1 min (valor 503.1)"
+"QFF · rango: 9 valores fuera de rango físico [920, 1060] (valor 524.3)",
+"QFE · rango: 9 valores fuera de lo habitual para la zona centro [936, 1016] (valor 505.6)",
+"QFE · salto: cambio de 478.4 en 1 min (valor 503.0)"
 ]
 },
 "400013|barómetro": {
@@ -93,10 +93,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-16 19:59",
-"visto": "2026-11-17 01:16",
+"visto": "2026-11-17 01:46",
 "detalle": [
-"QFF · rango: 355 valores fuera de rango físico [920, 1060] (valor 503.8)",
-"QFE · rango: 355 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.6)"
+"QFF · rango: 384 valores fuera de rango físico [920, 1060] (valor 503.8)",
+"QFE · rango: 384 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.6)"
 ]
 },
 "370036|piranómetro (radiación)": {
@@ -111,9 +111,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-16 19:59",
-"visto": "2026-11-17 01:16",
+"visto": "2026-11-17 01:46",
 "detalle": [
-"radiación · rango: 360 valores fuera de rango físico [0, 1600] (valor 3872.37)"
+"radiación · rango: 380 valores fuera de rango físico [0, 1600] (valor 3872.37)"
 ]
 },
 "200007|piranómetro (radiación)": {
@@ -165,7 +165,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-16 23:12",
-"visto": "2026-11-17 01:16",
+"visto": "2026-11-17 01:46",
 "detalle": [
 "Ts · rango: 3 valores fuera de rango físico [-40, 45] (valor -49.0)",
 "HR · rango: 128 valores fuera de rango físico [1, 100] (valor 0.0)",
@@ -189,7 +189,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-16 19:54",
-"visto": "2026-11-17 01:16",
+"visto": "2026-11-17 01:46",
 "detalle": [
 "QFF · rango: 1 valores fuera de rango físico [920, 1060] (valor 508.7)",
 "QFE · rango: 1 valores fuera de lo habitual para la zona austral [972, 1052] (valor 508.0)",
@@ -210,7 +210,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-16 23:06",
-"visto": "2026-11-17 01:16",
+"visto": "2026-11-17 01:46",
 "detalle": [
 "HR · rango: 4 valores fuera de rango físico [1, 100] (valor 0.0)",
 "Ts · salto: cambio de 27.6 en 1 min (valor 3.8)",
@@ -229,9 +229,30 @@
 ],
 "nivel": 2,
 "fin": "2026-11-17 00:59",
-"visto": "2026-11-17 01:16",
+"visto": "2026-11-17 01:46",
 "detalle": [
-"radiación · rango: 33 valores fuera de rango físico [0, 1600] (valor -2.5)"
+"radiación · rango: 63 valores fuera de rango físico [0, 1600] (valor -2.5)"
+]
+},
+"330006|termohigrómetro": {
+"codigo": "330006",
+"sensor": "termohigrómetro",
+"inicio": "2026-11-17 01:30",
+"vars": [
+"HR",
+"T"
+],
+"pruebas": [
+"rango",
+"salto"
+],
+"nivel": 2,
+"fin": "2026-11-17 01:30",
+"visto": "2026-11-17 01:46",
+"detalle": [
+"HR · rango: 1 valores fuera de rango físico [1, 100] (valor 0.0)",
+"Ts · salto: cambio de 15.7 en 1 min (valor -0.7)",
+"HR · salto: cambio de 99.0 en 1 min (valor 0.0)"
 ]
 }
 }
