@@ -133,6 +133,8 @@ def clima(S):
     C = {}
     for v_ in ("tx", "tn"):
         g = S[v_].dropna()
+        if g.empty or not isinstance(g.index, pd.DatetimeIndex):
+            continue
         for m, x in g.groupby(g.index.month):
             if x.index.year.nunique() >= 8 and len(x) >= 150:
                 q1, q2, q3 = np.percentile(x, [25, 50, 75])
