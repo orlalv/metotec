@@ -1,0 +1,37 @@
+name: Agua caída histórica
+on:
+  workflow_dispatch:
+    inputs:
+      cods:
+        description: "Códigos separados por coma (vacío: todas las estaciones con observador)"
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: pp-historica
+  cancel-in-progress: false
+jobs:
+  pp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pandas numpy requests
+      - name: Rama de datos
+        run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - name: Descargar agua caída diaria
+        env:
+          DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
+          DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
+        run: python qc/series_pp.py datos "${{ inputs.cods }}"
+      - name: Guardar
+        if: always()
+        run: |
+          cd datos
+          git config user.name "qc-metotec"; git config user.email "contacto.metotec@gmail.com"
+          git add -A series/pp muestras
+          git commit -q -m "agua caída histórica $(date -u +%F)" || exit 0
+          for i in 1 2 3; do git pull -q --rebase origin datos && git push -q origin datos && break; sleep 5; done
