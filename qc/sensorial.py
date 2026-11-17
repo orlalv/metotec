@@ -1200,6 +1200,50 @@ def extremas(t, o, A, codigo, hist=None, oficial=None):
     return [(a, b, c, nombre_ext(d)) for a, b, c, d in _extremas(t, o, A, codigo, hist, oficial)]
 
 
+def _hm(o, el):
+    fh = (o.get(el) or {}).get("FechaHora")
+    return fh[11:16] if isinstance(fh, str) and re.match(r"\d{4}-\d\d-\d\d \d\d:\d\d", fh) else None
+
+
+def extremas_repetidas(t, o, hist):
+    """La extrema ingresada (TnAM, TxAM, TnPM, TxPM) igual a la del día anterior: mismo valor, misma hora (al minuto) o ambos.
+    Si coinciden valor y hora, solo avisa «ambos» (sospechoso); valor u hora solos son informativos (a veces es el tiempo).
+    Compara con la misma extrema de los días previos (la misma hora UTC) y cuenta los días seguidos."""
+    out = []
+    if not hist:
+        return out
+    for el, nom, minimo in EXTREMAS:
+        x, hm = v(o, el), _hm(o, el)
+        if x is None:
+            continue
+        nv = nh = nb = 0
+        sv = sh = sb = True
+        for k in range(1, 8):
+            p = hist.get(t - pd.Timedelta(hours=24 * k))
+            xp = v(p, el) if p else None
+            if xp is None:
+                break
+            hp = _hm(p, el)
+            iv = abs(xp - x) < 0.05
+            ih = hm is not None and hp is not None and hm == hp
+            sv, sh, sb = sv and iv, sh and ih, sb and iv and ih
+            nv, nh, nb = nv + sv, nh + sh, nb + sb
+            if not (sv or sh):
+                break
+        dias = lambda n: "el día anterior" if n == 1 else f"los {n} días anteriores"
+        if nb:
+            out.append(("sensor", "SXRA", 1, f"{el} {x:g} °C a las {hm}: mismo valor y misma hora que {dias(nb)} ({nb + 1} días seguidos). "
+                        f"Revisar si se copió la extrema del día anterior"))
+            continue
+        if nv:
+            out.append(("sensor", "SXRV", 0, f"{el} {x:g} °C: mismo valor que {dias(nv)} ({nv + 1} días seguidos)" + (f"; la hora cambia ({hm})" if hm else "")
+                        + ". Puede ser el tiempo; confirmar con la automática"))
+        if nh:
+            out.append(("sensor", "SXRH", 0, f"{el} {x:g} °C a las {hm}: misma hora (al minuto) que {dias(nh)} ({nh + 1} días seguidos); el valor cambia. "
+                        "Puede ser casualidad; confirmar con la automática"))
+    return [(a, b, c, nombre_ext(d)) for a, b, c, d in out]
+
+
 def _agrupar(momentos, salto=10):
     """De una lista de minutos en que se repite un valor, deja el primero de cada racha (separadas por más de «salto» min)."""
     res, ant = [], None
@@ -1313,7 +1357,7 @@ def campos(h, o, t, hist, A, sg=None):
 
 
 # ======================================================================= ciclo
-EXT_PP = {"SEXT", "SEXH", "SEXF", "SRRR6", "SPRE", "E12", "E13", "E17"}     # extremas y precipitación
+EXT_PP = {"SEXT", "SEXH", "SEXF", "SXRA", "SXRV", "SXRH", "SRRR6", "SPRE", "E12", "E13", "E17"}     # extremas y precipitación
 
 
 def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None, oficial=None):
@@ -1334,11 +1378,11 @@ def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None, oficial=N
                             msg=f"{el} del observador difiere en forma constante {sg[el]:+.1f} hPa de la estación automática (diferencia propia: altura del sensor o de pista; ya se descuenta al comparar)"))
     for t in sel:
         o = obs[t]
-        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + satelital(t, o, sat):
+        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + extremas_repetidas(t, o, obs) + satelital(t, o, sat):
             out.append(campos(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"), o, t, obs, A, sg))
     for t in ext:
         o = obs[t]
-        for tipo, cod, niv, msg in evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial):
+        for tipo, cod, niv, msg in evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + extremas_repetidas(t, o, obs):
             if cod in EXT_PP:
                 out.append(campos(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"), o, t, obs, A, sg))
     return out

@@ -383,6 +383,30 @@ def prueba_metar_nieve_respalda_w1():
         FALLAS.append("METAR: SN→7, RA→6, TSRA→9")
 
 
+def prueba_extremas_repetidas():
+    t0 = pd.Timestamp("2026-11-12 12:00")
+    def dia(k, val, hm):
+        return {"TnAM": {"TnAM": val, "FechaHora": f"2026-11-{12 + k:02d} {hm}"}}
+    hist = {t0 + pd.Timedelta(days=k): dia(k, v_, h_) for k, (v_, h_) in enumerate([(12.3, "06:10"), (12.3, "06:10"), (12.3, "06:10")])}
+    t = t0 + pd.Timedelta(days=2)
+    r = S.extremas_repetidas(t, hist[t], hist)
+    si_alerta(r, "SXRA", "3 días con mismo valor y hora", nivel=1)
+    no_alerta(r, "SXRV", "ambos reemplaza a valor")
+    no_alerta(r, "SXRH", "ambos reemplaza a hora")
+    h2 = {k: dict(x) for k, x in hist.items()}; h2[t] = dia(2, 12.3, "06:40")
+    r = S.extremas_repetidas(t, h2[t], h2)
+    si_alerta(r, "SXRV", "solo el valor repetido", nivel=0); no_alerta(r, "SXRA", "hora distinta"); no_alerta(r, "SXRH", "hora distinta")
+    h3 = {k: dict(x) for k, x in hist.items()}; h3[t] = dia(2, 12.9, "06:10")
+    r = S.extremas_repetidas(t, h3[t], h3)
+    si_alerta(r, "SXRH", "solo la hora repetida", nivel=0); no_alerta(r, "SXRA", "valor distinto"); no_alerta(r, "SXRV", "valor distinto")
+    h4 = {k: dict(x) for k, x in hist.items()}; h4[t] = dia(2, 13.5, "05:20")
+    r = S.extremas_repetidas(t, h4[t], h4)
+    if r:
+        FALLAS.append(f"extremas repetidas: valor y hora distintos no debían alertar → {r}")
+    if S.extremas_repetidas(t0, hist[t0], {t0: hist[t0]}):
+        FALLAS.append("extremas repetidas: sin días anteriores no debía alertar")
+
+
 def prueba_super_vecinas_viento_lluvia():
     """Super automático: Ts, viento y lluvia contra las vecinas (≥ 3). Cubre el fallo que dejó sin alertas de comparación (_hc sin ingresado/deberia)."""
     import pandas as pd, superauto as SUP

@@ -30,7 +30,7 @@ const N = {
   ZC01: "Ts muy distinta de sus vecinas", ZC02: "Td muy distinto de sus vecinas", ZC03: "HR muy distinta de sus vecinas", ZC04: "QFF muy distinto de sus vecinas", ZC05: "Viento medio muy distinto de sus vecinas", ZC06: "Lluvia muy distinta de sus vecinas",
   ZM01: "Ts muy distinta del modelo", ZM02: "Td muy distinto del modelo", ZM03: "HR muy distinta del modelo", ZM04: "QFF muy distinto del modelo", ZM05: "Viento muy distinto del modelo",
   ZE01: "Mínima o máxima de 12 h no coincide con la temperatura por minuto", ZE03: "Mínima de 12 h mayor que la máxima de 12 h",
-  SEXT: "Extrema: valor", SEXH: "Extrema: hora", SEXF: "Extrema fuera de bloque sin ingresar", SRRR6: "RRR6 frente al pluviómetro",
+  SEXT: "Extrema: valor", SEXH: "Extrema: hora", SXRA: "Extrema repetida: mismo valor y hora que ayer", SXRV: "Extrema repetida: mismo valor que ayer", SXRH: "Extrema repetida: misma hora que ayer", SEXF: "Extrema fuera de bloque sin ingresar", SRRR6: "RRR6 frente al pluviómetro",
   SPRE: "Pluviómetro y tiempo presente", SinDato: "Sin dato", St: "Satélite: nubosidad", Sc: "Satélite: nubes", SD: "Satélite"
 };
 // Controles Definidos de SACLIM (qc/reglas_sistema.json): su código es un número; el texto del aviso es el propio mensaje del sistema
@@ -40,7 +40,7 @@ const SIN_CODIGO = new Set(["SEXT", "SEXH"]);     // estas dos se muestran sin e
 const html = (c, esc) => `${esc(nombre(c))}${(N[c] || esSaclim(c)) && !SIN_CODIGO.has(c) ? ` <small style="color:var(--mu);font-family:var(--mono)">${esc(c)}</small>` : ""}`;
 
 // a qué pestaña va cada regla de observaciones (cada alerta vive en un solo lugar; lo demás queda en «Observaciones»)
-const PESTANA = {SEXT: "ext", SEXH: "ext", SEXF: "ext",
+const PESTANA = {SEXT: "ext", SEXH: "ext", SEXF: "ext", SXRA: "ext", SXRV: "ext", SXRH: "ext",
   SRRR6: "pp", SPRE: "pp", E12: "pp", E13: "pp", E17: "pp",
   STs: "tem", STd: "tem", SHR: "tem", SBTs: "tem", SBTd: "tem", SBHR: "tem", C41: "tem", C41H: "tem"};
 const pestana = c => PESTANA[c] || (/^Z[TPVRECM]\d\d$/.test(c) ? "super" : "obs");
@@ -48,6 +48,7 @@ const pestana = c => PESTANA[c] || (/^Z[TPVRECM]\d\d$/.test(c) ? "super" : "obs"
 /* Registro de cambios de reglas. Al cambiar una regla o umbral en qc/, agregar una fila ARRIBA: [fecha AAAA-MM-DD, códigos, qué cambió, por qué].
    Lo que se vea aquí debe coincidir con lo que dicen las pruebas fijas (qc/casos.py). */
 const CAMBIOS = [
+  ["2026-11-17", "SXRA, SXRV, SXRH", "Nuevo en Extremas: la Tmin/Tmax AM/PM ingresada igual a la del día anterior (o de varios días seguidos). SXRA: mismo valor y misma hora (al minuto), sospechoso, y reemplaza a los otros dos. SXRV: solo el valor, informativo. SXRH: solo la hora, informativo.", "Con 26 años de 6 estaciones, el valor se repite entre 1 % y 6 % de los días, la hora entre 0,3 % y 6 %, y los dos juntos solo entre 0,01 % y 0,2 %: «ambos» casi nunca es casualidad."],
   ["2026-11-17", "Boletín: máxima y mínima", "El valor de la máxima y de la mínima del boletín debe ser igual al de la estación automática (a 1 decimal): se avisa con cualquier diferencia sobre 0,05 °C (antes, sobre 0,5 °C). La hora ya debía coincidir con el minuto del extremo.", "El Loa, Calama: boletín 25,6 °C a las 16:44 y la automática 25,7 °C a las 16:52; se avisaba la hora y no el valor. Con los datos de hoy solo esa estación pasa a avisarse (21 revisadas)."],
   ["2026-11-13", "2972, 3102, C02", "Neblina (BR METAR o ww 10) con visibilidad entre 1000 y 5000 m: ya no se avisa por el control de SACLIM 2972 / 3102 (la visibilidad se ingresa tal cual). Solo avisa con menos de 1000 m (es niebla) o con más de 8000 m. Se agregó el chequeo para el METAR (C02).", "En SACLIM esa regla no existe; la visibilidad se ingresa como se mide."],
   ["2026-11-13", "Resuelto", "«Resuelto» ya no devuelve la alerta si en la pasada siguiente el dato sigue igual (observaciones y Super automático); solo vuelve si el mensaje o el valor cambian.", "El servicio de observaciones no refleja las correcciones hechas en SACLIM, así que la etiqueta «el dato sigue igual» era una falsa alarma permanente."],
@@ -83,6 +84,7 @@ const UMBRALES = [
     "RRR6 debe calzar con la suma del pluviómetro en las 6 h que cierran a las 00, 06, 12 y 18 UTC.",
     "Traza con pluviómetro ≥ 0,2 mm → dudoso («Debería ir: RRR6 x.x»). Traza con RRR6 ≠ 0.0 → dudoso. Traza sin fenómenos en 6 h y pluviómetro 0 → informativo."]],
   ["Extremas", [
+    "Repetición (SXRA, SXRV, SXRH): la extrema ingresada se compara con la misma extrema de los días anteriores. Valor y hora (al minuto) iguales → sospechoso (SXRA); solo el valor (SXRV) o solo la hora (SXRH) → informativo. Cuenta los días seguidos.",
     "Tmin AM/Tmax AM (00–12 UTC) y Tmin PM/Tmax PM (12–00 UTC) frente a la extrema oficial de la estación automática, en valor y hora (hora local)."]],
   ["Controles Definidos de SACLIM", [
     "Se aplican las reglas propias del sistema de ingreso (qc/reglas_sistema.json) sobre lo grabado por el observador; se avisan como «Control de SACLIM» con el número de la regla y su mensaje.",
