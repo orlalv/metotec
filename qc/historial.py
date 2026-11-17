@@ -50,6 +50,29 @@ def _purgar(raiz, cache, tocados):
     f.write_text(json.dumps(hecho, sort_keys=True), encoding="utf-8")
 
 
+OMITIR_1828 = {"420014"}      # Mocopulli: ingresa cada día, a mano, las horas en que no estuvo (sin datos sensoriales)
+HORAS_TARDE_1828 = 10         # una observación que se detecta recién con más de 10 h de atraso es un ingreso tardío
+
+
+def omitir_1828(raiz, codigo, h, ahora):
+    """Regla del sistema 1828 (dirección de nubes con capas informadas): no aplica en estaciones que ingresan a mano horas pasadas ni en
+    observaciones que aparecen por primera vez con más de 10 h de atraso (ingreso retroactivo, sin sensoriales). Si la alerta ya estaba
+    abierta antes, se mantiene (no es un ingreso tardío sino un olvido real)."""
+    if h.get("regla") != "1828":
+        return False
+    if str(codigo) in OMITIR_1828:
+        return True
+    try:
+        import pandas as pd
+        hora = pd.Timestamp(h["hora"][:16])
+        if (pd.Timestamp(ahora) - hora) <= pd.Timedelta(hours=HORAS_TARDE_1828):
+            return False
+        D = _cargar(raiz, h["hora"][:10], {})
+        return f"o|{codigo}|{h['hora'][:16]}|1828" not in D["obs"]
+    except Exception:
+        return False
+
+
 def actualizar(raiz, ahora, sensorial=None, revisadas=None, alertas=None, nombres=None):
     """sensorial: lista de estaciones con 'hallazgos' (de control_sensorial); revisadas: {código: [horas revisadas]};
     alertas: lista de alertas de las estaciones automáticas. Devuelve {día: texto json} de los días modificados."""

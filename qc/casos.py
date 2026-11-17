@@ -452,6 +452,17 @@ def prueba_ts_fuera_extremas():
     if S.ts_fuera_extremas(t, ob(30.0), A.iloc[:300], hist): FALLAS.append("SEXC: con el período incompleto no debía afirmar nada")
 
 
+def prueba_omitir_1828():
+    import historial as HIS, tempfile
+    d = tempfile.mkdtemp()
+    ahora = pd.Timestamp("2026-11-17 11:20")
+    h = lambda hr, cod="1828": dict(regla=cod, hora=f"2026-11-17 {hr}:00")
+    if not HIS.omitir_1828(d, "420014", h("05"), ahora): FALLAS.append("1828: Mocopulli siempre se omite")
+    if HIS.omitir_1828(d, "330030", h("09"), ahora): FALLAS.append("1828: con menos de 10 h de atraso se mantiene")
+    if not HIS.omitir_1828(d, "330030", h("00"), ahora): FALLAS.append("1828: primera vez con más de 10 h de atraso es ingreso tardío")
+    if HIS.omitir_1828(d, "330030", h("00", "E12"), ahora): FALLAS.append("1828: otras reglas no se tocan")
+
+
 def prueba_extremas_repetidas():
     t0 = pd.Timestamp("2026-11-12 12:00")
     def dia(k, val, hm):

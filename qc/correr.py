@@ -300,6 +300,7 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
         except Exception:
             pass
         hall = SEN.revisar(cod, todas, A, horas=HORAS, sat=(SAT or {}).get(cod), horas_ext=HORAS_EXT, oficial=oficial, records=RECORDS)
+        hall = [h for h in hall if not HIS.omitir_1828(raiz, cod, h, ahora)]   # 1828 en ingresos tardíos (Mocopulli, >10 h)
         revisadas[cod] = [str(t) for t in sorted(obs)[-HORAS:]]
         cambios_nuevos[cod] = nuevos
         for t, o in obs.items():
