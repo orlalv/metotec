@@ -1,11 +1,11 @@
 /* Prioridad de los hallazgos de observaciones: primero lo que va en los mensajes SYNOP/METAR. */
 const ELEM = [
   ["presion", "Presión", 6, /^(E09|E14|E15|E16|SQFE|SQFF|SQNH|SBQFE|SBQFF|SBQNH)$/, /presi|QFE|QFF|QNH|tendencia|ppp/i],
-  ["viento", "Viento", 5, /^(C24|C25|C26|Sff|Sffkmh|Sdd|Sracha)$/, /viento|racha|rapidez/i],
+  ["viento", "Viento", 5, /^(C24|C25|C26|Sff|Sffkmh|Sdd|Sracha|RHVM?)$/, /viento|racha|rapidez/i],
   ["vis", "Visibilidad", 5, /^(C0[1-6]|E05|E06|SAT8)$/, /visib/i],
   ["tiempo", "Tiempo presente y pasado", 5, /^(C0[7-9]|C1[0-3]|C2[7-9]|C3[01]|E01|E03|E04|E1[01]|SAT[345])$/, /tiempo|fen[oó]meno|W1|ww/i],
   ["temp", "Temperatura y humedad", 4, /^((S|SB)(Ts|Td|HR)|SEXT|SEXH|SEXF|SXR[AVH]|RH[AM]|C41|C41H)$/, /temperatura|roc[ií]o|humedad/i],
-  ["precip", "Precipitación", 4, /^(E12|E13|SRRR6|SPRE)$/, /precipitaci|RRR|lluvia/i],
+  ["precip", "Precipitación", 4, /^(E12|E13|SRRR6|SPRE|RHPM?)$/, /precipitaci|RRR|lluvia/i],
   ["nubes", "Nubosidad", 3, /^(C1[4-9]|C2[0-3]|C32|C38|C39|C40|E18|SAT[1267])$/, /nub|octa|capa|N\b/i],
 ];
 function elementoDe(h){

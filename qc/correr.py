@@ -270,9 +270,7 @@ def control_sensorial(E, raiz, pausa=0.3, SAT=None):
     RECORDS = {}
     try:   # récords históricos de temperatura (series de 1990 en adelante); se guardan para la pestaña «Récord histórico»
         import recordhist as RC
-        RECORDS = RC.calcular(raiz, E.to_dict("records"))
-        if RECORDS and RECORDS != RC.cargar(raiz):
-            RC.guardar(raiz, RECORDS)
+        RECORDS = RC.todos(raiz, E.to_dict("records"))   # {t: temperatura, p: precipitación, v: viento}
     except Exception:
         RECORDS = {}
     for cod in cods:

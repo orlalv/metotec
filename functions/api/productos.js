@@ -24,7 +24,7 @@ function publico(b){
 export async function onRequestGet({ request, env }){
   const u = new URL(request.url), tipo = u.searchParams.get("tipo");
   if (tipo === "extremas"){ const r = await leer(env, "pub/extremas", "productos/extremas.json"); return r ? resp(r) : resp({ error: "sin datos" }, 503); }
-  if (tipo === "records"){ const r = await leer(env, "pub/records", "records/temperatura.json"); return r ? resp(r) : resp({ error: "sin datos" }, 503); }
+  if (tipo === "records"){ const [t, p, v] = await Promise.all([leer(env, "pub/records", "records/temperatura.json"), leer(env, "pub/records-pp", "records/precipitacion.json"), leer(env, "pub/records-v", "records/viento.json")]); return (t || p || v) ? resp({ t: t || {}, p: p || {}, v: v || {} }) : resp({ error: "sin datos" }, 503); }
   if (tipo === "lluvia"){ const r = await leer(env, "pub/lluvia_obs", "productos/lluvia_obs.json"); return r ? resp(r) : resp({ error: "sin datos" }, 503); }
   if (tipo === "boletin"){
     const pedido = u.searchParams.get("dia");

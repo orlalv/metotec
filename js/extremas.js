@@ -57,11 +57,17 @@ async function pintarRecords(){
   const el = $("#xRec"); if (!el) return;
   try {
     if (!RECS){ const r = await fetch("/api/productos?tipo=records"); if (!r.ok) throw new Error(r.status); RECS = await r.json(); }
-    const f = x => x ? `<b>${x[0].toFixed(1)}</b> °C<br><small>${x[1].split("-").reverse().join("-")}</small>` : "—";
+    const F = (x, u, d = 1) => x ? `<b>${x[0].toFixed(d)}</b> ${u}<br><small>${x[1].split("-").reverse().join("-")}</small>` : "—";
     const O = ((getR() || {}).observaciones || {}).estaciones || [];
     const nom = {}; O.forEach(e => nom[e.codigo] = e.nombre);
-    const filas = Object.entries(RECS).map(([c, e]) => ({c, n: e.nombre || nom[c] || c, e})).filter(x => !q || x.n.toLowerCase().includes(q) || x.c.includes(q)).sort((a, b) => a.n.localeCompare(b.n));
-    el.innerHTML = `<table class="xtab"><tr><th>Estación</th><th>Máxima más alta</th><th>Mínima más baja</th><th>Serie</th></tr>${filas.map(({c, n, e}) => `<tr><td class="nom"><b>${esc(n)}</b><br><small>${c}</small></td><td class="n">${f((e.tx || {}).max)}</td><td class="n">${f((e.tn || {}).min)}</td><td class="n">${esc((e.desde || "").slice(0, 4))}–${esc((e.hasta || "").slice(0, 4))}</td></tr>`).join("")}</table>`;
+    const T = RECS.t || {}, P = RECS.p || {}, V = RECS.v || {};
+    const cods = [...new Set([...Object.keys(T), ...Object.keys(P), ...Object.keys(V)])];
+    const filas = cods.map(c => ({c, n: (T[c] || {}).nombre || nom[c] || "Estación " + c})).filter(x => !q || x.n.toLowerCase().includes(q) || x.c.includes(q)).sort((a, b) => a.n.localeCompare(b.n));
+    const ser = (e, k) => e ? `${esc((e.desde || "").slice(0, 4))}–${esc((e.hasta || "").slice(0, 4))}` : "";
+    el.innerHTML = `<table class="xtab"><tr><th>Estación</th><th>Máxima más alta</th><th>Mínima más baja</th><th>Lluvia máx. diaria</th><th>Lluvia máx. mensual</th><th>Viento medio máx.</th></tr>${filas.map(({c, n}) => {
+      const t = T[c] || {}, p = P[c], v = V[c];
+      return `<tr><td class="nom"><b>${esc(n)}</b><br><small>${c}</small></td><td class="n">${F((t.tx || {}).max, "°C")}</td><td class="n">${F((t.tn || {}).min, "°C")}</td><td class="n">${p ? F(p.dia, "mm") : "—"}</td><td class="n">${p ? `<b>${p.mensual[0].toFixed(1)}</b> mm<br><small>${p.mensual[1].split("-").reverse().join("-")}</small>` : "—"}</td><td class="n">${v ? F(v.max, "kt", 0) : "—"}</td></tr>`;
+    }).join("")}</table><p style="color:var(--mu);font-size:12px;margin-top:6px">Temperatura: serie de 1990 en adelante. Lluvia: 1995 en adelante (2026 solo en las estaciones con archivo SACLIM). Viento: solo seis estaciones con archivo horario SACLIM (viento medio, no racha).</p>`;
   } catch (err){ el.innerHTML = `<p style="color:var(--mu)">Aún no hay récords publicados (se generan en la próxima pasada del control).</p>`; }
 }
 window.EXT = {init, pintar};

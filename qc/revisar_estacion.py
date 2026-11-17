@@ -31,7 +31,7 @@ def main():
     hechos, revisadas, res = {}, {}, []
     try:
         import recordhist as RC
-        REC = RC.cargar(a.datos) or RC.calcular(a.datos)
+        REC = {"t": RC.cargar(a.datos) or RC.calcular(a.datos), "p": RC.cargar_pv(a.datos, "precipitacion"), "v": RC.cargar_pv(a.datos, "viento")}
     except Exception:
         REC = {}
     for cod in cods:
