@@ -19,6 +19,11 @@ VARS.SEXT = VARS.SEXH = {cols: ["T"], nom: "Ts (período de la extrema)", u: "°
 VARS.C41 = VARS.C41H = {cols: ["HR"], nom: "HR", u: "%", obs: /HR (-?[\d.]+) %/};
 VARS.SRRR6 = {cols: ["rr1m"], nom: "Agua caída acumulada (6 h)", u: "mm", obs: /RRR6 anotado (-?[\d.]+)/, horas: 6, acum: true};
 VARS.E12 = VARS.E13 = VARS.E17 = {...VARS.SRRR6, obs: /RRR6 (-?[\d.]+)/};
+// récords: la serie de la automática en el período, lo que anotó el observador y una línea en el récord anterior
+const REC = /Récord anterior: (-?[\d.]+)/;
+VARS.RHA = VARS.RHM = {cols: ["T"], nom: "Ts (período de la extrema)", u: "°C", obs: /T(?:min|max) (?:AM|PM) (-?[\d.]+)/, horas: 12, rec: REC};
+VARS.RHP = VARS.RHPM = {cols: ["rr1m"], nom: "Agua caída acumulada (24 h)", u: "mm", obs: /^(?:RRR6|acumulado de 24 h) (-?[\d.]+)/, horas: 24, acum: true, rec: REC};
+VARS.RHV = VARS.RHVM = {cols: ["ff10", "fx10"], nom: "Viento medio 10 min", u: "kt", obs: /[Vv]iento medio (-?[\d.]+)/, horas: 12, rec: REC};
 VARS.SPRE = {cols: ["rr1m"], nom: "Agua caída por minuto (2 h previas)", u: "mm", obs: /$^/, horas: 2};
 [["SBTs", "STs"], ["SBTd", "STd"], ["SBHR", "SHR"], ["SBQFE", "SQFE"], ["SBQFF", "SQFF"], ["SBQNH", "SQNH"]].forEach(([a, b]) => VARS[a] = {...VARS[b], obs: /anotado (-?[\d.]+)/});
 const COLOR = {rr1m: "#5AA9E6", T: "#F07A5A", Td: "#62B6E8", HR: "#5BBF8A", P_est: "#C9A0F0", P_mar: "#C9A0F0", ff10: "#62B6E8", fx10: "#F07A5A", dd10: "#62B6E8"};
@@ -44,7 +49,8 @@ async function abrir(cont, cod, hora, regla, msg){
   if (V.acum){ let s_ = 0; F.forEach(o => { s_ += o.v[0] || 0; o.v[0] = Math.round(s_ * 10) / 10; }); }
   if (!F.length){ cont.innerHTML = `<p style="color:var(--mu);margin:6px 0">No hay minutario para esa hora.</p>`; return; }
   const m = (msg || "").match(V.obs), ob = m ? +m[1] : null;
-  const vals = F.flatMap(o => o.v).filter(x => x != null).concat(ob != null ? [ob] : []);
+  const rm = V.rec ? (msg || "").match(V.rec) : null, rec = rm ? +rm[1] : null;
+  const vals = F.flatMap(o => o.v).filter(x => x != null).concat(ob != null ? [ob] : []).concat(rec != null ? [rec] : []);
   if (V.racha) F.forEach(o => o.v[0] != null && vals.push(o.v[0] + 10));
   let lo = Math.min(...vals), hi = Math.max(...vals); const pad = Math.max((hi - lo) * .12, V.u === "°C" ? .3 : V.u === "hPa" ? .3 : 1); lo -= pad; hi += pad;
   const W = 720, H = 250, ml = 46, mr = 14, mt = 14, mb = 28, X = x => ml + (W - ml - mr) * (x - ini) / (t - ini), Y = y => mt + (H - mt - mb) * (1 - (y - lo) / (hi - lo));
@@ -62,10 +68,12 @@ async function abrir(cont, cod, hora, regla, msg){
     svg += `<path d="${d}" fill="none" stroke="${COLOR.ff10}" stroke-width="1.2" stroke-dasharray="3 3" opacity=".8"/>`; }
   if (ob != null) svg += `<line x1="${ml}" x2="${W - mr}" y1="${Y(ob)}" y2="${Y(ob)}" stroke="var(--tx)" stroke-width="1.6" stroke-dasharray="6 4"/>
     <text x="${ml + 6}" y="${Y(ob) - 5}" font-size="11" font-weight="700" fill="var(--tx)">observador ${ob} ${V.u}</text>`;
+  if (rec != null) svg += `<line x1="${ml}" x2="${W - mr}" y1="${Y(rec)}" y2="${Y(rec)}" stroke="var(--err)" stroke-width="1.6" stroke-dasharray="2 4"/>
+    <text x="${W - mr - 4}" y="${Y(rec) - 5}" text-anchor="end" font-size="11" font-weight="700" fill="var(--err)">récord anterior ${rec} ${V.u}</text>`;
   svg += `<line class="sgcur" x1="0" x2="0" y1="${mt}" y2="${H - mb}" stroke="var(--tx)" stroke-width="1" opacity="0"/><g class="sgpts"></g>
     <rect class="sghit" x="${ml}" y="${mt}" width="${W - ml - mr}" height="${H - mt - mb}" fill="transparent" style="cursor:crosshair"/>`;
   const ley = V.cols.map(c => `<span><i style="background:${COLOR[c]}"></i>${esc(NOMCOL[c] || V.nom)}</span>`).join("") + (V.racha ? `<span><i style="background:${COLOR.ff10};opacity:.6"></i>medio + 10 kt (umbral de racha)</span>` : "")
-    + (ob != null ? `<span><i style="background:var(--tx)"></i>lo que anotó el observador</span>` : "");
+    + (ob != null ? `<span><i style="background:var(--tx)"></i>lo que anotó el observador</span>` : "") + (rec != null ? `<span><i style="background:var(--err)"></i>récord anterior</span>` : "");
   const ult = HRS > 1 ? [] : F.filter(o => o.t > t - 16 * 60e3);
   const fmt = y => y == null ? "—" : (V.u === "%" || V.u === "°" ? y.toFixed(0) : y.toFixed(1));
   cont.innerHTML = `<div class="sgraf">
