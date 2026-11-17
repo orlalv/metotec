@@ -173,7 +173,7 @@ def revisar_dia(dia, bol, raiz, ayer=None):
                 d = min(abs(val - ref), *[abs(val - x) for x in otros])
                 real = dict(valor=ref, hora=f"{loc(tref):%H:%M}", fuente="automática")
                 realEMA[col] = real
-                if d > 0.5:
+                if d > 0.05:       # debe ser igual a la automática (a 1 decimal): cualquier diferencia se avisa
                     imposible = (val < ref - 0.5) if minimo else (val > max([ref] + otros) + 0.5)
                     marca(col, "err" if d > 1.0 or imposible else "warn", f"EMA {ref:.1f} · {loc(tref):%H:%M}",
                           f"{nombre.capitalize()} del boletín {val:.1f} °C a las {hora_txt}; la automática registró {ref:.1f} °C a las {loc(tref):%H:%M}"
