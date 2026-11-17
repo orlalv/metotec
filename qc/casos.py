@@ -445,7 +445,7 @@ def prueba_ts_fuera_extremas():
     r = S.ts_fuera_extremas(t, ob(12.0), A, hist)
     if r: FALLAS.append(f"Ts dentro de las extremas no debía alertar → {r}")
     h2 = dict(hist); h2[t - pd.Timedelta(hours=5)] = ob(9.0)
-    si_alerta(S.ts_fuera_extremas(t, ob(12.0), A, h2), "SEXC", "Ts bajo la mínima real", nivel=1)
+    si_alerta(S.ts_fuera_extremas(t, ob(12.0), A, h2), "SEXC", "Ts bajo la mínima real", nivel=2)
     h3 = dict(hist); h3[t - pd.Timedelta(hours=3)] = ob(19.0)
     si_alerta(S.ts_fuera_extremas(t, ob(12.0), A, h3), "SEXC", "Ts sobre la máxima real", nivel=2)
     if S.ts_fuera_extremas(t - pd.Timedelta(hours=3), ob(30.0), A, h3): FALLAS.append("SEXC: solo se evalúa al cierre de cada período (00 y 12 UTC)")

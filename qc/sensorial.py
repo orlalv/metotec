@@ -1229,9 +1229,8 @@ def ts_fuera_extremas(t, o, A, hist):
         elif x > mx + TOL_TS_EXT:
             malos.append((tk, x, "sobre", mx, x - mx))
     for tk, x, lado, real, d in sorted(malos):
-        niv = 2 if d > 1.5 else 1
-        out.append(("sensor", "SEXC", niv, f"Ts {x:g} °C a las {tk:%H:%M} UTC: {'más bajo que la mínima' if lado == 'bajo' else 'más alto que la máxima'} real del período {per} "
-                    f"({real:.1f} °C según la estación automática, {d:.1f} °C de diferencia). Un Ts no puede quedar fuera de las extremas del período: revisar el valor ingresado"))
+        out.append(("sensor", "SEXC", 2, f"Ts {x:g} °C a las {tk:%H:%M} UTC: {'más bajo que la mínima' if lado == 'bajo' else 'más alto que la máxima'} real del período {per} "
+                    f"({real:.1f} °C según la estación automática, {d:.1f} °C de diferencia). Un Ts no puede quedar fuera de las extremas del período: es un error de digitación"))
     return out[:3]
 
 
