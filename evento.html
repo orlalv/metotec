@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Evento · Monitoreo por zona · METOTEC</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--noche:#0A1F44;--marino:#082B5C;--azul:#1688D4;--oro:#C9A54C;--fondo:#F5F6F8;--tx:#16202E;--mu:#6B7686;--bd:#E3E7EC}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--tx);font:16px/1.5 Inter,system-ui,"Segoe UI",Roboto,Arial,sans-serif}
+.w{max-width:1280px;margin:0 auto;padding:0 clamp(16px,4vw,56px)}
+header{background:radial-gradient(1100px 380px at 85% 0%,#163a73 0%,var(--noche) 62%);color:#fff;padding:22px 0}
+header .w{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}
+header .logo img{display:block;height:40px;width:auto}
+header nav{display:flex;gap:26px;font-size:14.5px;font-weight:500}
+header nav a{color:#c8d2e2;text-decoration:none;padding-bottom:4px;border-bottom:2px solid transparent}
+header nav a:hover,header nav a.on{color:#fff;border-bottom-color:var(--oro)}
+.rule{height:3px;background:linear-gradient(90deg,var(--oro),rgba(201,165,76,0) 70%)}
+main.w{padding-top:24px;padding-bottom:20px}
+h1{margin:0 0 2px;font-size:26px}
+.mu{color:var(--mu);font-size:14px}
+.err{color:#b23a3a}
+.tarjetas{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));margin:16px 0}
+.t{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px 14px;text-align:left;font:inherit;color:inherit;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.t:hover{border-color:#c9d2dd}
+.t.on{border-color:var(--azul);box-shadow:0 0 0 2px rgba(22,136,212,.18)}
+.t b{display:block;font-size:14.5px}
+.t .ex{display:block;font-size:12.5px;color:var(--mu);margin-top:4px;line-height:1.35}
+.t .ex i{font-style:normal;color:var(--tx);font-weight:600}
+.barra{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.seg{display:inline-flex;border:1px solid #c9d2dd;border-radius:9px;overflow:hidden;background:#fff}
+.seg button{font:inherit;font-size:14px;padding:6px 14px;border:0;background:#fff;cursor:pointer;color:var(--tx)}
+.seg button.on{background:var(--marino);color:#fff}
+#mapa{height:min(78vh,820px);min-height:420px;border:1px solid var(--bd);border-radius:12px;background:#dfe6ee}
+.leyenda{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:var(--mu);flex-wrap:wrap}
+.leyenda .esc{flex:0 1 360px;height:12px;border-radius:6px;border:1px solid var(--bd)}
+.leyenda .ln{display:flex;justify-content:space-between;width:min(360px,100%)}
+.dato{display:flex;align-items:center;justify-content:center;min-width:34px;height:22px;padding:0 5px;border-radius:11px;border:1.5px solid rgba(255,255,255,.95);box-shadow:0 1px 4px rgba(0,0,0,.35);font:700 11.5px/1 Inter,system-ui,Arial,sans-serif;white-space:nowrap;gap:2px}
+.dato svg{width:11px;height:11px;flex:none}
+.pop b{font-size:15px}.pop table{border-collapse:collapse;margin-top:6px;font-size:13px}.pop td{padding:1px 10px 1px 0}.pop td:first-child{color:#6B7686}
+.pop a{display:inline-block;margin-top:8px;font-weight:600;color:#1688D4;text-decoration:none}
+.aviso{font-size:13px;color:var(--mu);margin-top:14px}
+footer{margin-top:30px;background:var(--noche);color:#9fb0c8;font-size:13px;padding:22px 0}
+footer .w{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer img{height:26px;width:auto;filter:brightness(0) invert(1);opacity:.8;margin-right:12px;vertical-align:middle}
+footer a{color:#9fb0c8}
+@media (max-width:600px){header{padding:16px 0}header .logo img{height:30px}header nav{width:100%;gap:18px;overflow-x:auto;font-size:14px}header nav a{white-space:nowrap}
+  .tarjetas{display:flex;overflow-x:auto;gap:10px;margin-right:-16px;padding-bottom:4px}.t{flex:0 0 160px}}
+
+.k{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));margin:14px 0}
+.k>div{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:12px 14px}
+.k .n{font-size:13px;color:var(--mu)}.k .v{font-size:26px;font-weight:600;line-height:1.2}.k .s{font-size:12.5px;color:var(--mu)}
+.sec{margin-top:26px}.sec h2{font-size:19px;margin:0 0 4px}
+.caja{background:#fff;border:1px solid var(--bd);border-radius:12px;padding:14px 16px;margin-top:10px}
+.guia{background:#fffaf0;border:1px solid #ecd9a6;border-radius:12px;padding:12px 16px;font-size:14px;line-height:1.55;margin-top:10px}
+.guia b{color:#6b4f10}
+table.c{border-collapse:collapse;width:100%;font-size:13.5px}
+table.c th{font-weight:600;text-align:right;padding:6px 8px;border-bottom:2px solid var(--bd);color:var(--mu);white-space:nowrap;font-size:12.5px}
+table.c td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--bd);font-variant-numeric:tabular-nums}
+table.c th:first-child,table.c td:first-child{text-align:left}
+table.c tr.clave td{background:#fbf6e6}table.c td.sel,table.c th.sel{background:#e8f2fb;font-weight:600}
+table.c tr.clave td.sel{background:#dcebf7}
+.ins{display:inline-block;font-size:11px;padding:1px 7px;border-radius:9px;background:#C9A54C;color:#fff;margin-left:6px;vertical-align:1px}
+.etq{font:600 12px Inter,system-ui,Arial,sans-serif;background:#fff;border:1px solid #C9A54C;padding:1px 6px}
+.gr text{font:12px Inter,system-ui,Arial,sans-serif;fill:#6B7686}
+.lg{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;margin-top:6px}.lg i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+</style>
+</head>
+<body>
+<header><div class="w">
+ <a href="index.html" class="logo"><img src="img/logo_blanco.svg" alt="METOTEC"></a>
+ <nav><a href="index.html#datos">Datos</a><a href="mapas.html">Mapas</a><a href="productos.html">Productos</a><a href="qc.html">Control de calidad</a><a href="acerca.html">Acerca</a></nav>
+</div></header>
+<div class="rule"></div>
+<main class="w">
+ <h1>Monitoreo de evento por zona</h1>
+ <div class="mu" id="sub">Cargando datos…</div>
+ <div class="barra" style="margin-top:12px"><span class="seg" id="zonas"></span><span class="seg" id="vars"></span><span class="seg" id="sub1" hidden></span></div>
+ <div id="mapa"></div>
+ <div class="leyenda"><div><div class="esc" id="esc"></div><div class="ln" id="ln"></div></div><span id="un"></span><span style="margin-left:auto"><span class="ins" style="margin:0">estación clave</span> círculo grande · aledañas, círculo pequeño</span></div>
+
+ <div class="sec"><h2>Resumen de la zona</h2><div class="k" id="kpis"></div></div>
+ <div class="sec"><h2>Comparación entre estaciones</h2><div class="mu" id="tbarras"></div><div class="caja"><div id="barras"></div></div>
+  <div class="guia" id="guia"></div></div>
+ <div class="sec"><h2>Evolución de las últimas 24 horas</h2><div class="mu" id="tserie"></div><div class="caja"><div id="serie">Cargando…</div><div class="lg" id="lgs"></div></div></div>
+ <div class="sec"><h2>Tabla comparativa</h2><div class="mu">Las estaciones clave van destacadas. La columna de la variable elegida se resalta; «Dif.» es la diferencia con la primera estación clave.</div><div class="caja" style="overflow-x:auto"><table class="c" id="tabla"></table></div></div>
+ <p class="aviso">Datos automáticos sin revisión: pueden incluir valores erróneos; se omiten los que están fuera de rango físico. La lluvia de 24 h es la que informa la estación (se reinicia a las 12 UTC, no es una ventana móvil). Contorno regional: Biblioteca del Congreso Nacional de Chile (referencial).</p>
+</main>
+<footer><div class="w"><div><img src="img/isotipo.svg" alt="">© 2026 O. Álvarez B. · Herramientas educativas y de apoyo, no oficiales.</div><a href="index.html">Portada</a></div></footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const ESC = {
+  temp: [[-10,"#5b3b9a"],[0,"#2a6fc4"],[8,"#3fb0d8"],[14,"#6cc56a"],[20,"#f2e24a"],[26,"#f29a2e"],[32,"#d9412b"],[40,"#7a1020"]],
+  prec: [[0,"#e9eef5"],[0.2,"#bfe0f5"],[2,"#6fb7ea"],[10,"#2a7fd0"],[30,"#4a3fc4"],[80,"#8a2bb5"],[150,"#c0185e"]],
+  vien: [[0,"#e9eef5"],[5,"#b9e3c4"],[10,"#6cc56a"],[20,"#f2e24a"],[30,"#f29a2e"],[45,"#d9412b"],[60,"#7a1020"]],
+  pres: [[995,"#5b3b9a"],[1005,"#2a6fc4"],[1012,"#e9eef5"],[1018,"#f2c46a"],[1028,"#d9412b"]]
+};
+// zonas: clave = estaciones destacadas (en este orden); caja = recorte de las aledañas (S, O, N, E); contorno = capa regional
+const ZONAS = {
+  rm: {nom: "Región Metropolitana", clave: ["330020", "330021", "330019"], caja: [-34.7, -71.8, -32.7, -69.7], vista: [[-34.15, -71.25], [-33.1, -70.2]], contorno: true},
+  ant: {nom: "Antártica", clave: ["950001"], caja: [-90, -90, -60, -40], vista: [[-68, -70], [-61.5, -56]], contorno: false}
+};
+const VARS = {
+  prec: {nom: "Lluvia", u: "mm", e: "prec", d: 1, sub: [["rr1h", "1 h"], ["rr24", "24 h"], ["rr72", "72 h"]], v: (s, o) => s[o],
+    guia: "<b>Cómo leerlo.</b> Compara cuánto llovió en cada estación. Si una estación clave marca mucho menos (o más) que sus vecinas a pocos kilómetros, puede ser un pluviómetro tapado o descalibrado, o una celda de lluvia localizada: mira el gráfico de evolución para ver si la lluvia fue continua. La lluvia de 24 h se reinicia a las 12 UTC; la de 72 h es una suma aproximada."},
+  tx: {nom: "Máxima 24 h", u: "°C", e: "temp", d: 1, v: s => s.Tx24,
+    guia: "<b>Cómo leerlo.</b> La máxima de las últimas 24 h debe ser parecida entre estaciones vecinas con altura similar. Una máxima muy distinta a las demás es candidata a error del sensor o a una extrema mal digitada por el observador; contrástala con la tabla de abajo y con la curva de temperatura."},
+  tn: {nom: "Mínima 24 h", u: "°C", e: "temp", d: 1, v: s => s.Tn24,
+    guia: "<b>Cómo leerlo.</b> Las mínimas dependen mucho de la altura y del relieve (el aire frío se acumula en el fondo del valle), así que diferencias de 2 a 4 °C entre aledañas pueden ser normales. Una estación clave que se aleja más de eso conviene revisarla."},
+  temp: {nom: "Temperatura", u: "°C", e: "temp", d: 1, v: s => s.T,
+    guia: "<b>Cómo leerlo.</b> Temperatura del último minuto. Un salto brusco en una sola estación mientras las demás se mantienen suele ser un problema del sensor y no del tiempo."},
+  vien: {nom: "Viento", u: "kt", e: "vien", d: 0, sub: [["ff10", "Medio 10 min"], ["fx10", "Racha"]], v: (s, o) => s[o], flecha: true,
+    guia: "<b>Cómo leerlo.</b> El viento medio es el promedio de 10 minutos; la racha, el máximo. Una racha mucho mayor que el medio es normal en un temporal. La flecha indica hacia dónde sopla. Si una estación marca viento y las vecinas calma, revisa su anemómetro."}
+};
+const RANGO = {T: [-60, 50], Tx24: [-60, 50], Tn24: [-60, 50], ff10: [0, 120], fx10: [0, 150], rr1h: [0, 200], rr24: [0, 600], rr72: [0, 1500]};
+const limpiar = s => { const o = {...s}; for (const k in RANGO){ const v = o[k]; if (v != null && (v < RANGO[k][0] || v > RANGO[k][1])) o[k] = null; } return o; };
+const hex = c => [1, 3, 5].map(i => parseInt(c.substr(i, 2), 16));
+const colorDe = (esc, v) => { const P = ESC[esc]; if (v <= P[0][0]) return hex(P[0][1]); if (v >= P[P.length - 1][0]) return hex(P[P.length - 1][1]);
+  for (let i = 1; i < P.length; i++) if (v <= P[i][0]){ const a = P[i - 1], b = P[i], f = (v - a[0]) / (b[0] - a[0]), A = hex(a[1]), B = hex(b[1]); return A.map((x, k) => Math.round(x + (B[k] - x) * f)); } };
+const css = c => "rgb(" + c.join(",") + ")", oscuro = c => (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) < 150;
+const fmt = (v, d) => v == null ? "—" : v.toFixed(d).replace(".", ",");
+const esc_ = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
+let datos = null, cat = {}, zona = new URLSearchParams(location.search).get("zona") || "rm", vcur = "prec", opc = {prec: "rr24", vien: "ff10"}, map, capa, contorno, CONT = null, SERIES = {};
+if (!ZONAS[zona]) zona = "rm";
+const val = (k, s) => VARS[k].v(s, opc[k]);
+const lista = () => { const Z = ZONAS[zona], [s, o, n, e] = Z.caja; const out = [];
+  for (const [c, s_] of Object.entries(datos.estaciones)){ const E = cat[c]; if (!E) continue; const clave = Z.clave.includes(c);
+    if (clave || (E.lat >= s && E.lat <= n && E.lon >= o && E.lon <= e && (zona !== "ant" || c.startsWith("95")))) out.push({c, E, s: s_, clave}); }
+  return out.sort((a, b) => (b.clave - a.clave) || (Z.clave.indexOf(a.c) - Z.clave.indexOf(b.c)) || a.E.nombre.localeCompare(b.E.nombre)); };
+
+function botones(){
+  $("zonas").innerHTML = Object.entries(ZONAS).map(([k, Z]) => `<button data-z="${k}" class="${k === zona ? "on" : ""}">${Z.nom}</button>`).join("");
+  $("vars").innerHTML = Object.entries(VARS).map(([k, V]) => `<button data-v="${k}" class="${k === vcur ? "on" : ""}">${V.nom}</button>`).join("");
+  const V = VARS[vcur]; $("sub1").hidden = !V.sub;
+  if (V.sub) $("sub1").innerHTML = V.sub.map(([k, n]) => `<button data-o="${k}" class="${opc[vcur] === k ? "on" : ""}">${n}</button>`).join("");
+  document.querySelectorAll("#zonas button").forEach(b => b.onclick = () => { zona = b.dataset.z; history.replaceState(null, "", "?zona=" + zona); todo(true); });
+  document.querySelectorAll("#vars button").forEach(b => b.onclick = () => { vcur = b.dataset.v; todo(false); });
+  document.querySelectorAll("#sub1 button").forEach(b => b.onclick = () => { opc[vcur] = b.dataset.o; todo(false); });
+}
+function leyenda(V){ const P = ESC[V.e], a = P[0][0], b = P[P.length - 1][0];
+  $("esc").style.background = "linear-gradient(90deg," + P.map(p => css(hex(p[1])) + " " + ((p[0] - a) / (b - a) * 100).toFixed(1) + "%").join(",") + ")";
+  $("ln").innerHTML = `<span>${a}</span><span>${b}${V.e === "prec" || V.e === "vien" ? "+" : ""}</span>`; $("un").textContent = V.u; }
+const FLECHA = '<svg viewBox="0 0 10 10" style="width:11px;height:11px"><path d="M5 0.5 L8.5 9 L5 7 L1.5 9 Z" fill="currentColor"/></svg>';
+
+function mapa(reencuadrar){
+  const V = VARS[vcur], Z = ZONAS[zona], L_ = lista();
+  if (capa) capa.remove(); capa = L.layerGroup().addTo(map);
+  if (contorno){ contorno.remove(); contorno = null; }
+  if (Z.contorno && CONT){
+    contorno = L.layerGroup().addTo(map);
+    L.geoJSON(CONT.comunas, {style: {color: "#9aa8ba", weight: 0.8, fill: false}, onEachFeature: (f, l) => l.bindTooltip(f.properties.nombre, {sticky: true})}).addTo(contorno);
+    L.geoJSON(CONT.region, {style: {color: "#082B5C", weight: 2.2, fill: false}, interactive: false}).addTo(contorno);
+  }
+  for (const {c, E, s, clave} of L_){
+    const v = val(vcur, s); if (v == null) continue;
+    const col = colorDe(V.e, v), tx = oscuro(col) ? "#fff" : "#16202E", an = clave ? 56 : 38, al = clave ? 30 : 20;
+    const fl = V.flecha && s.dd10 > 0 ? `<span style="display:inline-block;transform:rotate(${(s.dd10 + 180) % 360}deg);line-height:0">${FLECHA}</span>` : "";
+    const bd = clave ? "border:3px solid #C9A54C;font-size:15px" : "font-size:11.5px";
+    const ic = L.divIcon({className: "", iconSize: [an, al], iconAnchor: [an / 2, al / 2],
+      html: `<div class="dato" style="background:${css(col)};color:${tx};min-width:${an}px;height:${al}px;border-radius:${al / 2}px;${bd}">${fmt(v, V.d)}${fl}</div>`});
+    const mk = L.marker([E.lat, E.lon], {icon: ic, zIndexOffset: clave ? 1000 : 0}).addTo(capa);
+    if (clave) mk.bindTooltip(E.nombre.trim(), {permanent: true, direction: "top", offset: [0, -al / 2], className: "etq"});
+    mk.bindPopup(`<div class="pop"><b>${esc_(E.nombre)}</b><div class="mu">${c} · ${s.hora.replace("T", " ").replace("Z", " UTC")}</div><a href="estacion.html?cod=${c}">Ver ficha →</a></div>`);
+  }
+  if (reencuadrar) map.fitBounds(Z.vista, {padding: [10, 10], animate: false});
+}
+function kpis(){
+  const V = VARS[vcur], L_ = lista().map(x => ({...x, v: val(vcur, x.s)})).filter(x => x.v != null);
+  if (!L_.length){ $("kpis").innerHTML = '<div><div class="n">Sin datos</div></div>'; return; }
+  const mx = L_.reduce((a, b) => b.v > a.v ? b : a), mn = L_.reduce((a, b) => b.v < a.v ? b : a), med = L_.reduce((a, b) => a + b.v, 0) / L_.length;
+  const cl = L_.filter(x => x.clave);
+  const caja = (n, v, s) => `<div><div class="n">${n}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  $("kpis").innerHTML = caja("Mayor valor", fmt(mx.v, V.d) + " " + V.u, esc_(mx.E.nombre.trim())) + caja("Menor valor", fmt(mn.v, V.d) + " " + V.u, esc_(mn.E.nombre.trim()))
+    + caja("Promedio de la zona", fmt(med, V.d) + " " + V.u, L_.length + " estaciones con dato")
+    + cl.map(x => caja(esc_(x.E.nombre.trim().split(",")[0]) + '<span class="ins">clave</span>', fmt(x.v, V.d) + " " + V.u, "frente al promedio: " + (x.v - med >= 0 ? "+" : "") + fmt(x.v - med, V.d))).join("");
+}
+function barras(){
+  const V = VARS[vcur], L_ = lista().map(x => ({...x, v: val(vcur, x.s)})).filter(x => x.v != null).sort((a, b) => b.v - a.v);
+  $("tbarras").textContent = `${V.nom}${V.sub ? " · " + V.sub.find(x => x[0] === opc[vcur])[1] : ""}: de mayor a menor. Las estaciones clave llevan borde dorado.`;
+  if (!L_.length){ $("barras").textContent = "Sin datos."; return; }
+  const W = 900, fh = 22, H = L_.length * fh + 8, mx = Math.max(...L_.map(x => x.v), V.e === "prec" ? 1 : 0.0001), mi = Math.min(0, ...L_.map(x => x.v)), X = v => 250 + (W - 330) * (v - mi) / (mx - mi);
+  $("barras").innerHTML = `<svg class="gr" viewBox="0 0 ${W} ${H}" style="width:100%">` + L_.map((x, i) => { const y = 4 + i * fh, c = css(colorDe(V.e, x.v));
+    return `<text x="244" y="${y + 15}" text-anchor="end" style="${x.clave ? "font-weight:600;fill:#16202E" : ""}">${esc_(x.E.nombre.trim().slice(0, 34))}</text>
+      <rect x="${Math.min(X(0), X(x.v))}" y="${y + 2}" width="${Math.max(2, Math.abs(X(x.v) - X(0)))}" height="${fh - 6}" rx="3" fill="${c}" stroke="${x.clave ? "#C9A54C" : "#b8c2cf"}" stroke-width="${x.clave ? 2.5 : 0.6}"/>
+      <text x="${Math.max(X(x.v), X(0)) + 6}" y="${y + 15}" style="fill:#16202E">${fmt(x.v, V.d)}</text>`; }).join("") + "</svg>";
+  $("guia").innerHTML = V.guia;
+}
+function tabla(){
+  const L_ = lista(), base = L_.find(x => x.clave);
+  const C = [["T", "T °C", 1], ["Tx24", "Máx 24 h", 1], ["Tn24", "Mín 24 h", 1], ["rr1h", "Lluvia 1 h", 1], ["rr24", "Lluvia 24 h", 1], ["rr72", "Lluvia 72 h", 1], ["ff10", "Viento kt", 0], ["fx10", "Racha kt", 0]];
+  const sel = {prec: opc.prec, tx: "Tx24", tn: "Tn24", temp: "T", vien: opc.vien}[vcur];
+  $("tabla").innerHTML = `<tr><th>Estación</th>${C.map(([k, n]) => `<th class="${k === sel ? "sel" : ""}">${n}</th>`).join("")}<th>Dif.</th></tr>` +
+    L_.map(x => `<tr class="${x.clave ? "clave" : ""}"><td>${esc_(x.E.nombre.trim())}${x.clave ? '<span class="ins">clave</span>' : ""}<br><small class="mu">${x.c}</small></td>${C.map(([k, , d]) => `<td class="${k === sel ? "sel" : ""}">${fmt(x.s[k], d)}</td>`).join("")}<td>${base && base.s[sel] != null && x.s[sel] != null && x !== base ? (x.s[sel] - base.s[sel] >= 0 ? "+" : "") + fmt(x.s[sel] - base.s[sel], 1) : "—"}</td></tr>`).join("");
+}
+async function serie(){
+  const Z = ZONAS[zona], V = VARS[vcur], cols = ["#1688D4", "#d9412b", "#2f9e5b", "#8a2bb5"];
+  const campo = vcur === "prec" ? "rr1m" : vcur === "vien" ? (opc.vien === "fx10" ? "fx10" : "ff10") : "T";
+  const acum = vcur === "prec", u = vcur === "prec" ? "mm acumulados" : vcur === "vien" ? "kt" : "°C";
+  $("tserie").textContent = (vcur === "prec" ? "Lluvia acumulada desde hace 24 h" : vcur === "vien" ? "Viento" : "Temperatura") + " de las estaciones clave, minuto a minuto (UTC).";
+  const fin = new Date(datos.hasta.replace("Z", ":00Z")), ini = new Date(fin - 24 * 3600e3), h = d => d.toISOString().slice(0, 13);
+  const S = [];
+  for (const c of Z.clave){
+    const key = c + "|" + h(fin);
+    if (!SERIES[key]){ try { const r = await fetch(`/api/minutarios?cod=${c}&desde=${h(ini)}&hasta=${h(fin)}`).then(r => r.json()); SERIES[key] = r; } catch (e){ SERIES[key] = null; } }
+    S.push({c, r: SERIES[key]});
+  }
+  const lineas = S.map(({c, r}) => { if (!r || !r.cab) return {c, p: []}; const cab = r.cab.split(","), im = cab.indexOf("momento"), ic = cab.indexOf(campo); let a = 0;
+    return {c, p: r.filas.map(l => l.split(",")).map(f => ({t: Date.parse(f[im].replace(" ", "T") + "Z"), v: f[ic] === "" ? null : +f[ic]})).filter(o => o.t >= +ini && o.t <= +fin)
+      .sort((x, y) => x.t - y.t).map(o => { if (acum){ a += o.v || 0; return {t: o.t, v: Math.round(a * 10) / 10}; } return o; }).filter(o => o.v != null)}; });
+  const todos = lineas.flatMap(l => l.p.map(o => o.v));
+  if (!todos.length){ $("serie").textContent = "Sin datos minutarios para las estaciones clave."; $("lgs").innerHTML = ""; return; }
+  let lo = acum ? 0 : Math.min(...todos), hi = Math.max(...todos); if (hi - lo < 1) hi = lo + 1; const pad = (hi - lo) * 0.08; if (!acum) lo -= pad; hi += pad;
+  const W = 900, H = 260, ml = 44, mr = 12, mt = 10, mb = 28, X = t => ml + (W - ml - mr) * (t - ini) / (fin - ini), Y = v => mt + (H - mt - mb) * (1 - (v - lo) / (hi - lo));
+  let g = ""; for (let k = 0; k <= 4; k++){ const v = lo + (hi - lo) * k / 4; g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#e3e7ec"/><text x="${ml - 5}" y="${Y(v) + 4}" text-anchor="end">${fmt(v, vcur === "prec" ? 1 : V.d)}</text>`; }
+  for (let k = 0; k <= 24; k += 4){ const t = +ini + k * 3600e3; g += `<text x="${X(t)}" y="${H - 8}" text-anchor="middle">${new Date(t).toISOString().slice(11, 13)}:00</text>`; }
+  lineas.forEach((l, i) => { let d = ""; l.p.forEach((o, j) => d += (j ? "L" : "M") + X(o.t).toFixed(1) + " " + Y(o.v).toFixed(1)); g += `<path d="${d}" fill="none" stroke="${cols[i % 4]}" stroke-width="2"/>`; });
+  $("serie").innerHTML = `<svg class="gr" viewBox="0 0 ${W} ${H}" style="width:100%">${g}<text x="${ml}" y="${mt + 8}" style="fill:#16202E">${u}</text></svg>`;
+  $("lgs").innerHTML = lineas.map((l, i) => `<span><i style="background:${cols[i % 4]}"></i>${esc_((cat[l.c] || {nombre: l.c}).nombre.trim())}</span>`).join("");
+}
+function todo(reenc){ botones(); leyenda(VARS[vcur]); mapa(reenc); kpis(); barras(); tabla(); serie(); }
+(async function(){
+  map = L.map("mapa", {zoomControl: true, minZoom: 3}).setView([-33.5, -70.7], 9);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 12, attribution: "© OpenStreetMap"}).addTo(map);
+  try {
+    const [c, d] = await Promise.all([fetch("/api/minutarios?estaciones").then(r => r.json()), fetch("/api/mapa").then(r => { if (!r.ok) throw 0; return r.json(); })]);
+    c.forEach(e => cat[e.codigo] = e); datos = d; for (const k in d.estaciones) d.estaciones[k] = limpiar(d.estaciones[k]);
+    try { const r = await fetch("/api/productos?tipo=contorno"); if (r.ok) CONT = await r.json(); } catch (e) {}
+    $("sub").textContent = `Datos hasta ${d.hasta.replace("T", " ").replace("Z", " UTC")} · se actualiza al recargar la página`;
+    todo(true);
+  } catch (e){ $("sub").textContent = "No se pudieron cargar los datos. Intente de nuevo en unos minutos."; $("sub").className = "err"; }
+})();
+</script>
+</body>
+</html>

@@ -20,7 +20,7 @@ def leer(clave):
     base = {n.rsplit(".", 1)[0]: n.rsplit(".", 1)[0] for n in z.namelist() if n.lower().endswith(".shp")}
     nom = sorted(base)[0]
     arch = {e: io.BytesIO(z.read(n)) for n in z.namelist() for e in ("shp", "shx", "dbf", "prj") if n.lower().endswith("." + e) and n.rsplit(".", 1)[0] == nom}
-    sf = shapefile.Reader(shp=arch["shp"], shx=arch["shx"], dbf=arch["dbf"], encoding="latin-1")
+    sf = shapefile.Reader(shp=arch["shp"], shx=arch["shx"], dbf=arch["dbf"], encoding="utf-8", encodingErrors="replace")
     proy = None
     if "prj" in arch:
         try:
