@@ -436,6 +436,22 @@ def prueba_records_uno_por_dia():
         FALLAS.append(f"récords: elementos distintos y otras reglas se conservan → {r}")
 
 
+def prueba_ts_fuera_extremas():
+    t = pd.Timestamp("2026-11-17 12:00")
+    mom = pd.date_range(t - pd.Timedelta(hours=12) + pd.Timedelta(minutes=1), t, freq="1min")
+    A = pd.DataFrame({"momento": mom, "T": [10 + 6 * i / len(mom) for i in range(len(mom))]})   # mínima ~10,0 y máxima ~16,0
+    ob = lambda x: {"Ts": {"Ts": x}}
+    hist = {t - pd.Timedelta(hours=k): ob(12.0) for k in range(1, 12)}
+    r = S.ts_fuera_extremas(t, ob(12.0), A, hist)
+    if r: FALLAS.append(f"Ts dentro de las extremas no debía alertar → {r}")
+    h2 = dict(hist); h2[t - pd.Timedelta(hours=5)] = ob(9.0)
+    si_alerta(S.ts_fuera_extremas(t, ob(12.0), A, h2), "SEXC", "Ts bajo la mínima real", nivel=1)
+    h3 = dict(hist); h3[t - pd.Timedelta(hours=3)] = ob(19.0)
+    si_alerta(S.ts_fuera_extremas(t, ob(12.0), A, h3), "SEXC", "Ts sobre la máxima real", nivel=2)
+    if S.ts_fuera_extremas(t - pd.Timedelta(hours=3), ob(30.0), A, h3): FALLAS.append("SEXC: solo se evalúa al cierre de cada período (00 y 12 UTC)")
+    if S.ts_fuera_extremas(t, ob(30.0), A.iloc[:300], hist): FALLAS.append("SEXC: con el período incompleto no debía afirmar nada")
+
+
 def prueba_extremas_repetidas():
     t0 = pd.Timestamp("2026-11-12 12:00")
     def dia(k, val, hm):

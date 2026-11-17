@@ -30,7 +30,7 @@ const N = {
   ZC01: "Ts muy distinta de sus vecinas", ZC02: "Td muy distinto de sus vecinas", ZC03: "HR muy distinta de sus vecinas", ZC04: "QFF muy distinto de sus vecinas", ZC05: "Viento medio muy distinto de sus vecinas", ZC06: "Lluvia muy distinta de sus vecinas",
   ZM01: "Ts muy distinta del modelo", ZM02: "Td muy distinto del modelo", ZM03: "HR muy distinta del modelo", ZM04: "QFF muy distinto del modelo", ZM05: "Viento muy distinto del modelo",
   ZE01: "Mínima o máxima de 12 h no coincide con la temperatura por minuto", ZE03: "Mínima de 12 h mayor que la máxima de 12 h",
-  SEXT: "Extrema: valor", SEXH: "Extrema: hora", RHA: "Récord histórico de temperatura", RHM: "Récord del mes de temperatura", RHP: "Récord histórico de lluvia", RHPM: "Récord del mes de lluvia", RHV: "Récord histórico de viento", RHVM: "Récord del mes de viento", SXRA: "Extrema repetida: mismo valor y hora que ayer", SXRV: "Extrema repetida: mismo valor que ayer", SXRH: "Extrema repetida: misma hora que ayer", SEXF: "Extrema fuera de bloque sin ingresar", SRRR6: "RRR6 frente al pluviómetro",
+  SEXT: "Extrema: valor", SEXH: "Extrema: hora", RHA: "Récord histórico de temperatura", RHM: "Récord del mes de temperatura", RHP: "Récord histórico de lluvia", RHPM: "Récord del mes de lluvia", RHV: "Récord histórico de viento", RHVM: "Récord del mes de viento", SXRA: "Extrema repetida: mismo valor y hora que ayer", SXRV: "Extrema repetida: mismo valor que ayer", SXRH: "Extrema repetida: misma hora que ayer", SEXF: "Extrema fuera de bloque sin ingresar", SEXC: "Ts fuera de las extremas del período", SRRR6: "RRR6 frente al pluviómetro",
   SPRE: "Pluviómetro y tiempo presente", SinDato: "Sin dato", St: "Satélite: nubosidad", Sc: "Satélite: nubes", SD: "Satélite"
 };
 // Controles Definidos de SACLIM (qc/reglas_sistema.json): su código es un número; el texto del aviso es el propio mensaje del sistema
@@ -40,7 +40,7 @@ const SIN_CODIGO = new Set(["SEXT", "SEXH"]);     // estas dos se muestran sin e
 const html = (c, esc) => `${esc(nombre(c))}${(N[c] || esSaclim(c)) && !SIN_CODIGO.has(c) ? ` <small style="color:var(--mu);font-family:var(--mono)">${esc(c)}</small>` : ""}`;
 
 // a qué pestaña va cada regla de observaciones (cada alerta vive en un solo lugar; lo demás queda en «Observaciones»)
-const PESTANA = {SEXT: "ext", SEXH: "ext", SEXF: "ext", SXRA: "ext", SXRV: "ext", SXRH: "ext", RHA: "rec", RHM: "rec", RHP: "rec", RHPM: "rec", RHV: "rec", RHVM: "rec",
+const PESTANA = {SEXT: "ext", SEXH: "ext", SEXF: "ext", SEXC: "ext", SXRA: "ext", SXRV: "ext", SXRH: "ext", RHA: "rec", RHM: "rec", RHP: "rec", RHPM: "rec", RHV: "rec", RHVM: "rec",
   SRRR6: "pp", SPRE: "pp", E12: "pp", E13: "pp", E17: "pp",
   STs: "tem", STd: "tem", SHR: "tem", SBTs: "tem", SBTd: "tem", SBHR: "tem", C41: "tem", C41H: "tem"};
 const pestana = c => PESTANA[c] || (/^Z[TPVRECM]\d\d$/.test(c) ? "super" : "obs");
@@ -48,6 +48,7 @@ const pestana = c => PESTANA[c] || (/^Z[TPVRECM]\d\d$/.test(c) ? "super" : "obs"
 /* Registro de cambios de reglas. Al cambiar una regla o umbral en qc/, agregar una fila ARRIBA: [fecha AAAA-MM-DD, códigos, qué cambió, por qué].
    Lo que se vea aquí debe coincidir con lo que dicen las pruebas fijas (qc/casos.py). */
 const CAMBIOS = [
+  ["2026-11-17", "SEXC", "Nueva en Extremas. SEXC: un Ts ingresado en el período (12 h que cierran a las 00 y 12 UTC) queda más bajo que la mínima real o más alto que la máxima real del mismo período según la estación automática (margen 0,6 °C por las muestras de segundos; más de 1,5 °C sube a nivel 2). Un Ts instantáneo no puede salirse de las extremas del período.", "Detectar Ts mal digitados que ni la extrema real del período permite."],
   ["2026-11-17", "RHP, RHPM, RHV, RHVM", "Récords de lluvia y viento en la pestaña «Récord histórico». RHP (sospechoso): el RRR6 o el acumulado de 24 h del observador supera la máxima diaria de toda la serie de la estación; RHPM (informativo): supera la máxima diaria de ese mes. RHV / RHVM: lo mismo con el viento medio, solo en las 6 estaciones con archivo horario SACLIM (Arica, Quinta Normal, Pudahuel, Curicó, Puerto Montt, Punta Arenas). Lluvia: 43 estaciones desde 1995.", "Detectar lluvias o vientos fuera de lo que la estación ha visto en 30 años."],
   ["2026-11-17", "RHA, RHM", "Nueva pestaña «Récord histórico». RHA (sospechoso): la Tmin/Tmax AM/PM ingresada supera la máxima o mínima más alta o más baja de toda la serie de la estación (1990 en adelante); confirmar que el dato es correcto. RHM (informativo): supera el récord de ese mes. Se calcula con los anuarios de temperatura guardados (37 estaciones; las que no tienen serie no se revisan).", "Detectar valores que rompen la historia: o son un récord real o un error de digitación."],
   ["2026-11-17", "SXRA, SXRV, SXRH", "Nuevo en Extremas: la Tmin/Tmax AM/PM ingresada igual a la del día anterior (o de varios días seguidos). SXRA: mismo valor y misma hora (al minuto), sospechoso, y reemplaza a los otros dos. SXRV: solo el valor, informativo. SXRH: solo la hora, informativo.", "Con 26 años de 6 estaciones, el valor se repite entre 1 % y 6 % de los días, la hora entre 0,3 % y 6 %, y los dos juntos solo entre 0,01 % y 0,2 %: «ambos» casi nunca es casualidad."],
@@ -86,6 +87,7 @@ const UMBRALES = [
     "RRR6 debe calzar con la suma del pluviómetro en las 6 h que cierran a las 00, 06, 12 y 18 UTC.",
     "Traza con pluviómetro ≥ 0,2 mm → dudoso («Debería ir: RRR6 x.x»). Traza con RRR6 ≠ 0.0 → dudoso. Traza sin fenómenos en 6 h y pluviómetro 0 → informativo."]],
   ["Récord histórico", [
+    "Ts fuera de las extremas (SEXC): cada Ts ingresado en el período AM o PM contra la mínima y la máxima reales de la automática en ese período; margen 0,6 °C.",
     "Lluvia (RHP, RHPM) y viento (RHV, RHVM): RRR6 y acumulado de 24 h contra la máxima diaria de la historia (sospechoso) o del mes (informativo); viento medio contra su máximo, solo 6 estaciones. Margen de 0,05 mm en lluvia.",
     "Temperatura (RHA, RHM): la extrema ingresada se compara con la máxima y la mínima diarias de la estación desde 1990 (anuarios del portal, guardados en la rama de datos). Supera el récord de toda la historia → sospechoso; supera el récord del mes → informativo. Margen de 0,05 °C.",
     "Solo se revisan las estaciones con serie guardada; el resto no avisa."]],

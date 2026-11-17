@@ -16,6 +16,7 @@ const VARS = {
 };
 // diferencias constantes observador − automática (SBTs, SBQFE, …): misma serie, sin valor puntual del observador
 VARS.SEXT = VARS.SEXH = {cols: ["T"], nom: "Ts (período de la extrema)", u: "°C", obs: /T(?:min|max) (?:AM|PM) (-?[\d.]+)/, horas: 12};
+VARS.SEXC = {cols: ["T"], nom: "Ts (período de la extrema)", u: "°C", obs: /^Ts (-?[\d.]+)/, horas: 12};
 VARS.C41 = VARS.C41H = {cols: ["HR"], nom: "HR", u: "%", obs: /HR (-?[\d.]+) %/};
 VARS.SRRR6 = {cols: ["rr1m"], nom: "Agua caída acumulada (6 h)", u: "mm", obs: /RRR6 anotado (-?[\d.]+)/, horas: 6, acum: true};
 VARS.E12 = VARS.E13 = VARS.E17 = {...VARS.SRRR6, obs: /RRR6 (-?[\d.]+)/};

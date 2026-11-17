@@ -1200,6 +1200,41 @@ def extremas(t, o, A, codigo, hist=None, oficial=None):
     return [(a, b, c, nombre_ext(d)) for a, b, c, d in _extremas(t, o, A, codigo, hist, oficial)]
 
 
+TOL_TS_EXT = 0.6            # un Ts por hora no puede quedar más allá de la extrema real (la estación usa muestras de segundos: hasta ~0,6 °C)
+
+
+def ts_fuera_extremas(t, o, A, hist):
+    """SEXC: un Ts ingresado en el período (12 h que cierran a las 00 y 12 UTC) más bajo que la mínima real o más alto que la máxima real
+    del mismo período según la estación automática. Un Ts instantáneo no puede salirse de la mínima y la máxima del período."""
+    out = []
+    if t.hour not in (0, 12) or not hist or A is None or A.empty or "T" not in A:
+        return out
+    W = A[(A["momento"] > t - pd.Timedelta(hours=12)) & (A["momento"] <= t)].dropna(subset=["T"]).sort_values("momento")
+    if len(W) < 2:
+        return out
+    paso = W["momento"].diff().median() / pd.Timedelta(minutes=1)
+    if len(W) * paso < 0.8 * 720:
+        return out
+    mn, mx = float(W["T"].min()), float(W["T"].max())
+    per = "AM" if t.hour == 12 else "PM"
+    malos = []
+    for k in range(0, 12):
+        tk = t - pd.Timedelta(hours=k)
+        h = hist.get(tk) if k else o
+        x = v(h, "Ts") if h else None
+        if x is None:
+            continue
+        if x < mn - TOL_TS_EXT:
+            malos.append((tk, x, "bajo", mn, mn - x))
+        elif x > mx + TOL_TS_EXT:
+            malos.append((tk, x, "sobre", mx, x - mx))
+    for tk, x, lado, real, d in sorted(malos):
+        niv = 2 if d > 1.5 else 1
+        out.append(("sensor", "SEXC", niv, f"Ts {x:g} °C a las {tk:%H:%M} UTC: {'más bajo que la mínima' if lado == 'bajo' else 'más alto que la máxima'} real del período {per} "
+                    f"({real:.1f} °C según la estación automática, {d:.1f} °C de diferencia). Un Ts no puede quedar fuera de las extremas del período: revisar el valor ingresado"))
+    return out[:3]
+
+
 def _hm(o, el):
     fh = (o.get(el) or {}).get("FechaHora")
     return fh[11:16] if isinstance(fh, str) and re.match(r"\d{4}-\d\d-\d\d \d\d:\d\d", fh) else None
@@ -1406,7 +1441,7 @@ def campos(h, o, t, hist, A, sg=None):
 
 
 # ======================================================================= ciclo
-EXT_PP = {"SEXT", "SEXH", "SEXF", "SXRA", "SXRV", "SXRH", "RHA", "RHM", "RHP", "RHPM", "SRRR6", "SPRE", "E12", "E13", "E17"}     # extremas y precipitación
+EXT_PP = {"SEXT", "SEXH", "SEXF", "SEXC", "SXRA", "SXRV", "SXRH", "RHA", "RHM", "RHP", "RHPM", "SRRR6", "SPRE", "E12", "E13", "E17"}     # extremas y precipitación
 
 
 def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None, oficial=None, records=None):
@@ -1427,11 +1462,11 @@ def revisar(codigo, obs, A=None, horas=None, sat=None, horas_ext=None, oficial=N
                             msg=f"{el} del observador difiere en forma constante {sg[el]:+.1f} hPa de la estación automática (diferencia propia: altura del sensor o de pista; ya se descuenta al comparar)"))
     for t in sel:
         o = obs[t]
-        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + extremas_repetidas(t, o, obs) + extremas_records(t, o, codigo, (records or {}).get("t")) + records_pv(t, o, codigo, records, obs) + satelital(t, o, sat):
+        for tipo, cod, niv, msg in reglas_sistema(o) + codificacion(o) + evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + extremas_repetidas(t, o, obs) + ts_fuera_extremas(t, o, A, obs) + extremas_records(t, o, codigo, (records or {}).get("t")) + records_pv(t, o, codigo, records, obs) + satelital(t, o, sat):
             out.append(campos(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"), o, t, obs, A, sg))
     for t in ext:
         o = obs[t]
-        for tipo, cod, niv, msg in evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + extremas_repetidas(t, o, obs) + extremas_records(t, o, codigo, (records or {}).get("t")) + records_pv(t, o, codigo, records, obs):
+        for tipo, cod, niv, msg in evolucion(t, o, obs, A) + frente_sensor(t, o, A, sg) + extremas(t, o, A, codigo, obs, oficial) + extremas_repetidas(t, o, obs) + ts_fuera_extremas(t, o, A, obs) + extremas_records(t, o, codigo, (records or {}).get("t")) + records_pv(t, o, codigo, records, obs):
             if cod in EXT_PP:
                 out.append(campos(dict(codigo=str(codigo), hora=str(t), tipo=tipo, regla=cod, nivel=niv, msg=msg, revisado="si" if o.get("_qa") else "no"), o, t, obs, A, sg))
     return una_por_dia(out)

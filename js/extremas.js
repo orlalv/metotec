@@ -24,6 +24,7 @@ const deb = m => { const x = (m || "").match(/Debería ir: ([^.]+(?:\.\d[^.]*)?)
 const ing = f => { const m = (f.msg || "").match(/^(T(?:min|max) (?:AM|PM)) (-?[\d.]+) °C(?: a las (\d\d:\d\d))?/) || (f.msg || "").match(/^(?:(T(?:min|max) (?:AM|PM)) con hora (\d\d:\d\d))/);
   if (m && m[2] && /^-?[\d.]+$/.test(m[2])) return `${m[1]} ${m[2]} °C${m[3] ? " · " + m[3] : ""}`;
   if (m) return `${m[1]} · ${m[2]}`;
+  const tsx = (f.msg || "").match(/^Ts (-?[\d.]+) °C a las (\d\d:\d\d) UTC/); if (tsx) return `Ts ${tsx[1]} °C · ${tsx[2]} UTC`;
   const r = (f.msg || "").match(/RRR6 (?:anotado )?(-?[\d.]+)/); if (r) return `RRR6 ${r[1]} mm`;
   const s = (f.msg || "").match(/(Ts|Td|HR) anotad[oa] (-?[\d.]+)/); return s ? `${s[1]} ${s[2]}` : ""; };
 
