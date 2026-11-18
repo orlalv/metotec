@@ -4,8 +4,10 @@
 /* ---------- Series: faltantes de agua caída minutaria (rr1m) ---------- */
 const RAW = "https://raw.githubusercontent.com/orlalv/metotec/datos/ema/";
 const MIN_HUECO = 30;                                  // minutos seguidos sin dato para avisar
+const conTiempo = async (u, ms = 20000) => { const c = new AbortController(), t = setTimeout(() => c.abort(), ms); try { return await fetch(u, {signal: c.signal}); } finally { clearTimeout(t); } };
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const HORAS = [[6, "últimas 6 h"], [24, "últimas 24 h"], [72, "últimos 3 días"]];
+let PPX_ERR = "";
 let venH = (() => { try { return +localStorage.getItem("qcPpSerH") || 24; } catch (e) { return 24; } })(), soloAb = false, RES = null, TOK = 0, CACHE = new Map(), EST = null;
 const hh = t => new Date(t).toISOString().slice(11, 16);
 const loc = t => new Date(t).toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit"});
@@ -18,8 +20,8 @@ async function hora(t){                                // un archivo horario (to
   const url = RAW + k.replace(/-/g, "/").replace("T", "/") + ".csv.gz";
   const p = (async () => {
     for (let i = 0; i < 3; i++){
-      try { const r = await fetch(url + (i ? "?r=" + i : "")); if (r.status === 404) return null;
-        if (r.ok) return await new Response(r.body.pipeThrough(new DecompressionStream("gzip"))).text(); } catch (e) {}
+      try { const r = await conTiempo(url + (i ? "?r=" + i : "")); if (r.status === 404) return null;
+        if (r.ok){ const b = await r.arrayBuffer(); return await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text(); } } catch (e) { PPX_ERR = e && e.message || String(e); }
       await new Promise(z => setTimeout(z, 700 * (i + 1)));
     }
     return undefined;                                   // no se pudo leer (distinto de «no existe»)
@@ -34,8 +36,8 @@ async function varias(ts, par = 6){                    // descarga con pocas con
 }
 async function catalogo(){
   if (EST) return EST;
-  for (const u of ["/api/minutarios?estaciones=1", "https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json"]){
-    try { const j = await (await fetch(u)).json(); const L = Array.isArray(j) ? j : j.estaciones || []; if (L.length){ EST = new Map(L.map(e => [String(e.codigo), e])); return EST; } } catch (e) {}
+  for (const u of ["https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json", "/api/minutarios?estaciones=1"]){
+    try { const j = await (await conTiempo(u, 10000)).json(); const L = Array.isArray(j) ? j : j.estaciones || []; if (L.length){ EST = new Map(L.map(e => [String(e.codigo), e])); return EST; } } catch (e) {}
   }
   return EST = new Map();
 }
@@ -109,7 +111,7 @@ function dibujar(el){
       <td style="text-align:right"><b>${dur(x.falta)}</b><br><small style="color:var(--mu)">${x.huecos.length} ${x.huecos.length === 1 ? "hueco" : "huecos"}</small></td>
       <td style="font-size:12px;color:var(--mu)">${hs}</td>
       <td><button class="ppsAbrir" data-c="${esc(x.cod)}" data-d="${dd(u.a)}" title="Abre «Relleno de series» en esta estación y día">Abrir en Relleno</button></td></tr>`; };
-  out.innerHTML = `<p style="margin:2px 0 8px;color:var(--mu);font-size:12.5px">${r.lista.length ? `<b style="color:var(--tx)">${r.lista.length}</b> de ${r.total} estaciones con pluviómetro tienen huecos de ${MIN_HUECO} min o más (${ab} siguen sin dato).` : `Ninguna de las ${r.total} estaciones con pluviómetro tiene huecos de ${MIN_HUECO} min o más.`} Datos hasta ${hh(r.fin)} UTC (${loc(r.fin)} hora local).${r.fallas ? ` <b style="color:#e7b03b">No se pudieron leer ${r.fallas} horas del archivo; los resultados pueden estar incompletos.</b>` : ""}</p>
+  out.innerHTML = `<p style="margin:2px 0 8px;color:var(--mu);font-size:12.5px">${r.lista.length ? `<b style="color:var(--tx)">${r.lista.length}</b> de ${r.total} estaciones con pluviómetro tienen huecos de ${MIN_HUECO} min o más (${ab} siguen sin dato).` : `Ninguna de las ${r.total} estaciones con pluviómetro tiene huecos de ${MIN_HUECO} min o más.`} Datos hasta ${hh(r.fin)} UTC (${loc(r.fin)} hora local).${r.fallas ? ` <b style="color:#e7b03b">No se pudieron leer ${r.fallas} horas del archivo${PPX_ERR ? " (" + esc(PPX_ERR) + ")" : ""}; los resultados pueden estar incompletos.</b>` : ""}</p>
     ${L.length ? `<div style="overflow-x:auto"><table class="tb"><tr><th>Estación</th><th>Estado</th><th>Último hueco desde</th><th>Falta</th><th>Huecos (hora UTC)</th><th></th></tr>${L.map(fila).join("")}</table></div>` : `<p style="color:var(--mu)">Nada que mostrar con este filtro.</p>`}`;
 }
 function serie(el){
@@ -200,7 +202,7 @@ function dibujarSens(el){
     <td><b>${SK[h.k]}</b>${h.abierto ? `<br><small style="color:#e5534b">sigue ahora</small>` : ""}</td>
     <td style="white-space:nowrap">${dd(h.a).slice(5).split("-").reverse().join("/")} ${hh(h.a)}–${hh(h.b)} UTC<br><small style="color:var(--mu)">${loc(h.a)}–${loc(h.b)} hora local</small></td>
     <td style="font-size:12.5px">${esc(h.det)}</td></tr>`).join("");
-  out.innerHTML = `<p style="margin:2px 0 8px;color:var(--mu);font-size:12.5px">${r.lista.length ? `<b style="color:var(--tx)">${r.lista.length}</b> de ${r.total} estaciones con pluviómetro muestran un comportamiento sospechoso.` : `Ninguna de las ${r.total} estaciones con pluviómetro muestra un comportamiento sospechoso.`} Datos hasta ${hh(r.fin)} UTC (${loc(r.fin)} hora local). Pantalla informativa: solo señala; si llovió o no se juzga en «Precipitación binaria».${r.fallas ? ` <b style="color:#e7b03b">No se pudieron leer ${r.fallas} horas del archivo; los resultados pueden estar incompletos.</b>` : ""}</p>
+  out.innerHTML = `<p style="margin:2px 0 8px;color:var(--mu);font-size:12.5px">${r.lista.length ? `<b style="color:var(--tx)">${r.lista.length}</b> de ${r.total} estaciones con pluviómetro muestran un comportamiento sospechoso.` : `Ninguna de las ${r.total} estaciones con pluviómetro muestra un comportamiento sospechoso.`} Datos hasta ${hh(r.fin)} UTC (${loc(r.fin)} hora local). Pantalla informativa: solo señala; si llovió o no se juzga en «Precipitación binaria».${r.fallas ? ` <b style="color:#e7b03b">No se pudieron leer ${r.fallas} horas del archivo${PPX_ERR ? " (" + esc(PPX_ERR) + ")" : ""}; los resultados pueden estar incompletos.</b>` : ""}</p>
     ${r.lista.length ? `<div style="overflow-x:auto"><table class="tb"><tr><th>Estación</th><th>Comportamiento</th><th>Cuándo</th><th>Detalle</th></tr>${r.lista.map(fila).join("")}</table></div>` : ""}
     <details style="margin-top:10px;font-size:12.5px;color:var(--mu)"><summary>Cómo se decide</summary><ul style="margin:6px 0 0 18px">
       <li><b>Valor pegado:</b> el mismo valor mayor que 0 en cada minuto durante ${SEN.pegMin} min o más (${SEN.peg01} min si es 0,1 mm).</li>
