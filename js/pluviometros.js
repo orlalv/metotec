@@ -13,11 +13,18 @@ function init(fclave){
   clave = fclave || clave;
   const s = $("#plu"); if (!s.dataset.ok){
     s.dataset.ok = 1;
+    const st = document.createElement("style");
+    st.textContent = `#plu .tb{width:auto;min-width:380px}#plu .tb th:not(:first-child){text-align:right}#plu .pmk:hover rect:first-child{fill:#58a6ff22}
+      #pMapa{position:fixed;inset:0;background:#000a;z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px}
+      #pMapa .caja{background:var(--bg,#0d1117);color:var(--tx,#e6edf3);border:1px solid var(--bd,#30363d);border-radius:10px;width:min(860px,100%);max-height:100%;overflow:auto;padding:12px 14px}
+      #pMapa .barra{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}#pMapa .barra button.on{background:#1f6feb55}#pMapaM{height:min(60vh,470px);border-radius:8px}`;
+    document.head.appendChild(st);
     s.innerHTML = `<div class="htools"><span id="pRes"></span><input id="pQ" placeholder="Buscar estación o código" style="min-width:200px"><button id="pRec">↻ Actualizar</button></div>
       <div id="pOut"><p style="color:var(--mu)">Cargando…</p></div>`;
     $("#pQ").addEventListener("input", ev => { q = ev.target.value.trim().toLowerCase(); pintar(); });
     $("#pRec").addEventListener("click", cargar);
-    s.addEventListener("click", ev => { const b = ev.target.closest("button[data-f]"); if (b){ filtro = b.dataset.f; pintar(); } });
+    s.addEventListener("click", ev => { const b = ev.target.closest("button[data-f]"); if (b){ filtro = b.dataset.f; pintar(); return; }
+      const g = ev.target.closest(".pmk"); if (g) abrirMapa(+g.dataset.c, +g.dataset.i); });
   }
   cargar();
 }
@@ -39,12 +46,12 @@ const medido = e => { let t = 0, hay = false; (e.episodios || []).forEach(x => (
 const esperado = e => (e.episodios || []).reduce((t, x) => t + ((x.mm_vecinas || 0) > 0 ? x.mm_vecinas : (x.mm_modelo || 0)), 0);
 
 /* gráfico por episodio: barra = estación; ● vecinas, ▬ modelo (esta hora), ▲ IMERG */
-function grafico(det){
+function grafico(det, id){
   if (!det.length) return "";
   const vals = det.flatMap(d => [d.est, d.n_tot ? d.vec : null, (d.mod3 || [])[1], d.imerg]).filter(v => v != null);
   const mx = Math.max(1, ...vals) * 1.15, W = 70, H = 120, base = 100, y = v => base - (v / mx) * (base - 8);
   const cols = det.map((d, i) => { const x = 20 + i * W, c = x + W / 2 - 10, m = (d.mod3 || [])[1];
-    return `<g><rect x="${x + 4}" y="0" width="${W - 8}" height="${base}" fill="${d.sospechosa ? "#f8514914" : "transparent"}"/>
+    return `<g class="pmk" data-c="${id}" data-i="${i}" style="cursor:pointer"><title>Clic: ver el mapa de esta hora</title><rect x="${x + 4}" y="0" width="${W - 8}" height="${base}" fill="${d.sospechosa ? "#f8514914" : "transparent"}"/>
       ${d.est == null ? `<text x="${c}" y="${base - 6}" text-anchor="middle" font-size="10" fill="#8b949e">s/d</text>` : `<rect x="${c - 12}" y="${y(d.est)}" width="24" height="${Math.max(1, base - y(d.est))}" fill="${d.sospechosa ? "#f85149" : "#8b949e"}"><title>Estación ${n1(d.est)} mm</title></rect>`}
       ${d.n_tot ? `<circle cx="${c - 14}" cy="${y(d.vec)}" r="4" fill="#58a6ff"><title>Vecinas ${n1(d.vec)} mm (${d.n_vec}/${d.n_tot} llueven)</title></circle>` : ""}
       ${m != null ? `<rect x="${c + 6}" y="${y(m) - 1.5}" width="16" height="3" fill="#d29922"><title>Modelo ${n1(m)} mm</title></rect>` : ""}
@@ -53,9 +60,10 @@ function grafico(det){
   const w = 40 + det.length * W;
   return `<div style="overflow-x:auto"><svg viewBox="0 0 ${w} ${H + 6}" style="width:${w}px;max-width:100%;height:auto" role="img" aria-label="mm por hora: estación, vecinas, modelo e IMERG">
     <line x1="18" y1="${base}" x2="${w}" y2="${base}" stroke="#30363d"/><text x="2" y="${y(mx / 1.15) + 3}" font-size="9" fill="#8b949e">${n1(mx / 1.15)}</text><text x="2" y="${base}" font-size="9" fill="#8b949e">0</text>${cols}</svg></div>
-    <div style="font-size:11.5px;color:var(--mu);margin:2px 0 6px"><span style="color:#f85149">■</span> estación (mm/h) · <span style="color:#58a6ff">●</span> vecinas · <span style="color:#d29922">▬</span> modelo (esta hora) · <span style="color:#3fb950">▲</span> IMERG · fondo rojo = hora sospechosa · horas UTC</div>`;
+    <div style="font-size:11.5px;color:var(--mu);margin:2px 0 6px"><span style="color:#f85149">■</span> estación (mm/h) · <span style="color:#58a6ff">●</span> vecinas · <span style="color:#d29922">▬</span> modelo (esta hora) · <span style="color:#3fb950">▲</span> IMERG · fondo rojo = hora sospechosa · horas UTC · <b>clic en una hora para ver el mapa</b></div>`;
 }
-function episodio(e, abierto){
+const CTX = [];
+function episodio(e, abierto, est){
   const ev = e.evidencia || {}, det = e.detalle || [], num = (v, d, u) => v == null ? "—" : v.toFixed(d ?? 0) + (u || "");
   const imm = det.reduce((t, d) => t + (d.sospechosa && d.imerg ? d.imerg : 0), 0);
   const motivo = `<b>${e.horas} h</b> con ${n1(det.length ? det.filter(d => d.sospechosa).reduce((t, d) => t + (d.est || 0), 0) : 0)} mm medidos${e.sin_dato >= e.horas / 2 ? " (sin dato: comunicación)" : ""} · vecinas ${n1(e.mm_vecinas)} mm · modelo ${n1(e.mm_modelo)} mm${imm ? ` · IMERG ${n1(imm)} mm` : ""}${e.descarga_tardia ? " · <b>descarga tardía</b>" : ""}`;
@@ -79,7 +87,7 @@ function episodio(e, abierto){
     + [["vecinas", ev.vecinas], ["modelo", ev.modelo], ["satélite", ev.satelite], ["IMERG", ev.imerg]].filter(x => x[1]).map(([n]) => `<span style="font-size:11px;padding:1px 7px;border-radius:9px;margin-left:4px;background:#1f6feb55;border:1px solid #1f6feb">${n}</span>`).join("");
   return `<details ${abierto ? "open" : ""} style="margin:6px 0;border-top:1px solid var(--bd,#30363d);padding-top:6px"><summary style="cursor:pointer"><b>${f5(e.inicio)} → ${f5(e.fin)}</b> UTC · ${motivo}</summary>
     <div style="margin:6px 0">${insig}</div>
-    ${det.length ? grafico(det) : `<div style="color:var(--mu);margin:4px 0">El detalle hora por hora se genera en la próxima corrida del análisis (cada 6 h).</div>`}
+    ${det.length ? grafico(det, CTX.push({est, det}) - 1) : `<div style="color:var(--mu);margin:4px 0">El detalle hora por hora se genera en la próxima corrida del análisis (cada 6 h).</div>`}
     ${det.length ? `<details style="margin:4px 0"><summary style="cursor:pointer">Tabla hora por hora</summary><div style="overflow-x:auto"><table class="tb" style="font-size:12px"><tr><th>Hora UTC</th><th>Estación mm</th><th>Vecinas mm (llueven/con dato)</th><th>Modelo mm (ant. / esta / sig.)</th><th>IMERG mm</th>${COLS.map(c => `<th>${c[0]}</th>`).join("")}</tr>${filas}</table></div></details>` : ""}
     ${vecTabla}</details>`;
 }
@@ -98,8 +106,64 @@ function tarjeta(e, i){
       <span title="mm medidos en horas sospechosas / mm esperados según vecinas o modelo">${md == null ? "—" : n1(md)} medidos · ~${n1(ex)} esperados</span>
       <span style="color:var(--mu)">${ult ? `último: ${f5(ult.inicio)} UTC` : ""}</span>${dots(confianza(e))}</summary>
     ${partes.map(t => `<div style="margin:6px 0 0">${t}</div>`).join("")}
-    ${eps.map((x, k) => episodio(x, k === 0)).join("")}</details>`;
+    ${eps.map((x, k) => episodio(x, k === 0, e)).join("")}</details>`;
 }
+
+/* ---------- mapa de una hora: satélite NASA GIBS + estación y vecinas ---------- */
+let CAT = null, MP = null;
+async function catalogo(){
+  if (CAT) return CAT;
+  try { const c = new AbortController(), t = setTimeout(() => c.abort(), 10000);
+    const L = await (await fetch("https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json", {signal: c.signal})).json(); clearTimeout(t);
+    CAT = {cod: new Map(L.map(e => [String(e.codigo), e])), nom: new Map(L.map(e => [e.nombre, e]))}; } catch (e) { CAT = {cod: new Map(), nom: new Map()}; }
+  return CAT;
+}
+const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
+const CAPAS = {imerg: ["Lluvia NASA IMERG", "IMERG_Precipitation_Rate", "GoogleMapsCompatible_Level6", 6, "png", .85], ir: ["GOES-19 infrarrojo", "GOES-East_ABI_Band13_Clean_Infrared", "GoogleMapsCompatible_Level7", 7, "png", .75],
+  goes: ["GOES-19 color real", "GOES-East_ABI_GeoColor", "GoogleMapsCompatible_Level7", 7, "jpeg", .9]};
+let capaSel = (() => { try { return localStorage.getItem("qcPluCapa") || "imerg"; } catch (e) { return "imerg"; } })();
+function instante(h){                                   // "11-17 18:00" (UTC) -> ms; el año sale de la fecha de generación del análisis
+  const g = String(D.generado || ""), y = +g.slice(0, 4) || new Date().getUTCFullYear(); let t = Date.parse(`${y}-${h.slice(0, 5)}T${h.slice(6, 11)}:00Z`);
+  if (t > Date.now() + 864e5) t = Date.parse(`${y - 1}-${h.slice(0, 5)}T${h.slice(6, 11)}:00Z`); return t;
+}
+async function abrirMapa(id, i){
+  const cx = CTX[id]; if (!cx || !window.L) return; const {est, det} = cx, d = det[i], cat = await catalogo();
+  let m = document.getElementById("pMapa"); if (m) cerrarMapa();
+  m = document.createElement("div"); m.id = "pMapa"; document.body.appendChild(m);
+  const e0 = cat.cod.get(String(est.codigo));
+  m.innerHTML = `<div class="caja"><div class="barra"><b id="pMaT"></b><span style="flex:1"></span><button id="pMaX">✕ Cerrar</button></div>
+    <div class="barra"><button id="pMaA">‹ hora anterior</button><button id="pMaS">hora siguiente ›</button><span style="width:10px"></span>
+      ${Object.entries(CAPAS).map(([k, c]) => `<button data-cp="${k}" class="${capaSel === k ? "on" : ""}">${c[0]}</button>`).join("")}</div>
+    <div id="pMaV" style="font-size:12.5px;margin:4px 0"></div><div id="pPos" style="margin:0 0 4px"></div><div id="pMapaM"></div>
+    <div style="font-size:11.5px;color:var(--mu);margin-top:4px">Rojo = estación · azul = vecinas (mm de esa hora). IMERG llega con ~5 h de retraso: si la capa sale vacía, la hora es muy reciente. Fuente: NASA GIBS.</div></div>`;
+  m.addEventListener("click", ev => { if (ev.target === m) cerrarMapa(); });
+  document.addEventListener("keydown", esc_);
+  const mapa = L.map("pMapaM", {zoomControl: true}); MP = mapa;
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {maxZoom: 12, attribution: "© OpenStreetMap © CARTO"}).addTo(mapa);
+  mapa.createPane("sat").style.zIndex = 250;
+  let capa = null, grupo = L.layerGroup().addTo(mapa), ult = null;
+  const pintar = idx => {
+    const dd = det[idx], t = instante(dd.hora), iso = new Date(t).toISOString().slice(0, 19) + "Z";
+    $("#pMaT").textContent = `${est.nombre} (${est.codigo}) · ${new Date(t).toISOString().slice(5, 16).replace("T", " ")} UTC · ${new Date(t).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"})} local`;
+    $("#pMaV").innerHTML = `Estación <b>${dd.est == null ? "sin dato" : n1(dd.est) + " mm"}</b> · vecinas <b>${dd.n_tot ? n1(dd.vec) + " mm" : "—"}</b>${dd.n_tot ? ` (${dd.n_vec}/${dd.n_tot} llueven)` : ""} · modelo <b>${(dd.mod3 || []).map(x => x == null ? "·" : n1(x)).join(" / ")} mm</b> (ant./esta/sig.) · IMERG <b>${dd.imerg == null ? "—" : n1(dd.imerg) + " mm"}</b>${dd.sospechosa ? ` · <span style="color:#f85149">hora sospechosa</span>` : ""}`;
+    const C = CAPAS[capaSel]; if (capa) mapa.removeLayer(capa); capa = null;
+    $("#pPos").innerHTML = t > Date.now() ? `<span style="color:#d29922">Hora futura: sin imagen.</span>` : "";
+    if (C && t <= Date.now()) capa = L.tileLayer(`${GIBS}${C[1]}/default/${iso}/${C[2]}/{z}/{y}/{x}.${C[4]}`, {pane: "sat", maxNativeZoom: C[3], maxZoom: 12, opacity: C[5], attribution: "NASA GIBS"}).addTo(mapa);
+    grupo.clearLayers(); const pts = [];
+    if (e0){ pts.push([e0.lat, e0.lon]); L.circleMarker([e0.lat, e0.lon], {radius: 9, color: "#fff", weight: 2, fillColor: "#f85149", fillOpacity: 1}).bindTooltip(`${est.nombre} · ${dd.est == null ? "s/d" : n1(dd.est) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); }
+    (dd.vecs || []).forEach(([n, km, mm]) => { const e = cat.nom.get(n); if (!e) return; pts.push([e.lat, e.lon]);
+      L.circleMarker([e.lat, e.lon], {radius: 7, color: "#fff", weight: 2, fillColor: "#58a6ff", fillOpacity: 1}).bindTooltip(`${n} (${km} km) · ${mm == null ? "s/d" : n1(mm) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); });
+    if (ult == null){ if (pts.length) mapa.fitBounds(pts, {padding: [60, 60], maxZoom: 9}); else mapa.setView([-33.4, -70.7], 5); }
+    ult = idx; $("#pMaA").disabled = idx === 0; $("#pMaS").disabled = idx === det.length - 1;
+  };
+  let idx = i; pintar(idx);
+  $("#pMaA").onclick = () => pintar(--idx); $("#pMaS").onclick = () => pintar(++idx); $("#pMaX").onclick = cerrarMapa;
+  m.querySelectorAll("[data-cp]").forEach(b => b.onclick = () => { capaSel = b.dataset.cp; try { localStorage.setItem("qcPluCapa", capaSel); } catch (e) {}
+    m.querySelectorAll("[data-cp]").forEach(x => x.classList.toggle("on", x === b)); pintar(idx); });
+  setTimeout(() => mapa.invalidateSize(), 50);
+}
+const esc_ = ev => { if (ev.key === "Escape") cerrarMapa(); };
+function cerrarMapa(){ document.removeEventListener("keydown", esc_); if (MP){ MP.remove(); MP = null; } const m = document.getElementById("pMapa"); if (m) m.remove(); }
 const abiertos = new Set();
 function pintar(){
   const L0 = (D.estaciones || []).filter(e => e.estado !== "ok"), R = D.resumen || {};
@@ -117,7 +181,7 @@ function pintar(){
     .map(([k, n]) => `<span style="color:${f[k] ? "#3fb950" : "var(--mu)"}">${f[k] ? "●" : "○"} ${n}</span>`).join(" &nbsp; ");
   $("#pOut").innerHTML = `<div class="htools" style="margin:6px 0"><label>Ordenar por <select id="pOrd">${[["grav", "gravedad"], ["horas", "horas sospechosas"], ["mm", "mm esperados"], ["nombre", "nombre"]].map(([k, t]) => `<option value="${k}"${orden === k ? " selected" : ""}>${t}</option>`).join("")}</select></label>
       <button id="pAbrir">Abrir todo</button><button id="pCerrar">Cerrar todo</button><span style="color:var(--mu)">${L.length} estaciones · ●●●● = las 4 evidencias coinciden</span></div>
-    ${L.map(tarjeta).join("") || `<p style="color:var(--mu)">Ningún pluviómetro dudoso con este filtro en el periodo analizado.</p>`}
+    ${(CTX.length = 0, L.map(tarjeta).join("")) || `<p style="color:var(--mu)">Ningún pluviómetro dudoso con este filtro en el periodo analizado.</p>`}
     <details style="margin-top:12px;color:var(--mu);font-size:12.5px"><summary style="cursor:pointer">Cómo se decide · periodo y fuentes</summary><p>Periodo analizado: ${esc(D.desde || "—")} → ${esc(D.hasta || "—")} UTC (${D.dias ?? "—"} días, hasta donde hay datos minutarios). Actualizado ${esc(D.generado || "—")} UTC. Evidencias: ${fuentes}.<br>
     Una hora es sospechosa si la estación marcó menos de 0,2 mm (o no tuvo dato) y coinciden al menos 2 evidencias de lluvia, una de ellas las estaciones vecinas con dato. Si las vecinas están secas, no se sospecha. Es una sospecha para revisar en terreno, no una corrección.</p></details>`;
   const o = $("#pOut"); o.querySelector("#pOrd").onchange = ev => { orden = ev.target.value; try { localStorage.setItem("qcPluOrd", orden); } catch (e) {} pintar(); };
