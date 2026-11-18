@@ -114,3 +114,10 @@ FL = mkL(k => k >= 720 && k < 1080 && k % 5 === 0 ? .2 : 0, rango(900, 914), {10
 assert.equal(gl.met, "relleno 0"); const Tc = H.totalesLluvia(gl, SL.g); assert(Tc.completa && !Tc.anclado && Tc.tot.optimista > 0);
 gl.hand = H.manoInicial(gl, SL.g, gl.est, SL.L); gl.hand[gl.hand.length - 1].y = .6; gl.tocado = true; const inc22 = H.valores(gl); assert(Math.abs(inc22.reduce((a, b) => a + b, 0) - .6) < 1e-6 && inc22.every(x => Math.abs(x / .2 - Math.round(x / .2)) < 1e-6));
 console.log("huecos lluvia (escalones, RRR6 suave): OK");
+// 23) a mano alzada (lluvia): sigue al mouse sin bajar lo ya dibujado; solo empuja lo que viene después
+FL = mkL(k => k >= 720 && k < 1080 ? .02 : 0, rango(900, 914)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
+H.densificar(gl); gl.hand.forEach(h => h.y = 0);
+H.moverLluviaLibre(gl, gl.hand[3], .4, 5); assert(Math.abs(gl.hand[3].y - .4) < 1e-9 && gl.hand[2].y === 0 && gl.hand[10].y >= .4);
+H.moverLluviaLibre(gl, gl.hand[4], .1, 5); assert(gl.hand[4].y >= .4);                // no baja de lo que ya llevaba la curva antes
+H.moverLluviaLibre(gl, gl.hand[5], 99, 1.2); assert(gl.hand[5].y === 1.2 && gl.hand[14].y >= 1.2);
+console.log("huecos (a mano alzada lluvia): OK");
