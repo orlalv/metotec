@@ -1,5 +1,5 @@
 """Estaciones externas (INIA, CEAZA, SERVIMET, ARAUCO…) desde la red agregada de agrometeorologia.cl, con las variables instrumentales.
-Cada hora deja en el KV:  qc/externas/cat  (catálogo)  y  qc/externas/<VAR>  (valores por hora, ≈42 h, en UTC) para PP, TA, HR, VV, RD, PS, TS00, TS10.
+Cada 15 minutos deja en el KV:  qc/externas/cat  (catálogo)  y  qc/externas/<VAR>  (valores por hora, ≈42 h, en UTC) para PP, TA, HR, VV, RD, PS, TS00, TS10.
 INIA publica las horas en hora local de Chile; aquí se pasan a UTC ("AAAA-MM-DDTHH"). Se omiten DMC y MMA-DMC (ya vienen por la DMC).
 Valores: PP mm · TA °C · HR % · VV [media, ráfaga, dirección°] (unidad de viento por confirmar) · RD (radiación) · PS (presión de estación, hPa) · TS00/TS10 °C suelo."""
 import json, os, re, sys, time
