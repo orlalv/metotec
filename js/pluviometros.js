@@ -134,7 +134,7 @@ async function abrirMapa(id, i){
   m.innerHTML = `<div class="caja"><div class="barra"><b id="pMaT"></b><span style="flex:1"></span><button id="pMaX">✕ Cerrar</button></div>
     <div class="barra"><button id="pMaC" title="Volver a centrar en la estación">◎ Centrar</button><button id="pMaA">‹ hora anterior</button><button id="pMaS">hora siguiente ›</button><span style="width:10px"></span>
       ${Object.entries(CAPAS).map(([k, c]) => `<button data-cp="${k}" class="${capaSel === k ? "on" : ""}">${c[0]}</button>`).join("")}</div>
-    <div id="pMaV" style="font-size:12.5px;margin:4px 0"></div><div id="pPos" style="margin:0 0 4px"></div><div id="pMapaM"></div>
+    <div id="pMaV" style="font-size:12.5px;margin:4px 0"></div><div id="pPos" style="margin:0 0 4px"></div><div id="pDiag" style="font-size:11.5px;color:var(--mu);margin:0 0 4px"></div><div id="pMapaM"></div>
     <div style="font-size:11.5px;color:var(--mu);margin-top:4px">Rojo (anillo y cruz) = la estación; el círculo punteado marca los 60 km de búsqueda de vecinas · azul = vecinas (mm de esa hora). IMERG llega con ~5 h de retraso: si la capa sale vacía, la hora es muy reciente. Fuente: NASA GIBS.</div></div>`;
   m.addEventListener("click", ev => { if (ev.target === m) cerrarMapa(); });
   document.addEventListener("keydown", esc_);
@@ -149,6 +149,9 @@ async function abrirMapa(id, i){
     const C = CAPAS[capaSel]; if (capa) mapa.removeLayer(capa); capa = null;
     $("#pPos").innerHTML = t > Date.now() ? `<span style="color:#d29922">Hora futura: sin imagen.</span>` : "";
     if (C && t <= Date.now()) capa = L.tileLayer(`${GIBS}${C[1]}/default/${iso}/${C[2]}/{z}/{y}/{x}.${C[4]}`, {pane: "sat", maxNativeZoom: C[3], maxZoom: 12, opacity: C[5], attribution: "NASA GIBS"}).addTo(mapa);
+    let ok = 0, mal = 0; const diag = () => { const el = $("#pDiag"); if (el) el.innerHTML = `Diagnóstico v1.4 · estación ${e0 ? "ubicada (" + e0.lat.toFixed(3) + ", " + e0.lon.toFixed(3) + ")" : "<b style='color:#f85149'>sin coordenadas en el catálogo</b>"} · vecinas ubicadas ${nv}/${(dd.vecs || []).length} · capa ${C ? C[0] : "ninguna"}: ${ok} teselas cargadas, ${mal ? `<b style="color:#f85149">${mal} con error</b>` : "0 con error"}`; };
+    let nv = 0;
+    if (capa){ capa.on("tileload", () => { ok++; diag(); }); capa.on("tileerror", () => { mal++; diag(); }); }
     grupo.clearLayers(); const pts = [];
     if (e0){ pts.push([e0.lat, e0.lon]);
       L.circle([e0.lat, e0.lon], {radius: 60000, color: "#f85149", weight: 1, dashArray: "6 6", fill: false, interactive: false}).addTo(grupo);          // alcance de las vecinas (60 km)
@@ -156,10 +159,10 @@ async function abrirMapa(id, i){
       L.polyline([[e0.lat - 0.12, e0.lon], [e0.lat + 0.12, e0.lon]], {color: "#f85149", weight: 1, interactive: false}).addTo(grupo);
       L.polyline([[e0.lat, e0.lon - 0.12], [e0.lat, e0.lon + 0.12]], {color: "#f85149", weight: 1, interactive: false}).addTo(grupo);
       L.circleMarker([e0.lat, e0.lon], {radius: 8, color: "#fff", weight: 2, fillColor: "#f85149", fillOpacity: 1}).bindTooltip(`${est.nombre} · ${dd.est == null ? "s/d" : n1(dd.est) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); }
-    (dd.vecs || []).forEach(([n, km, mm]) => { const e = cat.nom.get(n); if (!e) return; pts.push([e.lat, e.lon]);
+    (dd.vecs || []).forEach(([n, km, mm]) => { const e = cat.nom.get(n); if (!e) return; nv++; pts.push([e.lat, e.lon]);
       L.circleMarker([e.lat, e.lon], {radius: 7, color: "#fff", weight: 2, fillColor: "#58a6ff", fillOpacity: 1}).bindTooltip(`${n} (${km} km) · ${mm == null ? "s/d" : n1(mm) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); });
     if (ult == null){ if (pts.length) (e0 ? mapa.setView([e0.lat, e0.lon], 8) : mapa.fitBounds(pts, {padding: [60, 60], maxZoom: 9})); else mapa.setView([-33.4, -70.7], 5); }
-    ult = idx; $("#pMaA").disabled = idx === 0; $("#pMaS").disabled = idx === det.length - 1;
+    diag(); ult = idx; $("#pMaA").disabled = idx === 0; $("#pMaS").disabled = idx === det.length - 1;
   };
   let idx = i; pintar(idx);
   $("#pMaA").onclick = () => pintar(--idx); $("#pMaS").onclick = () => pintar(++idx); $("#pMaX").onclick = cerrarMapa; $("#pMaC").onclick = () => { if (e0) mapa.setView([e0.lat, e0.lon], 8); };
