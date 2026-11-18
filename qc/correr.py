@@ -15,7 +15,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
-import dmc, pruebas as P, superauto as SUP, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC, boletin as BOL, productos as PRO
+import dmc, pruebas as P, superauto as SUP, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC, boletin as BOL, productos as PRO, pluviometros as PLU, reputacion as REP
 
 VERSION = "0.1"
 
@@ -552,6 +552,16 @@ def main():
             estado["productos"] = PRO.correr(a.datos, subir=subir_kv)
         except Exception:
             estado["errores"].append(f"productos: {traceback.format_exc(limit=2)}")
+        try:   # pluviómetros que podrían no estar marcando: cada 6 h (usa el modelo de varios días y las imágenes de las últimas 12 h)
+            prev = json.loads((Path(a.datos) / "productos" / "pluviometros.json").read_text(encoding="utf-8")).get("generado", "") if (Path(a.datos) / "productos" / "pluviometros.json").exists() else ""
+            if not prev or (datetime.now(timezone.utc).replace(tzinfo=None) - datetime.strptime(prev, "%Y-%m-%d %H:%M")).total_seconds() >= 6 * 3600:
+                estado["pluviometros"] = PLU.correr(a.datos, subir=subir_kv, sat=sat)
+        except Exception:
+            estado["errores"].append(f"pluviometros: {traceback.format_exc(limit=2)}")
+        try:   # reputación y estado de las estaciones (semáforo, cuarentena, en revisión)
+            estado["reputacion"] = REP.correr(a.datos, subir=subir_kv)
+        except Exception:
+            estado["errores"].append(f"reputacion: {traceback.format_exc(limit=2)}")
     txt = json.dumps(res, ensure_ascii=False, default=str)
     Path(a.salida).write_text(txt, encoding="utf-8")
     estado["kv"] = subir_kv("qc/ultimo", txt)

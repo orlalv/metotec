@@ -520,6 +520,117 @@ def prueba_super_vecinas_viento_lluvia():
         FALLAS.append("vecinas: la estación sana no debía tener alertas")
 
 
+def prueba_pluviometros_obstruidos():
+    import numpy as np, pluviometros as PL
+    h = pd.date_range("2026-11-10 01:00", periods=48, freq="h")
+    cods = ["A", "B", "C", "D", "E"]
+    E = pd.DataFrame({"codigo": cods, "nombre": cods, "lat": [-39.0, -39.05, -39.1, -39.02, -39.08], "lon": [-72.0, -72.05, -72.1, -72.02, -72.08]})
+    llueve = np.zeros(48); llueve[10:16] = 4.0                     # 6 horas de lluvia en la zona
+    R = pd.DataFrame({c: llueve.copy() for c in cods}, index=h)
+    N = pd.DataFrame(100, index=h, columns=cods)
+    R["C"] = 0.0                                                   # C: pluviómetro tapado (marca 0 con dato)
+    R.loc[R.index[12:16], "D"] = np.nan; N.loc[N.index[12:16], "D"] = 0     # D: cuatro horas sin dato
+    R.loc[R.index[13], "E"] = 0.0                                  # E: una sola hora en 0
+    M = pd.DataFrame({c: llueve * 0.8 for c in cods}, index=h)
+    est = {e["codigo"]: e for e in PL.analizar(R, N, E, M)}
+    if est["C"]["estado"] != "sospecha_obstruccion" or est["C"]["horas_sospechosas"] != 6:
+        FALLAS.append(f"pluviómetros: C (0 mm con lluvia en todo el entorno) debía ser sospecha de obstrucción de 6 h → {est['C']['estado']}, {est['C']['horas_sospechosas']} h")
+    if est["D"]["estado"] != "sin_dato_con_lluvia":
+        FALLAS.append(f"pluviómetros: D (sin dato mientras llovía) debía ser problema de comunicación → {est['D']['estado']}")
+    if est["E"]["estado"] != "revisar":
+        FALLAS.append(f"pluviómetros: E (una hora en 0) debía quedar «revisar», no obstrucción → {est['E']['estado']}")
+    if est["A"]["estado"] != "ok" or est["B"]["estado"] != "ok":
+        FALLAS.append("pluviómetros: A y B miden bien y no deben avisar")
+    sin = {e["codigo"]: e for e in PL.analizar(R, N, E, None)}      # sin modelo, con 4 vecinas llueve igual: sigue detectándose solo con vecinas?
+    if sin["C"]["horas_sospechosas"] != 0:
+        FALLAS.append("pluviómetros: con una sola evidencia (vecinas) no debe haber aviso; se piden al menos 2")
+    R2 = R.copy(); R2.loc[R2.index[16], "C"] = 12.0               # descarga al destaparse
+    d = {e["codigo"]: e for e in PL.analizar(R2, N, E, M)}["C"]
+    if not d["episodios"] or not d["episodios"][0]["descarga_tardia"]:
+        FALLAS.append("pluviómetros: la descarga de golpe después del episodio debía detectarse")
+    R3 = R.copy(); R3["C"] = llueve * 0.1                          # marca 10 % de lo que miden las vecinas, todo el periodo
+    r = {e["codigo"]: e for e in PL.analizar(R3, N, E, M)}["C"]
+    if r["razon_vecinas"] is None or r["razon_vecinas"] > 0.2 or r["estado"] != "sospecha_obstruccion":
+        FALLAS.append(f"pluviómetros: un pluviómetro que marca 10 % de lo de las vecinas debía quedar sospechoso → {r['razon_vecinas']}, {r['estado']}")
+
+
+def prueba_pluviometros_goteo_y_eventos():
+    import numpy as np, pluviometros as PL
+    h = pd.date_range("2026-11-10 01:00", periods=72, freq="h")
+    cods = ["A", "B", "C", "D"]
+    E = pd.DataFrame({"codigo": cods, "nombre": cods, "lat": [-39.0, -39.05, -39.1, -39.02], "lon": [-72.0, -72.05, -72.1, -72.02]})
+    N = pd.DataFrame(100, index=h, columns=cods)
+    # goteo: C marca 0,1–0,2 mm cada hora durante 14 h con todo el entorno seco
+    R = pd.DataFrame(0.0, index=h, columns=cods)
+    R.loc[R.index[20:34], "C"] = [0.1, 0.1, 0.2, 0.2, 0.2, 0.1, 0.2, 0.1, 0.2, 0.2, 0.1, 0.2, 0.2, 0.1]
+    g = {e["codigo"]: e for e in PL.analizar(R, N, E, None)}
+    if g["C"]["estado"] != "sospecha_obstruccion" or not g["C"]["goteo"] or g["C"]["goteo"][0]["horas"] < 12:
+        FALLAS.append(f"pluviómetros: 14 h de goteo con el entorno seco debía ser sospecha de obstrucción → {g['C']['estado']}, {g['C']['goteo']}")
+    if any(g[c]["goteo"] for c in "ABD"):
+        FALLAS.append("pluviómetros: el goteo solo debe avisar en la estación que gotea")
+    # llovizna real: las vecinas también marcan 0,1–0,2 → no es goteo
+    R2 = pd.DataFrame(0.0, index=h, columns=cods)
+    for c in cods:
+        R2.loc[R2.index[20:34], c] = 0.1 + 0.1 * (np.arange(14) % 2)
+    if any(PL.analizar(R2, N, E, None)[k]["goteo"] for k in range(4)):
+        FALLAS.append("pluviómetros: llovizna que miden todas las estaciones no es goteo")
+    # dos eventos de lluvia seguidos que C no marca (cada uno de 2 h): lleva tiempo sin marcar
+    R3 = pd.DataFrame(0.0, index=h, columns=cods)
+    for a in (5, 40):
+        R3.loc[R3.index[a:a + 2], ["A", "B", "D"]] = 4.0
+    M3 = pd.DataFrame(0.0, index=h, columns=cods)
+    for a in (5, 40):
+        M3.loc[M3.index[a:a + 2], :] = 1.0
+    c3 = {e["codigo"]: e for e in PL.analizar(R3, N, E, M3)}["C"]
+    if c3["eventos_sin_marcar"] != 2 or c3["estado"] != "sospecha_obstruccion" or not (c3["sin_marcar_desde"] or "").startswith("2026-11-10 05"):
+        FALLAS.append(f"pluviómetros: dos eventos sin marcar debía dar sospecha, desde el primero → {c3['eventos_sin_marcar']}, {c3['estado']}, {c3['sin_marcar_desde']}")
+    # el mismo pluviómetro marcando en el segundo evento ya no «lleva» sin marcar
+    R4 = R3.copy(); R4.loc[R4.index[40:42], "C"] = 4.0
+    c4 = {e["codigo"]: e for e in PL.analizar(R4, N, E, M3)}["C"]
+    if c4["eventos_sin_marcar"] != 0:
+        FALLAS.append(f"pluviómetros: si marcó en el último evento no debe quedar eventos sin marcar → {c4['eventos_sin_marcar']}")
+    # cadencia de 10 min: 6 datos en la hora es hora completa (no «sin dato»)
+    N5 = N.copy(); N5["B"] = 100.0
+    if {e["codigo"]: e for e in PL.analizar(R3, N5, E, M3)}["B"]["horas_sin_dato"] != 0:
+        FALLAS.append("pluviómetros: la cadencia de transmisión no debe contar como falta de dato")
+
+
+def prueba_pluviometros_satelite():
+    import numpy as np, tempfile, pluviometros as PL
+    h = pd.date_range("2026-11-10 01:00", periods=24, freq="h")
+    cods = ["A", "B", "C"]
+    E = pd.DataFrame({"codigo": cods, "nombre": cods, "lat": [-39.0, -39.05, -39.1], "lon": [-72.0, -72.05, -72.1]})
+    N = pd.DataFrame(100, index=h, columns=cods)
+    # el satélite vio nube fría sobre C durante 4 h y el pluviómetro marca 0, mientras el modelo da lluvia: 2 evidencias → sospechoso
+    R = pd.DataFrame(0.0, index=h, columns=cods)
+    M = pd.DataFrame(0.0, index=h, columns=cods); M.loc[h[5:9], "C"] = 1.0
+    res = {h[i]: {"C": [False, True, False, -45.0, 0]} for i in range(5, 9)}
+    S, C = PL.tablas_satelite(res, list(h))
+    c = {e["codigo"]: e for e in PL.analizar(R, N, E, M, S, None, C)}["C"]
+    if c["horas_sospechosas"] != 4:
+        FALLAS.append(f"pluviómetros: nube fría + modelo con lluvia y 0 mm debía dar 4 h sospechosas → {c['horas_sospechosas']}")
+    # sin la nube fría (solo el modelo) no hay aviso
+    if {e["codigo"]: e for e in PL.analizar(R, N, E, M)}["C"]["horas_sospechosas"] != 0:
+        FALLAS.append("pluviómetros: una sola evidencia no debe alertar")
+    # efecto contrario: B marca 1,2 mm con el cielo totalmente despejado, vecinas secas y modelo seco, en dos horas
+    R2 = pd.DataFrame(0.0, index=h, columns=cods); R2.loc[h[10:12], "B"] = 1.2
+    res2 = {h[i]: {c_: [False, False, True, None, 0] for c_ in cods} for i in range(8, 14)}
+    S2, C2 = PL.tablas_satelite(res2, list(h))
+    b = {e["codigo"]: e for e in PL.analizar(R2, N, E, None, S2, None, C2)}["B"]
+    if len(b["lluvia_con_cielo_despejado"]) != 2 or b["estado"] != "revisar":
+        FALLAS.append(f"pluviómetros: lluvia con cielo despejado debía quedar en «revisar» → {b['estado']}, {b['lluvia_con_cielo_despejado']}")
+    # si las vecinas también miden, no es anómala
+    R3 = R2.copy(); R3.loc[h[10:12], ["A", "C"]] = 2.0
+    if {e["codigo"]: e for e in PL.analizar(R3, N, E, None, S2, None, C2)}["B"]["lluvia_con_cielo_despejado"]:
+        FALLAS.append("pluviómetros: con lluvia en las vecinas no es «lluvia con cielo despejado»")
+    # el archivo diario acumula las horas y se puede leer
+    with tempfile.TemporaryDirectory() as d:
+        PL.archivar_satelite(d, {h[3]: {"A": [True, True, False, -50.0, 2]}}); PL.archivar_satelite(d, {h[4]: {"A": [False, False, True, None, 0]}})
+        L = PL.leer_satelite(d, h[0], h[-1])
+        if sorted(L) != [h[3], h[4]] or L[h[3]]["A"][0] is not True:
+            FALLAS.append(f"pluviómetros: el archivo de satélite debía acumular y leerse → {sorted(L)}")
+
+
 def prueba_metar_forma():
     """Errores de cifrado del tiempo presente METAR (guía): válidas no avisan, imposibles sí."""
     import sensorial as SEN

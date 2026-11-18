@@ -207,7 +207,7 @@ main[hidden]{display:none}
  <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
  <div class="salto"></div>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="super">Super automático</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
- <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="rec" data-g="real">Récord histórico</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="sup" data-g="super" hidden>Estaciones</button><button data-m="sup_pp" data-g="super" hidden>Agua caída</button><button data-m="sup_prc" data-g="super" hidden>Precipitación</button><button data-m="sup_ext" data-g="super" hidden>Extremas</button><button data-m="sup_pre" data-g="super" hidden>Presiones</button><button data-m="sup_tem" data-g="super" hidden>Temperaturas</button><button data-m="sup_vie" data-g="super" hidden>Viento</button><button data-m="sup_est" data-g="super" hidden>Estación</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
+ <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="rec" data-g="real">Récord histórico</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="est" data-g="real">Estado de estaciones</button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="sup" data-g="super" hidden>Estaciones</button><button data-m="sup_pp" data-g="super" hidden>Agua caída</button><button data-m="sup_prc" data-g="super" hidden>Precipitación</button><button data-m="sup_ext" data-g="super" hidden>Extremas</button><button data-m="sup_pre" data-g="super" hidden>Presiones</button><button data-m="sup_tem" data-g="super" hidden>Temperaturas</button><button data-m="sup_vie" data-g="super" hidden>Viento</button><button data-m="sup_est" data-g="super" hidden>Estación</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -233,6 +233,7 @@ main[hidden]{display:none}
 <section id="ext" hidden></section>
 <section id="ser" hidden></section>
 <section id="inf" hidden></section>
+<section id="est" hidden></section>
 <section id="reg" hidden></section>
 <section id="equ" hidden></section>
 <section id="mis" hidden></section>
@@ -251,6 +252,7 @@ main[hidden]{display:none}
 <script src="js/series.js?v=202611101600"></script>
 <script src="js/reglas.js?v=202611171350"></script>
 <script src="js/fallas.js?v=202611131300"></script>
+<script src="js/estaciones.js?v=202611172300"></script>
 <script src="js/equipo.js?v=202611161000"></script>
 <script src="js/servicios.js?v=202611131500"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
@@ -475,7 +477,7 @@ function visibles(){
   return R.estaciones.map(filtrar).filter(e => enZona(e) && ver[e.nivel] && EQ.filtra(e.codigo) && (sub === "pend" || e.alertas.length) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
 function pintar(){
-  if (modo === "hist" || modo === "reg" || modo === "minu" || modo === "bol") return;
+  if (modo === "hist" || modo === "reg" || modo === "minu" || modo === "bol" || modo === "est") return;
   if (modo === "equ" || modo === "mis" || modo === "comp") return EQ.pagina(modo);
   if (modo === "ext" || modo === "pp" || modo === "tem" || modo === "rec") return EXT.init(() => R, modo);
   if (modo === "sup") return pintarSup();
@@ -598,9 +600,9 @@ function cambiarModo(m){
   if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
   modo = m; $("#det").style.display = "none";
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", rec: "ext", ser: "ser", serh: "ser", inf: "inf", reg: "reg", equ: "equ", mis: "mis", comp: "comp", sup_pp: "sup", sup_prc: "sup", sup_est: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup"}[m];
+  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", rec: "ext", ser: "ser", serh: "ser", inf: "inf", est: "est", reg: "reg", equ: "equ", mis: "mis", comp: "comp", sup_pp: "sup", sup_prc: "sup", sup_est: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup"}[m];
   document.querySelector("main").hidden = h;
-  ["hist", "minu", "bol", "ext", "ser", "inf", "reg", "equ", "mis", "comp", "sup"].forEach(i => $("#" + i).hidden = i !== sec);
+  ["hist", "minu", "bol", "ext", "ser", "inf", "est", "reg", "equ", "mis", "comp", "sup"].forEach(i => $("#" + i).hidden = i !== sec);
   $("#chips").style.display = h ? "none" : "";
   $("#mvar").hidden = $("#mref").hidden = m !== "mod"; leyenda(m === "mod");
   $("#sub").hidden = $("#grupo").hidden = $("#vars").hidden = m !== "ema"; $("#gobs").hidden = m !== "obs";
@@ -611,6 +613,7 @@ function cambiarModo(m){
     else if (sec === "ext") EXT.init(() => R, m); else if (sec === "ser") SER.init(clave, m === "ser" ? "dia" : "hora");
     else if (sec === "equ" || sec === "mis" || sec === "comp") EQ.pagina(m);
     else if (sec === "sup") SUPER.init(() => R, m);
+    else if (m === "est") EST.init(clave);
     else if (m === "inf") R && pintarInf(); else if (m === "reg") REGLAS.pagina($("#reg"), esc);;
     return;
   }

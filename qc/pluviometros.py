@@ -1,0 +1,324 @@
+"""Pluviómetros que podrían no estar marcando: periodos en que probablemente llovió y la estación marca 0 (o no tiene dato).
+
+Para cada estación y cada hora cerrada se juntan hasta tres evidencias de lluvia, independientes entre sí:
+  · vecinas   al menos 2 estaciones a ≤ 60 km con ≥ 1 mm en la hora y ≥ 60 % de las que reportan
+  · modelo    Open-Meteo con ≥ 0,5 mm en la hora o en la anterior/siguiente (el modelo se equivoca en la hora)
+  · satélite  GOES: lluvia estimada con nube cerrada, o nube cerrada con tope más frío que −25 °C, o rayos (sat_estaciones.json, últimas 12 h;
+              cada corrida archiva el resumen horario en datos/sat/ para poder mirar periodos largos)
+  · IMERG     (NASA) todavía no incorporado; entra por el parámetro `imerg` (DataFrame codigo, h, mm)
+El efecto contrario también se revisa: lluvia en la estación con el cielo totalmente despejado y sin lluvia en vecinas ni modelo.
+Una hora es «sospechosa» si hay ≥ 2 evidencias y la estación marca menos de 0,2 mm o no tiene dato.
+Horas sospechosas seguidas forman un episodio. Además: eventos de lluvia seguidos sin que la estación marque (y desde cuándo), y «goteo»
+(horas seguidas con 0,1–0,2 mm sin lluvia en el entorno: agua que escurre de un embudo tapado). La cadencia de transmisión (1, 10 o 60 min) no importa. Un episodio de ≥ 3 horas con la estación en 0 (no sin dato) es «sospecha de obstrucción»;
+si en su mayoría no hay dato, es un problema de comunicación y no del pluviómetro.
+Además se calcula la razón largo plazo estación / vecinas en las horas con lluvia de las vecinas, y se avisa si ahora el pluviómetro
+«descarga» de golpe después de un episodio (agua acumulada que se liberó).
+El resultado es una sospecha para enviar a revisión; nunca se corrige el valor. Salida: datos/productos/pluviometros.json y KV «qc/pluviometros».
+"""
+import json
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+import numpy as np
+import pandas as pd
+
+RADIO_KM = 60
+MM_VECINA = 1.0
+FRAC_VECINAS = 0.6
+MM_MODELO = 0.5
+MARCA_MIN = 0.2                  # menos que esto en la hora = «no marca»
+MIN_DATOS = 70                   # % de los datos esperados en la hora (según la cadencia de la estación: 1, 10, 60 min) para considerarla completa
+GOTEO_MAX, GOTEO_H, GOTEO_LARGO = 0.4, 8, 12   # horas seguidas con 0 < mm ≤ 0,4 sin lluvia en el entorno; ≥ 12 h = sospecha
+EVENTOS_OBSTR = 2               # eventos de lluvia del entorno seguidos sin que la estación marque
+EV_MIN = 2                       # evidencias necesarias
+HORAS_OBSTRUCCION = 3
+RAZON_BAJA, MM_RAZON, RADIO_RAZON = 0.3, 20.0, 40     # la razón solo vale con lluvia acumulada suficiente (≥ 20 mm en la vecina) y vecinas cercanas
+DESCARGA_MM = 2.0
+
+
+def _km(la, lo):
+    la, lo = np.radians(la), np.radians(lo)
+    a = np.sin((la[:, None] - la[None]) / 2) ** 2 + np.cos(la[:, None]) * np.cos(la[None]) * np.sin((lo[:, None] - lo[None]) / 2) ** 2
+    return 6371 * 2 * np.arcsin(np.sqrt(a))
+
+
+def leer_horas(raiz, desde, hasta):
+    """Lluvia por estación y hora cerrada desde el archivo minutario: (mm, % de datos esperados con dato según la cadencia de cada estación), índices hora UTC y código."""
+    partes, t = [], pd.Timestamp(desde).floor("h")
+    while t <= pd.Timestamp(hasta):
+        f = Path(raiz) / "ema" / t.strftime("%Y/%m/%d/%H.csv.gz")
+        if f.exists():
+            try:
+                partes.append(pd.read_csv(f, dtype={"codigo": str}, parse_dates=["momento"], usecols=["codigo", "momento", "rr1m"]))
+            except Exception:
+                pass
+        t += pd.Timedelta(hours=1)
+    if not partes:
+        return pd.DataFrame(), pd.DataFrame()
+    A = pd.concat(partes, ignore_index=True).drop_duplicates(["codigo", "momento"])
+    A = A[(A["momento"] > pd.Timestamp(desde)) & (A["momento"] <= pd.Timestamp(hasta))]
+    A["h"] = A["momento"].dt.ceil("h")
+    g = A.groupby(["codigo", "h"])["rr1m"].agg(rr="sum", n="count").reset_index()
+    paso = A.sort_values("momento").groupby("codigo")["momento"].apply(lambda x: max(1.0, x.diff().dt.total_seconds().median() / 60 if len(x) > 1 else 1.0))
+    g["n"] = (100.0 * g["n"] / (60.0 / g["codigo"].map(paso).fillna(1.0))).clip(upper=100)
+    return g.pivot(index="h", columns="codigo", values="rr"), g.pivot(index="h", columns="codigo", values="n")
+
+
+def modelo_pp(E, dias, lote=25):
+    """Precipitación horaria del modelo (Open-Meteo, past_days) por estación: DataFrame h × código, mm."""
+    import time
+    import modelo as MO
+    E = E.dropna(subset=["lat", "lon"]).reset_index(drop=True)
+    cols = {}
+    for i in range(0, len(E), lote):
+        L = E.iloc[i:i + lote]
+        p = dict(latitude=",".join(f"{x:.4f}" for x in L.lat), longitude=",".join(f"{x:.4f}" for x in L.lon),
+                 elevation=",".join(f"{(x if pd.notna(x) else 0):.0f}" for x in L.alt), hourly="precipitation",
+                 past_days=min(dias + 1, 92), forecast_days=1, timezone="GMT")
+        try:
+            js = MO._pedir(p, 60)
+        except Exception as e:
+            MO.ULTIMOS_ERRORES.append(f"pluviómetros lote {i // lote + 1}: {e}")
+            continue
+        for cod, j in zip(L.codigo, js if isinstance(js, list) else [js]):
+            h = j.get("hourly") or {}
+            if h.get("time"):
+                cols[str(cod)] = pd.Series(h.get("precipitation"), index=pd.to_datetime(h["time"]), dtype=float)
+        time.sleep(1.5)
+    return pd.DataFrame(cols)
+
+
+def resumen_satelite(sat, horas):
+    """{hora: {código: [lluvia, nube_fria, despejado, tope_min, rayos]}} a partir de las imágenes de las últimas 12 h (sat_estaciones.json).
+      lluvia      ≥ 3 imágenes de la hora con lluvia estimada (rr10 ≥ 2) y nube cerrada (≥ 90 % a 10 km)
+      nube_fria   ≥ 3 imágenes con nube cerrada y tope a 10 km más frío que −25 °C, o rayos a ≤ 10 km (nube con capacidad de dar lluvia)
+      despejado   todas las imágenes (≥ 4) con ≤ 5 % de nube en 30 km
+    Solo se resumen las horas con ≥ 4 imágenes."""
+    import satelite as SAT
+    S = SAT.series(sat)
+    out = {}
+    for h in horas:
+        d = {}
+        for cod, F in S.items():
+            v = [f for t, f in F if h - pd.Timedelta(hours=1) < t <= h]
+            if len(v) < 4:
+                continue
+            llu = sum(1 for f in v if (f.get("rr10") or 0) >= 2 and (f.get("nub10") or 0) >= 90) >= 3
+            tp = [f.get("t13n10") for f in v if f.get("t13n10") is not None]
+            ray = int(sum(f.get("ray10") or 0 for f in v))
+            fria = sum(1 for f in v if (f.get("nub10") or 0) >= 90 and f.get("t13n10") is not None and f["t13n10"] <= -25) >= 3 or ray >= 1
+            nub = [f.get("nub30") for f in v if f.get("nub30") is not None]
+            desp = len(nub) >= 4 and all(x <= 5 for x in nub)
+            d[cod] = [bool(llu), bool(fria), bool(desp), (round(min(tp), 1) if tp else None), ray]
+        if d:
+            out[h] = d
+    return out
+
+
+def archivar_satelite(raiz, resumen):
+    """Guarda el resumen horario en datos/sat/AAAA/MM/DD.json (se acumula: así la evidencia satelital queda para analizar periodos largos)."""
+    por_dia = {}
+    for h, d in resumen.items():
+        por_dia.setdefault(h.strftime("%Y/%m/%d"), {})[h.strftime("%H")] = d
+    for dia, horas in por_dia.items():
+        f = Path(raiz) / "sat" / f"{dia}.json"
+        f.parent.mkdir(parents=True, exist_ok=True)
+        previo = _leer(f)
+        previo.update(horas)
+        f.write_text(json.dumps(previo, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+
+
+def _leer(f):
+    try:
+        return json.loads(Path(f).read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def leer_satelite(raiz, desde, hasta):
+    """Resumen archivado: {hora: {código: [...]}}."""
+    out, t = {}, pd.Timestamp(desde).floor("D")
+    while t <= pd.Timestamp(hasta):
+        for hh, d in _leer(Path(raiz) / "sat" / f"{t:%Y/%m/%d}.json").items():
+            out[t + pd.Timedelta(hours=int(hh))] = d
+        t += pd.Timedelta(days=1)
+    return out
+
+
+def tablas_satelite(resumen, horas):
+    """De {hora: {código: [lluvia, fria, despejado, ...]}} a tres DataFrames (hora × código) con True/False y NaN donde no hay imagen:
+    evidencia de lluvia (lluvia o nube fría), solo la lluvia estimada y cielo despejado."""
+    cods = sorted({c for d in resumen.values() for c in d})
+    ev, desp = pd.DataFrame(index=horas, columns=cods, dtype=object), pd.DataFrame(index=horas, columns=cods, dtype=object)
+    for h, d in resumen.items():
+        if h in ev.index:
+            for c, v in d.items():
+                ev.at[h, c] = bool(v[0] or v[1])
+                desp.at[h, c] = bool(v[2])
+    return ev, desp
+
+
+def analizar(R, N, E, M=None, S=None, I=None, C=None):
+    """R, N: mm y minutos con dato (hora × código). E: estaciones (codigo, nombre, lat, lon). M: modelo (hora × código, mm).
+    S: satélite, evidencia de lluvia (hora × código, bool). C: satélite, cielo despejado (hora × código, bool). I: IMERG (hora × código, mm). Devuelve la lista de estaciones con su diagnóstico."""
+    E = E.copy()
+    E["codigo"] = E["codigo"].astype(str)
+    E = E[E["codigo"].isin(R.columns)].dropna(subset=["lat", "lon"]).reset_index(drop=True)
+    cods = list(E["codigo"])
+    horas = list(R.index)
+    V = R[cods].where(N[cods] >= MIN_DATOS)                          # mm solo de horas completas; si no, NaN
+    D = _km(E["lat"].values.astype(float), E["lon"].values.astype(float))
+    np.fill_diagonal(D, np.inf)
+    nom = dict(zip(E["codigo"], E["nombre"]))
+    out = []
+    for j, c in enumerate(cods):
+        vec = np.where(D[j] <= RADIO_KM)[0]
+        X = V.iloc[:, vec].values if len(vec) else np.empty((len(horas), 0))
+        tot = np.isfinite(X).sum(1)
+        llu = np.nansum(np.where(np.isfinite(X), X >= MM_VECINA, False), 1)
+        ev_vec = (tot >= 2) & (llu >= 2) & (llu >= FRAC_VECINAS * np.maximum(tot, 1))
+        mm_vec = np.array([np.nanmedian(r[np.isfinite(r) & (r >= MM_VECINA)]) if ev_vec[i] else 0.0 for i, r in enumerate(X)])
+        ev_mod = np.zeros(len(horas), bool)
+        mm_mod = np.zeros(len(horas))
+        if M is not None and c in M.columns:
+            m = M[c].reindex(horas).fillna(0).values
+            mm_mod = m
+            ev_mod = pd.Series(m).rolling(3, center=True, min_periods=1).max().values >= MM_MODELO
+        ev_sat = np.zeros(len(horas), bool)
+        if S is not None and c in S.columns:
+            ev_sat = S[c].reindex(horas).fillna(False).astype(bool).values
+        ev_imerg = np.zeros(len(horas), bool)
+        if I is not None and c in I.columns:
+            ev_imerg = I[c].reindex(horas).fillna(0).values >= 0.5
+        pts = ev_vec.astype(int) + ev_mod + ev_sat + ev_imerg
+        mi = V[c].values
+        sin_dato = ~np.isfinite(mi)
+        no_marca = sin_dato | (np.nan_to_num(mi, nan=0.0) < MARCA_MIN)
+        sosp = (pts >= EV_MIN) & no_marca
+        # episodios: horas sospechosas separadas por ≤ 1 hora
+        eps, i = [], 0
+        idx = np.where(sosp)[0]
+        while i < len(idx):
+            k = i
+            while k + 1 < len(idx) and idx[k + 1] - idx[k] <= 2:
+                k += 1
+            a, b = idx[i], idx[k]
+            seg = np.arange(a, b + 1)
+            n_sosp = int(sosp[seg].sum())
+            n_sd = int((sosp[seg] & sin_dato[seg]).sum())
+            sigue = (b + 1 < len(horas) and np.isfinite(mi[b + 1]) and mi[b + 1] >= DESCARGA_MM and mm_vec[seg].sum() > 0 and mi[b + 1] >= 0.5 * mm_vec[seg].sum())
+            eps.append(dict(inicio=f"{horas[a] - pd.Timedelta(hours=1):%Y-%m-%d %H:%M}", fin=f"{horas[b]:%Y-%m-%d %H:%M}", horas=n_sosp, sin_dato=n_sd,
+                            evidencia=dict(vecinas=bool(ev_vec[seg].any()), modelo=bool(ev_mod[seg].any()), satelite=bool(ev_sat[seg].any()), imerg=bool(ev_imerg[seg].any())),
+                            mm_vecinas=round(float(mm_vec[seg].sum()), 1), mm_modelo=round(float(mm_mod[seg].sum()), 1),
+                            descarga_tardia=bool(sigue)))
+            i = k + 1
+        # efecto contrario: la estación marca lluvia con el cielo totalmente despejado, sin lluvia en las vecinas ni en el modelo (riego, mantención, insecto en el embudo)
+        despejado = np.zeros(len(horas), bool)
+        if C is not None and c in C.columns:
+            despejado = C[c].reindex(horas).fillna(False).astype(bool).values
+        mi_ok = np.nan_to_num(mi, nan=0.0)
+        raras = np.where(despejado & (mi_ok >= 0.5) & (pts == 0) & ~ev_mod)[0]
+        raras_h = [dict(hora=f"{horas[i]:%Y-%m-%d %H:%M}", mm=round(float(mi_ok[i]), 1)) for i in raras][-6:]
+        # eventos de lluvia del entorno (≥ 2 evidencias) y si la estación marcó en cada uno; solo se juzgan las horas con dato
+        ev_h = [i for i in np.where(pts >= EV_MIN)[0] if np.isfinite(mi[i])]
+        eventos, grupo = [], []
+        for i in ev_h:
+            if grupo and i - grupo[-1] > 6:
+                eventos.append(grupo); grupo = []
+            grupo.append(i)
+        if grupo:
+            eventos.append(grupo)
+        marco = [bool(np.nanmax(mi[g]) >= MARCA_MIN) for g in eventos]
+        seguidos = 0
+        for m in reversed(marco):
+            if m:
+                break
+            seguidos += 1
+        desde_sin = f"{horas[eventos[-seguidos][0]] - pd.Timedelta(hours=1):%Y-%m-%d %H:%M}" if seguidos else None
+        ultima_marca = next((f"{horas[i]:%Y-%m-%d %H:%M}" for g, m in zip(reversed(eventos), reversed(marco)) if m for i in [max(g, key=lambda k: mi[k])]), None)
+        # goteo: hora tras hora 0,1–0,2 mm sin lluvia en el entorno (agua que escurre de un embudo o cubeta tapada)
+        tick = np.isfinite(mi) & (mi > 0) & (mi <= GOTEO_MAX)
+        seco = (pts == 0) & (tot >= 2) & (np.array([(np.nansum(np.where(np.isfinite(r), r >= 0.1, False)) / max(np.isfinite(r).sum(), 1)) for r in X]) <= 0.34 if X.shape[1] else False)
+        gote, i = [], 0
+        while i < len(horas):
+            if tick[i] and seco[i]:
+                k = i
+                while k + 1 < len(horas) and ((tick[k + 1] and seco[k + 1]) or (k + 2 < len(horas) and mi[k + 1] == 0 and tick[k + 2] and seco[k + 2] and seco[k + 1])):
+                    k += 1
+                nt = int(tick[i:k + 1].sum())
+                if k - i + 1 >= GOTEO_H and nt >= 0.6 * (k - i + 1):
+                    gote.append(dict(inicio=f"{horas[i] - pd.Timedelta(hours=1):%Y-%m-%d %H:%M}", fin=f"{horas[k]:%Y-%m-%d %H:%M}", horas=k - i + 1, mm=round(float(np.nansum(mi[i:k + 1])), 1)))
+                i = k + 1
+            else:
+                i += 1
+        # razón largo plazo: total de la estación / total de cada vecina en las horas en que ambas tienen dato (no depende del horario de cada hora)
+        ratios = []
+        for k, v in enumerate(vec):
+            if D[j, v] > RADIO_RAZON:
+                continue
+            ambos = np.isfinite(mi) & np.isfinite(X[:, k])
+            tv = float(X[ambos, k].sum())
+            if ambos.sum() >= 24 and tv >= MM_RAZON:
+                ratios.append(float(mi[ambos].sum()) / tv)
+        sv = float(np.sum(mm_vec))
+        razon = round(float(np.median(ratios)), 2) if len(ratios) >= 2 else None
+        marca0 = [e for e in eps if e["sin_dato"] < e["horas"] / 2]
+        obstr = any(e["horas"] >= HORAS_OBSTRUCCION for e in marca0) or any(e["descarga_tardia"] and e["horas"] >= 2 for e in marca0) or seguidos >= EVENTOS_OBSTR
+        goteo_largo = any(g["horas"] >= GOTEO_LARGO for g in gote)
+        comunic = any(e["sin_dato"] >= e["horas"] / 2 for e in eps)
+        if obstr or goteo_largo or (razon is not None and razon < RAZON_BAJA and len(ratios) >= 3):
+            estado = "sospecha_obstruccion"
+        elif gote or len(raras) >= 2 or (razon is not None and razon < RAZON_BAJA):
+            estado = "revisar"
+        elif marca0:
+            estado = "revisar"
+        elif comunic:
+            estado = "sin_dato_con_lluvia"
+        else:
+            estado = "ok"
+        out.append(dict(codigo=c, nombre=nom.get(c, c), estado=estado, horas_sospechosas=int(sosp.sum()), horas_sin_dato=int((sosp & sin_dato).sum()),
+                        horas_con_evidencia=int((pts >= EV_MIN).sum()), lluvia_con_cielo_despejado=raras_h, eventos_sin_marcar=seguidos, sin_marcar_desde=desde_sin, ultima_vez_que_marco=ultima_marca, goteo=gote[-3:],
+                        razon_vecinas=razon, vecinas_comparadas=len(ratios), mm_vecinas_largo=round(sv, 1),
+                        episodios=sorted(eps, key=lambda e: e["inicio"], reverse=True)[:6]))
+    orden = {"sospecha_obstruccion": 0, "revisar": 1, "sin_dato_con_lluvia": 2, "ok": 3}
+    out.sort(key=lambda f: (orden[f["estado"]], -f["horas_sospechosas"], f["nombre"]))
+    return out
+
+
+def correr(raiz, ahora=None, dias=30, subir=None, sat=None, imerg=None, con_modelo=True):
+    """Calcula el diagnóstico de los últimos días, lo guarda en datos/productos/pluviometros.json y lo sube al KV."""
+    ahora = (ahora or datetime.now(timezone.utc)).replace(tzinfo=None, minute=0, second=0, microsecond=0)
+    desde = ahora - timedelta(days=dias)
+    R, N = leer_horas(raiz, desde, ahora)
+    if R.empty:
+        return dict(error="sin datos minutarios en el periodo")
+    E = pd.DataFrame(json.loads((Path(raiz) / "estaciones.json").read_text(encoding="utf-8")))
+    fuentes = dict(vecinas=True, modelo=False, satelite=False, imerg=False)
+    M = None
+    if con_modelo:
+        try:
+            M = modelo_pp(E, dias)
+            fuentes["modelo"] = not M.empty
+        except Exception:
+            M = None
+    S = C = None
+    try:
+        if sat:
+            frames = resumen_satelite(sat, sorted({pd.Timestamp(f["t"]).tz_localize(None).ceil("h") for f in sat.get("frames", [])}))
+            archivar_satelite(raiz, frames)
+        arch = leer_satelite(raiz, desde, ahora)
+        if arch:
+            S, C = tablas_satelite(arch, list(R.index))
+            fuentes["satelite"] = True
+            fuentes["satelite_horas"] = len(arch)
+    except Exception:
+        S = C = None
+    fuentes["imerg"] = imerg is not None
+    est = analizar(R, N, E, M, S, imerg, C)
+    cuenta = {k: sum(1 for e in est if e["estado"] == k) for k in ("sospecha_obstruccion", "revisar", "sin_dato_con_lluvia", "ok")}
+    res = dict(generado=f"{ahora:%Y-%m-%d %H:%M}", desde=f"{desde:%Y-%m-%d %H:%M}", hasta=f"{ahora:%Y-%m-%d %H:%M}", dias=dias,
+               horas=len(R.index), fuentes=fuentes, resumen=cuenta, estaciones=est)
+    txt = json.dumps(res, ensure_ascii=False)
+    f = Path(raiz) / "productos" / "pluviometros.json"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(txt, encoding="utf-8")
+    return dict(resumen=cuenta, fuentes=fuentes, kv=subir("qc/pluviometros", txt) if subir else "sin subir")
