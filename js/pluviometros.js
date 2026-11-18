@@ -41,9 +41,12 @@ function episodio(e){
     <td style="text-align:center">${d.sat ? "✓" : "·"}</td>
     ${celda(d.tope == null ? "—" : d.tope.toFixed(0) + " °C")}
     ${celda(d.ray == null ? "—" : d.ray)}</tr>`).join("");
+  const sinVec = (e.detalle || []).length && (e.detalle || []).every(d => !d.n_tot);
+  const aviso = !(e.detalle || []).length ? `<div style="color:var(--mu);margin:4px 0">El detalle hora por hora se genera en la próxima corrida del análisis (cada 6 h).</div>`
+    : sinVec ? `<div style="color:#d29922;margin:4px 0">Sin estaciones vecinas con dato a ≤ 60 km: la sospecha se apoya solo en modelo y satélite, por eso es de menor confianza.</div>` : "";
   return `<div style="margin:8px 0 12px 0"><b>${f5(e.inicio)} → ${f5(e.fin)}</b> UTC · ${e.horas} h sospechosas${e.sin_dato >= e.horas / 2 ? " (sin dato: comunicación)" : ""}${e.descarga_tardia ? " · <b>descarga tardía</b>" : ""} · vecinas ${e.mm_vecinas} mm, modelo ${e.mm_modelo} mm<br>
     <div style="margin:4px 0">${chips}</div>
-    <table class="tb" style="font-size:12px"><tr><th>Hora UTC</th><th>Estación mm</th><th>Vecinas mm (llueven/con dato)</th><th>Modelo mm</th><th>Satélite: lluvia o nube fría</th><th>Tope más frío</th><th>Rayos</th></tr>${filas}</table></div>`;
+    ${aviso}<table class="tb" style="font-size:12px;${(e.detalle || []).length ? "" : "display:none"}"><tr><th>Hora UTC</th><th>Estación mm</th><th>Vecinas mm (llueven/con dato)</th><th>Modelo mm</th><th>Satélite: lluvia o nube fría</th><th>Tope más frío</th><th>Rayos</th></tr>${filas}</table></div>`;
 }
 function tarjeta(e){
   const partes = [];

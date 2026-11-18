@@ -553,8 +553,10 @@ def main():
         except Exception:
             estado["errores"].append(f"productos: {traceback.format_exc(limit=2)}")
         try:   # pluviómetros que podrían no estar marcando: cada 6 h (usa el modelo de varios días y las imágenes de las últimas 12 h)
-            prev = json.loads((Path(a.datos) / "productos" / "pluviometros.json").read_text(encoding="utf-8")).get("generado", "") if (Path(a.datos) / "productos" / "pluviometros.json").exists() else ""
-            if not prev or (datetime.now(timezone.utc).replace(tzinfo=None) - datetime.strptime(prev, "%Y-%m-%d %H:%M")).total_seconds() >= 6 * 3600:
+            pf = Path(a.datos) / "productos" / "pluviometros.json"
+            pv = json.loads(pf.read_text(encoding="utf-8")) if pf.exists() else {}
+            prev = pv.get("generado", "")
+            if not prev or pv.get("version") != PLU.VERSION or (datetime.now(timezone.utc).replace(tzinfo=None) - datetime.strptime(prev, "%Y-%m-%d %H:%M")).total_seconds() >= 6 * 3600:
                 estado["pluviometros"] = PLU.correr(a.datos, subir=subir_kv, sat=sat)
         except Exception:
             estado["errores"].append(f"pluviometros: {traceback.format_exc(limit=2)}")

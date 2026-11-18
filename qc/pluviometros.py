@@ -22,6 +22,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+VERSION = 2                      # sube cuando cambia la forma del producto: qc/correr.py lo regenera aunque no hayan pasado 6 h
 RADIO_KM = 60
 MM_VECINA = 1.0
 FRAC_VECINAS = 0.6
@@ -326,7 +327,7 @@ def correr(raiz, ahora=None, dias=30, subir=None, sat=None, imerg=None, con_mode
     fuentes["imerg"] = imerg is not None
     est = analizar(R, N, E, M, S, imerg, C, arch)
     cuenta = {k: sum(1 for e in est if e["estado"] == k) for k in ("sospecha_obstruccion", "revisar", "sin_dato_con_lluvia", "ok")}
-    res = dict(generado=f"{ahora:%Y-%m-%d %H:%M}", desde=f"{desde:%Y-%m-%d %H:%M}", hasta=f"{ahora:%Y-%m-%d %H:%M}", dias=dias,
+    res = dict(version=VERSION, generado=f"{ahora:%Y-%m-%d %H:%M}", desde=f"{desde:%Y-%m-%d %H:%M}", hasta=f"{ahora:%Y-%m-%d %H:%M}", dias=dias,
                horas=len(R.index), fuentes=fuentes, resumen=cuenta, estaciones=est)
     txt = json.dumps(res, ensure_ascii=False)
     f = Path(raiz) / "productos" / "pluviometros.json"
