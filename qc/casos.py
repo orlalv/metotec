@@ -602,7 +602,7 @@ def prueba_pluviometros_satelite():
     E = pd.DataFrame({"codigo": cods, "nombre": cods, "lat": [-39.0, -39.05, -39.1], "lon": [-72.0, -72.05, -72.1]})
     N = pd.DataFrame(100, index=h, columns=cods)
     M = pd.DataFrame(0.0, index=h, columns=cods); M.loc[h[5:9], :] = 1.0
-    res = {h[i]: {"C": [False, True, False, -45.0, 0]} for i in range(5, 9)}
+    res = {h[i]: {"C": [False, True, False, -45.0, 0, 96.0, 90.0, 12.0, 3.5, 6]} for i in range(5, 9)}
     S, C = PL.tablas_satelite(res, list(h))
     # vecinas lluevendo + nube fría + modelo, y C marca 0 → sospechoso
     R = pd.DataFrame(0.0, index=h, columns=cods); R.loc[h[5:9], ["A", "B"]] = 3.0
@@ -610,6 +610,11 @@ def prueba_pluviometros_satelite():
     det = (c["episodios"] or [{}])[0].get("detalle") or []
     if not det or not any(d["tope"] == -45.0 and d["fria"] and d["sospechosa"] for d in det):
         FALLAS.append(f"pluviómetros: el detalle del episodio debía traer el tope de nube del satélite → {det[:2]}")
+    d0 = next((d for d in det if d["sospechosa"]), {})
+    vecs = d0.get("vecs", [])
+    if (d0.get("nub10"), d0.get("nub30"), d0.get("frio30"), d0.get("rr10"), d0.get("imagenes")) != (96.0, 90.0, 12.0, 3.5, 6) \
+            or [v[0] for v in vecs] != ["B", "A"] or not (0 < vecs[0][1] < vecs[1][1]) or [v[2] for v in vecs] != [3.0, 3.0] or d0.get("mod3") != [0.0, 1.0, 1.0]:
+        FALLAS.append(f"pluviómetros: el detalle debía traer vecinas una a una (nombre, km, mm), el modelo de 3 horas y los datos de la imagen → {d0}")
     if c["horas_sospechosas"] != 4:
         FALLAS.append(f"pluviómetros: vecinas con lluvia + nube fría + modelo y 0 mm debía dar 4 h sospechosas → {c['horas_sospechosas']}")
     # las vecinas miden 0 aunque el modelo y el satélite digan lluvia → no se sospecha de C (coherente con sus vecinas)

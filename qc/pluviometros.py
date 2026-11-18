@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-VERSION = 2                      # sube cuando cambia la forma del producto: qc/correr.py lo regenera aunque no hayan pasado 6 h
+VERSION = 3                      # sube cuando cambia la forma del producto: qc/correr.py lo regenera aunque no hayan pasado 6 h
 RADIO_KM = 60
 MM_VECINA = 1.0
 FRAC_VECINAS = 0.6
@@ -110,7 +110,10 @@ def resumen_satelite(sat, horas):
             fria = sum(1 for f in v if (f.get("nub10") or 0) >= 90 and f.get("t13n10") is not None and f["t13n10"] <= -35) >= 3 or ray >= 1
             nub = [f.get("nub30") for f in v if f.get("nub30") is not None]
             desp = len(nub) >= 4 and all(x <= 5 for x in nub)
-            d[cod] = [bool(llu), bool(fria), bool(desp), (round(min(tp), 1) if tp else None), ray]
+            g = lambda k, fn: (round(float(fn(x)), 1) if (x := [f.get(k) for f in v if f.get(k) is not None]) else None)
+            # [lluvia, nube fría, despejado, tope más frío °C, rayos, nube 10 km % (media), nube 30 km % (media), área < −40 °C % (máx), lluvia estimada máx mm/h, imágenes]
+            d[cod] = [bool(llu), bool(fria), bool(desp), (round(min(tp), 1) if tp else None), ray,
+                      g("nub10", np.mean), g("nub30", np.mean), g("frio30", np.max), g("rr10", np.max), len(v)]
         if d:
             out[h] = d
     return out
@@ -161,7 +164,7 @@ def tablas_satelite(resumen, horas):
 
 def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
     """R, N: mm y minutos con dato (hora × código). E: estaciones (codigo, nombre, lat, lon). M: modelo (hora × código, mm).
-    S: satélite, evidencia de lluvia (hora × código, bool). C: satélite, cielo despejado (hora × código, bool). T: resumen satelital archivado ({hora: {código: [lluvia, fría, despejado, tope, rayos]}}) solo para el detalle. I: IMERG (hora × código, mm). Devuelve la lista de estaciones con su diagnóstico."""
+    S: satélite, evidencia de lluvia (hora × código, bool). C: satélite, cielo despejado (hora × código, bool). T: resumen satelital archivado ({hora: {código: [lluvia, fría, despejado, tope, rayos, nub10, nub30, frío30, rr10, imágenes]}}) solo para el detalle. I: IMERG (hora × código, mm). Devuelve la lista de estaciones con su diagnóstico."""
     E = E.copy()
     E["codigo"] = E["codigo"].astype(str)
     E = E[E["codigo"].isin(R.columns)].dropna(subset=["lat", "lon"]).reset_index(drop=True)
@@ -214,7 +217,11 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
             det = []
             for i2 in seg[-24:]:
                 t = (T or {}).get(horas[i2], {}).get(c)
-                det.append(dict(hora=f"{horas[i2]:%m-%d %H:%M}", est=None if np.isnan(mi[i2]) else round(float(mi[i2]), 1), vec=round(float(mm_vec[i2]), 1),
+                orden = np.argsort(D[j, vec]) if len(vec) else []
+                vecs = [[nom.get(cods[vec[k]], cods[vec[k]]), round(float(D[j, vec[k]])), (None if not np.isfinite(X[i2, k]) else round(float(X[i2, k]), 1))] for k in orden][:10]
+                sx = (t[5:] + [None] * 5)[:5] if t else [None] * 5
+                det.append(dict(vecs=vecs, mod3=[round(float(mm_mod[i2 - 1]), 1) if i2 > 0 else None, round(float(mm_mod[i2]), 1), round(float(mm_mod[i2 + 1]), 1) if i2 + 1 < len(horas) else None],
+                                nub10=sx[0], nub30=sx[1], frio30=sx[2], rr10=sx[3], imagenes=sx[4] if t else None, hora=f"{horas[i2]:%m-%d %H:%M}", est=None if np.isnan(mi[i2]) else round(float(mi[i2]), 1), vec=round(float(mm_vec[i2]), 1),
                                 n_vec=int(llu[i2]), n_tot=int(tot[i2]), mod=round(float(mm_mod[i2]), 1), sat=bool(ev_sat[i2]),
                                 fria=(t[1] if t else None), tope=(t[3] if t else None), ray=(t[4] if t else None), sospechosa=bool(sosp[i2])))
             eps.append(dict(detalle=det, inicio=f"{horas[a] - pd.Timedelta(hours=1):%Y-%m-%d %H:%M}", fin=f"{horas[b]:%Y-%m-%d %H:%M}", horas=n_sosp, sin_dato=n_sd,

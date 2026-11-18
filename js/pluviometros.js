@@ -31,22 +31,31 @@ async function cargar(){
 }
 function celda(v, extra){ return `<td style="text-align:right${extra || ""}">${v}</td>`; }
 function episodio(e){
-  const ev = e.evidencia || {};
+  const ev = e.evidencia || {}, det = e.detalle || [];
   const chips = [["vecinas", ev.vecinas], ["modelo", ev.modelo], ["satélite", ev.satelite], ["IMERG", ev.imerg]]
     .map(([n, v]) => `<span style="padding:1px 7px;border-radius:9px;margin-right:4px;font-size:11px;background:${v ? "#1f6feb55" : "transparent"};border:1px solid ${v ? "#1f6feb" : "var(--bd,#30363d)"};color:${v ? "inherit" : "var(--mu)"}">${n}</span>`).join("");
-  const filas = (e.detalle || []).map(d => `<tr style="${d.sospechosa ? "background:#f8514916" : ""}"><td>${esc(d.hora)}</td>
+  const num = (v, d, u) => v == null ? "—" : v.toFixed(d ?? 0) + (u || "");
+  const filas = det.map(d => `<tr style="${d.sospechosa ? "background:#f8514916" : ""}"><td>${esc(d.hora)}</td>
     ${celda(d.est == null ? "<span style='color:var(--mu)'>sin dato</span>" : d.est.toFixed(1), d.sospechosa ? ";font-weight:600" : "")}
     ${celda(d.n_tot ? `${d.vec.toFixed(1)} <small style="color:var(--mu)">(${d.n_vec}/${d.n_tot})</small>` : "—")}
-    ${celda(d.mod.toFixed(1))}
-    <td style="text-align:center">${d.sat ? "✓" : "·"}</td>
-    ${celda(d.tope == null ? "—" : d.tope.toFixed(0) + " °C")}
-    ${celda(d.ray == null ? "—" : d.ray)}</tr>`).join("");
-  const sinVec = (e.detalle || []).length && (e.detalle || []).every(d => !d.n_tot);
-  const aviso = !(e.detalle || []).length ? `<div style="color:var(--mu);margin:4px 0">El detalle hora por hora se genera en la próxima corrida del análisis (cada 6 h).</div>`
+    ${celda((d.mod3 || []).map(x => x == null ? "·" : x.toFixed(1)).join(" / "))}
+    <td style="text-align:center">${d.sat ? "✓" : "·"}</td>${celda(num(d.nub10, 0, " %"))}${celda(num(d.nub30, 0, " %"))}${celda(num(d.tope, 0, " °C"))}${celda(num(d.frio30, 0, " %"))}${celda(num(d.rr10, 1))}${celda(d.ray == null ? "—" : d.ray)}${celda(d.imagenes ?? "—")}</tr>`).join("");
+  // vecinas una a una: filas = vecinas (por distancia), columnas = horas
+  const vv = {};
+  det.forEach(d => (d.vecs || []).forEach(([n, km]) => { vv[n] = km; }));
+  const nombres = Object.keys(vv).sort((a, b) => vv[a] - vv[b]);
+  const vecTabla = nombres.length ? `<details style="margin:6px 0"><summary style="cursor:pointer">Vecinas una a una (${nombres.length}, mm por hora)</summary>
+    <table class="tb" style="font-size:12px;margin-top:4px"><tr><th>Vecina</th><th>km</th>${det.map(d => `<th>${esc(d.hora.slice(6))}</th>`).join("")}</tr>
+    ${nombres.map(n => `<tr><td>${esc(n)}</td>${celda(vv[n])}${det.map(d => { const x = (d.vecs || []).find(z => z[0] === n); const v = x ? x[2] : null;
+      return `<td style="text-align:right;${v != null && v >= 1 ? "background:#1f6feb44" : ""}">${v == null ? "<span style='color:var(--mu)'>s/d</span>" : v.toFixed(1)}</td>`; }).join("")}</tr>`).join("")}
+    </table><small style="color:var(--mu)">Resaltadas las que midieron ≥ 1 mm; s/d = sin dato. Horas en UTC (HH:00).</small></details>` : "";
+  const sinVec = det.length && det.every(d => !d.n_tot);
+  const aviso = !det.length ? `<div style="color:var(--mu);margin:4px 0">El detalle hora por hora se genera en la próxima corrida del análisis (cada 6 h).</div>`
     : sinVec ? `<div style="color:#d29922;margin:4px 0">Sin estaciones vecinas con dato a ≤ 60 km: la sospecha se apoya solo en modelo y satélite, por eso es de menor confianza.</div>` : "";
   return `<div style="margin:8px 0 12px 0"><b>${f5(e.inicio)} → ${f5(e.fin)}</b> UTC · ${e.horas} h sospechosas${e.sin_dato >= e.horas / 2 ? " (sin dato: comunicación)" : ""}${e.descarga_tardia ? " · <b>descarga tardía</b>" : ""} · vecinas ${e.mm_vecinas} mm, modelo ${e.mm_modelo} mm<br>
-    <div style="margin:4px 0">${chips}</div>
-    ${aviso}<table class="tb" style="font-size:12px;${(e.detalle || []).length ? "" : "display:none"}"><tr><th>Hora UTC</th><th>Estación mm</th><th>Vecinas mm (llueven/con dato)</th><th>Modelo mm</th><th>Satélite: lluvia o nube fría</th><th>Tope más frío</th><th>Rayos</th></tr>${filas}</table></div>`;
+    <div style="margin:4px 0">${chips}</div>${aviso}
+    <div style="overflow-x:auto;${det.length ? "" : "display:none"}"><table class="tb" style="font-size:12px"><tr><th>Hora UTC</th><th>Estación mm</th><th>Vecinas mm (llueven/con dato)</th><th>Modelo mm (hora ant. / esta / sig.)</th><th>Satélite: lluvia o nube fría</th><th>Nube 10 km</th><th>Nube 30 km</th><th>Tope más frío</th><th>Área &lt; −40 °C</th><th>Lluvia estimada máx. mm/h</th><th>Rayos</th><th>Imágenes</th></tr>${filas}</table></div>
+    ${vecTabla}</div>`;
 }
 function tarjeta(e){
   const partes = [];
