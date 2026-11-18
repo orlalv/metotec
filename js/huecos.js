@@ -387,6 +387,8 @@ function grafico(){
   if (!isFinite(y0)){ y0 = 0; y1 = 1; }
   let dy = Math.max(y1 - y0, MINY[VAR] || 0) || 1; const mid = (y0 + y1) / 2; if (y1 - y0 < dy){ y0 = mid - dy / 2; y1 = mid + dy / 2; } const pad = sel ? .3 : .08; y0 -= dy * pad; y1 += dy * pad;
   if (sel && VIEW.y){ y0 = VIEW.y[0]; y1 = VIEW.y[1]; }
+  if (sel && sel.hand && !VIEW.y){ if (!sel._yf) sel._yf = [y0, y1]; [y0, y1] = sel._yf; }   // al dibujar el eje vertical queda fijo (no sube ni baja con el mouse ni con los puntos)
+  else if (sel && !sel.hand) delete sel._yf;
   dy = y1 - y0; LAST = {v0, v1, y0, y1};
   const X = t => iz + (W - iz - de) * (t - v0) / span, Y = y => ar + (H - ar - ab) * (1 - (y - y0) / (y1 - y0)), invY = py => y0 + (1 - (py - ar) / (H - ar - ab)) * (y1 - y0);
   let ruta = "", ant = null; if (!ll) obs.forEach(p => { if (!enV(p[0])) { ant = null; return; } ruta += (ant == null || p[0] - ant > 1.5 * g.cad ? "M" : "L") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1); ant = p[0]; });
