@@ -16,6 +16,15 @@ def get(u, **k):
     except Exception as e:
         print(f"ERROR {type(e).__name__}: {str(e)[:150]}  {u[:120]}")
 
+paso("GIBS: mapa de colores GPM_Precipitation_Rate.xml")
+rr = get("https://gibs.earthdata.nasa.gov/colormaps/v1.3/GPM_Precipitation_Rate.xml")
+if rr is not None and rr.ok:
+    t = rr.text
+    print(len(t), "caracteres; entradas:", t.count("<ColorMapEntry"))
+    print(t[:700].replace("\n", " "))
+    ent = re.findall(r"<ColorMapEntry[^>]*>", t)
+    for e_ in ent[:6] + ent[-3:]:
+        print("  ", e_)
 paso("GOES-19 en AWS (listado de archivos)")
 for prod in ("ABI-L2-RRQPEF", "ABI-L2-CMIPF", "GLM-L2-LCFA"):
     r = get(f"https://noaa-goes19.s3.amazonaws.com/?list-type=2&prefix={prod}/2026/322/12/&max-keys=2")
