@@ -71,14 +71,14 @@ async function leerDiario(e0, cand){
 }
 
 /* ---------- gráficos y tablas ---------- */
-function svgBarras(vals, ref, sel, onKey, etiq, titulo){      // barras de la estación + puntos de las vecinas; vals: [n], ref: [[color, [n]]]
+function svgBarras(vals, ref, sel, onKey, etiq, titulo){      // barras superpuestas con transparencia: estación (rojo) y vecinas (su color); vals: [n], ref: [[color, [n]]]
   const W = 30, H = 130, base = 108, n = vals.length;
   const todos = [...vals, ...ref.flatMap(r => r[1])].filter(v => v != null && isFinite(v)), mx = Math.max(1, ...todos) * 1.12, y = v => base - (v / mx) * (base - 8);
   const cols = vals.map((v, i) => { const x = 34 + i * W;
-    return `<g class="vclick" data-k="${onKey(i)}" style="cursor:pointer"><title>${esc(etiq(i))}${v == null ? " · sin dato" : " · estación " + n1(v) + " mm"}</title>
+    return `<g class="vclick" data-k="${onKey(i)}" style="cursor:pointer"><title>${esc(etiq(i))}${v == null ? " · sin dato" : " · estación " + n1(v) + " mm"}${ref.map(([c, a]) => a[i] == null ? "" : " · vecina " + n1(a[i])).join("")}</title>
       <rect x="${x}" y="2" width="${W - 2}" height="${base - 2}" fill="${i === sel ? "#58a6ff26" : "transparent"}"/>
-      ${v == null ? `<text x="${x + W / 2 - 1}" y="${base - 4}" text-anchor="middle" font-size="9" fill="#8b949e">s/d</text>` : `<rect x="${x + 5}" y="${y(v)}" width="${W - 12}" height="${Math.max(1, base - y(v))}" fill="#f85149"/>`}
-      ${ref.map(([c, a]) => a[i] == null ? "" : `<circle cx="${x + W / 2 - 1}" cy="${y(a[i])}" r="3" fill="${c}" fill-opacity=".85"/>`).join("")}
+      ${ref.map(([c, a]) => a[i] == null || a[i] <= 0 ? "" : `<rect x="${x + 3}" y="${y(a[i])}" width="${W - 8}" height="${Math.max(1, base - y(a[i]))}" fill="${c}" fill-opacity=".5" stroke="${c}" stroke-opacity=".9"/>`).join("")}
+      ${v == null ? `<text x="${x + W / 2 - 1}" y="${base - 4}" text-anchor="middle" font-size="9" fill="#8b949e">s/d</text>` : v <= 0 ? "" : `<rect x="${x + 3}" y="${y(v)}" width="${W - 8}" height="${Math.max(1, base - y(v))}" fill="#f85149" fill-opacity=".5" stroke="#f85149" stroke-opacity=".9"/>`}
       <text x="${x + W / 2 - 1}" y="${base + 13}" text-anchor="middle" font-size="9.5" fill="${i === sel ? "#58a6ff" : "#8b949e"}">${esc(etiq(i, true))}</text></g>`; }).join("");
   const w = 44 + n * W;
   return `<div style="overflow-x:auto"><svg viewBox="0 0 ${w} ${H + 4}" style="width:${w}px;max-width:100%;min-width:${Math.min(w, 520)}px;height:auto" role="img" aria-label="${esc(titulo)}">
@@ -115,7 +115,7 @@ function pintarMin(out){
   out.innerHTML = `<p style="margin:4px 0">${resumen}</p>
     <h4 style="margin:10px 0 2px">Lluvia por hora · ${esc(ST.dia)} (UTC) <small style="color:var(--mu);font-weight:400">· clic en una hora para cambiar las imágenes</small></h4>${leyenda(D)}${hs}
     <h4 style="margin:12px 0 2px">Minuto a minuto · ${p2(h)}:00–${p2(h)}:59 UTC</h4>${minG}
-    <details open style="margin-top:10px"><summary style="cursor:pointer"><b>Tabla de precipitación por hora (mm)</b></summary><div style="overflow-x:auto"><table class="tb" style="margin-top:4px"><tr><th>Hora UTC</th><th>Hora local</th><th>${esc(D.e0.nombre)}</th>${D.vec.map(x => `<th style="color:${x.color}">${esc(x.nombre)}<br><small>${Math.round(x.km)} km</small></th>`).join("")}<th>Media vecinas</th></tr>${filas}
+    <details open style="margin-top:10px"><summary style="cursor:pointer"><b>Tabla de precipitación por hora (mm)</b></summary><div style="overflow-x:auto"><table class="tb" style="margin-top:4px"><tr><th>Hora UTC</th><th>Hora local</th><th>${esc(D.e0.nombre)}</th>${D.vec.map(x => `<th style="color:${x.color};text-align:right">${esc(x.nombre)}<br><small>${Math.round(x.km)} km</small></th>`).join("")}<th style="text-align:right">Media vecinas</th></tr>${filas}
       <tr style="font-weight:700"><td colspan="2">Total del día</td><td style="text-align:right">${n1(tot)}</td>${tot2.map(z => `<td style="text-align:right">${n1(z)}</td>`).join("")}<td></td></tr></table></div>
       <small style="color:var(--mu)">Fila rosada = la estación marcó menos de 0,2 mm mientras las vecinas marcaron 1 mm o más en promedio. s/d = menos de ${MIN_FILAS_H} datos en la hora.</small></details>`;
 }
@@ -124,10 +124,10 @@ function pintarDia(out){
   const vals = f.map(val), refs = D.vec.map(v => [v.color, f.map(d => { const r = v.dias.get(d); return r ? (r[2] ?? r[1]) : null; })]);
   const g = svgBarras(vals, refs, sel, i => i, (i, c) => c ? f[i].slice(8) : f[i], "mm por día");
   const filas = f.map((d, i) => { const r = D.mia.get(d), mv = refs.map(x => x[1][i]), mn = mv.filter(z => z != null), m = mn.length ? mn.reduce((s, z) => s + z, 0) / mn.length : null, x = vals[i], sosp = x != null && x < 0.2 && m != null && m >= 1;
-    return `<tr class="vclick" data-k="${i}" style="cursor:pointer;${i === sel ? "background:#1f6feb33;" : sosp ? "background:#f8514916;" : ""}"><td style="white-space:nowrap">${d}</td><td style="text-align:right">${r ? n1(r[1] ?? 0) : "s/d"}</td><td style="text-align:right;font-weight:600">${x == null ? "s/d" : n1(x)}${r && r[3] ? " <small>(traza)</small>" : ""}</td>${mv.map(z => `<td style="text-align:right">${z == null ? "s/d" : n1(z)}</td>`).join("")}<td style="text-align:right">${m == null ? "—" : n1(m)}</td></tr>`; }).join("");
+    return `<tr class="vclick" data-k="${i}" style="cursor:pointer;${i === sel ? "background:#1f6feb33;" : sosp ? "background:#f8514916;" : ""}"><td style="white-space:nowrap">${d}</td><td style="text-align:right;font-weight:600">${x == null ? "s/d" : n1(x)}${r && r[3] ? " <small>(traza)</small>" : ""}</td>${mv.map(z => `<td style="text-align:right">${z == null ? "s/d" : n1(z)}</td>`).join("")}<td style="text-align:right">${m == null ? "—" : n1(m)}</td></tr>`; }).join("");
   out.innerHTML = `<p style="margin:4px 0;color:#e7b03b">No hay archivo minutario de METOTEC para ${esc(ST.dia)}: se muestra la lluvia <b>diaria</b> de la DMC (±15 días). Las imágenes sí son de la fecha elegida (hora ${p2(ST.hora)}:00 UTC).</p>
     <h4 style="margin:10px 0 2px">Lluvia diaria · clic en un día para cambiar la fecha</h4>${leyenda(D)}${g}
-    <details open style="margin-top:10px"><summary style="cursor:pointer"><b>Tabla de precipitación diaria (mm)</b></summary><div style="overflow-x:auto"><table class="tb" style="margin-top:4px"><tr><th>Fecha</th><th>${esc(D.e0.nombre)}<br><small>parcial</small></th><th>${esc(D.e0.nombre)}<br><small>total</small></th>${D.vec.map(x => `<th style="color:${x.color}">${esc(x.nombre)}<br><small>${Math.round(x.km)} km</small></th>`).join("")}<th>Media vecinas</th></tr>${filas}</table></div>
+    <details style="margin-top:10px"><summary style="cursor:pointer"><b>Tabla de precipitación diaria (mm)</b></summary><div style="overflow-x:auto"><table class="tb" style="margin-top:4px;width:auto"><tr><th>Fecha</th><th style="text-align:right">${esc(D.e0.nombre)}</th>${D.vec.map(x => `<th style="color:${x.color};text-align:right">${esc(x.nombre)}<br><small>${Math.round(x.km)} km</small></th>`).join("")}<th style="text-align:right">Media vecinas</th></tr>${filas}</table></div>
       <small style="color:var(--mu)">Fila rosada = la estación marcó menos de 0,2 mm mientras las vecinas marcaron 1 mm o más en promedio. Los valores diarios cierran a las 12 UTC según el servicio.</small></details>`;
 }
 
