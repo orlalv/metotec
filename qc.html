@@ -320,8 +320,11 @@ function supFiltradas(){
   const S = R.super || {}, q = $("#buscar").value.trim().toLowerCase();
   const L = (S.estaciones || []).map(e => { const h = (e.hallazgos || []).map(x => ({...x, gen: S.generado})).filter(x => MARCA.estado(e.codigo, x) !== "oculta");
     return {...e, hallazgos: h, nivel: e.nivel === 3 ? 3 : Math.max(0, ...h.map(x => x.nivel))}; });
-  return L.filter(e => e.lat != null && enZona(e) && ver[e.nivel] && EQ.filtra(e.codigo) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
+  return L.filter(e => e.lat != null && enZona(e) && ver[e.nivel] && supPersona(e.codigo) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
+// las estaciones del Super automático no tienen observador: casi nunca están en «mis estaciones». Si la persona no tiene ninguna
+// de ellas, el filtro de persona no se aplica (solo el de red); así la pestaña no queda vacía
+function supPersona(c){ const S = R.super || {}; return EQ.filtra(c) || ((EQ.enRed ? EQ.enRed(c) : true) && !(S.estaciones || []).some(x => EQ.filtra(x.codigo))); }
 const supAtraso = (S, e) => { if (!e.ultima || !S.generado) return null; return Math.round((Date.parse(S.generado + "Z") - Date.parse(e.ultima + ":00Z")) / 60000); };
 function pintarSup(){
   const S = R.super || {}, g = S.generado ? new Date(S.generado + "Z") : null;
