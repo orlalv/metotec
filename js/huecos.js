@@ -235,7 +235,7 @@ function pintar(){
   $("#mHue").innerHTML = `<div class="htools"><span style="color:var(--mu);font-size:12.5px">Variable:</span>${ST.vars.map(x => `<button data-hv="${x[0]}" style="${x[0] === VAR ? "border-color:var(--oro);color:var(--oro)" : ""}">${x[1]}</button>`).join("")}
     <button id="hCsv" ${nOk ? "" : "disabled"} title="Descarga solo los valores estimados, marcados como tales">Descargar estimados (CSV)</button></div>
     <p class="nota" id="hNota" style="margin:0 0 8px"></p>
-    ${S.gaps.length ? `<div id="hGraf"></div><div id="hBar"></div><div id="hTab" style="overflow:auto;margin-top:8px"></div>` : `<p style="color:var(--mu)">No hay huecos en ${esc(mi.NOM[VAR] || VAR)} para este día.</p>`}`;
+    ${S.gaps.length ? `<div id="hGraf"></div><div id="hRes"></div><div id="hBar"></div><div id="hTab" style="overflow:auto;margin-top:8px"></div>` : `<p style="color:var(--mu)">No hay huecos en ${esc(mi.NOM[VAR] || VAR)} para este día.</p>`}`;
   document.querySelectorAll("#mHue [data-hv]").forEach(b => b.onclick = () => { VAR = b.dataset.hv; SEL = null; VIEW = {}; pintar(); });
   const cb = $("#hCsv"); if (cb) cb.onclick = () => { const M = ST.M, t = csv(datos(), VAR, M.cod, M.nombre, M.dia), a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob(["\ufeff" + t], {type: "text/csv"})); a.download = `estimados_${M.cod}_${M.dia}_${VAR}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
@@ -262,6 +262,18 @@ function tabla(){                                    // la tabla se repinta sola
 const claveQC = () => { try { return sessionStorage.getItem("qcClave") || ""; } catch (e) { return window._qc || ""; } };
 const quienQC = () => { try { return localStorage.getItem("qcPersona") || ""; } catch (e) { return ""; } };
 const ymdhm = t => new Date(t).toISOString().slice(0, 16).replace("T", " ");
+function resumenLluvia(S, gp, base){                 // recuadro en vivo bajo el gráfico: cuánto se sumó en el hueco, cuánto cayó antes y después, y cómo queda el acumulado
+  const el = $("#hRes"); if (!el) return;
+  if (!gp || !gp.lluvia){ el.innerHTML = ""; return; }
+  const F = filasValores(S, gp), tot = r3(F.reduce((a, f) => a + (f.v ?? 0), 0)), R = totalesLluvia(gp, S.g), V = R.V, f2 = x => x == null ? "sin dato" : x.toFixed(2) + " mm", res = gp.res || .1;
+  const dif = gp.total != null ? r3(tot - gp.total) : null;
+  el.innerHTML = `<div style="margin:6px 0;padding:7px 11px;background:var(--panel);border:1px solid var(--bd);border-left:3px solid ${EST};border-radius:8px;font-size:13.5px;line-height:1.6">
+    <b style="color:${EST};font-size:15px">Sumó en el hueco: ${tot.toFixed(2)} mm</b> <span style="color:var(--mu)">(${Math.round(tot / res)} vuelcos de ${res} mm en ${gp.n} min)</span>
+    · Antes (${R.lapso} min iguales): <b>${f2(V.A)}</b> · Después (${R.lapso} min): <b>${f2(V.B)}</b>
+    · Acumulado del día: <b>${base.toFixed(2)}</b> → <b>${(base + tot).toFixed(2)} mm</b>
+    ${R.tot ? `· Rango sugerido: ${R.tot.conservador.toFixed(2)} – ${R.tot.optimista.toFixed(2)} mm${tot + 1e-9 < R.tot.conservador || tot - 1e-9 > R.tot.optimista ? ` <span style="color:var(--sos)">(fuera del rango)</span>` : ""}` : ""}
+    ${dif != null ? `· RRR6 pide: <b>${gp.total.toFixed(2)} mm</b> ${Math.abs(dif) <= TOL_RR6 ? `<span style="color:var(--ok)">✓ coincide</span>` : `<span style="color:var(--sos)">(${dif > 0 ? "+" : ""}${dif.toFixed(2)} mm de diferencia)</span>`}` : ""}</div>`;
+}
 function filasValores(S, gp){                        // [{t, v, acum?}] del hueco, con el valor que vale hoy (null si falta)
   const e = valores(gp), ll = !!gp.lluvia; let c = 0;
   return Array.from({length: gp.n}, (_, i) => { const x = e && e[i] != null ? redondeo(Math.min(S.L[1], Math.max(S.L[0], e[i])), VAR) : null; if (ll && x != null) c += x; return {t: S.g.t(gp.k0 + i), v: x, acum: ll ? r3(c) : null}; });
@@ -409,7 +421,8 @@ function grafico(){
     if (ll){ const r = rutasLl(); $("#hObs").setAttribute("d", r.sol); estim = r.est ? `<path d="${r.est}" fill="none" stroke="${EST}" stroke-width="2" stroke-dasharray="5 4"/>` : ""; }
     else estim = estSuave(X, Y, 2);
     const manos = sel && sel.hand && MODO === "puntos" && sel.hand.length <= 12 ? sel.hand.map(h => `<circle cx="${X(g.t(h.k))}" cy="${Y(ll ? base + h.y : h.y)}" r="6" fill="${EST}" fill-opacity=".22" stroke="${EST}" stroke-opacity=".9" stroke-width="1.8" style="cursor:ns-resize"/>`).join("") : "";
-    $("#hDin").innerHTML = estim + manos;
+    $("#hDin").innerHTML = estim + manos + (ll && sel ? (() => { const tot = r3(filasValores(S, sel).reduce((a, f) => a + (f.v ?? 0), 0)); return `<text x="${(X(g.t(sel.k0)) + X(g.t(sel.k1))) / 2}" y="${ar + 16}" fill="${EST}" font-size="14" font-weight="700" text-anchor="middle">+${tot.toFixed(2)} mm</text>`; })() : "");
+    resumenLluvia(S, sel, base);
     if (sel && $("#hMe")){                                       // minigráfico: se actualiza mientras se dibuja
       if (ll){ const r = rutasLl(Xm, Ym); $("#hMo").setAttribute("d", r.sol); $("#hMe").innerHTML = r.est ? `<path d="${r.est}" fill="none" stroke="${EST}" stroke-width="1.4" vector-effect="non-scaling-stroke"/>` : ""; }
       else $("#hMe").innerHTML = estSuave(Xm, Ym, 1.4, true);
