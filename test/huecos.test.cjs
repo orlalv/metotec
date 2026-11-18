@@ -49,7 +49,7 @@ FL = mkL(k => 0, rango(300, 314)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1,
 assert.equal(SL.gaps[0].met, "relleno 0"); assert(SL.gaps[0].est.every(x => x === 0));
 // 11) no llovía antes y sí después (0.05 mm/min × 15 = 0.75 mm): conservador 0, moderado 0.375, optimista 0.75; la forma sube de 0 hacia la lluvia posterior
 FL = mkL(k => k >= 315 ? .05 : 0, rango(300, 314)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []);
-const T11 = H.totalesLluvia(SL.gaps[0], SL.g).tot; assert.equal(T11.conservador, 0); assert(Math.abs(T11.moderado - .375) < 1e-3 && Math.abs(T11.optimista - .75) < 1e-3);
+const T11 = H.totalesLluvia(SL.gaps[0], SL.g).tot; assert.equal(T11.conservador, 0); assert(Math.abs(T11.moderado - .375) <= .05 / 2 + 1e-9 && Math.abs(T11.optimista - .75) < 1e-3);   // en vuelcos de 0.05 mm
 assert.equal(SL.gaps[0].met, "antes y después"); assert(SL.gaps[0].est[0] < SL.gaps[0].est[14]);
 // 12) lluvia continua > 1 h sin RRR6: no se prolonga
 FL = mkL(k => .03, rango(500, 580)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); assert.equal(SL.gaps[0].met, "ninguno");
@@ -74,19 +74,19 @@ console.log("huecos lluvia: 8 pruebas OK");
 FL = mkL(k => k >= 720 && k < 1080 ? .02 : 0, rango(900, 914), {1079: {rr6: 8}}); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
 gl.hand = H.manoInicial(gl, SL.g, gl.est, SL.L); const hm = gl.hand[2];
 H.moverLluvia(gl, hm, 0.9, 5); assert(Math.abs(hm.y - 0.9) < 1e-9); assert(gl.hand.every((q, i, a) => !i || q.y >= a[i - 1].y));
-H.moverLluvia(gl, hm, 99, 5); assert(Math.abs(hm.y - gl.total) < 1e-9);           // no pasa del total anclado
+H.moverLluvia(gl, hm, 99, 5); assert(hm.y === 5);           // la RRR6 no frena el dibujo: solo el alto de la vista
 H.moverLluvia(gl, hm, -3, 5); assert(hm.y === 0 && gl.hand.slice(0, 3).every(q => q.y === 0));
 console.log("huecos lluvia (mover): OK");
 // 18) rellenos automáticos de lluvia: sin RRR6 el total cambia (conservador < moderado < optimista); con RRR6 el total es el mismo y solo cambia la forma
 FL = mkL(k => k >= 960 && k < 1100 ? .02 : 0, rango(990, 1004)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
 const tot = e => e.est.reduce((a, b) => a + b, 0), E = x => H.escenarioLluvia(gl, SL.g, x);
 assert(tot(E("conservador")) < tot(E("moderado")) && tot(E("moderado")) < tot(E("optimista"))); assert(Math.abs(tot(E("moderado")) - .3) < 1e-2);
-assert(Math.abs(E("conservador").total - .225) < 1e-3 && Math.abs(E("optimista").total - .375) < 1e-3);
+assert(Math.abs(E("conservador").total - .225) <= .011 && Math.abs(E("optimista").total - .375) <= .011);
 FL = mkL(k => k >= 720 && k < 1080 ? .02 : 0, rango(900, 914), {1079: {rr6: 8}}); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
 ["conservador", "moderado", "optimista"].forEach(x => assert(Math.abs(tot(H.escenarioLluvia(gl, SL.g, x)) - gl.total) < .02, x));
 // hueco al final del día (solo hay lluvia antes): 0.5 / 1 / 1.5 × lo de antes
 FL = mkL(k => k >= 1380 ? .02 : 0, rango(1425, 1439)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []);
-const T18 = H.totalesLluvia(SL.gaps[0], SL.g).tot; assert(Math.abs(T18.moderado - .3) < 1e-3 && Math.abs(T18.conservador - .15) < 1e-3 && Math.abs(T18.optimista - .45) < 1e-3);
+const T18 = H.totalesLluvia(SL.gaps[0], SL.g).tot; assert(Math.abs(T18.moderado - .3) < 1e-3 && Math.abs(T18.conservador - .15) <= .011 && Math.abs(T18.optimista - .45) <= .011);
 // hueco de lluvia > 3 h sin RRR6: no hay relleno automático
 FL = mkL(k => .03, rango(300, 520)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); assert.equal(H.escenarioLluvia(SL.gaps[0], SL.g, "moderado"), null);
 // 19) suavizar: reduce las diferencias entre puntos vecinos y se queda entre los bordes; densificar/adelgazar conservan la curva
@@ -101,3 +101,16 @@ H.densificar(gl); H.adelgazar(gl); assert(gl.hand.length <= 8 && gl.hand.length 
 assert(Math.abs(H.rectaHueco(gl).reduce((a, b) => a + b, 0) - gl.total) < .02); S = H.analizar(mk(k => 10 + k * .1, [50, 51, 52]), "T", ini, lim, cad, true, []);
 H.rectaHueco(S.gaps[0]).forEach((x, i) => assert(Math.abs(x - (10 + (50 + i) * .1)) < 1e-9));
 console.log("huecos (modos de dibujo, rellenos, suavizar): OK");
+
+// 21) la lluvia sube por escalones: cada minuto es 0 o un múltiplo del vuelco del pluviómetro, y se conserva el total
+FL = mkL(k => (k >= 800 && k % 7 === 0 && k < 1100) ? .2 : 0, rango(990, 1004)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
+assert.equal(SL.g && H.resLluvia(SL.g), .2); assert.equal(gl.res, .2);
+const esc3 = ["conservador", "moderado", "optimista"].map(x => H.escenarioLluvia(gl, SL.g, x));
+esc3.forEach(e => { assert(e.est.every(x => Math.abs(x / .2 - Math.round(x / .2)) < 1e-6), "no es múltiplo del vuelco"); assert(Math.abs(e.est.reduce((a, b) => a + b, 0) - e.total) < 1e-6); });
+assert(esc3[1].est.filter(x => x > 0).length < 15);                                // hay minutos sin vuelco: escalones, no una línea inclinada
+assert.deepEqual(H.cuantizar([.05, .05, .05, .05, .05, .05], .1), [0.1, 0, 0.1, 0, 0.1, 0]);
+// 22) con la RRR6 ya completa (hueco sin lluvia según la estación) se puede igual dibujar y rellenar: ya no queda bloqueado
+FL = mkL(k => k >= 720 && k < 1080 && k % 5 === 0 ? .2 : 0, rango(900, 914), {1079: {rr6: 13.8}}); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
+assert.equal(gl.met, "relleno 0"); const Tc = H.totalesLluvia(gl, SL.g); assert(Tc.completa && !Tc.anclado && Tc.tot.optimista > 0);
+gl.hand = H.manoInicial(gl, SL.g, gl.est, SL.L); gl.hand[gl.hand.length - 1].y = .6; gl.tocado = true; const inc22 = H.valores(gl); assert(Math.abs(inc22.reduce((a, b) => a + b, 0) - .6) < 1e-6 && inc22.every(x => Math.abs(x / .2 - Math.round(x / .2)) < 1e-6));
+console.log("huecos lluvia (escalones, RRR6 suave): OK");

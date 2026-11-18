@@ -83,6 +83,14 @@ function totalRR6(gp, g, F){                        // mm que faltan para que lo
   const fila = F.find(o => o.t === pe && o.rr6 != null); if (!fila) return null;
   return {total: r3(fila.rr6 - obs), rr6: fila.rr6, obs: r3(obs)};
 }
+function resLluvia(g){                              // lo que marca cada vuelco del pluviómetro: el menor valor de lluvia observado (la lluvia sube por escalones)
+  let m = Infinity; for (const x of g.y) if (x != null && x >= .005 && x < m) m = x;
+  return isFinite(m) ? Math.round(m * 1000) / 1000 : .1;
+}
+function cuantizar(inc, res){                       // reparte la lluvia en vuelcos enteros: cada minuto es 0 o un múltiplo de `res` (escalones de la acumulada)
+  if (!res) return inc; let c = 0, ant = 0;
+  return inc.map(x => { c += x ?? 0; const t = Math.round(c / res + 1e-9); const v = r3((t - ant) * res); ant = t; return v; });
+}
 function ventanasLluvia(gp, g){                     // lluvia (mm) en un lapso igual al hueco justo antes y justo después; null si falta dato
   const n = gp.n, suma = (a, b) => { let s = 0, c = 0; for (let k = Math.max(0, a); k <= Math.min(g.n - 1, b); k++) if (g.y[k] != null){ s += g.y[k]; c++; } return c >= Math.max(1, n / 2) ? {mm: s * n / c} : null; };
   const tasa = (a, b) => { let s = 0, c = 0; for (let k = Math.max(0, a); k <= Math.min(g.n - 1, b); k++) if (g.y[k] != null){ s += g.y[k]; c++; } return c ? s / c : null; };
@@ -90,12 +98,12 @@ function ventanasLluvia(gp, g){                     // lluvia (mm) en un lapso i
   return {A: A ? A.mm : null, B: B ? B.mm : null, rA: tasa(gp.k0 - m, gp.k0 - 1), rB: tasa(gp.k1 + 1, gp.k1 + m)};
 }
 function totalesLluvia(gp, g){                      // mm que faltan en el hueco según cada escenario; si la RRR6 cierra el total, los tres coinciden
-  const V = ventanasLluvia(gp, g), anclado = gp.total != null; let tot = null;
+  const V = ventanasLluvia(gp, g), anclado = gp.total != null && gp.total > TOL_RR6; let tot = null;   // total ≤ tolerancia: la RRR6 ya está completa y no restringe
   if (anclado) tot = {conservador: gp.total, moderado: gp.total, optimista: gp.total};
   else if (V.A != null && V.B != null){ const m = (V.A + V.B) / 2; tot = {conservador: Math.min(V.A, V.B, .75 * m), moderado: m, optimista: Math.max(V.A, V.B, 1.25 * m)}; }
   else if (V.A != null || V.B != null){ const u = V.A ?? V.B; tot = {conservador: .5 * u, moderado: u, optimista: 1.5 * u}; }
-  if (tot) for (const k in tot) tot[k] = r3(tot[k]);
-  return {V, tot, anclado, lapso: Math.round(gp.n * g.cad / 60e3)};
+  if (tot) for (const k in tot) tot[k] = gp.res ? r3(Math.round(tot[k] / gp.res + 1e-9) * gp.res) : r3(tot[k]);   // en vuelcos enteros
+  return {V, tot, anclado, completa: gp.total != null && !anclado, lapso: Math.round(gp.n * g.cad / 60e3)};
 }
 function escenarioLluvia(gp, g, esc){               // relleno de lluvia: conservador / moderado / optimista, a partir de lo que cayó en un lapso igual antes y después
   const R = totalesLluvia(gp, g), mx = LIM.rr1m[1], n = gp.n; if (!R.tot || !R.tot[esc]  && R.tot[esc] !== 0) return null;
@@ -103,16 +111,16 @@ function escenarioLluvia(gp, g, esc){               // relleno de lluvia: conser
   const t = R.tot[esc], V = R.V, r0 = V.rA ?? V.rB ?? 0, r1 = V.rB ?? V.rA ?? 0;
   let w = Array.from({length: n}, (_, i) => r0 + (r1 - r0) * (n > 1 ? i / (n - 1) : .5)); let sw = w.reduce((a, b) => a + b, 0); if (sw <= 0){ w = new Array(n).fill(1); sw = n; }
   const f = x => x == null ? "sin dato" : x.toFixed(2) + " mm";
-  return {est: w.map(x => Math.min(mx, r3(t * x / sw))), total: t, det: R.anclado ? `${esc}: total fijo por la RRR6 (${t.toFixed(2)} mm), repartido según la intensidad al borde del hueco` : `${esc}: ${t.toFixed(2)} mm · en un lapso igual (${R.lapso} min) cayeron antes ${f(V.A)} y después ${f(V.B)}`};
+  return {est: cuantizar(w.map(x => Math.min(mx, r3(t * x / sw))), gp.res), total: t, det: R.anclado ? `${esc}: total fijo por la RRR6 (${t.toFixed(2)} mm), repartido según la intensidad al borde del hueco` : `${esc}: ${t.toFixed(2)} mm · en un lapso igual (${R.lapso} min) cayeron antes ${f(V.A)} y después ${f(V.B)}`};
 }
 function autoLluvia(gp, g, F){
   const dur = gp.n * g.cad, A = totalRR6(gp, g, F);
   if (A){
     gp.total = Math.max(0, A.total);
     if (A.total < -TOL_RR6) return {met: "ninguno", est: null, det: `lo observado (${A.obs} mm) ya supera la RRR6 informada (${A.rr6} mm): revise la estación`};
+    if (A.total <= TOL_RR6) return {met: "relleno 0", est: new Array(gp.n).fill(0), det: `la RRR6 informada (${A.rr6} mm) ya queda completa con lo observado (${A.obs} mm); si igual quiere rellenar, elija un escenario o dibuje`, anclado: true};
     const e = escenarioLluvia(gp, g, "moderado");
-    if (A.total <= TOL_RR6 && (!e || e.total <= TOL_RR6)) return {met: "relleno 0", est: new Array(gp.n).fill(0), det: `la RRR6 informada (${A.rr6} mm) ya queda completa con lo observado (${A.obs} mm)`, anclado: true};
-    return {met: "RRR6 + lluvia alrededor", est: e ? e.est : new Array(gp.n).fill(r3(gp.total / gp.n)), anclado: true, det: `faltan ${gp.total.toFixed(2)} mm para la RRR6 informada (${A.rr6} mm − ${A.obs} mm observados), repartidos según la lluvia antes y después del hueco`};
+    return {met: "RRR6 + lluvia alrededor", est: e ? e.est : cuantizar(new Array(gp.n).fill(gp.total / gp.n), gp.res), anclado: true, det: `faltan ${gp.total.toFixed(2)} mm para la RRR6 informada (${A.rr6} mm − ${A.obs} mm observados), repartidos en vuelcos de ${gp.res} mm según la lluvia antes y después del hueco`};
   }
   if (dur > MAX_INT) return {met: "ninguno", est: null, det: "más de 3 h sin dato de lluvia ni RRR6: elija un relleno o dibújelo a mano"};
   const e = escenarioLluvia(gp, g, "moderado");
@@ -123,11 +131,11 @@ function autoLluvia(gp, g, F){
 }
 function manoLluvia(gp, g, est){                    // puntos de control = lluvia ACUMULADA dentro del hueco (mm), en pasos parejos
   const saltos = Math.max(1, Math.ceil(gp.n / 8)), ks = []; for (let k = gp.k0 + Math.floor(saltos / 2); k <= gp.k1; k += saltos) ks.push(k);
-  if (!ks.length) ks.push(Math.floor((gp.k0 + gp.k1) / 2));
+  if (ks[ks.length - 1] !== gp.k1) ks.push(gp.k1);                                  // el último punto es el fin del hueco: ahí queda el total
   return ks.map(k => ({k, y: est ? r3(est.slice(0, k - gp.k0 + 1).reduce((s, x) => s + (x ?? 0), 0)) : 0}));
 }
 function moverLluvia(gp, h, y, tope){               // sube/baja un punto de la acumulada; los vecinos se arrastran para que la curva nunca baje
-  const hs = gp.hand, i = hs.indexOf(h), mx = Math.min(tope ?? Infinity, gp.total ?? Infinity);
+  const hs = gp.hand, i = hs.indexOf(h), mx = tope ?? Infinity;       // la RRR6 no limita el dibujo: solo se avisa si el total no coincide
   h.y = Math.max(0, Math.min(mx, y));
   for (let j = i + 1; j < hs.length; j++) if (hs[j].y < h.y) hs[j].y = h.y;
   for (let j = i - 1; j >= 0; j--) if (hs[j].y > h.y) hs[j].y = h.y;
@@ -144,22 +152,22 @@ function adelgazar(gp){                             // vuelve a ~8 puntos de con
 }
 function suavizar(gp, it){                          // media móvil sobre los puntos de control, anclada a los bordes (en lluvia: 0 al inicio y el total al final)
   const hs = gp.hand, N = hs ? hs.length : 0; if (!N) return;
-  const izq = gp.lluvia ? 0 : (gp.izq ?? hs[0].y), der = gp.lluvia ? (gp.total ?? hs[N - 1].y) : (gp.der ?? hs[N - 1].y);
+  const izq = gp.lluvia ? 0 : (gp.izq ?? hs[0].y), der = gp.lluvia ? hs[N - 1].y : (gp.der ?? hs[N - 1].y);
   for (let r = 0; r < (it ?? (N > 12 ? 6 : 2)); r++){ const y = hs.map(h => h.y); hs.forEach((h, i) => { h.y = (( i ? y[i - 1] : izq) + 2 * y[i] + (i < N - 1 ? y[i + 1] : der)) / 4; }); }
 }
 function rectaHueco(gp){                            // recta entre los bordes (en lluvia: la acumulada sube pareja hasta el total)
-  if (gp.lluvia){ const tot = gp.total ?? (valores(gp) || []).reduce((a, x) => a + (x ?? 0), 0); return new Array(gp.n).fill(Math.min(LIM.rr1m[1], r3(tot / gp.n))); }
+  if (gp.lluvia){ const tot = gp.total ?? (valores(gp) || []).reduce((a, x) => a + (x ?? 0), 0); return cuantizar(new Array(gp.n).fill(Math.min(LIM.rr1m[1], r3(tot / gp.n))), gp.res); }
   return gp.izq != null && gp.der != null ? interp(gp) : new Array(gp.n).fill(gp.izq ?? gp.der);
 }
 function incLluvia(gp, hand){                       // curva acumulada por tramos (no decreciente) → mm de cada minuto
-  const P = [[gp.k0 - 1, 0]]; hand.slice().sort((a, b) => a.k - b.k).forEach(h => P.push([h.k, Math.max(0, h.y)])); if (gp.total != null) P.push([gp.k1, gp.total]);
+  const P = [[gp.k0 - 1, 0]]; hand.slice().sort((a, b) => a.k - b.k).forEach(h => P.push([h.k, Math.max(0, h.y)]));
   const cum = []; let mxAcum = 0;
   for (let k = gp.k0; k <= gp.k1; k++){
     let a = null, b = null; for (const p of P){ if (p[0] <= k) a = p; if (p[0] >= k && !b) b = p; }
     let c = a && b && a[0] !== b[0] ? a[1] + (b[1] - a[1]) * (k - a[0]) / (b[0] - a[0]) : (a || b)[1];
     mxAcum = Math.max(mxAcum, c); cum.push(mxAcum);
   }
-  return cum.map((c, i) => Math.min(LIM.rr1m[1], r3(Math.max(0, c - (i ? cum[i - 1] : 0)))));
+  return cuantizar(cum.map((c, i) => Math.min(LIM.rr1m[1], r3(Math.max(0, c - (i ? cum[i - 1] : 0))))), gp.res);
 }
 function manoInicial(gp, g, est, L){                // puntos de control (hasta ~8 por hueco, a lo más cada ~30 min), partiendo de la curva automática (o plana desde un borde)
   if (gp.lluvia) return manoLluvia(gp, g, est);
@@ -182,7 +190,7 @@ function curvaMano(gp, hand){                       // recta por tramos entre lo
 function analizar(F, v, ini, lim, cad, cerrado, vecF){   // vecF: [{cod, nombre, F}]
   const L = LIM[v], g = rejilla(F, v, ini, lim, cad, L);
   const vecs = vecF.map(V => Object.assign(rejilla(V.F, v, ini, lim, cad, L), {cod: V.cod, nombre: V.nombre}));
-  const ll = v === "rr1m", gaps = detectar(g, cerrado).map(gp => { if (ll) gp.lluvia = true; const a = ll ? autoLluvia(gp, g, F) : auto(gp, g, vecs); return Object.assign(gp, {met: a.met, est: a.est, det: a.det, auto: a, hand: null}); });
+  const ll = v === "rr1m", gaps = detectar(g, cerrado).map(gp => { if (ll){ gp.lluvia = true; gp.res = resLluvia(g); } const a = ll ? autoLluvia(gp, g, F) : auto(gp, g, vecs); return Object.assign(gp, {met: a.met, est: a.est, det: a.det, auto: a, hand: null}); });
   return {g, gaps, L};
 }
 const valores = gp => gp.hand && gp.tocado ? curvaMano(gp, gp.hand) : gp.est;   // lo que vale hoy en el hueco (null si nada)
@@ -193,7 +201,7 @@ function csv(S, v, cod, nombre, dia){
     L.push(`${new Date(S.g.t(gp.k0 + i)).toISOString().slice(0, 16).replace("T", " ")},${v},${redondeo(Math.min(S.L[1], Math.max(S.L[0], x)), v)},${gp.tocado ? "manual" : gp.met},"${f(gp.tocado ? (gp.nota || "curva dibujada con el mouse") : gp.det)}",sí`); }); });
   return L.join("\n");
 }
-const API = {rejilla, detectar, interp, ajuste, regresion, auto, autoLluvia, totalRR6, incLluvia, moverLluvia, escenarioLluvia, totalesLluvia, curvaActual, densificar, adelgazar, suavizar, rectaHueco, manoInicial, curvaMano, analizar, valores, csv, VARS_H, LIM, MAX_INT};
+const API = {resLluvia, cuantizar, rejilla, detectar, interp, ajuste, regresion, auto, autoLluvia, totalRR6, incLluvia, moverLluvia, escenarioLluvia, totalesLluvia, curvaActual, densificar, adelgazar, suavizar, rectaHueco, manoInicial, curvaMano, analizar, valores, csv, VARS_H, LIM, MAX_INT};
 if (typeof module !== "undefined") module.exports = API;
 if (typeof window === "undefined") return;
 
@@ -256,8 +264,8 @@ function filasValores(S, gp){                        // [{t, v, acum?}] del huec
 function valoresTabla(){                             // tabla minuto a minuto de lo estimado (se repinta al dibujar)
   const el = $("#hValTab"); if (!el || SEL == null) return; const S = datos(), gp = S.gaps[SEL], F = filasValores(S, gp), ll = !!gp.lluvia, mi = window.MINU;
   if (F.every(f => f.v == null)){ el.innerHTML = `<p class="nota" style="margin:0">Este hueco todavía no tiene valores estimados: elija un relleno o dibuje la curva.</p>`; return; }
-  const dec = ll ? 3 : 1;
-  el.innerHTML = `<table><tr><th>Hora UTC</th><th>${ll ? "Agua caída del minuto (mm)" : "Valor estimado"}</th>${ll ? "<th>Acumulado del hueco (mm)</th>" : ""}</tr>${F.map(f => `<tr><td>${mi.hhmm(f.t)}</td><td>${f.v == null ? "—" : f.v.toFixed(dec)}</td>${ll ? `<td>${f.v == null ? "—" : f.acum.toFixed(2)}</td>` : ""}</tr>`).join("")}</table>`;
+  const dec = ll ? 3 : 1, tot = ll ? r3(F.reduce((a, f) => a + (f.v ?? 0), 0)) : null;
+  el.innerHTML = `${ll ? `<p class="nota" style="margin:0 0 4px">Total estimado del hueco: <b>${tot.toFixed(2)} mm</b> · la lluvia sube por vuelcos de <b>${gp.res} mm</b>${gp.total != null ? ` · la RRR6 informada pide <b>${gp.total.toFixed(2)} mm</b>${Math.abs(tot - gp.total) > TOL_RR6 ? ` <span style="color:var(--sos)">(no coincide)</span>` : ""}` : ""}</p>` : ""}<table><tr><th>Hora UTC</th><th>${ll ? "Agua caída del minuto (mm)" : "Valor estimado"}</th>${ll ? "<th>Acumulado del hueco (mm)</th>" : ""}</tr>${F.map(f => `<tr><td>${mi.hhmm(f.t)}</td><td>${f.v == null ? "—" : f.v.toFixed(dec)}</td>${ll ? `<td>${f.v == null ? "—" : f.acum.toFixed(2)}</td>` : ""}</tr>`).join("")}</table>`;
 }
 async function acciones(id, sel, S){                // guardar / quitar / copiar
   const msg = (t, ok) => { const m = $("#hMsg"); if (m){ m.textContent = t; m.style.color = ok ? "var(--ok)" : "var(--err)"; } };
@@ -293,7 +301,7 @@ function barra(){                                    // herramientas del hueco e
       <button data-hb="guardar" title="Registra estos valores como «rellenado» (gris) en el registro de correcciones; el dato original no se toca">Guardar relleno</button>${sel.guardado ? `<button data-hb="quitar" title="Borra el relleno guardado de este hueco">Quitar relleno guardado</button>` : ""}<button data-hb="copiar" title="Copia hora y valor de cada minuto">Copiar valores</button>
       <span id="hMsg" style="font-size:12.5px;color:${sel.guardado ? "var(--ok)" : "var(--mu)"}">${sel.guardado ? "Guardado " + sel.guardado : "Sin guardar"}</span></div>
     <div id="hValTab" style="max-height:200px;overflow:auto;margin-bottom:6px"></div>
-    ${sel.lluvia ? `<p class="nota" style="margin:0 0 6px">${R.anclado ? `Total del hueco fijado por la RRR6 informada: <b>${R.tot.moderado.toFixed(2)} mm</b>.` : R.tot ? `En un lapso igual al hueco (${R.lapso} min) cayeron antes <b>${R.V.A == null ? "sin dato" : R.V.A.toFixed(2) + " mm"}</b> y después <b>${R.V.B == null ? "sin dato" : R.V.B.toFixed(2) + " mm"}</b>; el hueco debería tener entre <b>${R.tot.conservador.toFixed(2)}</b> y <b>${R.tot.optimista.toFixed(2)} mm</b>.` : "Sin datos de lluvia antes ni después del hueco: dibújelo a mano."}</p>` : ""}`;
+    ${sel.lluvia ? `<p class="nota" style="margin:0 0 6px">${R.completa ? `La RRR6 informada ya queda completa con lo observado (el hueco no tendría lluvia). Si igual quiere rellenar, los botones usan lo que cayó antes y después. ` : ""}${R.anclado ? `Total del hueco según la RRR6 informada: <b>${R.tot.moderado.toFixed(2)} mm</b>.` : R.tot ? `En un lapso igual al hueco (${R.lapso} min) cayeron antes <b>${R.V.A == null ? "sin dato" : R.V.A.toFixed(2) + " mm"}</b> y después <b>${R.V.B == null ? "sin dato" : R.V.B.toFixed(2) + " mm"}</b>; el hueco debería tener entre <b>${R.tot.conservador.toFixed(2)}</b> y <b>${R.tot.optimista.toFixed(2)} mm</b>.` : "Sin datos de lluvia antes ni después del hueco: dibújelo a mano."}</p>` : ""}`;
   el.querySelectorAll("[data-hb]").forEach(x => x.onclick = () => { const id = x.dataset.hb, T = {conservador: 1, moderado: 1, optimista: 1};
     if (id === "guardar" || id === "quitar" || id === "copiar"){ sel.motivo = ($("#hMot") || {}).value || ""; return acciones(id, sel, S); }
     if (id === "puntos"){ if (MODO === "libre") adelgazar(sel); MODO = "puntos"; }
