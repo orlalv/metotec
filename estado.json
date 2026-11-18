@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-18T15:15:38+00:00",
+ "inicio": "2026-11-18T15:45:42+00:00",
  "errores": [],
  "estaciones": 133,
- "con_datos": 122,
- "registros": 4851,
- "desde": "2026-11-18 14:16:00",
- "hasta": "2026-11-18 15:10:00",
+ "con_datos": 120,
+ "registros": 4754,
+ "desde": "2026-11-18 14:45:01",
+ "hasta": "2026-11-18 15:40:00",
  "horas_archivadas": 2,
  "modelo": 6384,
  "wrf": "sin corridas nuevas",
@@ -20,22 +20,22 @@
  "wrf_ref": 654,
  "satelite": {
   "imagenes": 32,
-  "ultima": "2026-11-18T15:00Z"
+  "ultima": "2026-11-18T15:30Z"
  },
  "calibracion": {
   "dias": 11,
   "filas": 27421,
   "activa": false
  },
- "consenso_quitados": 2,
+ "consenso_quitados": 1,
  "incendios_cerca": 1,
  "kv_incendios": "200",
- "ob_filas": 2009,
+ "ob_filas": 2124,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 520,
+  "observaciones": 519,
   "fallas": 0,
-  "hallazgos": 345,
+  "hallazgos": 344,
   "kv": "200",
   "completitud": "200"
  },
@@ -45,7 +45,7 @@
  ],
  "super": {
   "estaciones": 100,
-  "hallazgos": 49,
+  "hallazgos": 48,
   "kv": "200"
  },
  "historial": {
@@ -56,16 +56,23 @@
   "2026-11-17": "200",
   "2026-11-18": "200"
  },
+ "boletin": {
+  "dia": "2026-11-18",
+  "estaciones": 26,
+  "hallazgos": 17,
+  "cambios": 26,
+  "kv": "200"
+ },
  "productos": {
   "extremas": "200",
   "lluvia_obs": "200"
  },
  "pluviometros": {
   "resumen": {
-   "sospecha_obstruccion": 9,
-   "revisar": 16,
-   "sin_dato_con_lluvia": 1,
-   "ok": 102
+   "sospecha_obstruccion": 4,
+   "revisar": 11,
+   "sin_dato_con_lluvia": 2,
+   "ok": 111
   },
   "fuentes": {
    "vecinas": true,
@@ -73,15 +80,15 @@
    "satelite": true,
    "imerg": true,
    "satelite_horas": 19,
-   "imerg_pasos_nuevos": 96
+   "imerg_pasos_nuevos": 49
   },
   "kv": "200"
  },
  "reputacion": {
   "resumen": {
    "cuarentena": 0,
-   "en_revision": 34,
-   "operativa": 99,
+   "en_revision": 30,
+   "operativa": 103,
    "verde": 85,
    "amarillo": 22,
    "rojo": 26,
@@ -90,12 +97,12 @@
   "kv": "200"
  },
  "kv": "200",
- "alertas": 21,
+ "alertas": 19,
  "resumen": {
   "bien": 109,
   "sospechoso": 11,
   "erróneo": 7,
   "sin datos": 6
  },
- "fin": "2026-11-18T15:21:11+00:00"
+ "fin": "2026-11-18T15:50:01+00:00"
 }
