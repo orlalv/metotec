@@ -39,24 +39,25 @@ console.log("huecos: 8 pruebas OK");
 const cad1 = 60e3, ini1 = Date.UTC(2026, 10, 17), n1 = 1440, lim1 = ini1 + n1 * cad1;
 const mkL = (f, borrar = [], extra = {}) => Array.from({length: n1}, (_, k) => borrar.includes(k) ? null : Object.assign({t: ini1 + (k + 1) * cad1, rr1m: f(k)}, extra[k] || {})).filter(Boolean);
 const rango = (a, b) => Array.from({length: b - a + 1}, (_, i) => a + i);
-// 9) lloviendo 0.02 mm/min y se corta 15 min sin RRR6: se prolonga la intensidad (0.02 × 15 = 0.30 mm), no se interpola
+// 9) lloviendo 0.02 mm/min y se corta 15 min sin RRR6: en un lapso igual cayeron 0.30 mm antes y 0.30 después → moderado 0.30 mm, no se interpola
 let FL = mkL(k => k >= 960 && k < 1100 ? .02 : 0, rango(990, 1004));
 let SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); let gl = SL.gaps[0];
-assert.equal(SL.gaps.length, 1); assert.equal(gl.met, "intensidad previa"); assert.equal(gl.est.length, 15);
+assert.equal(SL.gaps.length, 1); assert.equal(gl.met, "antes y después"); assert.equal(gl.est.length, 15);
 assert(gl.est.every(x => Math.abs(x - .02) < 1e-9)); assert(/estimaci/.test(gl.det));
 // 10) sin lluvia antes ni después: relleno con 0 (no se inventa lluvia entre dos ceros)
 FL = mkL(k => 0, rango(300, 314)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []);
 assert.equal(SL.gaps[0].met, "relleno 0"); assert(SL.gaps[0].est.every(x => x === 0));
-// 11) no llovía antes y sí después: no se estima, se deja a mano
+// 11) no llovía antes y sí después (0.05 mm/min × 15 = 0.75 mm): conservador 0, moderado 0.375, optimista 0.75; la forma sube de 0 hacia la lluvia posterior
 FL = mkL(k => k >= 315 ? .05 : 0, rango(300, 314)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []);
-assert.equal(SL.gaps[0].met, "ninguno");
+const T11 = H.totalesLluvia(SL.gaps[0], SL.g).tot; assert.equal(T11.conservador, 0); assert(Math.abs(T11.moderado - .375) < 1e-3 && Math.abs(T11.optimista - .75) < 1e-3);
+assert.equal(SL.gaps[0].met, "antes y después"); assert(SL.gaps[0].est[0] < SL.gaps[0].est[14]);
 // 12) lluvia continua > 1 h sin RRR6: no se prolonga
 FL = mkL(k => .03, rango(500, 580)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); assert.equal(SL.gaps[0].met, "ninguno");
 // 13) con RRR6 informada: el total del hueco es RRR6 − observado y la intensidad solo lo reparte
 // período 12–18 UTC = minutos 720..1079; lluvia .02 mm/min, hueco de 15 min dentro, RRR6 informada = 8.0 mm (observado 6.9 mm)
 FL = mkL(k => k >= 720 && k < 1080 ? .02 : 0, rango(900, 914), {1079: {rr6: 8}}); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []);
 gl = SL.gaps[0]; const obs6 = 345 * .02;
-assert.equal(gl.met, "intensidad previa + RRR6"); assert(Math.abs(gl.total - (8 - obs6)) < 1e-3, "total " + gl.total);
+assert.equal(gl.met, "RRR6 + lluvia alrededor"); assert(Math.abs(gl.total - (8 - obs6)) < 1e-3, "total " + gl.total);
 assert(Math.abs(gl.est.reduce((a, b) => a + b, 0) - (8 - obs6)) < 0.015);          // se conserva el total (salvo redondeo del reparto)
 // 14) lo observado ya supera la RRR6: se avisa, no se estima
 FL = mkL(k => k >= 720 && k < 1080 ? .02 : 0, rango(900, 914), {1079: {rr6: 3}}); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []);
@@ -79,10 +80,13 @@ console.log("huecos lluvia (mover): OK");
 // 18) rellenos automáticos de lluvia: sin RRR6 el total cambia (conservador < moderado < optimista); con RRR6 el total es el mismo y solo cambia la forma
 FL = mkL(k => k >= 960 && k < 1100 ? .02 : 0, rango(990, 1004)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
 const tot = e => e.est.reduce((a, b) => a + b, 0), E = x => H.escenarioLluvia(gl, SL.g, x);
-assert(tot(E("conservador")) < tot(E("moderado")) && tot(E("moderado")) < tot(E("optimista"))); assert(Math.abs(tot(E("moderado")) - .3) < 1e-6);
-assert(E("conservador").est[0] > E("conservador").est[14] && E("optimista").est[0] < E("optimista").est[14]);   // afloja / se intensifica
+assert(tot(E("conservador")) < tot(E("moderado")) && tot(E("moderado")) < tot(E("optimista"))); assert(Math.abs(tot(E("moderado")) - .3) < 1e-2);
+assert(Math.abs(E("conservador").total - .225) < 1e-3 && Math.abs(E("optimista").total - .375) < 1e-3);
 FL = mkL(k => k >= 720 && k < 1080 ? .02 : 0, rango(900, 914), {1079: {rr6: 8}}); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
 ["conservador", "moderado", "optimista"].forEach(x => assert(Math.abs(tot(H.escenarioLluvia(gl, SL.g, x)) - gl.total) < .02, x));
+// hueco al final del día (solo hay lluvia antes): 0.5 / 1 / 1.5 × lo de antes
+FL = mkL(k => k >= 1380 ? .02 : 0, rango(1425, 1439)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []);
+const T18 = H.totalesLluvia(SL.gaps[0], SL.g).tot; assert(Math.abs(T18.moderado - .3) < 1e-3 && Math.abs(T18.conservador - .15) < 1e-3 && Math.abs(T18.optimista - .45) < 1e-3);
 // hueco de lluvia > 3 h sin RRR6: no hay relleno automático
 FL = mkL(k => .03, rango(300, 520)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); assert.equal(H.escenarioLluvia(SL.gaps[0], SL.g, "moderado"), null);
 // 19) suavizar: reduce las diferencias entre puntos vecinos y se queda entre los bordes; densificar/adelgazar conservan la curva

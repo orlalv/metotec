@@ -41,7 +41,7 @@ export async function onRequestGet({ request, env }){
     const ini = min(c.momento), fin = c.hasta ? min(c.hasta) + 60e3 : ini + 60e3;
     if (fin < +desde || ini > +hasta + 864e5) continue;
     tramos.push({ id, g: GRUPO[c.var] || "todas", var: c.var, ini, fin, estado: c.estado === "rellenado" ? "rellenado" : "corregido",
-      anterior: c.anterior, nuevo: c.nuevo, motivo: c.motivo, quien: c.quien, t: c.t });
+      anterior: c.anterior, nuevo: c.nuevo, motivo: c.motivo, quien: c.quien, t: c.t, metodo: c.metodo, valores: c.valores });
   }
   tramos.sort((a, b) => a.ini - b.ini);
   return json({ cod, desde: dia(desde), hasta: dia(hasta), tramos }, { headers: { "Cache-Control": "public, max-age=120", "Access-Control-Allow-Origin": "*" } });

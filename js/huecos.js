@@ -2,9 +2,10 @@
    Tres métodos: interpolación lineal (huecos de hasta 3 h con valor a ambos lados), regresión con una estación vecina
    (huecos largos o sin un borde) y curva dibujada a mano con el mouse. Los valores completados NUNCA se mezclan con los
    observados: se dibujan aparte, llevan su método y solo salen en un CSV marcado «estimado». No sirve para extremas ni viento.
-   Lluvia (rr1m, agua caída del minuto): solo huecos cortos y siempre como estimación. Se prolonga la intensidad de los 15 min previos
-   (no se interpola: no se inventa lluvia entre dos ceros); si la RRR6 informada de la estación cierra el período, el total del hueco es
-   RRR6 − lo observado y la intensidad previa solo decide cómo se reparte en el tiempo. Se muestra como acumulada. */
+   Lluvia (rr1m, agua caída del minuto): solo como estimación. El total del hueco sale de lo que cayó en un lapso igual (misma duración)
+   justo antes y justo después: conservador = el menor, moderado = el promedio, optimista = el mayor (sin dato de un lado: 0,5 / 1 / 1,5 × el otro).
+   Si la RRR6 informada cierra el período, el total es RRR6 − lo observado y los tres coinciden. No se interpola: no se inventa lluvia
+   entre dos ceros. Se muestra como acumulada. */
 (function(){
 const VARS_H = [["T", "Ts (temp. seca)", "°C"], ["Td", "Td (punto de rocío)", "°C"], ["HR", "Humedad", "%"], ["P_est", "QFE", "hPa"], ["P_mar", "QFF", "hPa"], ["P_std", "QNH", "hPa"], ["rr1m", "Agua caída (acumulada)", "mm"]];
 const MAX_INT = 3 * 3600e3, R2_MIN = .5, COB_MIN = .8, N_MIN = 20, MAX_LL = 3600e3, VENT_LL = 15 * 60e3, TOL_RR6 = .2;
@@ -82,29 +83,43 @@ function totalRR6(gp, g, F){                        // mm que faltan para que lo
   const fila = F.find(o => o.t === pe && o.rr6 != null); if (!fila) return null;
   return {total: r3(fila.rr6 - obs), rr6: fila.rr6, obs: r3(obs)};
 }
+function ventanasLluvia(gp, g){                     // lluvia (mm) en un lapso igual al hueco justo antes y justo después; null si falta dato
+  const n = gp.n, suma = (a, b) => { let s = 0, c = 0; for (let k = Math.max(0, a); k <= Math.min(g.n - 1, b); k++) if (g.y[k] != null){ s += g.y[k]; c++; } return c >= Math.max(1, n / 2) ? {mm: s * n / c} : null; };
+  const tasa = (a, b) => { let s = 0, c = 0; for (let k = Math.max(0, a); k <= Math.min(g.n - 1, b); k++) if (g.y[k] != null){ s += g.y[k]; c++; } return c ? s / c : null; };
+  const m = Math.min(5, n), A = suma(gp.k0 - n, gp.k0 - 1), B = suma(gp.k1 + 1, gp.k1 + n);
+  return {A: A ? A.mm : null, B: B ? B.mm : null, rA: tasa(gp.k0 - m, gp.k0 - 1), rB: tasa(gp.k1 + 1, gp.k1 + m)};
+}
+function totalesLluvia(gp, g){                      // mm que faltan en el hueco según cada escenario; si la RRR6 cierra el total, los tres coinciden
+  const V = ventanasLluvia(gp, g), anclado = gp.total != null; let tot = null;
+  if (anclado) tot = {conservador: gp.total, moderado: gp.total, optimista: gp.total};
+  else if (V.A != null && V.B != null){ const m = (V.A + V.B) / 2; tot = {conservador: Math.min(V.A, V.B, .75 * m), moderado: m, optimista: Math.max(V.A, V.B, 1.25 * m)}; }
+  else if (V.A != null || V.B != null){ const u = V.A ?? V.B; tot = {conservador: .5 * u, moderado: u, optimista: 1.5 * u}; }
+  if (tot) for (const k in tot) tot[k] = r3(tot[k]);
+  return {V, tot, anclado, lapso: Math.round(gp.n * g.cad / 60e3)};
+}
+function escenarioLluvia(gp, g, esc){               // relleno de lluvia: conservador / moderado / optimista, a partir de lo que cayó en un lapso igual antes y después
+  const R = totalesLluvia(gp, g), mx = LIM.rr1m[1], n = gp.n; if (!R.tot || !R.tot[esc]  && R.tot[esc] !== 0) return null;
+  if (!R.anclado && n * g.cad > MAX_INT) return null;
+  const t = R.tot[esc], V = R.V, r0 = V.rA ?? V.rB ?? 0, r1 = V.rB ?? V.rA ?? 0;
+  let w = Array.from({length: n}, (_, i) => r0 + (r1 - r0) * (n > 1 ? i / (n - 1) : .5)); let sw = w.reduce((a, b) => a + b, 0); if (sw <= 0){ w = new Array(n).fill(1); sw = n; }
+  const f = x => x == null ? "sin dato" : x.toFixed(2) + " mm";
+  return {est: w.map(x => Math.min(mx, r3(t * x / sw))), total: t, det: R.anclado ? `${esc}: total fijo por la RRR6 (${t.toFixed(2)} mm), repartido según la intensidad al borde del hueco` : `${esc}: ${t.toFixed(2)} mm · en un lapso igual (${R.lapso} min) cayeron antes ${f(V.A)} y después ${f(V.B)}`};
+}
 function autoLluvia(gp, g, F){
-  const dur = gp.n * g.cad, mx = LIM.rr1m[1], nW = Math.max(1, Math.round(VENT_LL / g.cad)), media = a => a.reduce((s, x) => s + x, 0) / a.length;
-  const pre = [], pos = [];
-  for (let k = gp.k0 - 1; k >= 0 && pre.length < nW; k--){ if (g.y[k] == null) break; pre.push(g.y[k]); }
-  for (let k = gp.k1 + 1; k < g.n && pos.length < nW; k++){ if (g.y[k] == null) break; pos.push(g.y[k]); }
-  const tasa = pre.length ? media(pre) : null, mmh = x => (x * 3600e3 / g.cad).toFixed(1), ceros = () => new Array(gp.n).fill(0);
-  const A = totalRR6(gp, g, F);
+  const dur = gp.n * g.cad, A = totalRR6(gp, g, F);
   if (A){
     gp.total = Math.max(0, A.total);
     if (A.total < -TOL_RR6) return {met: "ninguno", est: null, det: `lo observado (${A.obs} mm) ya supera la RRR6 informada (${A.rr6} mm): revise la estación`};
-    if (A.total <= TOL_RR6 && (tasa == null || tasa === 0)) return {met: "relleno 0", est: ceros(), det: `la RRR6 informada (${A.rr6} mm) ya queda completa con lo observado (${A.obs} mm)`, anclado: true};
-    const forma = tasa > 0 ? new Array(gp.n).fill(tasa) : new Array(gp.n).fill(1);       // sin lluvia previa, se reparte parejo
-    const f = gp.total / (forma.reduce((s, x) => s + x, 0) || 1), est = forma.map(x => Math.min(mx, r3(x * f)));
-    return {met: "intensidad previa + RRR6", est, anclado: true, det: `faltan ${gp.total.toFixed(2)} mm para la RRR6 informada (${A.rr6} mm − ${A.obs} mm observados), repartidos con la intensidad previa${tasa > 0 ? " (" + mmh(tasa) + " mm/h)" : ""}`};
+    const e = escenarioLluvia(gp, g, "moderado");
+    if (A.total <= TOL_RR6 && (!e || e.total <= TOL_RR6)) return {met: "relleno 0", est: new Array(gp.n).fill(0), det: `la RRR6 informada (${A.rr6} mm) ya queda completa con lo observado (${A.obs} mm)`, anclado: true};
+    return {met: "RRR6 + lluvia alrededor", est: e ? e.est : new Array(gp.n).fill(r3(gp.total / gp.n)), anclado: true, det: `faltan ${gp.total.toFixed(2)} mm para la RRR6 informada (${A.rr6} mm − ${A.obs} mm observados), repartidos según la lluvia antes y después del hueco`};
   }
-  if (!pre.length) return {met: "ninguno", est: null, det: "sin datos de lluvia justo antes del hueco: dibújelo a mano"};
-  if (tasa === 0){
-    if (pos.length && media(pos) > 0) return {met: "ninguno", est: null, det: "no llovía antes, pero llueve después del hueco: dibújelo a mano"};
-    if (dur <= MAX_INT) return {met: "relleno 0", est: ceros(), det: "sin lluvia antes ni después del hueco"};
-    return {met: "ninguno", est: null, det: "más de 3 h sin dato de lluvia: dibújelo a mano"};
-  }
-  if (dur > MAX_LL) return {met: "ninguno", est: null, det: "más de 1 h con lluvia y sin RRR6 que cierre el total: dibújelo a mano"};
-  return {met: "intensidad previa", est: new Array(gp.n).fill(Math.min(mx, r3(tasa))), det: `prolonga la intensidad de los ${Math.round(pre.length * g.cad / 60e3)} min previos (${mmh(tasa)} mm/h); es una estimación, sin valor posterior que la confirme`};
+  if (dur > MAX_INT) return {met: "ninguno", est: null, det: "más de 3 h sin dato de lluvia ni RRR6: elija un relleno o dibújelo a mano"};
+  const e = escenarioLluvia(gp, g, "moderado");
+  if (!e) return {met: "ninguno", est: null, det: "sin datos de lluvia antes ni después del hueco: dibújelo a mano"};
+  if (e.total === 0) return {met: "relleno 0", est: e.est, det: "no llovió en un lapso igual antes ni después del hueco"};
+  if (dur > MAX_LL) return {met: "ninguno", est: null, det: "más de 1 h con lluvia y sin RRR6 que cierre el total: elija conservador, moderado u optimista, o dibújelo a mano"};
+  return {met: "antes y después", est: e.est, det: e.det.replace(/^moderado: /, "promedio de lo que cayó antes y después: ") + " (estimación; compare con conservador y optimista)"};
 }
 function manoLluvia(gp, g, est){                    // puntos de control = lluvia ACUMULADA dentro del hueco (mm), en pasos parejos
   const saltos = Math.max(1, Math.ceil(gp.n / 8)), ks = []; for (let k = gp.k0 + Math.floor(saltos / 2); k <= gp.k1; k += saltos) ks.push(k);
@@ -116,19 +131,6 @@ function moverLluvia(gp, h, y, tope){               // sube/baja un punto de la 
   h.y = Math.max(0, Math.min(mx, y));
   for (let j = i + 1; j < hs.length; j++) if (hs[j].y < h.y) hs[j].y = h.y;
   for (let j = i - 1; j >= 0; j--) if (hs[j].y > h.y) hs[j].y = h.y;
-}
-function escenarioLluvia(gp, g, esc){               // relleno de lluvia: conservador (afloja), moderado (sigue igual), optimista (se intensifica)
-  const mx = LIM.rr1m[1], nW = Math.max(1, Math.round(VENT_LL / g.cad)), media = a => a.reduce((s, x) => s + x, 0) / a.length, n = gp.n, pre = [], pos = [];
-  for (let k = gp.k0 - 1; k >= 0 && pre.length < nW; k--){ if (g.y[k] == null) break; pre.push(g.y[k]); }
-  for (let k = gp.k1 + 1; k < g.n && pos.length < nW; k++){ if (g.y[k] == null) break; pos.push(g.y[k]); }
-  const r = pre.length && media(pre) > 0 ? media(pre) : (pos.length ? media(pos) : 0), F = {conservador: .5, moderado: 1, optimista: 1.5}[esc], anclado = gp.total != null;
-  if (!F) return null;
-  if (!anclado && n * g.cad > MAX_INT) return null;
-  const w = Array.from({length: n}, (_, i) => { const t = n > 1 ? i / (n - 1) : .5; return esc === "conservador" ? 1.5 - t : esc === "optimista" ? .5 + t : 1; });
-  const sw = w.reduce((a, b) => a + b, 0);
-  const est = anclado ? w.map(x => Math.min(mx, r3(gp.total * x / sw))) : w.map(x => Math.min(mx, r3(r * F * x)));
-  const forma = esc === "conservador" ? "la lluvia afloja durante el hueco" : esc === "optimista" ? "la lluvia se intensifica durante el hueco" : "la lluvia sigue igual que antes";
-  return {est, det: anclado ? `${esc}: total fijo por la RRR6 (${gp.total.toFixed(2)} mm); ${forma}` : `${esc}: ${(F * 100).toFixed(0)} % de la intensidad previa (${(r * 3600e3 / g.cad).toFixed(1)} mm/h); ${forma}`};
 }
 function curvaActual(gp){                           // lo que vale hoy en el hueco, listo para editar: en lluvia la ACUMULADA, en el resto el valor
   const e = valores(gp) || (gp.hand ? curvaMano(gp, gp.hand) : new Array(gp.n).fill(0)); if (!gp.lluvia) return e.slice();
@@ -191,7 +193,7 @@ function csv(S, v, cod, nombre, dia){
     L.push(`${new Date(S.g.t(gp.k0 + i)).toISOString().slice(0, 16).replace("T", " ")},${v},${redondeo(Math.min(S.L[1], Math.max(S.L[0], x)), v)},${gp.tocado ? "manual" : gp.met},"${f(gp.tocado ? (gp.nota || "curva dibujada con el mouse") : gp.det)}",sí`); }); });
   return L.join("\n");
 }
-const API = {rejilla, detectar, interp, ajuste, regresion, auto, autoLluvia, totalRR6, incLluvia, moverLluvia, escenarioLluvia, curvaActual, densificar, adelgazar, suavizar, rectaHueco, manoInicial, curvaMano, analizar, valores, csv, VARS_H, LIM, MAX_INT};
+const API = {rejilla, detectar, interp, ajuste, regresion, auto, autoLluvia, totalRR6, incLluvia, moverLluvia, escenarioLluvia, totalesLluvia, curvaActual, densificar, adelgazar, suavizar, rectaHueco, manoInicial, curvaMano, analizar, valores, csv, VARS_H, LIM, MAX_INT};
 if (typeof module !== "undefined") module.exports = API;
 if (typeof window === "undefined") return;
 
@@ -244,22 +246,64 @@ function tabla(){                                    // la tabla se repinta sola
     SEL = i; tabla(); grafico(); });
   document.querySelectorAll("#hTab [data-hr]").forEach(b => b.onclick = () => { const gp = S.gaps[+b.dataset.hr]; gp.hand = null; gp.tocado = false; gp.esc = null; gp.nota = null; gp.est = gp.auto.est; gp.met = gp.auto.met; gp.det = gp.auto.det; SEL = null; tabla(); grafico(); });
 }
+const claveQC = () => { try { return sessionStorage.getItem("qcClave") || ""; } catch (e) { return window._qc || ""; } };
+const quienQC = () => { try { return localStorage.getItem("qcPersona") || ""; } catch (e) { return ""; } };
+const ymdhm = t => new Date(t).toISOString().slice(0, 16).replace("T", " ");
+function filasValores(S, gp){                        // [{t, v, acum?}] del hueco, con el valor que vale hoy (null si falta)
+  const e = valores(gp), ll = !!gp.lluvia; let c = 0;
+  return Array.from({length: gp.n}, (_, i) => { const x = e && e[i] != null ? redondeo(Math.min(S.L[1], Math.max(S.L[0], e[i])), VAR) : null; if (ll && x != null) c += x; return {t: S.g.t(gp.k0 + i), v: x, acum: ll ? r3(c) : null}; });
+}
+function valoresTabla(){                             // tabla minuto a minuto de lo estimado (se repinta al dibujar)
+  const el = $("#hValTab"); if (!el || SEL == null) return; const S = datos(), gp = S.gaps[SEL], F = filasValores(S, gp), ll = !!gp.lluvia, mi = window.MINU;
+  if (F.every(f => f.v == null)){ el.innerHTML = `<p class="nota" style="margin:0">Este hueco todavía no tiene valores estimados: elija un relleno o dibuje la curva.</p>`; return; }
+  const dec = ll ? 3 : 1;
+  el.innerHTML = `<table><tr><th>Hora UTC</th><th>${ll ? "Agua caída del minuto (mm)" : "Valor estimado"}</th>${ll ? "<th>Acumulado del hueco (mm)</th>" : ""}</tr>${F.map(f => `<tr><td>${mi.hhmm(f.t)}</td><td>${f.v == null ? "—" : f.v.toFixed(dec)}</td>${ll ? `<td>${f.v == null ? "—" : f.acum.toFixed(2)}</td>` : ""}</tr>`).join("")}</table>`;
+}
+async function acciones(id, sel, S){                // guardar / quitar / copiar
+  const msg = (t, ok) => { const m = $("#hMsg"); if (m){ m.textContent = t; m.style.color = ok ? "var(--ok)" : "var(--err)"; } };
+  const M = ST.M, F = filasValores(S, sel), uni = (VARS_H.find(x => x[0] === VAR) || [])[2], idReg = "c|" + M.cod + "|" + ymdhm(S.g.t(sel.k0)) + "|" + VAR;
+  if (id === "copiar"){
+    if (F.some(f => f.v == null)) return msg("El hueco no tiene valores completos", false);
+    const txt = F.map(f => ymdhm(f.t) + "\t" + f.v).join("\n");
+    try { await navigator.clipboard.writeText(txt); msg("Copiado (" + F.length + " valores)", true); } catch (e) { msg("No se pudo copiar; use «Descargar estimados (CSV)»", false); } return;
+  }
+  const clave = claveQC(); if (!clave) return msg("Falta la clave general: ingrésela en Control de calidad y vuelva", false);
+  if (id === "quitar"){
+    try { const r = await fetch("/api/correcciones", {method: "POST", headers: {"x-clave": clave, "content-type": "application/json"}, body: JSON.stringify({borrar: idReg})});
+      if (!r.ok) return msg(r.status === 401 ? "Clave incorrecta" : "No se pudo quitar (" + r.status + ")", false); sel.guardado = null; barra(); msg("Relleno guardado quitado", true); } catch (e) { msg("Sin conexión", false); } return;
+  }
+  if (F.some(f => f.v == null)) return msg("El hueco no tiene valores completos: elija un relleno o dibuje la curva", false);
+  const vals = F.map(f => f.v), tot = r3(vals.reduce((a, b) => a + b, 0)), metodo = sel.tocado ? "manual" + (sel.nota ? " · " + sel.nota : "") : sel.met;
+  const nuevo = sel.lluvia ? `${tot.toFixed(2)} mm en ${sel.n} min (estimado)` : `${vals[0]} … ${vals[vals.length - 1]} ${uni} en ${sel.n} min (estimado)`;
+  try {
+    const r = await fetch("/api/correcciones", {method: "POST", headers: {"x-clave": clave, "content-type": "application/json"}, body: JSON.stringify({cod: M.cod, momento: ymdhm(S.g.t(sel.k0)), hasta: ymdhm(S.g.t(sel.k1)), var: VAR, anterior: null, nuevo, estado: "rellenado", metodo, valores: vals, motivo: sel.motivo || ("Hueco estimado: " + metodo), quien: quienQC()})});
+    if (!r.ok) return msg(r.status === 401 ? "Clave incorrecta" : "No se pudo guardar (" + r.status + ")", false);
+    sel.guardado = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC"; barra(); msg("Guardado " + sel.guardado + " · " + sel.n + " valores", true);
+  } catch (e) { msg("Sin conexión: no se guardó", false); }
+}
 function barra(){                                    // herramientas del hueco elegido: modo de dibujo, suavizar, recta y rellenos automáticos
   const el = $("#hBar"); if (!el) return; const S = datos(), sel = SEL != null ? S.gaps[SEL] : null;
   if (!sel){ el.innerHTML = ""; return; }
-  const b = (id, txt, tit, on) => `<button data-hb="${id}" title="${tit}" style="${on ? "border-color:var(--oro);color:var(--oro)" : ""}">${txt}</button>`;
+  const R = sel.lluvia ? totalesLluvia(sel, S.g) : null, b = (id, txt, tit, on) => `<button data-hb="${id}" title="${tit}" style="${on ? "border-color:var(--oro);color:var(--oro)" : ""}">${txt}</button>`;
   el.innerHTML = `<div class="htools" style="margin:6px 0;align-items:center"><span style="color:var(--mu);font-size:12.5px">Dibujo:</span>
     ${b("puntos", "Puntos", "Arrastre los puntos; se unen con rectas", MODO === "puntos")}${b("libre", "A mano alzada", "Mantenga el mouse apretado y dibuje la curva", MODO === "libre")}
     <span style="color:var(--mu)">·</span>${b("suavizar", "Suavizar", "Alisa la curva actual (se puede repetir)", false)}${b("recta", "Recta", "Une los bordes del hueco con una recta", false)}
-    ${sel.lluvia ? `<span style="color:var(--mu);font-size:12.5px">· Rellenar:</span>${b("conservador", "Conservador", "La lluvia afloja durante el hueco (la mitad de la intensidad previa si no hay RRR6)", sel.esc === "conservador")}${b("moderado", "Moderado", "La lluvia sigue igual que antes del hueco", sel.esc === "moderado")}${b("optimista", "Optimista", "La lluvia se intensifica durante el hueco (1,5 × la intensidad previa si no hay RRR6)", sel.esc === "optimista")}` : ""}</div>`;
+    ${sel.lluvia ? `<span style="color:var(--mu);font-size:12.5px">· Rellenar:</span>${["conservador", "moderado", "optimista"].map(x => b(x, `${x[0].toUpperCase() + x.slice(1)}${R.tot ? " · " + R.tot[x].toFixed(2) + " mm" : ""}`, x === "conservador" ? "El menor de lo que cayó antes y después en un lapso igual al hueco" : x === "moderado" ? "El promedio de lo que cayó antes y después en un lapso igual al hueco" : "El mayor de lo que cayó antes y después en un lapso igual al hueco", sel.esc === x)).join("")}` : ""}</div>
+    <div class="htools" style="margin:4px 0;align-items:center"><input id="hMot" placeholder="Motivo (opcional)" value="${(sel.motivo || "").replace(/"/g, "&quot;")}" style="min-width:230px">
+      <button data-hb="guardar" title="Registra estos valores como «rellenado» (gris) en el registro de correcciones; el dato original no se toca">Guardar relleno</button>${sel.guardado ? `<button data-hb="quitar" title="Borra el relleno guardado de este hueco">Quitar relleno guardado</button>` : ""}<button data-hb="copiar" title="Copia hora y valor de cada minuto">Copiar valores</button>
+      <span id="hMsg" style="font-size:12.5px;color:${sel.guardado ? "var(--ok)" : "var(--mu)"}">${sel.guardado ? "Guardado " + sel.guardado : "Sin guardar"}</span></div>
+    <div id="hValTab" style="max-height:200px;overflow:auto;margin-bottom:6px"></div>
+    ${sel.lluvia ? `<p class="nota" style="margin:0 0 6px">${R.anclado ? `Total del hueco fijado por la RRR6 informada: <b>${R.tot.moderado.toFixed(2)} mm</b>.` : R.tot ? `En un lapso igual al hueco (${R.lapso} min) cayeron antes <b>${R.V.A == null ? "sin dato" : R.V.A.toFixed(2) + " mm"}</b> y después <b>${R.V.B == null ? "sin dato" : R.V.B.toFixed(2) + " mm"}</b>; el hueco debería tener entre <b>${R.tot.conservador.toFixed(2)}</b> y <b>${R.tot.optimista.toFixed(2)} mm</b>.` : "Sin datos de lluvia antes ni después del hueco: dibújelo a mano."}</p>` : ""}`;
   el.querySelectorAll("[data-hb]").forEach(x => x.onclick = () => { const id = x.dataset.hb, T = {conservador: 1, moderado: 1, optimista: 1};
+    if (id === "guardar" || id === "quitar" || id === "copiar"){ sel.motivo = ($("#hMot") || {}).value || ""; return acciones(id, sel, S); }
     if (id === "puntos"){ if (MODO === "libre") adelgazar(sel); MODO = "puntos"; }
     else if (id === "libre"){ MODO = "libre"; if (sel.hand.length < sel.n) densificar(sel); }
-    else if (id === "suavizar"){ sel.tocado = true; sel.nota = "curva suavizada"; suavizar(sel); }
-    else if (id === "recta"){ sel.est = rectaHueco(sel); sel.met = "recta"; sel.det = "recta entre los bordes del hueco"; sel.esc = "recta"; sel.tocado = false; sel.nota = null; sel.hand = manoInicial(sel, S.g, sel.est, S.L); MODO = "puntos"; }
-    else if (T[id]){ const r = escenarioLluvia(sel, S.g, id); if (!r){ x.textContent = "Hueco muy largo sin RRR6"; return; }
-      sel.est = r.est; sel.met = "escenario " + id; sel.det = r.det; sel.esc = id; sel.tocado = false; sel.nota = null; sel.hand = manoInicial(sel, S.g, sel.est, S.L); MODO = "puntos"; }
+    else if (id === "suavizar"){ sel.guardado = null; sel.tocado = true; sel.nota = "curva suavizada"; suavizar(sel); }
+    else if (id === "recta"){ sel.guardado = null; sel.est = rectaHueco(sel); sel.met = "recta"; sel.det = "recta entre los bordes del hueco"; sel.esc = "recta"; sel.tocado = false; sel.nota = null; sel.hand = manoInicial(sel, S.g, sel.est, S.L); MODO = "puntos"; }
+    else if (T[id]){ const r = escenarioLluvia(sel, S.g, id); if (!r){ x.textContent = "Sin datos o hueco muy largo"; return; }
+      sel.guardado = null; sel.est = r.est; sel.met = "escenario " + id; sel.det = r.det; sel.esc = id; sel.tocado = false; sel.nota = null; sel.hand = manoInicial(sel, S.g, sel.est, S.L); MODO = "puntos"; }
     tabla(); grafico(); });
+  valoresTabla();
 }
 function grafico(){
   const mi = window.MINU, M = ST.M, S = datos(), g = S.g, ll = VAR === "rr1m", uni = (VARS_H.find(x => x[0] === VAR) || [])[2], sel = SEL != null ? S.gaps[SEL] : null;
@@ -310,7 +354,7 @@ function grafico(){
       if (gp.der != null) p += "L" + X(g.t(gp.k1 + 1)).toFixed(1) + " " + Y(gp.der).toFixed(1);
       return `<path d="${p}" fill="none" stroke="${EST}" stroke-width="2" stroke-dasharray="5 4"/>`; }).join("");
     const manos = sel && sel.hand && MODO === "puntos" && sel.hand.length <= 12 ? sel.hand.map(h => `<circle cx="${X(g.t(h.k))}" cy="${Y(ll ? base + h.y : h.y)}" r="6" fill="${EST}" fill-opacity=".22" stroke="${EST}" stroke-opacity=".9" stroke-width="1.8" style="cursor:ns-resize"/>`).join("") : "";
-    $("#hDin").innerHTML = estim + manos; };
+    $("#hDin").innerHTML = estim + manos; valoresTabla(); };
   const ticks = [], paso = [1, 2, 5, 10, 15, 30, 60, 180].map(m => m * 60e3).find(p => span / p <= 10) || 180 * 60e3;
   for (let t = M.ini + Math.ceil((v0 - M.ini) / paso) * paso; t <= v1 && t <= M.fin; t += paso) ticks.push(`<line x1="${X(t)}" x2="${X(t)}" y1="${ar}" y2="${H - ab}" stroke="#ffffff" opacity=".07"/><text x="${X(t)}" y="${H - 8}" fill="#9fb0cc" font-size="11" text-anchor="middle">${mi.hhmm(t)}</text>`);
   const yt = [y0 + dy * .08, (y0 + y1) / 2, y1 - dy * .08].map(y => `<text x="${iz - 6}" y="${Y(y) + 4}" fill="#9fb0cc" font-size="11" text-anchor="end">${(ll ? mi.f1 && Math.abs(y1 - y0) < 3 ? y.toFixed(2) : mi.f1(y) : mi.f1(y))}</text>`).join("");
@@ -332,7 +376,7 @@ function grafico(){
         for (let j = 1; j <= pasos; j++){ const kx = d ? k0 + Math.sign(d) * j : kk; poner(sel.hand[kx - sel.k0], y0u + (yv - y0u) * (d ? j / pasos : 1)); }
         ult = {k: kk, y: yv};
       } else { let h = sel.hand[0]; sel.hand.forEach(q => { if (Math.abs(q.k - kk) < Math.abs(h.k - kk)) h = q; }); poner(h, yv); }
-      const primera = !sel.tocado; sel.tocado = true; sel.nota = null; dinamica(); if (primera) tabla(); };
+      const primera = !sel.tocado; sel.tocado = true; sel.nota = null; sel.guardado = null; dinamica(); if (primera) tabla(); };
     svg.addEventListener("pointerdown", ev => { bajo = true; ult = null; try { svg.setPointerCapture(ev.pointerId); } catch (e) {} mover(ev); });
     svg.addEventListener("pointermove", ev => { if (bajo) mover(ev); });
     svg.addEventListener("pointerup", () => { bajo = false; ult = null; if (SEL != null) tabla(); });

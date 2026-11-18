@@ -1,6 +1,7 @@
 // Registro de correcciones (KV «qc/correcciones»): {id: {cod, momento, hasta?, var, anterior, nuevo, estado: "corregido"|"rellenado", motivo, quien, t}}
 // GET (con clave)          : todo el registro
-// POST (con clave) {…}     : agrega una corrección (la usa el formulario del punto 35)
+// POST (con clave) {…}     : agrega una corrección (la usa el formulario del punto 35 y «Guardar relleno» de Completar huecos).
+//   Un relleno puede traer `valores` (un número por minuto/paso, de `momento` a `hasta`, máx. 1500) y `metodo`.
 // POST {borrar: id}        : quita una
 // Las correcciones se ven en la ficha de cada estación (/api/calidad, público) en azul (corregido) o gris (rellenado).
 import { json } from "./_kv.js";
@@ -20,6 +21,8 @@ export async function onRequestPost({ request, env }){
   const id = b.id || "c|" + b.cod + "|" + b.momento + "|" + b.var;
   C[id] = { cod: b.cod, momento: b.momento, hasta: b.hasta || undefined, var: String(b.var).slice(0, 10), anterior: b.anterior ?? null, nuevo: b.nuevo ?? null,
     estado: b.estado, motivo: String(b.motivo || "").slice(0, 300), quien: String(b.quien || "").slice(0, 40), t: new Date().toISOString().slice(0, 19) };
+  if (Array.isArray(b.valores) && b.valores.length && b.valores.length <= 1500 && b.valores.every(x => typeof x === "number" && isFinite(x))) C[id].valores = b.valores;
+  if (b.metodo) C[id].metodo = String(b.metodo).slice(0, 80);
   await env.DATOS.put("qc/correcciones", JSON.stringify(C));
   return json({ ok: true, id, reg: C[id] });
 }
