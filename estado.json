@@ -1,23 +1,39 @@
 {
  "version": "0.1",
- "inicio": "2026-11-18T23:15:41+00:00",
- "errores": [],
- "estaciones": 110,
- "con_datos": 123,
- "registros": 4921,
- "desde": "2026-11-18 22:16:00",
- "hasta": "2026-11-18 23:10:00",
+ "inicio": "2026-11-18T23:45:43+00:00",
+ "errores": [
+  "super: comparar: Traceback (most recent call last):\n  File \"/home/runner/work/metotec/metotec/qc/superauto.py\", line 452, in correr\n    for h in comparar(P.horario(sin[sin[\"momento\"] > fin - pd.Timedelta(hours=8)]) if len(sin) else sin, E, V or {}, M, aisladas, X=X, errores=errores):\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/metotec/metotec/qc/superauto.py\", line 307, in comparar\n    H, E, V = EV.unir(X, H, E, V)\n              ^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/metotec/metotec/qc/externas_vec.py\", line 179, in unir\n    if X is None or X.H.empty or H is None or H.empty:\n                    ^^^\nAttributeError: 'DataFrame' object has no attribute 'H'\n"
+ ],
+ "estaciones": 137,
+ "con_datos": 121,
+ "registros": 4909,
+ "desde": "2026-11-18 22:46:00",
+ "hasta": "2026-11-18 23:40:00",
  "horas_archivadas": 2,
  "modelo": 6576,
- "wrf": "corridas nuevas",
- "nuevas": [
-  "2026111812_ecmwf"
+ "wrf": "sin corridas nuevas",
+ "corridas": [
+  "2026111700_ecmwf",
+  "2026111700_gfs",
+  "2026111712_ecmwf",
+  "2026111800_ecmwf",
+  "2026111800_gfs",
+  "2026111812_ecmwf",
+  "2026111812_gfs"
  ],
- "fallas": 27,
  "wrf_ref": 654,
  "satelite": {
-  "imagenes": 68,
-  "ultima": "2026-11-18T22:50Z"
+  "imagenes": 69,
+  "ultima": "2026-11-18T23:30Z"
+ },
+ "externas": {
+  "estaciones": 325,
+  "con_vecinas": 115,
+  "desactivadas": 0,
+  "generado": "2026-11-18T22:48:53Z",
+  "pp_archivadas": 8807,
+  "desviadas": 3,
+  "kv_desvio": "200"
  },
  "calibracion": {
   "dias": 11,
@@ -27,7 +43,7 @@
  "consenso_quitados": 1,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 3012,
+ "ob_filas": 3130,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 546,
@@ -42,7 +58,7 @@
  ],
  "super": {
   "estaciones": 104,
-  "hallazgos": 56,
+  "hallazgos": 28,
   "kv": "200"
  },
  "historial": {
@@ -56,6 +72,24 @@
  "productos": {
   "extremas": "200",
   "lluvia_obs": "200"
+ },
+ "pluviometros": {
+  "resumen": {
+   "sospecha_obstruccion": 4,
+   "revisar": 12,
+   "sin_dato_con_lluvia": 2,
+   "ok": 111
+  },
+  "fuentes": {
+   "vecinas": true,
+   "modelo": true,
+   "satelite": true,
+   "imerg": true,
+   "satelite_horas": 27,
+   "imerg_pasos_nuevos": 4,
+   "externas_error": "AttributeError: 'DataFrame' object has no attribute 'P'"
+  },
+  "kv": "200"
  },
  "reputacion": {
   "resumen": {
@@ -77,5 +111,5 @@
   "erróneo": 8,
   "sin datos": 9
  },
- "fin": "2026-11-18T23:25:08+00:00"
+ "fin": "2026-11-18T23:50:55+00:00"
 }
