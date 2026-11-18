@@ -212,7 +212,7 @@ main[hidden]{display:none}
  <div class="salto"></div>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="super">Super automático</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
  <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="rec" data-g="real">Récord histórico</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="est" data-g="real">Estado de estaciones</button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="sup" data-g="super" hidden>Estaciones</button><button data-m="sup_pp" data-g="super" hidden>Agua caída</button><button data-m="sup_prc" data-g="super" hidden>Precipitación</button><button data-m="sup_ext" data-g="super" hidden>Extremas</button><button data-m="sup_pre" data-g="super" hidden>Presiones</button><button data-m="sup_tem" data-g="super" hidden>Temperaturas</button><button data-m="sup_vie" data-g="super" hidden>Viento</button><button data-m="sup_est" data-g="super" hidden>Estación</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
- <div class="salto"></div><div id="ppSub" class="ppsub" hidden></div>
+ <div class="salto" id="salto2" hidden></div><div id="ppSub" class="ppsub" hidden></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -611,13 +611,13 @@ let ppSub = (() => { try { return localStorage.getItem("qcPpSub") || "alertas"; 
 const ppN = {};                                                      // contadores por subopción (las que se conocen)
 window.ppContar = (k, n) => { ppN[k] = n; ppBarra(); };
 function obsBarra(){
-  const el = $("#ppSub"); if (!el || modo !== "obs") return; el.hidden = false; el.style.visibility = "visible";
+  const el = $("#ppSub"); if (!el || modo !== "obs") return; el.hidden = false; $("#salto2").hidden = false; el.style.visibility = "visible";
   el.innerHTML = [["todas", "Todas"], ["sistema", "Reglas del sistema"], ["codificacion", "Codificación"], ["evolucion", "Evolución"], ["sensor", "Frente al sensor"], ["satelite", "Frente al satélite"]].map(([k, t]) => { const n = ((R && R.observaciones || {}).estaciones || []).filter(e => hObs(e).some(x => x.nivel > 0 && (k === "todas" || x.tipo === k))).length; return `<button data-ob="${k}" class="${gobs === k ? "on" : ""}">${t}<b>${n || ""}</b></button>`; }).join("");
 }
 document.addEventListener("click", ev => { const b = ev.target.closest("#ppSub button[data-ob]"); if (b){ gobs = b.dataset.ob; $("#gobs").value = gobs; guardarVista(); obsBarra(); R && pintar(); } });
 function ppBarra(){
   const el = $("#ppSub"); if (!el) return;
-  el.hidden = modo !== "pp"; el.style.visibility = "visible";
+  el.hidden = modo !== "pp"; el.style.visibility = "visible"; $("#salto2").hidden = el.hidden;
   el.innerHTML = PP_SUBS.map(([k, t]) => `<button data-pp="${k}" class="${ppSub === k ? "on" : ""}">${t}<b>${ppN[k] || ""}</b></button>`).join("");
 }
 document.addEventListener("click", ev => { const b = ev.target.closest("#ppSub button[data-pp]"); if (b) ppElegir(b.dataset.pp); });
