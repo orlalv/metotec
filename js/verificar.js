@@ -103,10 +103,12 @@ function pintarMin(out){
   const mxm = Math.max(0.5, ...mm.filter(z => z === z), ...veM.flat().filter(z => z === z)) * 1.12, W = 11, base = 96, y = z => base - (z / mxm) * (base - 6);
   const lin = a => { let d = "", on = false; a.forEach((z, i) => { if (z !== z){ on = false; return; } d += (on ? "L" : "M") + (30 + i * W + W / 2) + " " + y(z); on = true; }); return d; };
   const wm = 40 + 60 * W;
+  const tm = mxm / 1.12, pm = [.1, .2, .5, 1, 2, 5, 10, 20, 50, 100].find(q => tm / q <= 4) || 100;
+  let rej = ""; for (let q = 0; q <= tm * 1.05; q += pm){ const yy = y(q); rej += `<line x1="28" y1="${yy}" x2="${wm}" y2="${yy}" stroke="#30363d" stroke-dasharray="${q ? "3 4" : "0"}" stroke-opacity=".8"/><text x="25" y="${yy + 3}" text-anchor="end" font-size="9" fill="#8b949e">${n1(Math.round(q * 10) / 10)}</text>`; }
   const minG = `<svg viewBox="0 0 ${wm} ${base + 20}" style="width:${wm}px;max-width:100%;height:auto" role="img" aria-label="mm por minuto en la hora elegida"><line x1="28" y1="${base}" x2="${wm}" y2="${base}" stroke="#30363d"/>
-    <text x="2" y="${y(mxm / 1.12) + 3}" font-size="9" fill="#8b949e">${n1(mxm / 1.12)}</text><text x="2" y="${base}" font-size="9" fill="#8b949e">0</text>
-    ${mm.map((z, i) => z !== z ? `<rect x="${30 + i * W}" y="${base - 3}" width="${W - 1}" height="3" fill="#8b949e55"><title>${p2(h)}:${p2(i)} sin dato</title></rect>` : `<rect x="${30 + i * W}" y="${y(z)}" width="${W - 2}" height="${Math.max(0.5, base - y(z))}" fill="#f85149"><title>${p2(h)}:${p2(i)} · ${n1(z)} mm</title></rect>`).join("")}
-    ${veM.map((a, i) => `<path d="${lin(a)}" fill="none" stroke="${D.vec[i].color}" stroke-width="1.4" stroke-opacity=".9"/>`).join("")}
+    ${rej}
+    ${veM.map((a, k) => a.map((z, i) => z !== z || z <= 0 ? "" : `<rect x="${30 + i * W}" y="${y(z)}" width="${W - 2}" height="${Math.max(0.5, base - y(z))}" fill="${D.vec[k].color}" fill-opacity=".5" stroke="${D.vec[k].color}" stroke-opacity=".9"><title>${esc(D.vec[k].nombre)} ${p2(h)}:${p2(i)} · ${n1(z)} mm</title></rect>`).join("")).join("")}
+    ${mm.map((z, i) => z !== z ? `<rect x="${30 + i * W}" y="${base - 3}" width="${W - 1}" height="3" fill="#8b949e55"><title>${p2(h)}:${p2(i)} sin dato</title></rect>` : `<rect x="${30 + i * W}" y="${y(z)}" width="${W - 2}" height="${Math.max(0.5, base - y(z))}" fill="#f85149" fill-opacity=".5" stroke="#f85149" stroke-opacity=".9"><title>${p2(h)}:${p2(i)} · ${n1(z)} mm</title></rect>`).join("")}
     ${[0, 10, 20, 30, 40, 50].map(i => `<text x="${30 + i * W}" y="${base + 13}" font-size="9.5" fill="#8b949e">${p2(h)}:${p2(i)}</text>`).join("")}</svg>`;
   // tabla horaria
   const filas = D.hs.map((x, i) => { const mv = medH(D.hv.map(a => a[i])), sosp = x != null && x < 0.2 && mv != null && mv >= 1;
