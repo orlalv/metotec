@@ -5,7 +5,7 @@ Para cada estación y cada hora cerrada se juntan hasta tres evidencias de lluvi
   · modelo    Open-Meteo con ≥ 0,5 mm en la hora o en la anterior/siguiente (el modelo se equivoca en la hora)
   · satélite  GOES: lluvia estimada con nube cerrada, o nube cerrada con tope más frío que −35 °C, o rayos (sat_estaciones.json, últimas 12 h;
               cada corrida archiva el resumen horario en datos/sat/ para poder mirar periodos largos)
-  · IMERG     (NASA) todavía no incorporado; entra por el parámetro `imerg` (DataFrame codigo, h, mm)
+  · IMERG     (NASA, imágenes de GIBS, qc/imerg.py) ≥ 0,5 mm en la hora o en la anterior/siguiente; tiene unas 5 h de retraso, así que las horas más recientes no lo traen
 El efecto contrario también se revisa: lluvia en la estación con el cielo totalmente despejado y sin lluvia en vecinas ni modelo.
 Si hay vecinas con dato y todas están secas, la estación en 0 es coherente y no se sospecha (modelo y satélite solos solo valen sin vecinas cercanas).
 Una hora es «sospechosa» si hay ≥ 2 evidencias y la estación marca menos de 0,2 mm o no tiene dato.
@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-VERSION = 3                      # sube cuando cambia la forma del producto: qc/correr.py lo regenera aunque no hayan pasado 6 h
+VERSION = 4                      # sube cuando cambia la forma del producto: qc/correr.py lo regenera aunque no hayan pasado 6 h
 RADIO_KM = 60
 MM_VECINA = 1.0
 FRAC_VECINAS = 0.6
@@ -192,8 +192,10 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
         if S is not None and c in S.columns:
             ev_sat = S[c].reindex(horas).fillna(False).astype(bool).values
         ev_imerg = np.zeros(len(horas), bool)
+        mm_imerg = np.full(len(horas), np.nan)
         if I is not None and c in I.columns:
-            ev_imerg = I[c].reindex(horas).fillna(0).values >= 0.5
+            mm_imerg = I[c].reindex(horas).values.astype(float)
+            ev_imerg = pd.Series(np.nan_to_num(mm_imerg, nan=0.0)).rolling(3, center=True, min_periods=1).max().values >= 0.5     # ±1 h, igual que el modelo
         pts = ev_vec.astype(int) + ev_mod + ev_sat + ev_imerg
         # si hay vecinas con dato y ninguna llueve, la estación en 0 es coherente: modelo y satélite solos no bastan (se equivocan más que un pluviómetro vecino).
         # Solo valen sin vecinas cercanas con dato (estación aislada).
@@ -222,7 +224,7 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
                 sx = (t[5:] + [None] * 5)[:5] if t else [None] * 5
                 det.append(dict(vecs=vecs, mod3=[round(float(mm_mod[i2 - 1]), 1) if i2 > 0 else None, round(float(mm_mod[i2]), 1), round(float(mm_mod[i2 + 1]), 1) if i2 + 1 < len(horas) else None],
                                 nub10=sx[0], nub30=sx[1], frio30=sx[2], rr10=sx[3], imagenes=sx[4] if t else None, hora=f"{horas[i2]:%m-%d %H:%M}", est=None if np.isnan(mi[i2]) else round(float(mi[i2]), 1), vec=round(float(mm_vec[i2]), 1),
-                                n_vec=int(llu[i2]), n_tot=int(tot[i2]), mod=round(float(mm_mod[i2]), 1), sat=bool(ev_sat[i2]),
+                                n_vec=int(llu[i2]), n_tot=int(tot[i2]), mod=round(float(mm_mod[i2]), 1), imerg=(None if np.isnan(mm_imerg[i2]) else round(float(mm_imerg[i2]), 1)), sat=bool(ev_sat[i2]),
                                 fria=(t[1] if t else None), tope=(t[3] if t else None), ray=(t[4] if t else None), sospechosa=bool(sosp[i2])))
             eps.append(dict(detalle=det, inicio=f"{horas[a] - pd.Timedelta(hours=1):%Y-%m-%d %H:%M}", fin=f"{horas[b]:%Y-%m-%d %H:%M}", horas=n_sosp, sin_dato=n_sd,
                             evidencia=dict(vecinas=bool(ev_vec[seg].any()), modelo=bool(ev_mod[seg].any()), satelite=bool(ev_sat[seg].any()), imerg=bool(ev_imerg[seg].any())),
@@ -331,6 +333,16 @@ def correr(raiz, ahora=None, dias=30, subir=None, sat=None, imerg=None, con_mode
             fuentes["satelite_horas"] = len(arch)
     except Exception:
         S = C = None
+    if imerg is None:       # IMERG (NASA, vía GIBS): baja los pasos de 30 min que faltan y arma la tabla por hora
+        try:
+            import imerg as IM
+            fuentes["imerg_pasos_nuevos"] = IM.actualizar(raiz, E, ahora)
+            imerg = IM.tabla(raiz, list(R.index), [str(c) for c in E["codigo"]])
+            if not imerg.notna().any().any():
+                imerg = None
+        except Exception as e:
+            fuentes["imerg_error"] = f"{type(e).__name__}: {str(e)[:120]}"
+            imerg = None
     fuentes["imerg"] = imerg is not None
     est = analizar(R, N, E, M, S, imerg, C, arch)
     cuenta = {k: sum(1 for e in est if e["estado"] == k) for k in ("sospecha_obstruccion", "revisar", "sin_dato_con_lluvia", "ok")}

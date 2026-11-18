@@ -39,6 +39,7 @@ function episodio(e){
     ${celda(d.est == null ? "<span style='color:var(--mu)'>sin dato</span>" : d.est.toFixed(1), d.sospechosa ? ";font-weight:600" : "")}
     ${celda(d.n_tot ? `${d.vec.toFixed(1)} <small style="color:var(--mu)">(${d.n_vec}/${d.n_tot})</small>` : "—")}
     ${celda((d.mod3 || []).map(x => x == null ? "·" : x.toFixed(1)).join(" / "))}
+    ${celda(num(d.imerg, 1))}
     <td style="text-align:center">${d.sat ? "✓" : "·"}</td>${celda(num(d.nub10, 0, " %"))}${celda(num(d.nub30, 0, " %"))}${celda(num(d.tope, 0, " °C"))}${celda(num(d.frio30, 0, " %"))}${celda(num(d.rr10, 1))}${celda(d.ray == null ? "—" : d.ray)}${celda(d.imagenes ?? "—")}</tr>`).join("");
   // vecinas una a una: filas = vecinas (por distancia), columnas = horas
   const vv = {};
@@ -54,7 +55,7 @@ function episodio(e){
     : sinVec ? `<div style="color:#d29922;margin:4px 0">Sin estaciones vecinas con dato a ≤ 60 km: la sospecha se apoya solo en modelo y satélite, por eso es de menor confianza.</div>` : "";
   return `<div style="margin:8px 0 12px 0"><b>${f5(e.inicio)} → ${f5(e.fin)}</b> UTC · ${e.horas} h sospechosas${e.sin_dato >= e.horas / 2 ? " (sin dato: comunicación)" : ""}${e.descarga_tardia ? " · <b>descarga tardía</b>" : ""} · vecinas ${e.mm_vecinas} mm, modelo ${e.mm_modelo} mm<br>
     <div style="margin:4px 0">${chips}</div>${aviso}
-    <div style="overflow-x:auto;${det.length ? "" : "display:none"}"><table class="tb" style="font-size:12px"><tr><th>Hora UTC</th><th>Estación mm</th><th>Vecinas mm (llueven/con dato)</th><th>Modelo mm (hora ant. / esta / sig.)</th><th>Satélite: lluvia o nube fría</th><th>Nube 10 km</th><th>Nube 30 km</th><th>Tope más frío</th><th>Área &lt; −40 °C</th><th>Lluvia estimada máx. mm/h</th><th>Rayos</th><th>Imágenes</th></tr>${filas}</table></div>
+    <div style="overflow-x:auto;${det.length ? "" : "display:none"}"><table class="tb" style="font-size:12px"><tr><th>Hora UTC</th><th>Estación mm</th><th>Vecinas mm (llueven/con dato)</th><th>Modelo mm (hora ant. / esta / sig.)</th><th>IMERG (NASA) mm</th><th>Satélite: lluvia o nube fría</th><th>Nube 10 km</th><th>Nube 30 km</th><th>Tope más frío</th><th>Área &lt; −40 °C</th><th>Lluvia estimada máx. mm/h</th><th>Rayos</th><th>Imágenes</th></tr>${filas}</table></div>
     ${vecTabla}</div>`;
 }
 function tarjeta(e){

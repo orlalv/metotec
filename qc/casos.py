@@ -649,6 +649,48 @@ def prueba_pluviometros_satelite():
             FALLAS.append(f"pluviómetros: el archivo de satélite debía acumular y leerse → {sorted(L)}")
 
 
+def prueba_imerg():
+    import numpy as np, tempfile, imerg as IM, pluviometros as PL
+    xml = ('<ColorMaps><ColorMap><Entries><ColorMapEntry rgb="128,128,128" transparent="true" nodata="true" ref="0"/>'
+           '<ColorMapEntry rgb="191,191,191" transparent="true" sourceValue="[-INF,0.1)" value="[-INF,0.1)" ref="1"/>'
+           '<ColorMapEntry rgb="0,118,78" transparent="false" sourceValue="[0.1,0.2)" value="[0.1,0.2)" ref="2"/>'
+           '<ColorMapEntry rgb="255,200,0" transparent="false" sourceValue="[4,6)" value="[4,6)" ref="3"/>'
+           '<ColorMapEntry rgb="68,3,60" transparent="false" sourceValue="[50,+INF)" value="[50,+INF)" ref="4"/></Entries></ColorMap></ColorMaps>')
+    cm = IM.leer_colormap(xml)
+    casos = [((191, 191, 191, 0), 0.0), ((128, 128, 128, 0), None), ((0, 118, 78, 255), 0.15), ((250, 198, 3, 255), 5.0), ((68, 3, 60, 255), 50.0)]
+    for px, esp in casos:
+        v = IM.mm_pixel(px, cm)
+        if (v is None) != (esp is None) or (v is not None and abs(v - esp) > 1e-9):
+            FALLAS.append(f"imerg: el píxel {px} debía dar {esp} mm/h → {v}")
+    # geometría: Santiago en el mosaico (fila 6, columna 6) y el píxel dentro de los 512
+    r, c, y, x = IM.posicion(-33.4, -70.7)
+    if (r, c) != (6, 6) or not (0 <= y < 512 and 0 <= x < 512):
+        FALLAS.append(f"imerg: el punto de Santiago debía caer en el mosaico (6, 6) → {(r, c, y, x)}")
+    px_ = 18 / 512
+    if abs((90 - (-33.4)) - (r * 18 + y * px_)) > px_ or abs((-70.7 + 180) - (c * 18 + x * px_)) > px_:
+        FALLAS.append("imerg: el píxel no corresponde a la coordenada")
+    # archivo y tabla por hora: promedio de los pasos :00 y :30 de la hora cerrada (h−1, h]
+    h = pd.Timestamp("2026-11-10 10:00")
+    with tempfile.TemporaryDirectory() as d:
+        IM.guardar_paso(d, pd.Timestamp("2026-11-10 09:00"), {"A": 4.0, "B": 0.0})
+        IM.guardar_paso(d, pd.Timestamp("2026-11-10 09:30"), {"A": 2.0})
+        T = IM.tabla(d, [h, h + pd.Timedelta(hours=1)], ["A", "B"])
+        if abs(T.at[h, "A"] - 3.0) > 1e-9 or T.at[h, "B"] != 0.0 or not np.isnan(T.at[h + pd.Timedelta(hours=1), "A"]):
+            FALLAS.append(f"imerg: la tabla por hora debía promediar los dos pasos y dejar NaN donde no hay → {T.to_dict()}")
+    # como evidencia: vecinas con lluvia + IMERG (sin modelo) y la estación en 0 → sospechosa; IMERG solo, no
+    hh = pd.date_range("2026-11-10 01:00", periods=24, freq="h")
+    E = pd.DataFrame({"codigo": ["A", "B", "C"], "nombre": ["A", "B", "C"], "lat": [-39.0, -39.05, -39.1], "lon": [-72.0, -72.05, -72.1]})
+    N = pd.DataFrame(100, index=hh, columns=["A", "B", "C"])
+    R = pd.DataFrame(0.0, index=hh, columns=["A", "B", "C"]); R.loc[hh[5:9], ["A", "B"]] = 3.0
+    I = pd.DataFrame(np.nan, index=hh, columns=["A", "B", "C"]); I.loc[hh[5:9], "C"] = 2.0
+    c = {e["codigo"]: e for e in PL.analizar(R, N, E, None, None, I)}["C"]
+    if c["horas_sospechosas"] < 4 or not c["episodios"][0]["evidencia"]["imerg"] or c["episodios"][0]["detalle"][0]["imerg"] is None:
+        FALLAS.append(f"pluviómetros: vecinas con lluvia + IMERG y 0 mm debía sospechar, con IMERG en el detalle → {c['horas_sospechosas']}")
+    R0 = pd.DataFrame(0.0, index=hh, columns=["A", "B", "C"])
+    if {e["codigo"]: e for e in PL.analizar(R0, N, E, None, None, I)}["C"]["horas_sospechosas"] != 0:
+        FALLAS.append("pluviómetros: con las vecinas secas, IMERG solo no debe sospechar")
+
+
 def prueba_metar_forma():
     """Errores de cifrado del tiempo presente METAR (guía): válidas no avisan, imposibles sí."""
     import sensorial as SEN
