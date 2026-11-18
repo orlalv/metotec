@@ -121,7 +121,7 @@ async function catalogo(){
   return {cod: new Map(), nom: new Map()};                // falló: no se guarda, se reintenta al abrir otro mapa
 }
 const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
-const CAPAS = {imerg: ["Lluvia NASA IMERG", "IMERG_Precipitation_Rate", "GoogleMapsCompatible_Level6", 6, "png", .85], ir: ["GOES-19 infrarrojo", "GOES-East_ABI_Band13_Clean_Infrared", "GoogleMapsCompatible_Level7", 7, "png", .75],
+const CAPAS = {imerg: ["Lluvia NASA IMERG", "IMERG_Precipitation_Rate", "GoogleMapsCompatible_Level6", 6, "png", .85], ir: ["GOES-19 infrarrojo", "GOES-East_ABI_Band13_Clean_Infrared", "GoogleMapsCompatible_Level6", 6, "png", .75, [["GoogleMapsCompatible_Level7", 7], ["GoogleMapsCompatible_Level8", 8]]],
   goes: ["GOES-19 color real", "GOES-East_ABI_GeoColor", "GoogleMapsCompatible_Level7", 7, "jpeg", .9]};
 let capaSel = (() => { try { return localStorage.getItem("qcPluCapa") || "imerg"; } catch (e) { return "imerg"; } })();
 function instante(h){                                   // "11-17 18:00" (UTC) -> ms; el año sale de la fecha de generación del análisis
@@ -150,10 +150,15 @@ async function abrirMapa(id, i){
     $("#pMaV").innerHTML = `Estación <b>${dd.est == null ? "sin dato" : n1(dd.est) + " mm"}</b> · vecinas <b>${dd.n_tot ? n1(dd.vec) + " mm" : "—"}</b>${dd.n_tot ? ` (${dd.n_vec}/${dd.n_tot} llueven)` : ""} · modelo <b>${(dd.mod3 || []).map(x => x == null ? "·" : n1(x)).join(" / ")} mm</b> (ant./esta/sig.) · IMERG <b>${dd.imerg == null ? "—" : n1(dd.imerg) + " mm"}</b>${dd.sospechosa ? ` · <span style="color:#f85149">hora sospechosa</span>` : ""}`;
     const C = CAPAS[capaSel]; if (capa) mapa.removeLayer(capa); capa = null;
     $("#pPos").innerHTML = t > Date.now() ? `<span style="color:#d29922">Hora futura: sin imagen.</span>` : "";
-    if (C && t <= Date.now()) capa = L.tileLayer(`${GIBS}${C[1]}/default/${iso}/${C[2]}/{z}/{y}/{x}.${C[4]}`, {pane: "sat", maxNativeZoom: C[3], maxZoom: 12, opacity: C[5], attribution: "NASA GIBS"}).addTo(mapa);
-    let ok = 0, mal = 0; const diag = () => { const el = $("#pDiag"); if (el) el.innerHTML = `Diagnóstico v1.5 · estación ${e0 ? "ubicada (" + e0.lat.toFixed(3) + ", " + e0.lon.toFixed(3) + ")" : "<b style='color:#f85149'>sin coordenadas en el catálogo</b>"} · vecinas ubicadas ${nv}/${(dd.vecs || []).length} · capa ${C ? C[0] : "ninguna"}: ${ok} teselas cargadas, ${mal ? `<b style="color:#f85149">${mal} con error</b>` : "0 con error"}`; };
+    let alt = -1;                                        // -1 = nivel de teselas principal; luego los alternativos (si la capa de NASA usa otro nivel, las teselas dan error)
+    const mk = () => { const [nivel, z] = alt < 0 ? [C[2], C[3]] : C[6][alt];
+      return L.tileLayer(`${GIBS}${C[1]}/default/${iso}/${nivel}/{z}/{y}/{x}.${C[4]}`, {pane: "sat", maxNativeZoom: z, maxZoom: 12, opacity: C[5], attribution: "NASA GIBS"}).addTo(mapa); };
+    if (C && t <= Date.now()) capa = mk();
+    let ok = 0, mal = 0; const diag = () => { const el = $("#pDiag"); if (el) el.innerHTML = `Diagnóstico v1.6 · estación ${e0 ? "ubicada (" + e0.lat.toFixed(3) + ", " + e0.lon.toFixed(3) + ")" : "<b style='color:#f85149'>sin coordenadas en el catálogo</b>"} · vecinas ubicadas ${nv}/${(dd.vecs || []).length} · capa ${C ? C[0] : "ninguna"}: ${ok} teselas cargadas, ${mal ? `<b style="color:#f85149">${mal} con error</b>` : "0 con error"}`; };
     let nv = 0;
-    if (capa){ capa.on("tileload", () => { ok++; diag(); }); capa.on("tileerror", () => { mal++; diag(); }); }
+    const vigilar = ly => { ly.on("tileload", () => { ok++; diag(); }); ly.on("tileerror", () => { mal++; diag();
+      if (ok === 0 && mal >= 3 && C[6] && alt + 1 < C[6].length && ly === capa){ alt++; mapa.removeLayer(capa); mal = 0; capa = mk(); vigilar(capa); } }); };
+    if (capa) vigilar(capa);
     grupo.clearLayers(); const pts = [];
     if (e0){ pts.push([e0.lat, e0.lon]);
       L.circle([e0.lat, e0.lon], {radius: 60000, color: "#f85149", weight: 1, dashArray: "6 6", fill: false, interactive: false}).addTo(grupo);          // alcance de las vecinas (60 km)
