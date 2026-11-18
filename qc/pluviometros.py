@@ -3,10 +3,11 @@
 Para cada estación y cada hora cerrada se juntan hasta tres evidencias de lluvia, independientes entre sí:
   · vecinas   al menos 2 estaciones a ≤ 60 km con ≥ 1 mm en la hora y ≥ 60 % de las que reportan
   · modelo    Open-Meteo con ≥ 0,5 mm en la hora o en la anterior/siguiente (el modelo se equivoca en la hora)
-  · satélite  GOES: lluvia estimada con nube cerrada, o nube cerrada con tope más frío que −25 °C, o rayos (sat_estaciones.json, últimas 12 h;
+  · satélite  GOES: lluvia estimada con nube cerrada, o nube cerrada con tope más frío que −35 °C, o rayos (sat_estaciones.json, últimas 12 h;
               cada corrida archiva el resumen horario en datos/sat/ para poder mirar periodos largos)
   · IMERG     (NASA) todavía no incorporado; entra por el parámetro `imerg` (DataFrame codigo, h, mm)
 El efecto contrario también se revisa: lluvia en la estación con el cielo totalmente despejado y sin lluvia en vecinas ni modelo.
+Si hay vecinas con dato y todas están secas, la estación en 0 es coherente y no se sospecha (modelo y satélite solos solo valen sin vecinas cercanas).
 Una hora es «sospechosa» si hay ≥ 2 evidencias y la estación marca menos de 0,2 mm o no tiene dato.
 Horas sospechosas seguidas forman un episodio. Además: eventos de lluvia seguidos sin que la estación marque (y desde cuándo), y «goteo»
 (horas seguidas con 0,1–0,2 mm sin lluvia en el entorno: agua que escurre de un embudo tapado). La cadencia de transmisión (1, 10 o 60 min) no importa. Un episodio de ≥ 3 horas con la estación en 0 (no sin dato) es «sospecha de obstrucción»;
@@ -90,7 +91,7 @@ def modelo_pp(E, dias, lote=25):
 def resumen_satelite(sat, horas):
     """{hora: {código: [lluvia, nube_fria, despejado, tope_min, rayos]}} a partir de las imágenes de las últimas 12 h (sat_estaciones.json).
       lluvia      ≥ 3 imágenes de la hora con lluvia estimada (rr10 ≥ 2) y nube cerrada (≥ 90 % a 10 km)
-      nube_fria   ≥ 3 imágenes con nube cerrada y tope a 10 km más frío que −25 °C, o rayos a ≤ 10 km (nube con capacidad de dar lluvia)
+      nube_fria   ≥ 3 imágenes con nube cerrada y tope a 10 km más frío que −35 °C, o rayos a ≤ 10 km (nube con capacidad de dar lluvia)
       despejado   todas las imágenes (≥ 4) con ≤ 5 % de nube en 30 km
     Solo se resumen las horas con ≥ 4 imágenes."""
     import satelite as SAT
@@ -105,7 +106,7 @@ def resumen_satelite(sat, horas):
             llu = sum(1 for f in v if (f.get("rr10") or 0) >= 2 and (f.get("nub10") or 0) >= 90) >= 3
             tp = [f.get("t13n10") for f in v if f.get("t13n10") is not None]
             ray = int(sum(f.get("ray10") or 0 for f in v))
-            fria = sum(1 for f in v if (f.get("nub10") or 0) >= 90 and f.get("t13n10") is not None and f["t13n10"] <= -25) >= 3 or ray >= 1
+            fria = sum(1 for f in v if (f.get("nub10") or 0) >= 90 and f.get("t13n10") is not None and f["t13n10"] <= -35) >= 3 or ray >= 1
             nub = [f.get("nub30") for f in v if f.get("nub30") is not None]
             desp = len(nub) >= 4 and all(x <= 5 for x in nub)
             d[cod] = [bool(llu), bool(fria), bool(desp), (round(min(tp), 1) if tp else None), ray]
@@ -190,6 +191,9 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None):
         if I is not None and c in I.columns:
             ev_imerg = I[c].reindex(horas).fillna(0).values >= 0.5
         pts = ev_vec.astype(int) + ev_mod + ev_sat + ev_imerg
+        # si hay vecinas con dato y ninguna llueve, la estación en 0 es coherente: modelo y satélite solos no bastan (se equivocan más que un pluviómetro vecino).
+        # Solo valen sin vecinas cercanas con dato (estación aislada).
+        pts = np.where(ev_vec | (tot < 2), pts, 0)
         mi = V[c].values
         sin_dato = ~np.isfinite(mi)
         no_marca = sin_dato | (np.nan_to_num(mi, nan=0.0) < MARCA_MIN)

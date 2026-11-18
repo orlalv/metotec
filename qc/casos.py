@@ -601,17 +601,27 @@ def prueba_pluviometros_satelite():
     cods = ["A", "B", "C"]
     E = pd.DataFrame({"codigo": cods, "nombre": cods, "lat": [-39.0, -39.05, -39.1], "lon": [-72.0, -72.05, -72.1]})
     N = pd.DataFrame(100, index=h, columns=cods)
-    # el satélite vio nube fría sobre C durante 4 h y el pluviómetro marca 0, mientras el modelo da lluvia: 2 evidencias → sospechoso
-    R = pd.DataFrame(0.0, index=h, columns=cods)
-    M = pd.DataFrame(0.0, index=h, columns=cods); M.loc[h[5:9], "C"] = 1.0
+    M = pd.DataFrame(0.0, index=h, columns=cods); M.loc[h[5:9], :] = 1.0
     res = {h[i]: {"C": [False, True, False, -45.0, 0]} for i in range(5, 9)}
     S, C = PL.tablas_satelite(res, list(h))
+    # vecinas lluevendo + nube fría + modelo, y C marca 0 → sospechoso
+    R = pd.DataFrame(0.0, index=h, columns=cods); R.loc[h[5:9], ["A", "B"]] = 3.0
     c = {e["codigo"]: e for e in PL.analizar(R, N, E, M, S, None, C)}["C"]
     if c["horas_sospechosas"] != 4:
-        FALLAS.append(f"pluviómetros: nube fría + modelo con lluvia y 0 mm debía dar 4 h sospechosas → {c['horas_sospechosas']}")
-    # sin la nube fría (solo el modelo) no hay aviso
-    if {e["codigo"]: e for e in PL.analizar(R, N, E, M)}["C"]["horas_sospechosas"] != 0:
-        FALLAS.append("pluviómetros: una sola evidencia no debe alertar")
+        FALLAS.append(f"pluviómetros: vecinas con lluvia + nube fría + modelo y 0 mm debía dar 4 h sospechosas → {c['horas_sospechosas']}")
+    # las vecinas miden 0 aunque el modelo y el satélite digan lluvia → no se sospecha de C (coherente con sus vecinas)
+    R0 = pd.DataFrame(0.0, index=h, columns=cods)
+    if {e["codigo"]: e for e in PL.analizar(R0, N, E, M, S, None, C)}["C"]["horas_sospechosas"] != 0:
+        FALLAS.append("pluviómetros: con las vecinas secas, modelo y satélite solos no deben sospechar de la estación")
+    # estación aislada (sin vecinas a ≤ 60 km): modelo + satélite sí valen
+    E2 = pd.DataFrame({"codigo": ["Z"], "nombre": ["Z"], "lat": [-45.0], "lon": [-72.0]})
+    S2z, C2z = PL.tablas_satelite({h[i]: {"Z": [False, True, False, -45.0, 0]} for i in range(5, 9)}, list(h))
+    z = PL.analizar(pd.DataFrame(0.0, index=h, columns=["Z"]), pd.DataFrame(100, index=h, columns=["Z"]), E2, pd.DataFrame(1.0, index=h, columns=["Z"]), S2z, None, C2z)[0]
+    if z["horas_sospechosas"] != 4:
+        FALLAS.append(f"pluviómetros: una estación aislada con modelo + satélite debía sospecharse → {z['horas_sospechosas']}")
+    # una sola evidencia (solo las vecinas, sin modelo ni satélite) no alerta
+    if {e["codigo"]: e for e in PL.analizar(R, N, E, None)}["C"]["horas_sospechosas"] != 0:
+        FALLAS.append("pluviómetros: con solo las vecinas como evidencia no debe alertar")
     # efecto contrario: B marca 1,2 mm con el cielo totalmente despejado, vecinas secas y modelo seco, en dos horas
     R2 = pd.DataFrame(0.0, index=h, columns=cods); R2.loc[h[10:12], "B"] = 1.2
     res2 = {h[i]: {c_: [False, False, True, None, 0] for c_ in cods} for i in range(8, 14)}
