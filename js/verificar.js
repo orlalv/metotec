@@ -137,7 +137,7 @@ function actualizarMapas(){
   const t = ms(ST.dia, ST.hora), iso = new Date(t).toISOString().slice(0, 19) + "Z", futuro = t > Date.now();
   $("#vHoraT", EL).textContent = `${ST.dia} ${p2(ST.hora)}:00 UTC · ${locD(t)} local`;
   MAPS.forEach((M, ci) => { const C = CAPAS[ci], diag = $("#vD" + ci, EL);
-    if (M.capa){ M.mapa.removeLayer(M.capa); M.capa = null; } M.grupo.clearLayers();
+    if (M.capa){ M.mapa.removeLayer(M.capa); M.capa = null; } M.grupo.clearLayers(); if (M.goesCapa){ M.mapa.removeLayer(M.goesCapa); M.goesCapa = null; } M.goesTok = (M.goesTok || 0) + 1; const bg = $("#vG" + ci, EL); if (bg) bg.innerHTML = "";
     const viejo = C.k !== "imerg" && t < Date.now() - 90 * 864e5;                    // GOES en NASA GIBS: solo ventana móvil de ~90 días → imagen diaria de MODIS/VIIRS
     const opc = viejo ? C.dia.flatMap(([id, n]) => C.diaNiv.map(([niv, z]) => ({id, n, niv, z, ext: C.diaExt, tiempo: ST.dia, op: C.diaOp}))) : C.niv.map(([niv, z]) => ({id: C.id, n: "", niv, z, ext: C.ext, tiempo: iso, op: C.op}));
     let alt = 0, ok = 0, mal = 0;
@@ -145,6 +145,7 @@ function actualizarMapas(){
     const mk = () => { const o = opc[alt], ly = L.tileLayer(`${GIBS}${o.id}/default/${o.tiempo}/${o.niv}/{z}/{y}/{x}.${o.ext}`, {pane: "sat", maxNativeZoom: o.z, maxZoom: 12, opacity: o.op, attribution: "NASA GIBS"}).addTo(M.mapa);
       ly.on("tileload", () => { ok++; info(); }); ly.on("tileerror", () => { mal++; info(); if (ok === 0 && mal >= 3 && alt + 1 < opc.length && ly === M.capa){ alt++; M.mapa.removeLayer(ly); mal = 0; M.capa = mk(); info(); } }); return ly; };
     if (!futuro) M.capa = mk(); info();
+    if (viejo && !futuro && e0) goesOriginal(ci, e0, t);
     if (!e0) return; const g = M.grupo;
     L.circle([e0.lat, e0.lon], {radius: RADIO_KM * 1000, color: "#f85149", weight: 1, dashArray: "6 6", fill: false, interactive: false}).addTo(g);
     L.circleMarker([e0.lat, e0.lon], {radius: 15, color: "#f85149", weight: 3, fill: false, interactive: false}).addTo(g);
@@ -153,6 +154,30 @@ function actualizarMapas(){
       L.circleMarker([v.lat, v.lon], {radius: 6, color: "#fff", weight: 2, fillColor: v.color, fillOpacity: 1}).bindTooltip(x != null ? `${n1(x)} mm` : `${v.nombre} (${Math.round(v.km)} km)`, {permanent: x != null, direction: "right"}).bindPopup(`<b>${esc(v.nombre)}</b><br>${Math.round(v.km)} km${x != null ? " · " + n1(x) + " mm esa hora" : ""}`).addTo(g); });
     if (M.estacion !== ST.cod && e0){ M.estacion = ST.cod; M.sync = true; M.mapa.setView([e0.lat, e0.lon], 8, {animate: false}); M.sync = false; }
   });
+}
+/* GOES original (NOAA AWS) para fechas de más de 90 días: pedido a /api/goes → GitHub Actions → imagen en el KV */
+const GOES_PROD = {ir: "ir", goes: "color"};
+function goesOriginal(ci, e0, t){
+  const M = MAPS[ci], C = CAPAS[ci], box = $("#vG" + ci, EL), prod = GOES_PROD[C.k]; if (!box || !prod) return;
+  const tt = new Date(t).toISOString().slice(0, 16), id = `${prod}_${ST.cod}_${tt.replace(/[-:]/g, "")}`, tok = M.goesTok;
+  const vivo = () => tok === M.goesTok;
+  const mostrar = m => { if (!vivo()) return; if (M.capa){ M.mapa.removeLayer(M.capa); M.capa = null; } if (M.goesCapa) M.mapa.removeLayer(M.goesCapa);
+    M.goesCapa = L.imageOverlay(`/api/goes?id=${id}&img=1`, m.limites, {pane: "sat", opacity: prod === "ir" ? .8 : 1, attribution: "NOAA GOES"}).addTo(M.mapa);
+    const d = $("#vD" + ci, EL); if (d) d.innerHTML = `<span style="color:#3fb950">${esc(m.sat)} original · escaneo ${esc(m.escaneo)}</span>${m.noche ? ` · <span style="color:#d29922">de noche el color real sale oscuro</span>` : ""}`;
+    box.innerHTML = `<span style="color:var(--mu)" title="${esc(m.leyenda || "")}">ⓘ ${esc(m.leyenda || "")}</span>`; };
+  const estado = async () => { try { const r = await fetch(`/api/goes?id=${id}`, {cache: "no-store"}); return r.ok ? await r.json() : null; } catch (e) { return null; } };
+  const sondear = async n => { if (!vivo()) return; const m = await estado(); if (!vivo()) return;
+    if (m && m.estado === "listo") return mostrar(m);
+    if (m && m.estado === "error"){ box.innerHTML = `<span style="color:#e5534b">GOES original: ${esc(m.error || "error")}</span> <button data-g="1" style="background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 8px;cursor:pointer;font:600 11.5px inherit">reintentar</button>`; return; }
+    if (n > 60){ box.innerHTML = `<span style="color:#e5534b">GOES original: tardó demasiado</span> <button data-g="1" style="background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 8px;cursor:pointer;font:600 11.5px inherit">reintentar</button>`; return; }
+    box.innerHTML = `<span style="color:#d29922">⏳ GOES original en proceso (${m && m.estado === "procesando" ? "procesando" : "en cola"}, 1–2 min)…</span>`; setTimeout(() => sondear(n + 1), 6000); };
+  const pedir = async () => { const k = clave(); if (!k){ box.innerHTML = `<span style="color:#e5534b">falta la clave: vuelve a entrar a la página</span>`; return; }
+    box.innerHTML = `<span style="color:#d29922">pidiendo…</span>`;
+    try { const r = await fetch("/api/goes", {method: "POST", headers: {"x-clave": k, "content-type": "application/json"}, body: JSON.stringify({cod: ST.cod, lat: e0.lat, lon: e0.lon, t: tt, prod})});
+      if (!r.ok) throw new Error(r.status === 401 ? "clave incorrecta" : (await r.text()).slice(0, 120)); sondear(0); }
+    catch (e) { box.innerHTML = `<span style="color:#e5534b">${esc(e.message || e)}</span> <button data-g="1" style="background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 8px;cursor:pointer;font:600 11.5px inherit">reintentar</button>`; } };
+  box.onclick = ev => { if (ev.target.closest("[data-g]")) pedir(); };
+  estado().then(m => { if (!vivo()) return; if (m && ["listo", "pendiente", "procesando"].includes(m.estado)) return sondear(0); box.innerHTML = `<button data-g="1" style="background:none;border:1px solid var(--bd);color:var(--oro);border-radius:6px;padding:1px 8px;cursor:pointer;font:600 11.5px inherit" title="Baja el archivo original de NOAA (AWS) y lo dibuja; tarda 1–2 min la primera vez">GOES original (NOAA)</button>`; });
 }
 function crearMapas(){
   MAPS = CAPAS.map((C, i) => { const mapa = L.map("vM" + i, {zoomControl: true, attributionControl: i === 2});
@@ -173,7 +198,7 @@ function pagina(el){
       <label>Día (UTC) <input type="date" id="vDia" value="${esc(ST.dia)}" max="${hoyUTC()}"></label>
       <label>Hora UTC <select id="vHora">${Array.from({length: 24}, (_, h) => `<option value="${h}"${h === ST.hora ? " selected" : ""}>${p2(h)}:00</option>`).join("")}</select></label>
       <button id="vAnt">‹ hora</button><button id="vSig">hora ›</button><button id="vAyer" title="Ayer (UTC)">Ayer</button><button id="vAct">↻ Cargar</button><b id="vHoraT" style="margin-left:6px"></b></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;margin:6px 0">${CAPAS.map((C, i) => `<div><div style="font-size:12.5px;margin-bottom:2px"><b>${C.t}</b> <span id="vD${i}" style="color:var(--mu);font-size:11.5px"></span></div><div id="vM${i}" style="height:330px;border-radius:8px"></div></div>`).join("")}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;margin:6px 0">${CAPAS.map((C, i) => `<div><div style="font-size:12.5px;margin-bottom:2px"><b>${C.t}</b> <span id="vD${i}" style="color:var(--mu);font-size:11.5px"></span><span id="vG${i}" style="font-size:11.5px"></span></div><div id="vM${i}" style="height:330px;border-radius:8px"></div></div>`).join("")}</div>
     <div style="font-size:11.5px;color:var(--mu);margin-bottom:6px">Rojo = estación (anillo y cruz) · círculo punteado = ${RADIO_KM} km · puntos de color = vecinas. Los 3 mapas se mueven juntos. IMERG llega con ~5 h de retraso y existe desde el año 2000. GOES (infrarrojo y color) en NASA GIBS solo guarda los últimos ~90 días: en fechas anteriores esos dos mapas muestran la imagen diaria de MODIS/VIIRS (una pasada por día, no la hora elegida).</div>
     <div id="vOut"></div></div>`;
   crearMapas();
