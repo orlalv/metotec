@@ -14,7 +14,8 @@ def get(u, **k):
 def links(r, pat):
     if r is not None and r.ok:
         t = r.text
-        print("  enlaces/rutas:", sorted(set(re.findall(r"""["'(]((?:https?:)?/?[\w./%-]*(?:%s)[\w./?=&%%-]*)""" % pat, t)))[:25])
+        rx = r"""["'(]((?:https?:)?/?[\w./%-]*(?:PAT)[\w./?=&%-]*)""".replace("PAT", pat)
+        print("  enlaces/rutas:", sorted(set(re.findall(rx, t)))[:25])
         print("  inicio:", re.sub(r"\s+", " ", t[:300]))
 
 print("=== INIA (Agromet) ===")
