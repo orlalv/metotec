@@ -39,6 +39,23 @@ async function varias(ts, par = 6){                    // descarga con pocas con
   await Promise.all(Array.from({length: par}, async () => { while (i < ts.length){ const j = i++; out[j] = await hora(ts[j]); } }));
   return out;
 }
+/* Rellenos guardados en «Relleno de series» (registro de correcciones, KV qc/correcciones): {cod -> [[desde ms, hasta ms], …]} solo de agua caída (rr1m) */
+let REL = null;
+async function rellenos(){
+  if (REL && Date.now() - REL.t < 60e3) return REL;
+  const out = {t: Date.now(), por: new Map(), sinClave: false, error: ""};
+  let clave = ""; try { clave = sessionStorage.getItem("qcClave") || ""; } catch (e) {}
+  if (!clave) out.sinClave = true;
+  else { try {
+    const c = new AbortController(), t = setTimeout(() => c.abort(), 15000);
+    const r = await fetch("/api/correcciones", {headers: {"x-clave": clave}, cache: "no-store", signal: c.signal}); clearTimeout(t);
+    if (!r.ok) out.error = "registro de correcciones HTTP " + r.status;
+    else { const C = await r.json(); Object.values(C).forEach(x => { if (x.estado !== "rellenado" || x.var !== "rr1m") return;
+      const a = Date.parse(x.momento.replace(" ", "T") + ":00Z"), b = Date.parse((x.hasta || x.momento).replace(" ", "T") + ":00Z"); if (!isFinite(a) || !isFinite(b)) return;
+      if (!out.por.has(x.cod)) out.por.set(x.cod, []); out.por.get(x.cod).push([a, b]); }); }
+  } catch (e) { out.error = "registro de correcciones: " + (e.name === "AbortError" ? "sin respuesta" : e.message); } }
+  return REL = out;
+}
 async function catalogo(){
   if (EST) return EST;
   for (const u of ["/api/minutarios?estaciones=1", "https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json"]){
@@ -51,7 +68,7 @@ async function catalogo(){
 async function analizar(H){
   const ahora = Date.now(), h0 = Math.floor(ahora / 3600e3) * 3600e3, ts = [];
   for (let i = H - 1; i >= 0; i--) ts.push(h0 - i * 3600e3);
-  const [txt, pistas] = await Promise.all([varias(ts), muestras(h0)]);
+  const [txt, pistas, rel] = await Promise.all([varias(ts), muestras(h0), rellenos()]);
   const t0 = ts[0], N = H * 60, fila = new Map(), rr = new Map(), glob = new Uint16Array(N);
   let fin = -1, fallas = 0;
   txt.forEach((tx, h) => {
@@ -70,23 +87,22 @@ async function analizar(H){
   const cat = await catalogo(), universo = new Set([...rr.keys(), ...pistas]);   // con pluviómetro: informó agua caída en la ventana o en las muestras de los últimos 7 días
   const lista = [];
   for (const cod of universo){
-    const a = fila.get(cod), b = rr.get(cod), huecos = [];
-    let ini = -1, falta = 0;
-    for (let m = 0; m <= fin; m++){
-      const ok = !glob[m] || (b && b[m]);              // minuto sin ninguna fila en el archivo: no cuenta
-      if (!ok){ if (ini < 0) ini = m; falta++; }
-      else if (ini >= 0){ huecos.push([ini, m - 1]); ini = -1; }
-    }
-    if (ini >= 0) huecos.push([ini, fin]);
-    const grandes = huecos.filter(g => g[1] - g[0] + 1 >= MIN_HUECO); if (!grandes.length) continue;
-    const abierto = grandes[grandes.length - 1][1] === fin;
+    const a = fila.get(cod), b = rr.get(cod), fr = rel.por.get(cod), llenos = new Uint8Array(N);
+    (fr || []).forEach(([x, y]) => { for (let m = Math.max(0, Math.round((x - t0) / 60e3)); m <= Math.min(N - 1, Math.round((y - t0) / 60e3)); m++) llenos[m] = 1; });
+    const tramos = ok => { const out = []; let ini = -1;                          // tramos de minutos «sin dato» según el criterio ok(m); minuto sin ninguna fila en el archivo no cuenta
+      for (let m = 0; m <= fin; m++){ const bien = !glob[m] || (b && b[m]) || ok(m); if (!bien){ if (ini < 0) ini = m; } else if (ini >= 0){ out.push([ini, m - 1]); ini = -1; } }
+      if (ini >= 0) out.push([ini, fin]); return out.filter(g => g[1] - g[0] + 1 >= MIN_HUECO); };
+    const orig = tramos(() => false); if (!orig.length) continue;
+    const pend = tramos(m => llenos[m]), pendiente = pend.length > 0, grandes = pendiente ? pend : orig;
+    let rell = 0; orig.forEach(g => { for (let m = g[0]; m <= g[1]; m++) if (llenos[m]) rell++; });
+    const abierto = grandes[grandes.length - 1][1] === fin && pendiente;
     const ug = grandes[grandes.length - 1], sinFila = (() => { for (let m = ug[0]; m <= ug[1]; m++) if (a && a[m]) return false; return true; })();
     const e = cat.get(cod) || {};
-    lista.push({cod, nombre: e.nombre || cod, huecos: grandes.map(g => ({a: t0 + g[0] * 60e3, b: t0 + g[1] * 60e3, n: g[1] - g[0] + 1})),
+    lista.push({cod, nombre: e.nombre || cod, huecos: grandes.map(g => ({a: t0 + g[0] * 60e3, b: t0 + g[1] * 60e3, n: g[1] - g[0] + 1})), pendiente, rell,
       falta: grandes.reduce((s, g) => s + g[1] - g[0] + 1, 0), abierto, todo: !b, sinFila, ultimo: b ? ult(b, fin, t0) : null});
   }
-  lista.sort((x, y) => (y.abierto - x.abierto) || (y.huecos[y.huecos.length - 1].n - x.huecos[x.huecos.length - 1].n) || x.cod.localeCompare(y.cod));
-  return {H, t0, fin: fin >= 0 ? t0 + fin * 60e3 : null, lista, total: universo.size, fallas, tFin: Date.now()};
+  lista.sort((x, y) => (y.pendiente - x.pendiente) || (y.abierto - x.abierto) || (y.huecos[y.huecos.length - 1].n - x.huecos[x.huecos.length - 1].n) || x.cod.localeCompare(y.cod));
+  return {H, t0, fin: fin >= 0 ? t0 + fin * 60e3 : null, lista, total: universo.size, fallas, tFin: Date.now(), rel: {sinClave: rel.sinClave, error: rel.error}};
 }
 function ult(b, fin, t0){ for (let m = fin; m >= 0; m--) if (b[m]) return t0 + m * 60e3; return null; }
 /* una hora al día, de los 6 días anteriores a la ventana: sirve para saber qué estaciones tienen pluviómetro aunque hoy no informen nada */
@@ -98,7 +114,7 @@ async function muestras(h0){
   return out;
 }
 
-function cuenta(r){ return r ? r.lista.length : 0; }
+function cuenta(r){ return r ? r.lista.filter(x => x.pendiente).length : 0; }
 const progreso = (el, tok, T) => { const iv = setInterval(() => { const o = el.querySelector("#ppsOut"); if (tok !== T() || !o || !o.querySelector("[data-leyendo]")){ clearInterval(iv); return; } o.querySelector("[data-leyendo]").innerHTML = " " + dgTxt(); }, 700); };
 async function cargar(el){
   const tok = ++TOK; Object.assign(DG, {ok: 0, nf: 0, api: 0, raw: 0, ult: ""}); progreso(el, tok, () => TOK);
@@ -109,15 +125,15 @@ async function cargar(el){
 function dibujar(el){
   const r = RES, out = el.querySelector("#ppsOut"); if (!r) return;
   if (r.fin == null){ out.innerHTML = `<p style="color:var(--mu)">No hay datos minutarios en el archivo para esta ventana.</p>`; return; }
-  const L = r.lista.filter(x => !soloAb || x.abierto), ab = r.lista.filter(x => x.abierto).length;
+  const pen = r.lista.filter(x => x.pendiente), nRel = r.lista.length - pen.length, L = r.lista.filter(x => !soloAb || x.abierto), ab = r.lista.filter(x => x.abierto).length;
   const fila = x => { const u = x.huecos[x.huecos.length - 1], hs = x.huecos.slice(-3).map(g => `${hh(g.a)}–${hh(g.b)} (${dur(g.n)})`).join(" · ") + (x.huecos.length > 3 ? ` · +${x.huecos.length - 3} antes` : "");
     return `<tr><td><b>${esc(x.cod)}</b> · ${esc(x.nombre)}</td>
-      <td>${x.abierto ? `<span style="color:#e5534b;font-weight:700">sin dato ahora</span>` : `<span style="color:#e7b03b;font-weight:700">se recuperó</span>`}${x.todo ? `<br><small style="color:var(--mu)">no informó agua caída en toda la ventana</small>` : x.sinFila ? `<br><small style="color:var(--mu)">la estación no envió nada</small>` : `<br><small style="color:var(--mu)">solo falta la lluvia</small>`}</td>
+      <td>${!x.pendiente ? `<span style="color:#3fb950;font-weight:700">rellenado (guardado)</span><br><small style="color:var(--mu)">${dur(x.rell)} guardados en el registro de correcciones</small>` : x.abierto ? `<span style="color:#e5534b;font-weight:700">sin dato ahora</span>` : `<span style="color:#e7b03b;font-weight:700">se recuperó</span>`}${x.pendiente && x.rell ? `<br><small style="color:#3fb950">${dur(x.rell)} ya rellenados y guardados</small>` : ""}${x.todo ? `<br><small style="color:var(--mu)">no informó agua caída en toda la ventana</small>` : x.sinFila ? `<br><small style="color:var(--mu)">la estación no envió nada</small>` : `<br><small style="color:var(--mu)">solo falta la lluvia</small>`}</td>
       <td style="white-space:nowrap">${dd(u.a).slice(5).split("-").reverse().join("/")} ${hh(u.a)} UTC<br><small style="color:var(--mu)">${loc(u.a)} hora local</small></td>
-      <td style="text-align:right"><b>${dur(x.falta)}</b><br><small style="color:var(--mu)">${x.huecos.length} ${x.huecos.length === 1 ? "hueco" : "huecos"}</small></td>
+      <td style="text-align:right"><b>${dur(x.falta)}</b><br><small style="color:var(--mu)">${x.pendiente ? "" : "eran "}${x.huecos.length} ${x.huecos.length === 1 ? "hueco" : "huecos"}</small></td>
       <td style="font-size:12px;color:var(--mu)">${hs}</td>
       <td><button class="ppsAbrir" data-c="${esc(x.cod)}" data-d="${dd(u.a)}" title="Abre «Relleno de series» en esta estación y día">Abrir en Relleno</button></td></tr>`; };
-  out.innerHTML = `<p style="margin:2px 0 8px;color:var(--mu);font-size:12.5px">${r.lista.length ? `<b style="color:var(--tx)">${r.lista.length}</b> de ${r.total} estaciones con pluviómetro tienen huecos de ${MIN_HUECO} min o más (${ab} siguen sin dato).` : `Ninguna de las ${r.total} estaciones con pluviómetro tiene huecos de ${MIN_HUECO} min o más.`} Datos hasta ${hh(r.fin)} UTC (${loc(r.fin)} hora local).${r.fallas ? ` <b style="color:#e7b03b">No se pudieron leer ${r.fallas} horas del archivo${" (" + dgTxt() + ")"}; los resultados pueden estar incompletos.</b>` : ""}</p>
+  out.innerHTML = `<p style="margin:2px 0 8px;color:var(--mu);font-size:12.5px">${r.lista.length ? `<b style="color:var(--tx)">${pen.length}</b> de ${r.total} estaciones con pluviómetro tienen huecos de ${MIN_HUECO} min o más por rellenar (${ab} siguen sin dato)${nRel ? `; <b style="color:#3fb950">${nRel} ya rellenadas y guardadas</b>` : ""}.` : `Ninguna de las ${r.total} estaciones con pluviómetro tiene huecos de ${MIN_HUECO} min o más.`} Datos hasta ${hh(r.fin)} UTC (${loc(r.fin)} hora local).${r.rel && r.rel.sinClave ? ` <b style="color:#e7b03b">Sin clave: no se pueden mostrar los rellenos guardados.</b>` : r.rel && r.rel.error ? ` <b style="color:#e7b03b">No pude leer los rellenos guardados (${esc(r.rel.error)}).</b>` : ""}${r.fallas ? ` <b style="color:#e7b03b">No se pudieron leer ${r.fallas} horas del archivo${" (" + dgTxt() + ")"}; los resultados pueden estar incompletos.</b>` : ""}</p>
     ${L.length ? `<div style="overflow-x:auto"><table class="tb"><tr><th>Estación</th><th>Estado</th><th>Último hueco desde</th><th>Falta</th><th>Huecos (hora UTC)</th><th></th></tr>${L.map(fila).join("")}</table></div>` : `<p style="color:var(--mu)">Nada que mostrar con este filtro.</p>`}`;
 }
 function serie(el){
