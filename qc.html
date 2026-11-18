@@ -297,6 +297,7 @@ function obsFiltradas(){
   return L.filter(e => e.lat != null && enZona(e) && ver[e.nivel] && EQ.filtra(e.codigo) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
 function pintarObs(){
+  obsBarra();
   const O = R.observaciones || {}, g = O.generado ? new Date(O.generado) : null;
   $("#hora").textContent = g ? `Observaciones · últimas 24 h (extremas y pp: 4 días) · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay revisión de observaciones";
   const T = ((O.estaciones) || []), res = [0, 0, 0];
@@ -611,7 +612,7 @@ const ppN = {};                                                      // contador
 window.ppContar = (k, n) => { ppN[k] = n; ppBarra(); };
 function obsBarra(){
   const el = $("#obsSub"); if (!el) return; el.hidden = modo !== "obs";
-  el.innerHTML = [["todas", "Todas"], ["sistema", "Reglas del sistema"], ["codificacion", "Codificación"], ["evolucion", "Evolución"], ["sensor", "Frente al sensor"], ["satelite", "Frente al satélite"]].map(([k, t]) => `<button data-ob="${k}" class="${gobs === k ? "on" : ""}">${t}</button>`).join("");
+  el.innerHTML = [["todas", "Todas"], ["sistema", "Reglas del sistema"], ["codificacion", "Codificación"], ["evolucion", "Evolución"], ["sensor", "Frente al sensor"], ["satelite", "Frente al satélite"]].map(([k, t]) => { const n = ((R && R.observaciones || {}).estaciones || []).filter(e => hObs(e).some(x => x.nivel > 0 && (k === "todas" || x.tipo === k))).length; return `<button data-ob="${k}" class="${gobs === k ? "on" : ""}">${t}<b>${n || ""}</b></button>`; }).join("");
 }
 document.addEventListener("click", ev => { const b = ev.target.closest("#obsSub button[data-ob]"); if (b){ gobs = b.dataset.ob; $("#gobs").value = gobs; guardarVista(); obsBarra(); R && pintar(); } });
 function ppBarra(){
