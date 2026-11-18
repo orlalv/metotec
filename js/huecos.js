@@ -212,7 +212,7 @@ if (typeof window === "undefined") return;
 
 /* ---------- pantalla ---------- */
 const $ = s => document.querySelector(s);
-let ST = null, VAR = "T", SEL = null, TOK = 0, MODO = "libre";       // por defecto se dibuja a mano alzada con el botón izquierdo apretado
+let ST = null, VAR = "T", SEL = null, TOK = 0, VIEW = {}, LAST = null, MODO = "libre";       // por defecto se dibuja a mano alzada con el botón izquierdo apretado
 const W = 1100, H = 270, iz = 58, de = 12, ar = 16, ab = 26, COL = "#C9A54C", EST = "#F2994A";
 
 async function render(){
@@ -236,7 +236,7 @@ function pintar(){
     <button id="hCsv" ${nOk ? "" : "disabled"} title="Descarga solo los valores estimados, marcados como tales">Descargar estimados (CSV)</button></div>
     <p class="nota" id="hNota" style="margin:0 0 8px"></p>
     ${S.gaps.length ? `<div id="hGraf"></div><div id="hBar"></div><div id="hTab" style="overflow:auto;margin-top:8px"></div>` : `<p style="color:var(--mu)">No hay huecos en ${esc(mi.NOM[VAR] || VAR)} para este día.</p>`}`;
-  document.querySelectorAll("#mHue [data-hv]").forEach(b => b.onclick = () => { VAR = b.dataset.hv; SEL = null; pintar(); });
+  document.querySelectorAll("#mHue [data-hv]").forEach(b => b.onclick = () => { VAR = b.dataset.hv; SEL = null; VIEW = {}; pintar(); });
   const cb = $("#hCsv"); if (cb) cb.onclick = () => { const M = ST.M, t = csv(datos(), VAR, M.cod, M.nombre, M.dia), a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob(["\ufeff" + t], {type: "text/csv"})); a.download = `estimados_${M.cod}_${M.dia}_${VAR}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
   if (S.gaps.length){ tabla(); grafico(); }
@@ -252,7 +252,7 @@ function tabla(){                                    // la tabla se repinta sola
       <td><b>${gp.tocado ? "manual" : esc(gp.met)}</b></td><td style="color:var(--mu)">${esc(gp.tocado ? (gp.nota || "curva dibujada con el mouse") : gp.det)}</td>
       <td style="white-space:nowrap"><button data-hs="${i}">${SEL === i ? "Cerrar" : "Dibujar a mano"}</button>${gp.tocado || gp.esc ? ` <button data-hr="${i}">Volver al automático</button>` : ""}</td></tr>`; }).join("")}</table>`;
   document.querySelectorAll("#hTab [data-hs]").forEach(b => b.onclick = () => { const i = +b.dataset.hs, gp = S.gaps[i];
-    MODO = "libre";
+    MODO = "libre"; VIEW = {};
     if (SEL === i){ if (!gp.tocado) gp.hand = null; SEL = null; tabla(); grafico(); return; }
     const ant = SEL != null ? S.gaps[SEL] : null; if (ant && !ant.tocado) ant.hand = null;
     if (!gp.hand){ const h = manoInicial(gp, S.g, gp.est, S.L); if (!h){ b.textContent = "Sin borde de referencia"; return; } gp.hand = h; }
@@ -294,6 +294,19 @@ async function acciones(id, sel, S){                // guardar / quitar / copiar
     sel.guardado = new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC"; barra(); msg("Guardado " + sel.guardado + " · " + sel.n + " valores", true);
   } catch (e) { msg("Sin conexión: no se guardó", false); }
 }
+function zoomUsuario(acc, cx, cy){                  // acciones de zoom/desplazamiento de la vista ampliada (se guardan en VIEW hasta «Ajustar» o cambiar de hueco)
+  if (!LAST || SEL == null) return;
+  const M = ST.M, S = datos(), g = S.g, minX = Math.max(5 * g.cad, 6 * 60e3), minY = (MINY[VAR] || 1) / 10;
+  let [a, b] = VIEW.x || [LAST.v0, LAST.v1], [c, d] = VIEW.y || [LAST.y0, LAST.y1];
+  const zx = f => { const m = cx ?? (a + b) / 2, na = m - (m - a) * f, nb = m + (b - m) * f; if (nb - na < minX || nb - na > M.fin - M.ini) return; a = na; b = nb; };
+  const zy = f => { const m = cy ?? (c + d) / 2, nc = m - (m - c) * f, nd = m + (d - m) * f; if (nd - nc < minY) return; c = nc; d = nd; };
+  if (acc === "hx+") zx(.5); else if (acc === "hx-") zx(2); else if (acc === "vy+") zy(.5); else if (acc === "vy-") zy(2);
+  else if (acc === "izq" || acc === "der"){ const k = (acc === "izq" ? -1 : 1) * (b - a) * .25; a += k; b += k; }
+  else if (acc === "arr" || acc === "aba"){ const k = (acc === "arr" ? 1 : -1) * (d - c) * .25; c += k; d += k; }
+  else if (acc === "aj"){ VIEW = {}; return; }
+  if (a < M.ini){ b += M.ini - a; a = M.ini; } if (b > M.fin){ a -= b - M.fin; b = M.fin; } a = Math.max(M.ini, a);
+  VIEW = {x: [a, b], y: [c, d]};
+}
 function barra(){                                    // herramientas del hueco elegido: modo de dibujo, suavizar, recta y rellenos automáticos
   const el = $("#hBar"); if (!el) return; const S = datos(), sel = SEL != null ? S.gaps[SEL] : null;
   if (!sel){ el.innerHTML = ""; return; }
@@ -305,8 +318,14 @@ function barra(){                                    // herramientas del hueco e
     <div class="htools" style="margin:4px 0;align-items:center"><input id="hMot" placeholder="Motivo (opcional)" value="${(sel.motivo || "").replace(/"/g, "&quot;")}" style="min-width:230px">
       <button data-hb="guardar" title="Registra estos valores como «rellenado» (gris) en el registro de correcciones; el dato original no se toca">Guardar relleno</button>${sel.guardado ? `<button data-hb="quitar" title="Borra el relleno guardado de este hueco">Quitar relleno guardado</button>` : ""}<button data-hb="copiar" title="Copia hora y valor de cada minuto">Copiar valores</button>
       <span id="hMsg" style="font-size:12.5px;color:${sel.guardado ? "var(--ok)" : "var(--mu)"}">${sel.guardado ? "Guardado " + sel.guardado : "Sin guardar"}</span></div>
+    <div class="htools" style="margin:4px 0;align-items:center"><span style="color:var(--mu);font-size:12.5px">Zoom:</span>
+      <button data-hz="hx+" title="Acercar en el tiempo (también Ctrl + rueda sobre el gráfico)">Tiempo +</button><button data-hz="hx-" title="Alejar en el tiempo">Tiempo −</button><button data-hz="vy+" title="Acercar en vertical (también Mayús + rueda)">Vertical +</button><button data-hz="vy-" title="Alejar en vertical">Vertical −</button>
+      <button data-hz="izq" title="Mover hacia atrás en el tiempo">◀</button><button data-hz="der" title="Mover hacia adelante en el tiempo">▶</button><button data-hz="arr" title="Subir la vista">▲</button><button data-hz="aba" title="Bajar la vista">▼</button><button data-hz="aj" title="Volver al zoom automático del hueco">Ajustar</button>
+      <span style="color:var(--mu);font-size:12px">Ctrl + rueda: tiempo · Mayús + rueda: vertical</span></div>
     <div id="hValTab" style="max-height:200px;overflow:auto;margin-bottom:6px"></div>
     ${sel.lluvia ? `<p class="nota" style="margin:0 0 6px">${R.completa ? `La RRR6 informada ya queda completa con lo observado (el hueco no tendría lluvia). Si igual quiere rellenar, los botones usan lo que cayó antes y después. ` : ""}${R.anclado ? `Total del hueco según la RRR6 informada: <b>${R.tot.moderado.toFixed(2)} mm</b>.` : R.tot ? `En un lapso igual al hueco (${R.lapso} min) cayeron antes <b>${R.V.A == null ? "sin dato" : R.V.A.toFixed(2) + " mm"}</b> y después <b>${R.V.B == null ? "sin dato" : R.V.B.toFixed(2) + " mm"}</b>; el hueco debería tener entre <b>${R.tot.conservador.toFixed(2)}</b> y <b>${R.tot.optimista.toFixed(2)} mm</b>.` : "Sin datos de lluvia antes ni después del hueco: dibújelo a mano."}</p>` : ""}`;
+  const mot = $("#hMot"); if (mot) mot.oninput = () => { sel.motivo = mot.value; };
+  el.querySelectorAll("[data-hz]").forEach(x => x.onclick = () => { zoomUsuario(x.dataset.hz); grafico(); });
   el.querySelectorAll("[data-hb]").forEach(x => x.onclick = () => { const id = x.dataset.hb, T = {conservador: 1, moderado: 1, optimista: 1};
     if (id === "guardar" || id === "quitar" || id === "copiar"){ sel.motivo = ($("#hMot") || {}).value || ""; return acciones(id, sel, S); }
     if (id === "puntos"){ if (MODO === "libre") adelgazar(sel); MODO = "puntos"; }
@@ -322,6 +341,7 @@ function grafico(){
   const mi = window.MINU, M = ST.M, S = datos(), g = S.g, ll = VAR === "rr1m", uni = (VARS_H.find(x => x[0] === VAR) || [])[2], sel = SEL != null ? S.gaps[SEL] : null;
   let v0 = M.ini, v1 = M.fin;                        // con un hueco elegido se acerca: el hueco más un margen a cada lado (al menos 30 min)
   if (sel){ const mg = Math.max(30 * 60e3, sel.n * g.cad); v0 = Math.max(M.ini, g.t(sel.k0) - g.cad - mg); v1 = Math.min(M.fin, g.t(sel.k1) + mg); }
+  if (sel && VIEW.x){ v0 = VIEW.x[0]; v1 = VIEW.x[1]; }                   // zoom del usuario (aparte del automático): se mantiene mientras se dibuja
   barra();
   const span = Math.max(1, v1 - v0), enV = t => t >= v0 - g.cad && t <= v1 + g.cad;
   const cumul = () => {                              // lluvia acumulada del día: observado + estimado vigente de cada hueco
@@ -354,17 +374,18 @@ function grafico(){
   }
   if (!isFinite(y0)){ y0 = 0; y1 = 1; }
   let dy = Math.max(y1 - y0, MINY[VAR] || 0) || 1; const mid = (y0 + y1) / 2; if (y1 - y0 < dy){ y0 = mid - dy / 2; y1 = mid + dy / 2; } const pad = sel ? .3 : .08; y0 -= dy * pad; y1 += dy * pad;
-  dy = y1 - y0;
+  if (sel && VIEW.y){ y0 = VIEW.y[0]; y1 = VIEW.y[1]; }
+  dy = y1 - y0; LAST = {v0, v1, y0, y1};
   const X = t => iz + (W - iz - de) * (t - v0) / span, Y = y => ar + (H - ar - ab) * (1 - (y - y0) / (y1 - y0)), invY = py => y0 + (1 - (py - ar) / (H - ar - ab)) * (y1 - y0);
   let ruta = "", ant = null; if (!ll) obs.forEach(p => { if (!enV(p[0])) { ant = null; return; } ruta += (ant == null || p[0] - ant > 1.5 * g.cad ? "M" : "L") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1); ant = p[0]; });
   const bandas = S.gaps.map((gp, i) => `<rect x="${X(g.t(gp.k0) - g.cad)}" y="${ar}" width="${Math.max(2, X(g.t(gp.k1)) - X(g.t(gp.k0) - g.cad))}" height="${H - ar - ab}" fill="${EST}" opacity="${SEL === i ? .22 : .1}"/>`).join("");
-  const estSuave = (Xf, Yf, sw) => S.gaps.map(gp => { const e = valores(gp); if (!e) return ""; let p = "";
+  const estSuave = (Xf, Yf, sw, fino) => S.gaps.map(gp => { const e = valores(gp); if (!e) return ""; let p = "";
     if (gp.izq != null) p += "M" + Xf(g.t(gp.k0 - 1)).toFixed(1) + " " + Yf(gp.izq).toFixed(1);
     e.forEach((x, j) => { if (x != null) p += (p ? "L" : "M") + Xf(g.t(gp.k0 + j)).toFixed(1) + " " + Yf(Math.min(S.L[1], Math.max(S.L[0], x))).toFixed(1); });
     if (gp.der != null) p += "L" + Xf(g.t(gp.k1 + 1)).toFixed(1) + " " + Yf(gp.der).toFixed(1);
-    return `<path d="${p}" fill="none" stroke="${EST}" stroke-width="${sw}" stroke-dasharray="${sw > 1.5 ? "5 4" : "3 2"}"/>`; }).join("");
+    return `<path d="${p}" fill="none" stroke="${EST}" stroke-width="${sw}" stroke-dasharray="${fino ? "4 2" : "5 4"}"${fino ? ' vector-effect="non-scaling-stroke"' : ""}/>`; }).join("");
   /* minigráfico del día completo (arriba a la derecha, solo con un hueco abierto): muestra cómo va quedando la serie entera */
-  const MW = 260, MH = 96, mx0 = W - de - MW - 6, my0 = ar + 4, mi0 = mx0 + 6, mw = MW - 12, mj0 = my0 + 15, mh = MH - 28, spanD = Math.max(1, M.fin - M.ini);
+  const MW = 330, MH = 118, mx0 = W - de - MW - 6, my0 = ar + 4, mi0 = mx0 + 6, mw = MW - 12, mj0 = my0 + 15, mh = MH - 28, spanD = Math.max(1, M.fin - M.ini);
   let ya = 0, yb = 1;
   if (sel){
     if (ll){ const {pts} = cumul(); yb = Math.max(...pts.map(p => p.c), 0) + Math.max(.3, (sel.res || .1) * 3); ya = 0; }
@@ -373,12 +394,14 @@ function grafico(){
   const Xm = t => mi0 + mw * (t - M.ini) / spanD, Ym = y => mj0 + mh * (1 - (y - ya) / ((yb - ya) || 1));
   const miniHtml = () => {
     if (!sel) return "";
-    let o = ""; if (!ll){ let ant = null; obs.forEach(p => { o += (ant == null || p[0] - ant > 1.5 * g.cad ? "M" : "L") + Xm(p[0]).toFixed(1) + " " + Ym(p[1]).toFixed(1); ant = p[0]; }); }
+    let o = ""; if (!ll){                                       // línea de tendencia: promedios por tramos de ~1,5 px (no los 1440 puntos, que la vuelven un trazo grueso y borroso)
+      const bin = spanD / (mw / 1.5), B = new Map(); obs.forEach(p => { const k = Math.floor((p[0] - M.ini) / bin), q = B.get(k) || {s: 0, n: 0, t: 0}; q.s += p[1]; q.n++; q.t += p[0]; B.set(k, q); });
+      let ant = -9; [...B.keys()].sort((a, b) => a - b).forEach(k => { const q = B.get(k); o += (k - ant > 3 ? "M" : "L") + Xm(q.t / q.n).toFixed(1) + " " + Ym(q.s / q.n).toFixed(1); ant = k; }); }
     return `<g pointer-events="none"><rect x="${mx0}" y="${my0}" width="${MW}" height="${MH}" rx="6" fill="var(--panel)" fill-opacity=".93" stroke="#ffffff" stroke-opacity=".28"/>
       <text x="${mx0 + 8}" y="${my0 + 11}" fill="#9fb0cc" font-size="10">Día completo${ll ? " · lluvia acumulada" : ""} · así va quedando</text>
       <clipPath id="hMc"><rect x="${mi0}" y="${mj0}" width="${mw}" height="${mh}"/></clipPath>
-      <g clip-path="url(#hMc)"><rect x="${Xm(v0)}" y="${mj0}" width="${Math.max(2, Xm(v1) - Xm(v0))}" height="${mh}" fill="#ffffff" fill-opacity=".1" stroke="${EST}" stroke-opacity=".8"/>
-        <path id="hMo" d="${o}" fill="none" stroke="${COL}" stroke-width="1.2"/><g id="hMe"></g></g>
+      <g clip-path="url(#hMc)"><rect x="${Xm(v0)}" y="${mj0}" width="${Math.max(2, Xm(v1) - Xm(v0))}" height="${mh}" fill="#ffffff" fill-opacity=".1" stroke="${EST}" stroke-opacity=".8" vector-effect="non-scaling-stroke"/>
+        <path id="hMo" d="${o}" fill="none" stroke="${COL}" stroke-width="1" vector-effect="non-scaling-stroke"/><g id="hMe"></g></g>
       <text x="${mi0}" y="${my0 + MH - 3}" fill="#9fb0cc" font-size="9">${mi.hhmm(M.ini)}</text><text x="${mi0 + mw / 2}" y="${my0 + MH - 3}" fill="#9fb0cc" font-size="9" text-anchor="middle">${mi.hhmm(M.ini + spanD / 2)}</text><text x="${mi0 + mw}" y="${my0 + MH - 3}" fill="#9fb0cc" font-size="9" text-anchor="end">${mi.hhmm(M.fin)}</text></g>`;
   };
   const dinamica = () => {
@@ -388,8 +411,8 @@ function grafico(){
     const manos = sel && sel.hand && MODO === "puntos" && sel.hand.length <= 12 ? sel.hand.map(h => `<circle cx="${X(g.t(h.k))}" cy="${Y(ll ? base + h.y : h.y)}" r="6" fill="${EST}" fill-opacity=".22" stroke="${EST}" stroke-opacity=".9" stroke-width="1.8" style="cursor:ns-resize"/>`).join("") : "";
     $("#hDin").innerHTML = estim + manos;
     if (sel && $("#hMe")){                                       // minigráfico: se actualiza mientras se dibuja
-      if (ll){ const r = rutasLl(Xm, Ym); $("#hMo").setAttribute("d", r.sol); $("#hMe").innerHTML = r.est ? `<path d="${r.est}" fill="none" stroke="${EST}" stroke-width="1.6"/>` : ""; }
-      else $("#hMe").innerHTML = estSuave(Xm, Ym, 1.4);
+      if (ll){ const r = rutasLl(Xm, Ym); $("#hMo").setAttribute("d", r.sol); $("#hMe").innerHTML = r.est ? `<path d="${r.est}" fill="none" stroke="${EST}" stroke-width="1.4" vector-effect="non-scaling-stroke"/>` : ""; }
+      else $("#hMe").innerHTML = estSuave(Xm, Ym, 1.4, true);
     }
     valoresTabla(); };
   const ticks = [], paso = [1, 2, 5, 10, 15, 30, 60, 180].map(m => m * 60e3).find(p => span / p <= 10) || 180 * 60e3;
@@ -414,6 +437,11 @@ function grafico(){
     <text x="${iz}" y="${ar - 3}" fill="#9fb0cc" font-size="11">${mi.NOM[VAR] || VAR}${ll ? " acumulada" : ""} (${uni}) · hora UTC · <tspan fill="${COL}">━ observado</tspan>  <tspan fill="${EST}">╍ estimado</tspan>${sel ? `  ·  vista ampliada del hueco · ${MODO === "libre" ? "dibuje con el botón izquierdo apretado dentro de la banda naranja" : "arrastre los puntos"}${ll ? " (la lluvia acumulada no baja)" : ""}` : ""}</text>
     <rect id="hHit" x="${iz}" y="${ar}" width="${W - iz - de}" height="${H - ar - ab}" fill="transparent" style="${sel ? "cursor:crosshair" : ""}"/></svg>`;
   const svg = $("#hGraf svg"); dinamica();
+  if (sel) svg.addEventListener("wheel", ev => {                                   // Ctrl + rueda: tiempo; Mayús + rueda: vertical (la rueda sola sigue desplazando la página)
+    if (!ev.ctrlKey && !ev.shiftKey) return; ev.preventDefault();
+    const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width, py = (ev.clientY - r.top) * H / r.height;
+    if (ev.shiftKey && !ev.ctrlKey) zoomUsuario((ev.deltaY || ev.deltaX) < 0 ? "vy+" : "vy-", undefined, invY(py)); else zoomUsuario((ev.deltaY || ev.deltaX) < 0 ? "hx+" : "hx-", v0 + (px - iz) / (W - iz - de) * span);
+    grafico(); }, {passive: false});
   if (sel && sel.hand){
     let bajo = false;
     let ult = null;
