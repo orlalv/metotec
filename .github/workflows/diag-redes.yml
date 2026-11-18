@@ -1,17 +1,18 @@
-# Diagnóstico a mano: ¿se leen estaciones de INIA y DGA? Solo lectura.
+# Diagnóstico a mano de las estaciones externas (INIA, DGA). Solo lectura.
 name: Diagnóstico INIA y DGA
 on:
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   diag:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install -q requests
-      - env:
-          DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
-          DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
-        run: python qc/diag_externas.py
+      - run: pip install -q requests pandas numpy
+      - name: Rama de datos
+        run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - run: python qc/diag_alinea.py datos
