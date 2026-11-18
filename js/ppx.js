@@ -1,15 +1,6 @@
 /* Subopciones «Series» y «Sensores» de Precipitación.
-   Series (etapa 2): faltantes de agua caída minutaria. Sensores sigue como pantalla informativa (etapa 3). */
+   Series (etapa 2): faltantes de agua caída minutaria. Sensores (etapa 3): comportamiento del pluviómetro (pegado, cero sostenido, goteo); pantalla informativa, sin botones de revisión. */
 (function(){
-const TXT = {
-  sensores: {
-    t: "Sensores",
-    p: ["Aquí se detectará un pluviómetro tapado o con fallas del propio aparato: el mismo valor repetido minuto a minuto (por ejemplo 0,2 0,2 0,2 0,2…), un cero sostenido mientras las vecinas sí registran lluvia y el goteo posterior a una obstrucción.",
-        "Se separa de «Precipitación binaria»: allí se juzga si llovió o no en cada hora; aquí se juzga el comportamiento del sensor."],
-    n: "Mientras tanto, algunos casos de goteo ya aparecen en «Precipitación binaria»."
-  }
-};
-
 /* ---------- Series: faltantes de agua caída minutaria (rr1m) ---------- */
 const RAW = "https://raw.githubusercontent.com/orlalv/metotec/datos/ema/";
 const MIN_HUECO = 30;                                  // minutos seguidos sin dato para avisar
@@ -136,10 +127,108 @@ function contar(){                                      // para el contador de l
   if (RES && Date.now() - RES.tFin < 5 * 60e3) return window.ppContar && window.ppContar("series", cuenta(RES));
   analizar(venH).then(r => { RES = r; window.ppContar && window.ppContar("series", cuenta(r)); }).catch(() => {});
 }
-function pagina(el, sub){
-  if (sub === "series") return serie(el);
-  const d = TXT[sub] || TXT.sensores;
-  el.innerHTML = `<div class="ppx"><h3>${d.t} <small style="color:var(--mu);font-weight:400">· próximamente</small></h3>${d.p.map(x => `<p style="margin:6px 0">${x}</p>`).join("")}<p style="margin:10px 0 0"><i>${d.n}</i></p></div>`;
+
+/* ---------- Sensores: comportamiento del pluviómetro (informativo) ---------- */
+const SEN = {pegMin: 20, peg01: 60, ceroH: 3, ceroVec: 1.0, goteoH: 12, vecKm: 60, vecMin: 2, horaMin: 30};  // minutos/horas seguidos y mm por hora
+const SENH = [[24, "últimas 24 h"], [72, "últimos 3 días"]];
+let senH = (() => { try { return +localStorage.getItem("qcPpSenH") || 24; } catch (e) { return 24; } })(), SRES = null, STOK = 0;
+const km = (a, b) => { const r = Math.PI / 180, dl = (b.lat - a.lat) * r, dn = (b.lon - a.lon) * r, x = Math.sin(dl / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dn / 2) ** 2; return 12742 * Math.asin(Math.sqrt(x)); };
+const f1 = x => (Math.round(x * 10) / 10).toLocaleString("es-CL");
+
+async function analizarSens(H){
+  const h0 = Math.floor(Date.now() / 3600e3) * 3600e3, ts = []; for (let i = H - 1; i >= 0; i--) ts.push(h0 - i * 3600e3);
+  const [txt, cat] = await Promise.all([varias(ts), catalogo()]);
+  const t0 = ts[0], N = H * 60, rr = new Map(); let fallas = 0, fin = -1;
+  txt.forEach((tx, h) => {
+    if (tx === undefined){ if (ts[h] < Date.now() - 3600e3) fallas++; return; }
+    if (!tx) return;
+    const ls = tx.split("\n"), iR = ls[0].split(",").indexOf("rr1m"); if (iR < 0) return;
+    for (let i = 1; i < ls.length; i++){
+      const l = ls[i]; if (l.length < 20) continue;
+      const v = l.split(","); if (v[iR] === "") continue;
+      const m = Math.round((Date.parse(v[1].replace(" ", "T") + "Z") - t0) / 60e3); if (m < 0 || m >= N) continue;
+      let a = rr.get(v[0]); if (!a){ a = new Float32Array(N).fill(NaN); rr.set(v[0], a); }
+      a[m] = +v[iR]; if (m > fin) fin = m;
+    }
+  });
+  const sum = new Map(), con = new Map();                       // suma por hora y si la hora tiene dato suficiente
+  for (const [c, a] of rr){ const s = new Float32Array(H), k = new Uint8Array(H);
+    for (let m = 0; m < N; m++) if (a[m] === a[m]){ s[m / 60 | 0] += a[m]; k[m / 60 | 0]++; }
+    sum.set(c, s); con.set(c, Array.from(k, x => x >= SEN.horaMin)); }
+  const pos = c => { const e = cat.get(c); return e && isFinite(e.lat) && isFinite(e.lon) ? {lat: +e.lat, lon: +e.lon} : null; };
+  const vecs = new Map(); for (const c of rr.keys()){ const p = pos(c); if (!p) continue;
+    vecs.set(c, [...rr.keys()].filter(o => o !== c && pos(o)).map(o => [o, km(p, pos(o))]).filter(x => x[1] <= SEN.vecKm).sort((x, y) => x[1] - y[1]).slice(0, 6)); }
+  const lista = [], nom = c => (cat.get(c) || {}).nombre || c;
+  const horas = (c, fn) => { const out = []; let ini = -1; const s = sum.get(c), k = con.get(c);       // tramos de horas seguidas donde fn(h) es cierto
+    for (let h = 0; h <= H; h++){ const ok = h < H && k[h] && fn(h); if (ok && ini < 0) ini = h; else if (!ok && ini >= 0){ out.push([ini, h - 1]); ini = -1; } } return out; };
+  const vh = (c, h) => (vecs.get(c) || []).filter(([o]) => con.get(o)[h]);
+  for (const [c, a] of rr){
+    const e = {cod: c, nombre: nom(c), hallazgos: []};
+    // 1) pegado: mismo valor positivo repetido minuto a minuto
+    const cerrar = (i, f) => { const n = f - i + 1, v = a[i], min = v > 0.15 ? SEN.pegMin : SEN.peg01;
+      if (n >= min) e.hallazgos.push({k: "peg", a: t0 + i * 60e3, b: t0 + f * 60e3, n, det: `${f1(v)} mm cada minuto durante ${dur(n)} (${f1(v * n)} mm acumulados)`, abierto: f >= fin - 1}); };
+    for (let m = 0, i = 0; m < N; m++){
+      if (!(a[m] > 0)) continue;
+      i = m; while (m + 1 < N && a[m + 1] === a[i]) m++;
+      cerrar(i, m);
+    }
+    // 2) cero sostenido con vecinas lloviendo
+    for (const [i, f] of horas(c, h => sum.get(c)[h] < 0.05 && vh(c, h).filter(([o]) => sum.get(o)[h] >= SEN.ceroVec).length >= SEN.vecMin)){
+      if (f - i + 1 < SEN.ceroH) continue;
+      const vs = vh(c, f).filter(([o]) => sum.get(o)[f] >= SEN.ceroVec).slice(0, 3);
+      let tot = {}; vs.forEach(([o]) => { let t = 0; for (let h = i; h <= f; h++) t += sum.get(o)[h]; tot[o] = t; });
+      e.hallazgos.push({k: "cero", a: t0 + i * 3600e3, b: t0 + (f + 1) * 3600e3, n: (f - i + 1) * 60, det: `0 mm durante ${f - i + 1} h; vecinas: ` + vs.map(([o, d]) => `${nom(o)} (${Math.round(d)} km) ${f1(tot[o])} mm`).join(" · "), abierto: f === H - 1}); }
+    // 3) goteo: 0,1–0,4 mm por hora con vecinas secas
+    for (const [i, f] of horas(c, h => sum.get(c)[h] >= 0.1 && sum.get(c)[h] <= 0.4 && vh(c, h).length >= SEN.vecMin && vh(c, h).every(([o]) => sum.get(o)[h] < 0.05))){
+      if (f - i + 1 < SEN.goteoH) continue; let t = 0; for (let h = i; h <= f; h++) t += sum.get(c)[h];
+      e.hallazgos.push({k: "gota", a: t0 + i * 3600e3, b: t0 + (f + 1) * 3600e3, n: (f - i + 1) * 60, det: `${f1(t)} mm en ${f - i + 1} h (0,1–0,4 mm por hora) con las vecinas cercanas secas`, abierto: f === H - 1}); }
+    if (e.hallazgos.length){                                       // un mismo tipo repetido: se muestran los 2 más largos y cuántos más hubo
+      const por = {}; e.hallazgos.forEach(h => (por[h.k] = por[h.k] || []).push(h));
+      e.hallazgos = Object.values(por).flatMap(L => { L.sort((x, y) => y.n - x.n); const top = L.slice(0, 2); if (L.length > 2) top[1] = {...top[1], det: top[1].det + ` · y ${L.length - 2} episodios más parecidos`}; return top; })
+        .sort((x, y) => x.a - y.a);
+      lista.push(e);
+    }
+  }
+  lista.sort((x, y) => (y.hallazgos.some(h => h.abierto) - x.hallazgos.some(h => h.abierto)) || x.cod.localeCompare(y.cod));
+  return {H, t0, fin: fin >= 0 ? t0 + fin * 60e3 : null, lista, total: rr.size, fallas, tFin: Date.now()};
 }
-window.PPX = {pagina, contar};
+const SK = {peg: "Valor pegado", cero: "Cero con vecinas lloviendo", gota: "Goteo sin lluvia alrededor"};
+function dibujarSens(el){
+  const r = SRES, out = el.querySelector("#ppsOut"); if (!r) return;
+  if (r.fin == null){ out.innerHTML = `<p style="color:var(--mu)">No hay datos minutarios en el archivo para esta ventana.</p>`; return; }
+  const fila = x => x.hallazgos.map((h, i) => `<tr>${i ? "" : `<td rowspan="${x.hallazgos.length}"><b>${esc(x.cod)}</b> · ${esc(x.nombre)}</td>`}
+    <td><b>${SK[h.k]}</b>${h.abierto ? `<br><small style="color:#e5534b">sigue ahora</small>` : ""}</td>
+    <td style="white-space:nowrap">${dd(h.a).slice(5).split("-").reverse().join("/")} ${hh(h.a)}–${hh(h.b)} UTC<br><small style="color:var(--mu)">${loc(h.a)}–${loc(h.b)} hora local</small></td>
+    <td style="font-size:12.5px">${esc(h.det)}</td></tr>`).join("");
+  out.innerHTML = `<p style="margin:2px 0 8px;color:var(--mu);font-size:12.5px">${r.lista.length ? `<b style="color:var(--tx)">${r.lista.length}</b> de ${r.total} estaciones con pluviómetro muestran un comportamiento sospechoso.` : `Ninguna de las ${r.total} estaciones con pluviómetro muestra un comportamiento sospechoso.`} Datos hasta ${hh(r.fin)} UTC (${loc(r.fin)} hora local). Pantalla informativa: solo señala; si llovió o no se juzga en «Precipitación binaria».${r.fallas ? ` <b style="color:#e7b03b">No se pudieron leer ${r.fallas} horas del archivo; los resultados pueden estar incompletos.</b>` : ""}</p>
+    ${r.lista.length ? `<div style="overflow-x:auto"><table class="tb"><tr><th>Estación</th><th>Comportamiento</th><th>Cuándo</th><th>Detalle</th></tr>${r.lista.map(fila).join("")}</table></div>` : ""}
+    <details style="margin-top:10px;font-size:12.5px;color:var(--mu)"><summary>Cómo se decide</summary><ul style="margin:6px 0 0 18px">
+      <li><b>Valor pegado:</b> el mismo valor mayor que 0 en cada minuto durante ${SEN.pegMin} min o más (${SEN.peg01} min si es 0,1 mm).</li>
+      <li><b>Cero con vecinas lloviendo:</b> ${SEN.ceroH} h seguidas o más con 0 mm mientras al menos ${SEN.vecMin} vecinas (≤ ${SEN.vecKm} km) marcan ${SEN.ceroVec} mm o más cada hora.</li>
+      <li><b>Goteo:</b> ${SEN.goteoH} h seguidas o más con 0,1–0,4 mm por hora mientras al menos ${SEN.vecMin} vecinas (≤ ${SEN.vecKm} km) marcan 0. Solo se puede ver con ventana de 24 h o más.</li>
+      <li>Las estaciones sin vecinas cercanas con dato solo se revisan por valor pegado. Las que informan cada 10 min o más no alcanzan a mostrar un valor pegado minuto a minuto.</li></ul></details>`;
+}
+async function cargarSens(el){
+  const tok = ++STOK; el.querySelector("#ppsOut").innerHTML = `<p style="color:var(--mu)">Leyendo ${senH <= 24 ? senH + " horas" : Math.round(senH / 24) + " días"} de datos minutarios…</p>`;
+  try { const r = await analizarSens(senH); if (tok !== STOK) return; SRES = r; if (window.ppContar) window.ppContar("sensores", r.lista.length); dibujarSens(el); }
+  catch (e) { if (tok === STOK) el.querySelector("#ppsOut").innerHTML = `<p style="color:#e5534b">No pude leer los datos (${esc(e.message)}). Pruebe de nuevo.</p>`; }
+}
+function sensores(el){
+  el.innerHTML = `<div class="ppx ppser"><h3>Sensores <small style="color:var(--mu);font-weight:400">· comportamiento del pluviómetro</small></h3>
+    <div class="htools"><select id="ppsH">${SENH.map(([h, t]) => `<option value="${h}"${h === senH ? " selected" : ""}>${t}</option>`).join("")}</select><button id="ppsAct">Actualizar</button></div>
+    <div id="ppsOut"></div></div>`;
+  el.querySelector("#ppsH").onchange = ev => { senH = +ev.target.value; try { localStorage.setItem("qcPpSenH", senH); } catch (e) {} cargarSens(el); };
+  el.querySelector("#ppsAct").onclick = () => { CACHE.clear(); cargarSens(el); };
+  el.onclick = null;
+  if (SRES && SRES.H === senH && Date.now() - SRES.tFin < 5 * 60e3) dibujarSens(el); else cargarSens(el);
+}
+function contarSens(){
+  if (SRES && Date.now() - SRES.tFin < 5 * 60e3) return window.ppContar && window.ppContar("sensores", SRES.lista.length);
+  analizarSens(senH).then(r => { SRES = r; window.ppContar && window.ppContar("sensores", r.lista.length); }).catch(() => {});
+}
+function pagina(el, sub){
+  if (sub === "sensores") return sensores(el);
+  return serie(el);
+}
+window.PPX = {pagina, contar: k => { if (k !== "sensores") contar(); if (k !== "series") contarSens(); }};
 })();
