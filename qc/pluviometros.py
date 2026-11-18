@@ -8,6 +8,7 @@ Para cada estación y cada hora cerrada se juntan hasta tres evidencias de lluvi
   · IMERG     (NASA, imágenes de GIBS, qc/imerg.py) ≥ 0,5 mm en la hora o en la anterior/siguiente; tiene unas 5 h de retraso, así que las horas más recientes no lo traen
 El efecto contrario también se revisa: lluvia en la estación con el cielo totalmente despejado y sin lluvia en vecinas ni modelo.
 Si hay vecinas con dato y todas están secas, la estación en 0 es coherente y no se sospecha (modelo y satélite solos solo valen sin vecinas cercanas).
+Una evidencia de modelo, IMERG o vecinas exige ≥ 1 mm en la hora (±1 h); un episodio es «sospecha de obstrucción» si dura ≥ 3 h y la lluvia esperada suma ≥ 3 mm.
 Una hora es «sospechosa» si hay ≥ 2 evidencias y la estación marca menos de 0,2 mm o no tiene dato.
 Horas sospechosas seguidas forman un episodio. Además: eventos de lluvia seguidos sin que la estación marque (y desde cuándo), y «goteo»
 (horas seguidas con 0,1–0,2 mm sin lluvia en el entorno: agua que escurre de un embudo tapado). La cadencia de transmisión (1, 10 o 60 min) no importa. Un episodio de ≥ 3 horas con la estación en 0 (no sin dato) es «sospecha de obstrucción»;
@@ -22,11 +23,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-VERSION = 4                      # sube cuando cambia la forma del producto: qc/correr.py lo regenera aunque no hayan pasado 6 h
+VERSION = 5                      # sube cuando cambia la forma del producto: qc/correr.py lo regenera aunque no hayan pasado 6 h
 RADIO_KM = 60
 MM_VECINA = 1.0
 FRAC_VECINAS = 0.6
-MM_MODELO = 0.5
+MM_MODELO = 1.0                  # un modelo o IMERG con lloviznas de décimas no distingue de «0» a un pluviómetro de balancín
+MM_IMERG = 1.0
+MM_OBSTR = 3.0                   # un episodio solo es «sospecha de obstrucción» si la lluvia esperada suma al menos esto (mm)
 MARCA_MIN = 0.2                  # menos que esto en la hora = «no marca»
 MIN_DATOS = 70                   # % de los datos esperados en la hora (según la cadencia de la estación: 1, 10, 60 min) para considerarla completa
 GOTEO_MAX, GOTEO_H, GOTEO_LARGO = 0.4, 8, 12   # horas seguidas con 0 < mm ≤ 0,4 sin lluvia en el entorno; ≥ 12 h = sospecha
@@ -195,8 +198,9 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
         mm_imerg = np.full(len(horas), np.nan)
         if I is not None and c in I.columns:
             mm_imerg = I[c].reindex(horas).values.astype(float)
-            ev_imerg = pd.Series(np.nan_to_num(mm_imerg, nan=0.0)).rolling(3, center=True, min_periods=1).max().values >= 0.5     # ±1 h, igual que el modelo
+            ev_imerg = pd.Series(np.nan_to_num(mm_imerg, nan=0.0)).rolling(3, center=True, min_periods=1).max().values >= MM_IMERG     # ±1 h, igual que el modelo
         pts = ev_vec.astype(int) + ev_mod + ev_sat + ev_imerg
+        fuerza = np.maximum.reduce([mm_vec, mm_mod, np.nan_to_num(mm_imerg, nan=0.0)])     # mm esperados en la hora según la mejor fuente
         # si hay vecinas con dato y ninguna llueve, la estación en 0 es coherente: modelo y satélite solos no bastan (se equivocan más que un pluviómetro vecino).
         # Solo valen sin vecinas cercanas con dato (estación aislada).
         pts = np.where(ev_vec | (tot < 2), pts, 0)
@@ -228,7 +232,7 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
                                 fria=(t[1] if t else None), tope=(t[3] if t else None), ray=(t[4] if t else None), sospechosa=bool(sosp[i2])))
             eps.append(dict(detalle=det, inicio=f"{horas[a] - pd.Timedelta(hours=1):%Y-%m-%d %H:%M}", fin=f"{horas[b]:%Y-%m-%d %H:%M}", horas=n_sosp, sin_dato=n_sd,
                             evidencia=dict(vecinas=bool(ev_vec[seg].any()), modelo=bool(ev_mod[seg].any()), satelite=bool(ev_sat[seg].any()), imerg=bool(ev_imerg[seg].any())),
-                            mm_vecinas=round(float(mm_vec[seg].sum()), 1), mm_modelo=round(float(mm_mod[seg].sum()), 1),
+                            mm_vecinas=round(float(mm_vec[seg].sum()), 1), mm_modelo=round(float(mm_mod[seg].sum()), 1), mm_imerg=round(float(np.nan_to_num(mm_imerg[seg], nan=0.0).sum()), 1),
                             descarga_tardia=bool(sigue)))
             i = k + 1
         # efecto contrario: la estación marca lluvia con el cielo totalmente despejado, sin lluvia en las vecinas ni en el modelo (riego, mantención, insecto en el embudo)
@@ -239,7 +243,7 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
         raras = np.where(despejado & (mi_ok >= 0.5) & (pts == 0) & ~ev_mod)[0]
         raras_h = [dict(hora=f"{horas[i]:%Y-%m-%d %H:%M}", mm=round(float(mi_ok[i]), 1)) for i in raras][-6:]
         # eventos de lluvia del entorno (≥ 2 evidencias) y si la estación marcó en cada uno; solo se juzgan las horas con dato
-        ev_h = [i for i in np.where(pts >= EV_MIN)[0] if np.isfinite(mi[i])]
+        ev_h = [i for i in np.where((pts >= EV_MIN) & (fuerza >= 1.0))[0] if np.isfinite(mi[i])]
         eventos, grupo = [], []
         for i in ev_h:
             if grupo and i - grupo[-1] > 6:
@@ -282,7 +286,8 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
         sv = float(np.sum(mm_vec))
         razon = round(float(np.median(ratios)), 2) if len(ratios) >= 2 else None
         marca0 = [e for e in eps if e["sin_dato"] < e["horas"] / 2]
-        obstr = any(e["horas"] >= HORAS_OBSTRUCCION for e in marca0) or any(e["descarga_tardia"] and e["horas"] >= 2 for e in marca0) or seguidos >= EVENTOS_OBSTR
+        esperada = lambda e: max(e["mm_vecinas"], e["mm_modelo"], e.get("mm_imerg", 0.0))
+        obstr = any(e["horas"] >= HORAS_OBSTRUCCION and esperada(e) >= MM_OBSTR for e in marca0) or any(e["descarga_tardia"] and e["horas"] >= 2 and esperada(e) >= MM_OBSTR for e in marca0) or seguidos >= EVENTOS_OBSTR
         goteo_largo = any(g["horas"] >= GOTEO_LARGO for g in gote)
         comunic = any(e["sin_dato"] >= e["horas"] / 2 for e in eps)
         if obstr or goteo_largo or (razon is not None and razon < RAZON_BAJA and len(ratios) >= 3):
