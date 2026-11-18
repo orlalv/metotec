@@ -1,9 +1,9 @@
 """Estaciones externas (INIA, CEAZA, SERVIMET, ARAUCO…) desde la red agregada de agrometeorologia.cl, con las variables instrumentales.
 Cada 15 minutos deja en el KV:  qc/externas/cat  (catálogo)  y  qc/externas/<VAR>  (valores por hora, ≈42 h, en UTC) para PP, TA, HR, VV, RD, PS, TS00, TS10.
-INIA publica las horas en hora local de Chile; aquí se pasan a UTC ("AAAA-MM-DDTHH"). Se omiten DMC y MMA-DMC (ya vienen por la DMC).
+INIA etiqueta las horas en UTC-4 fijo (inicio de la hora); aquí se pasan a la hora UTC en que TERMINA el acumulado ("AAAA-MM-DDTHH"), como las nuestras. Se omiten DMC y MMA-DMC (ya vienen por la DMC).
 Valores: PP mm · TA °C · HR % · VV [media, ráfaga, dirección°] (unidad de viento por confirmar) · RD (radiación) · PS (presión de estación, hPa) · TS00/TS10 °C suelo."""
 import json, os, re, sys, time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import requests
 
@@ -31,8 +31,11 @@ def num(v):
 
 
 def utc(h):
+    """Etiqueta de INIA → hora UTC en que TERMINA el acumulado (igual que nuestras horas de `P.horario`).
+    Medido contra 103 estaciones DMC (qc/diag_alinea.py): INIA usa hora fija UTC-4 (sin horario de verano) y la etiqueta es el INICIO de la hora,
+    así que hora que termina (UTC) = etiqueta + 4 h + 1 h = etiqueta + 5 h."""
     try:
-        return datetime.strptime(h, "%Y-%m-%d %H:%M").replace(tzinfo=CL).astimezone(timezone.utc).strftime("%Y-%m-%dT%H")
+        return (datetime.strptime(h, "%Y-%m-%d %H:%M") + timedelta(hours=5)).strftime("%Y-%m-%dT%H")
     except ValueError:
         return None
 
