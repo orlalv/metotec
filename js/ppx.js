@@ -7,7 +7,8 @@ const MIN_HUECO = 30;                                  // minutos seguidos sin d
 const conTiempo = async (u, ms = 20000) => { const c = new AbortController(), t = setTimeout(() => c.abort(), ms); try { return await fetch(u, {signal: c.signal}); } finally { clearTimeout(t); } };
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const HORAS = [[6, "últimas 6 h"], [24, "últimas 24 h"], [72, "últimos 3 días"]];
-let PPX_ERR = "";
+let PPX_ERR = ""; const DG = {ok: 0, nf: 0, api: 0, raw: 0, ult: ""};                  // diagnóstico de lectura: horas leídas / sin archivo / errores por ruta
+const dgTxt = () => `leídas ${DG.ok} · sin archivo ${DG.nf} · fallos de /api/emahora ${DG.api} · de GitHub ${DG.raw}${DG.ult ? " · último error: " + esc(DG.ult) : ""}`;
 let venH = (() => { try { return +localStorage.getItem("qcPpSerH") || 24; } catch (e) { return 24; } })(), soloAb = false, RES = null, TOK = 0, CACHE = new Map(), EST = null;
 const hh = t => new Date(t).toISOString().slice(11, 16);
 const loc = t => new Date(t).toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit"});
@@ -20,10 +21,12 @@ async function hora(t){                                // un archivo horario (to
   const url = RAW + k.replace(/-/g, "/").replace("T", "/") + ".csv.gz";
   const p = (async () => {
     for (let i = 0; i < 3; i++){
-      try { let r = await conTiempo("/api/emahora?h=" + k + (i ? "&r=" + i : "")).catch(() => null);       // mismo dominio (algunas redes bloquean raw.githubusercontent.com)
-        if (!r || (!r.ok && r.status !== 404)) r = await conTiempo(url + (i ? "?r=" + i : ""));
-        if (r.status === 404) return null;
-        if (r.ok){ const b = await r.arrayBuffer(); return await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text(); } } catch (e) { PPX_ERR = e && e.message || String(e); }
+      try { let r = null; try { r = await conTiempo("/api/emahora?h=" + k + (i ? "&r=" + i : "")); if (!r.ok && r.status !== 404){ DG.api++; DG.ult = "/api/emahora HTTP " + r.status; r = null; } } catch (e) { DG.api++; DG.ult = "/api/emahora " + (e.name === "AbortError" ? "sin respuesta en 20 s" : e.message); r = null; }       // mismo dominio primero (algunas redes bloquean raw.githubusercontent.com)
+        if (!r){ try { r = await conTiempo(url + (i ? "?r=" + i : ""), 12000); } catch (e) { DG.raw++; DG.ult = "GitHub " + (e.name === "AbortError" ? "sin respuesta en 12 s" : e.message); throw e; } }
+        if (r.status === 404){ DG.nf++; return null; }
+        if (r.ok){ const b = await r.arrayBuffer(); const tx = await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text(); DG.ok++; return tx; }
+        DG.raw++; DG.ult = "HTTP " + r.status;
+      } catch (e) { PPX_ERR = e && e.message || String(e); }
       await new Promise(z => setTimeout(z, 700 * (i + 1)));
     }
     return undefined;                                   // no se pudo leer (distinto de «no existe»)
@@ -96,9 +99,10 @@ async function muestras(h0){
 }
 
 function cuenta(r){ return r ? r.lista.length : 0; }
+const progreso = (el, tok, T) => { const iv = setInterval(() => { const o = el.querySelector("#ppsOut"); if (tok !== T() || !o || !o.querySelector("[data-leyendo]")){ clearInterval(iv); return; } o.querySelector("[data-leyendo]").innerHTML = " " + dgTxt(); }, 700); };
 async function cargar(el){
-  const tok = ++TOK;
-  el.querySelector("#ppsOut").innerHTML = `<p style="color:var(--mu)">Leyendo ${venH <= 24 ? venH + " horas" : Math.round(venH / 24) + " días"} de datos minutarios…</p>`;
+  const tok = ++TOK; Object.assign(DG, {ok: 0, nf: 0, api: 0, raw: 0, ult: ""}); progreso(el, tok, () => TOK);
+  el.querySelector("#ppsOut").innerHTML = `<p style="color:var(--mu)">Leyendo ${venH <= 24 ? venH + " horas" : Math.round(venH / 24) + " días"} de datos minutarios…<small data-leyendo style="display:block"></small></p>`;
   try { const r = await analizar(venH); if (tok !== TOK) return; RES = r; if (window.ppContar) window.ppContar("series", cuenta(r)); dibujar(el); }
   catch (e) { if (tok === TOK) el.querySelector("#ppsOut").innerHTML = `<p style="color:#e5534b">No pude leer los datos (${esc(e.message)}). Pruebe de nuevo.</p>`; }
 }
@@ -113,7 +117,7 @@ function dibujar(el){
       <td style="text-align:right"><b>${dur(x.falta)}</b><br><small style="color:var(--mu)">${x.huecos.length} ${x.huecos.length === 1 ? "hueco" : "huecos"}</small></td>
       <td style="font-size:12px;color:var(--mu)">${hs}</td>
       <td><button class="ppsAbrir" data-c="${esc(x.cod)}" data-d="${dd(u.a)}" title="Abre «Relleno de series» en esta estación y día">Abrir en Relleno</button></td></tr>`; };
-  out.innerHTML = `<p style="margin:2px 0 8px;color:var(--mu);font-size:12.5px">${r.lista.length ? `<b style="color:var(--tx)">${r.lista.length}</b> de ${r.total} estaciones con pluviómetro tienen huecos de ${MIN_HUECO} min o más (${ab} siguen sin dato).` : `Ninguna de las ${r.total} estaciones con pluviómetro tiene huecos de ${MIN_HUECO} min o más.`} Datos hasta ${hh(r.fin)} UTC (${loc(r.fin)} hora local).${r.fallas ? ` <b style="color:#e7b03b">No se pudieron leer ${r.fallas} horas del archivo${PPX_ERR ? " (" + esc(PPX_ERR) + ")" : ""}; los resultados pueden estar incompletos.</b>` : ""}</p>
+  out.innerHTML = `<p style="margin:2px 0 8px;color:var(--mu);font-size:12.5px">${r.lista.length ? `<b style="color:var(--tx)">${r.lista.length}</b> de ${r.total} estaciones con pluviómetro tienen huecos de ${MIN_HUECO} min o más (${ab} siguen sin dato).` : `Ninguna de las ${r.total} estaciones con pluviómetro tiene huecos de ${MIN_HUECO} min o más.`} Datos hasta ${hh(r.fin)} UTC (${loc(r.fin)} hora local).${r.fallas ? ` <b style="color:#e7b03b">No se pudieron leer ${r.fallas} horas del archivo${" (" + dgTxt() + ")"}; los resultados pueden estar incompletos.</b>` : ""}</p>
     ${L.length ? `<div style="overflow-x:auto"><table class="tb"><tr><th>Estación</th><th>Estado</th><th>Último hueco desde</th><th>Falta</th><th>Huecos (hora UTC)</th><th></th></tr>${L.map(fila).join("")}</table></div>` : `<p style="color:var(--mu)">Nada que mostrar con este filtro.</p>`}`;
 }
 function serie(el){
@@ -204,7 +208,7 @@ function dibujarSens(el){
     <td><b>${SK[h.k]}</b>${h.abierto ? `<br><small style="color:#e5534b">sigue ahora</small>` : ""}</td>
     <td style="white-space:nowrap">${dd(h.a).slice(5).split("-").reverse().join("/")} ${hh(h.a)}–${hh(h.b)} UTC<br><small style="color:var(--mu)">${loc(h.a)}–${loc(h.b)} hora local</small></td>
     <td style="font-size:12.5px">${esc(h.det)}</td></tr>`).join("");
-  out.innerHTML = `<p style="margin:2px 0 8px;color:var(--mu);font-size:12.5px">${r.lista.length ? `<b style="color:var(--tx)">${r.lista.length}</b> de ${r.total} estaciones con pluviómetro muestran un comportamiento sospechoso.` : `Ninguna de las ${r.total} estaciones con pluviómetro muestra un comportamiento sospechoso.`} Datos hasta ${hh(r.fin)} UTC (${loc(r.fin)} hora local). Pantalla informativa: solo señala; si llovió o no se juzga en «Precipitación binaria».${r.fallas ? ` <b style="color:#e7b03b">No se pudieron leer ${r.fallas} horas del archivo${PPX_ERR ? " (" + esc(PPX_ERR) + ")" : ""}; los resultados pueden estar incompletos.</b>` : ""}</p>
+  out.innerHTML = `<p style="margin:2px 0 8px;color:var(--mu);font-size:12.5px">${r.lista.length ? `<b style="color:var(--tx)">${r.lista.length}</b> de ${r.total} estaciones con pluviómetro muestran un comportamiento sospechoso.` : `Ninguna de las ${r.total} estaciones con pluviómetro muestra un comportamiento sospechoso.`} Datos hasta ${hh(r.fin)} UTC (${loc(r.fin)} hora local). Pantalla informativa: solo señala; si llovió o no se juzga en «Precipitación binaria».${r.fallas ? ` <b style="color:#e7b03b">No se pudieron leer ${r.fallas} horas del archivo${" (" + dgTxt() + ")"}; los resultados pueden estar incompletos.</b>` : ""}</p>
     ${r.lista.length ? `<div style="overflow-x:auto"><table class="tb"><tr><th>Estación</th><th>Comportamiento</th><th>Cuándo</th><th>Detalle</th></tr>${r.lista.map(fila).join("")}</table></div>` : ""}
     <details style="margin-top:10px;font-size:12.5px;color:var(--mu)"><summary>Cómo se decide</summary><ul style="margin:6px 0 0 18px">
       <li><b>Valor pegado:</b> el mismo valor mayor que 0 en cada minuto durante ${SEN.pegMin} min o más (${SEN.peg01} min si es 0,1 mm).</li>
@@ -213,7 +217,7 @@ function dibujarSens(el){
       <li>Las estaciones sin vecinas cercanas con dato solo se revisan por valor pegado. Las que informan cada 10 min o más no alcanzan a mostrar un valor pegado minuto a minuto.</li></ul></details>`;
 }
 async function cargarSens(el){
-  const tok = ++STOK; el.querySelector("#ppsOut").innerHTML = `<p style="color:var(--mu)">Leyendo ${senH <= 24 ? senH + " horas" : Math.round(senH / 24) + " días"} de datos minutarios…</p>`;
+  const tok = ++STOK; Object.assign(DG, {ok: 0, nf: 0, api: 0, raw: 0, ult: ""}); progreso(el, tok, () => STOK); el.querySelector("#ppsOut").innerHTML = `<p style="color:var(--mu)">Leyendo ${senH <= 24 ? senH + " horas" : Math.round(senH / 24) + " días"} de datos minutarios…<small data-leyendo style="display:block"></small></p>`;
   try { const r = await analizarSens(senH); if (tok !== STOK) return; SRES = r; if (window.ppContar) window.ppContar("sensores", r.lista.length); dibujarSens(el); }
   catch (e) { if (tok === STOK) el.querySelector("#ppsOut").innerHTML = `<p style="color:#e5534b">No pude leer los datos (${esc(e.message)}). Pruebe de nuevo.</p>`; }
 }
