@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 import pruebas as P
+import externas_vec as EV
 
 # --- umbrales estrictos (sospechoso, erróneo)
 SALTO_T = (5, 8)           # °C entre minutos consecutivos: solo saltos groseros (el ruido normal del sensor no avisa)
@@ -295,66 +296,88 @@ def _sostenida(dif, t1, t2, horas=3, minimo=2):
     return t, float(mal[t]), 2 if (mal.abs() > t2).sum() >= minimo else 1
 
 
-def comparar(H, E, V, M=None, aisladas=()):
-    """Alertas de comparación con vecinas (mediana de ≥ 3, con corrección por altura) y con el modelo, solo estaciones sin observador (H ya viene filtrado)."""
+def comparar(H, E, V, M=None, aisladas=(), X=None, errores=None):
+    """Alertas de comparación con vecinas (mediana ponderada de ≥ 3, con corrección por altura) y con el modelo, solo estaciones sin observador (H ya viene filtrado).
+    X: externas (externas_vec.Ext): se suman como vecinas de menor peso; no se les calcula alerta. Un fallo en una estación se anota en `errores` y no tumba a las demás."""
     out = []
     if H is None or H.empty:
         return out
+    errores = errores if errores is not None else []
+    cods = list(H["codigo"].unique())
+    H, E, V = EV.unir(X, H, E, V)
     alt = {c: (None if pd.isna(z) else float(z)) for c, z in E.set_index("codigo")["alt"].items()}
-    Hi = H.set_index(["codigo", "momento"]).sort_index()
     Ha = H.pivot(index="momento", columns="codigo")
-    horas = sorted(H["momento"].unique())[-4:]
-    for cod in H["codigo"].unique():
-        a = alt.get(cod)
-        vs = [c for c in V.get(cod, []) if c in Ha["T"].columns]
-        for v, (t1, t2, corr, nom, un) in VEC_S.items():
-            if v == "P_mar" and (a or 0) > ALT_PMAR or v not in Ha or cod not in Ha[v].columns or len(vs) < 3:
+    horas = sorted(H.loc[H["codigo"].isin(cods), "momento"].unique())[-4:]
+    for cod in cods:
+        try:
+            out += _comparar_est(cod, Ha, alt, V, M, aisladas, horas)
+        except Exception:
+            import traceback
+            errores.append(f"comparar {cod}: {traceback.format_exc(limit=2)}")
+    return out
+
+
+def _comparar_est(cod, Ha, alt, V, M, aisladas, horas):
+    out = []
+    a = alt.get(cod)
+    vs = [c for c in V.get(cod, []) if c in Ha["T"].columns]
+    for v, (t1, t2, corr, nom, un) in VEC_S.items():
+        if v == "P_mar" and (a or 0) > ALT_PMAR or v not in Ha or cod not in Ha[v].columns or len(vs) < 3:
+            continue
+        cols = [c for c in vs if c in Ha[v].columns]
+        F = pd.DataFrame({c: Ha[v][c] + (0.0065 * ((alt.get(c) or 0) - (a or 0)) if corr else 0) for c in cols})
+        ref, fin = EV.ref_filas(F, v)
+        r = _sostenida((Ha[v][cod] - ref).loc[lambda x: x.index.isin(horas)], t1, t2)
+        if r:
+            t, d, niv = r
+            val = float(Ha[v][cod].get(t))
+            nd = sum(1 for c in cols if not EV.es_ext(c) and bool(fin.loc[t, c]))
+            out.append(_hc(cod, REGLA_V[v][0], niv, REGLA_V[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que la mediana de sus {nd} estaciones vecinas (diferencia sostenida en las últimas horas; revisar el sensor)." + EV.nota(cols, fin.loc[t]),
+                           ingresado=f"{nom} {val:.1f} {un}", deberia=f"≈ {val - d:.1f} {un} (vecinas)"))
+    # viento medio y lluvia contra las vecinas (≥ 3); estaciones muy altas o aisladas se omiten: el viento cambia mucho de un lugar a otro
+    if len(vs) >= 3 and not (cod in aisladas or (a or 0) >= 2000):
+        if "ff10" in Ha and cod in Ha["ff10"].columns:
+            cols = [c for c in vs if c in Ha["ff10"].columns]
+            refv, fin = EV.ref_filas(pd.DataFrame({c: Ha["ff10"][c] for c in cols}), "ff10")
+            r = _sostenida((Ha["ff10"][cod] - refv).loc[lambda x: x.index.isin(horas)], VIENTO_V[0], VIENTO_V[1], horas=4, minimo=3)
+            if r:
+                t, d, niv = r
+                val = float(Ha["ff10"][cod].get(t))
+                nd = sum(1 for c in cols if not EV.es_ext(c) and bool(fin.loc[t, c]))
+                out.append(_hc(cod, "ZC05", niv, "vie", t, f"Viento medio {'mayor' if d > 0 else 'menor'} en {abs(d):.0f} kt que la mediana de sus {nd} estaciones vecinas (diferencia sostenida en 3 de las últimas 4 horas; revisar el anemómetro)." + EV.nota(cols, fin.loc[t]),
+                               ingresado=f"Viento medio {val:.0f} kt", deberia=f"≈ {val - d:.0f} kt (vecinas)"))
+        if "rr1h" in Ha and cod in Ha["rr1h"].columns and "n" in Ha:
+            u = [h for h in horas[-3:] if (Ha["n"][cod].get(h) or 0) >= 50]
+            if len(u) == 3:
+                mia = float(sum(Ha["rr1h"][cod].get(h) or 0 for h in u))
+                ve = [(float(sum(Ha["rr1h"][c].get(h) or 0 for h in u)), EV.peso(c, "rr1h")) for c in vs
+                      if c in Ha["rr1h"].columns and all((Ha["n"][c].get(h) or 0) >= 50 for h in u)]
+                pes = [w for _, w in ve]
+                if EV.suficiente(pes):
+                    med = EV.mediana_pond([x for x, _ in ve], pes)
+                    llu = [w for x, w in ve if x >= 0.5]
+                    ext_n = sum(1 for c in vs if EV.es_ext(c) and c in Ha["rr1h"].columns and all((Ha["n"][c].get(h) or 0) >= 50 for h in u))
+                    nd = len(ve) - ext_n
+                    n_ext = f" La referencia incluye {ext_n} estaciones externas de menor peso." if ext_n else ""
+                    if mia == 0 and med >= LLUVIA_SIN and EV.suficiente(llu):
+                        out.append(_hc(cod, "ZC06", 1, "pp", u[-1], f"El pluviómetro no marcó lluvia en 3 h y la mediana de sus {nd} estaciones vecinas acumuló {med:.1f} mm (pluviómetro tapado o sin medir)." + n_ext,
+                                       ingresado="0.0 mm en 3 h", deberia=f"≈ {med:.1f} mm (vecinas)"))
+                    elif mia >= LLUVIA_SOLA and max(x for x, _ in ve) <= 0.2:
+                        out.append(_hc(cod, "ZC06", 1, "pp", u[-1], f"El pluviómetro acumuló {mia:.1f} mm en 3 h y ninguna de sus {nd} estaciones vecinas pasó de 0,2 mm (puede ser una tormenta local; revisar el pluviómetro)." + n_ext,
+                                       ingresado=f"{mia:.1f} mm en 3 h", deberia="≈ 0 mm (vecinas)"))
+    if M is not None and not M.empty:
+        Mc = M[M["codigo"] == cod].set_index("momento")
+        for v, (t1, t2, nom, un) in MOD_S.items():
+            if v == "P_mar" and (a or 0) > ALT_PMAR or v not in Mc or v not in Ha or cod not in Ha[v].columns:
                 continue
-            ref = pd.DataFrame({c: Ha[v][c] + (0.0065 * ((alt.get(c) or 0) - (a or 0)) if corr else 0) for c in vs})
-            ref = ref[ref.notna().sum(axis=1) >= 3].median(axis=1)
-            r = _sostenida((Ha[v][cod] - ref).loc[lambda x: x.index.isin(horas)], t1, t2)
+            dif = (Ha[v][cod] - Mc[v]).dropna()
+            f = 1.5 if (a or 0) >= 2000 and cod in aisladas else 1.0
+            r = _sostenida(dif[dif.index.isin(horas)], t1 * f, t2 * f)
             if r:
                 t, d, niv = r
                 val = float(Ha[v][cod].get(t))
-                out.append(_hc(cod, REGLA_V[v][0], niv, REGLA_V[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que la mediana de sus {len(vs)} estaciones vecinas (diferencia sostenida en las últimas horas; revisar el sensor)",
-                               ingresado=f"{nom} {val:.1f} {un}", deberia=f"≈ {val - d:.1f} {un} (vecinas)"))
-        # viento medio y lluvia contra las vecinas (≥ 3); estaciones muy altas o aisladas se omiten: el viento cambia mucho de un lugar a otro
-        if len(vs) >= 3 and not (cod in aisladas or (a or 0) >= 2000):
-            if "ff10" in Ha and cod in Ha["ff10"].columns:
-                refv = pd.DataFrame({c: Ha["ff10"][c] for c in vs if c in Ha["ff10"].columns})
-                refv = refv[refv.notna().sum(axis=1) >= 3].median(axis=1)
-                r = _sostenida((Ha["ff10"][cod] - refv).loc[lambda x: x.index.isin(horas)], VIENTO_V[0], VIENTO_V[1], horas=4, minimo=3)
-                if r:
-                    t, d, niv = r
-                    val = float(Ha["ff10"][cod].get(t))
-                    out.append(_hc(cod, "ZC05", niv, "vie", t, f"Viento medio {'mayor' if d > 0 else 'menor'} en {abs(d):.0f} kt que la mediana de sus {len(vs)} estaciones vecinas (diferencia sostenida en 3 de las últimas 4 horas; revisar el anemómetro)",
-                                   ingresado=f"Viento medio {val:.0f} kt", deberia=f"≈ {val - d:.0f} kt (vecinas)"))
-            if "rr1h" in Ha and cod in Ha["rr1h"].columns and "n" in Ha:
-                u = [h for h in horas[-3:] if (Ha["n"][cod].get(h) or 0) >= 50]
-                if len(u) == 3:
-                    mia = float(sum(Ha["rr1h"][cod].get(h) or 0 for h in u))
-                    ve = [float(sum(Ha["rr1h"][c].get(h) or 0 for h in u)) for c in vs if c in Ha["rr1h"].columns and all((Ha["n"][c].get(h) or 0) >= 50 for h in u)]
-                    if len(ve) >= 3:
-                        med = float(pd.Series(ve).median())
-                        if mia == 0 and med >= LLUVIA_SIN and sum(1 for x in ve if x >= 0.5) >= 3:
-                            out.append(_hc(cod, "ZC06", 1, "pp", u[-1], f"El pluviómetro no marcó lluvia en 3 h y la mediana de sus {len(ve)} estaciones vecinas acumuló {med:.1f} mm (pluviómetro tapado o sin medir)",
-                                           ingresado="0.0 mm en 3 h", deberia=f"≈ {med:.1f} mm (vecinas)"))
-                        elif mia >= LLUVIA_SOLA and max(ve) <= 0.2:
-                            out.append(_hc(cod, "ZC06", 1, "pp", u[-1], f"El pluviómetro acumuló {mia:.1f} mm en 3 h y ninguna de sus {len(ve)} estaciones vecinas pasó de 0,2 mm (puede ser una tormenta local; revisar el pluviómetro)",
-                                           ingresado=f"{mia:.1f} mm en 3 h", deberia="≈ 0 mm (vecinas)"))
-        if M is not None and not M.empty:
-            Mc = M[M["codigo"] == cod].set_index("momento")
-            for v, (t1, t2, nom, un) in MOD_S.items():
-                if v == "P_mar" and (a or 0) > ALT_PMAR or v not in Mc or v not in Ha or cod not in Ha[v].columns:
-                    continue
-                dif = (Ha[v][cod] - Mc[v]).dropna()
-                f = 1.5 if (a or 0) >= 2000 and cod in aisladas else 1.0
-                r = _sostenida(dif[dif.index.isin(horas)], t1 * f, t2 * f)
-                if r:
-                    t, d, niv = r
-                    val = float(Ha[v][cod].get(t))
-                    out.append(_hc(cod, REGLA_M[v][0], niv, REGLA_M[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que el modelo (diferencia sostenida en las últimas horas; revisar el sensor)",
-                                   ingresado=f"{nom} {val:.1f} {un}", deberia=f"≈ {val - d:.1f} {un} (modelo)"))
+                out.append(_hc(cod, REGLA_M[v][0], niv, REGLA_M[v][1], t, f"{nom} {'mayor' if d > 0 else 'menor'} en {abs(d):.1f} {un} que el modelo (diferencia sostenida en las últimas horas; revisar el sensor)",
+                               ingresado=f"{nom} {val:.1f} {un}", deberia=f"≈ {val - d:.1f} {un} (modelo)"))
     return out
 
 
@@ -416,20 +439,23 @@ def diario(raiz, ahora=None, subir=None):
     return sorted(tocados)
 
 
-def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=()):
+def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(), X=None):
     """E: estaciones (DataFrame); cods_obs: códigos con observador (se excluyen). Devuelve el dict para el KV."""
     fin = pd.Timestamp.utcnow().tz_localize(None)
     A = leer_archivo(raiz, fin, horas=horas)
     cods_obs = {str(c) for c in cods_obs}
     meta = E.set_index("codigo")[["nombre", "oaci", "lat", "lon", "alt"]].to_dict("index")
     por = {c: g for c, g in A.groupby("codigo")} if len(A) else {}
-    cmp_al = {}
-    try:   # comparación con vecinas y modelo, sobre el valor horario
+    cmp_al, errores = {}, []
+    try:   # comparación con vecinas (DMC y externas) y modelo, sobre el valor horario
         sin = A[~A["codigo"].isin(cods_obs)] if len(A) else A
-        for h in comparar(P.horario(sin[sin["momento"] > fin - pd.Timedelta(hours=8)]) if len(sin) else sin, E, V or {}, M, aisladas):
+        for h in comparar(P.horario(sin[sin["momento"] > fin - pd.Timedelta(hours=8)]) if len(sin) else sin, E, V or {}, M, aisladas, X=X, errores=errores):
             cmp_al.setdefault(h.pop("_cod"), []).append(h)
-    except Exception:
-        cmp_al = {}
+    except Exception:      # no se oculta: queda en el resultado (errores) y en el registro de la pasada
+        import traceback
+        errores.append(f"comparar: {traceback.format_exc(limit=3)}")
+    for e_ in errores:
+        print("super/comparar:", e_, flush=True)
     est = []
     for cod, m in meta.items():
         if cod in cods_obs:
@@ -454,4 +480,4 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
         else:
             fila["nivel"] = 3
         est.append(fila)
-    return dict(generado=pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), horas=horas, estaciones=est)
+    return dict(generado=pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), horas=horas, estaciones=est, errores=errores[:10])

@@ -726,6 +726,175 @@ def prueba_metar_forma():
         FALLAS.append("METAR: FG bajo 0 °C, FG con HR baja y DRSN con poco viento debían avisar")
 
 
+# ----------------------------------------------------------------- vecinas externas (INIA…): solo comparación
+def _ext(vec, horas, **vals):
+    """Ext de prueba: vec {cod DMC: [ids]}; vals {var: {id: valor fijo}} (T, HR, ff10, P_mar, rr1h) para todas las horas."""
+    import externas_vec as EV
+    ids = sorted({i for L in vec.values() for i in L})
+    filas = []
+    for i in ids:
+        for h in horas:
+            f = dict(codigo=i, momento=h, T=np_nan, Td=np_nan, HR=np_nan, P_mar=np_nan, ff10=np_nan, rr1h=np_nan, n=np_nan)
+            for v, d in vals.items():
+                if i in d:
+                    f[v] = d[i]
+            if f["rr1h"] == f["rr1h"]:
+                f["n"] = 60
+            filas.append(f)
+    cat = {i: dict(id=i, lat=0.0, lon=0.0, alt=100.0, inst=i.split(":")[0]) for i in ids}
+    return EV.Ext(pd.DataFrame(filas), cat, vec, [])
+
+
+np_nan = float("nan")
+
+
+def _red(cods, **por_cod):
+    """E, V y H horario (5 h) de estaciones DMC sin diferencias salvo las de por_cod: {var: {cod: valor}}."""
+    E = pd.DataFrame({"codigo": cods, "nombre": cods, "oaci": "", "lat": 0.0, "lon": 0.0, "alt": 100.0})
+    V = {c: [x for x in cods if x != c] for c in cods}
+    base = dict(T=15.0, Td=8.0, HR=50.0, P_mar=1010.0, ff10=5.0, rr1h=0.0)
+    horas = list(pd.date_range("2026-11-13 18:00", periods=5, freq="h"))
+    filas = [dict(codigo=c, momento=h, n=60, **{v: por_cod.get(v, {}).get(c, x) for v, x in base.items()}) for h in horas for c in cods]
+    return E, V, pd.DataFrame(filas), horas
+
+
+def prueba_externas_conversiones():
+    import externas_vec as EV, pruebas as P
+    h = "2026-11-13T18"
+    cat = {"INIA:1": dict(id="INIA:1", lat=0.0, lon=0.0, alt=0.0), "INIA:2": dict(id="INIA:2", lat=0.0, lon=0.0, alt=1600.0), "INIA:3": dict(id="INIA:3", lat=0.0, lon=0.0, alt=500.0),
+           "INIA:4": dict(id="INIA:4", lat=0.0, lon=0.0, alt=None)}
+    datos = {"TA": {i: {h: 20.0} for i in cat}, "HR": {i: {h: 50.0} for i in cat}, "VV": {i: {h: [37.04, 60.0, 180.0]} for i in cat},
+             "PS": {"INIA:1": {h: 1010.0}, "INIA:2": {h: 830.0}, "INIA:3": {h: 950.0}}, "PP": {i: {h: 1.2} for i in cat}}
+    D = EV.tabla(datos, cat).set_index("codigo")
+    if "INIA:4" in D.index:
+        FALLAS.append("externas: una estación sin altura no debe usarse como vecina")
+    r = D.loc["INIA:1"]
+    if abs(r["ff10"] - 20.0) > 0.01:
+        FALLAS.append(f"externas: 37,04 km/h debían ser 20 kt → {r['ff10']}")
+    if abs(P.hr_magnus(r["T"], r["Td"]) - 50.0) > 0.3:
+        FALLAS.append(f"externas: Td calculada desde TA y HR no devuelve la HR → {r['Td']}")
+    if abs(r["P_mar"] - 1010.0) > 0.01:
+        FALLAS.append(f"externas: a 0 m el QFF es la presión de estación → {r['P_mar']}")
+    if D.loc["INIA:2", "P_mar"] == D.loc["INIA:2", "P_mar"]:
+        FALLAS.append("externas: sobre 1500 m no debe haber QFF")
+    q = D.loc["INIA:3", "P_mar"]
+    if not 1005 < q < 1015:
+        FALLAS.append(f"externas: QFF a 500 m con 950 hPa debía rondar 1010 → {q}")
+    off = EV.tabla(datos, cat, off=["INIA:3"])
+    if "INIA:3" in set(off["codigo"]):
+        FALLAS.append("externas: una estación desactivada no debe entrar")
+    mal = {**datos, "PS": {"INIA:1": {h: 700.0}}}      # presión incoherente con la altura
+    if EV.tabla(mal, cat).set_index("codigo").loc["INIA:1", "P_mar"] == EV.tabla(mal, cat).set_index("codigo").loc["INIA:1", "P_mar"]:
+        FALLAS.append("externas: presión de estación incoherente con la altura debía descartarse")
+
+
+def prueba_externas_tope_y_peso():
+    import externas_vec as EV
+    cat = {f"INIA:{k}": dict(id=f"INIA:{k}", lat=0.01 * k, lon=0.0, alt=100.0) for k in range(1, 8)}
+    cat["INIA:99"] = dict(id="INIA:99", lat=3.0, lon=0.0, alt=100.0)          # lejos (> 80 km)
+    cat["INIA:98"] = dict(id="INIA:98", lat=0.0, lon=0.0, alt=900.0)          # mucha diferencia de altura
+    E = pd.DataFrame({"codigo": ["A"], "lat": [0.0], "lon": [0.0], "alt": [100.0]})
+    v = EV.vecinas_ext(E, cat)["A"]
+    if v != [f"INIA:{k}" for k in range(1, 5)]:
+        FALLAS.append(f"externas: debían quedar las {EV.TOPE_EXT} más cercanas y aptas → {v}")
+    if abs(EV.mediana_pond([15, 15, 25, 25, 25], [1, 1, .5, .5, .5]) - 15) > 1e-9:
+        FALLAS.append("externas: 3 externas de peso 0,5 no deben imponerse a 2 DMC")
+    if EV.suficiente([.5, .5, .5]) or not EV.suficiente([1, .5, .5, .5]) or EV.suficiente([1, 1]):
+        FALLAS.append("externas: mínimo de 3 vecinas y peso 2,5")
+
+
+def prueba_super_vecinas_externas():
+    """Con solo 2 DMC vecinas no hay comparación; con 3 externas de apoyo sí. Las externas no generan alertas propias, no mandan sobre las DMC y no tumban la comparación."""
+    import superauto as SUP
+    ids = ["INIA:1", "INIA:2", "INIA:3"]
+    E, V, H, horas = _red(["A", "B", "C"], T={"A": 25.0})
+    V = {"A": ["B", "C"], "B": ["A", "C"], "C": ["A", "B"]}
+    X = _ext({"A": ids, "B": [], "C": []}, horas, T={i: 15.0 for i in ids}, HR={i: 50.0 for i in ids}, ff10={i: 5.0 for i in ids})
+    if [x for x in SUP.comparar(H, E, V, None, ()) if x["_cod"] == "A" and x["regla"] == "ZC01"]:
+        FALLAS.append("super externas: con 2 vecinas DMC y sin externas no debía comparar")
+    err = []
+    out = SUP.comparar(H, E, V, None, (), X=X, errores=err)
+    za = [x for x in out if x["_cod"] == "A" and x["regla"] == "ZC01"]
+    if not za or "externas" not in za[0]["msg"] or "INIA 3" not in za[0]["msg"]:
+        FALLAS.append(f"super externas: debía alertar ZC01 con una línea sobre las externas → {[x['msg'] for x in za]}")
+    if err or any(str(x["_cod"]).startswith("INIA") for x in out):
+        FALLAS.append(f"super externas: sin errores y sin alertas de externas → {err}, {[x['_cod'] for x in out]}")
+    # 2 DMC iguales a A (25 °C) y 3 externas a 15 °C: por peso no deciden → A no alerta
+    E2, V2, H2, horas2 = _red(["A", "B", "C"], T={"A": 25.0, "B": 25.0, "C": 25.0})
+    out2 = SUP.comparar(H2, E2, {"A": ["B", "C"], "B": ["A", "C"], "C": ["A", "B"]}, None, (), X=_ext({"A": ids, "B": [], "C": []}, horas2, T={i: 15.0 for i in ids}))
+    if [x for x in out2 if x["_cod"] == "A"]:
+        FALLAS.append("super externas: 3 externas distintas no deben imponerse a 2 DMC concordantes")
+    # lluvia: A no marca; 2 DMC + 2 externas con 1,5 mm/h (peso 3) avisan; 1 DMC + 2 externas (peso 2) no alcanzan el mínimo de 2,5
+    E3, V3, H3, h3 = _red(["A", "B", "C"], rr1h={"A": 0.0, "B": 1.5, "C": 1.5})
+    ids2 = ["INIA:1", "INIA:2"]
+    o3 = SUP.comparar(H3, E3, {"A": ["B", "C"], "B": ["A", "C"], "C": ["A", "B"]}, None, (), X=_ext({"A": ids2, "B": [], "C": []}, h3, rr1h={i: 1.5 for i in ids2}))
+    if "ZC06" not in {x["regla"] for x in o3 if x["_cod"] == "A"}:
+        FALLAS.append("super externas: pluviómetro en 0 con 2 DMC y 2 externas lloviendo debía avisar ZC06")
+    o3b = SUP.comparar(H3, E3, {"A": ["B"], "B": ["A"], "C": []}, None, (), X=_ext({"A": ids2, "B": [], "C": []}, h3, rr1h={i: 1.5 for i in ids2}))
+    if "ZC06" in {x["regla"] for x in o3b if x["_cod"] == "A"}:
+        FALLAS.append("super externas: con 1 DMC y 2 externas (peso 2) no debía avisar")
+    # el error de una estación se registra y no borra las alertas de las demás
+    E4, V4, H4, _ = _red(["A", "B", "C", "D", "E"], T={"A": 25.0})
+    orig = SUP._comparar_est
+    def falla(cod, *a, **k):
+        if cod == "B":
+            raise ValueError("prueba")
+        return orig(cod, *a, **k)
+    SUP._comparar_est = falla
+    try:
+        err4 = []
+        o4 = SUP.comparar(H4, E4, V4, None, (), errores=err4)
+    finally:
+        SUP._comparar_est = orig
+    if len(err4) != 1 or "B" not in err4[0] or "ZC01" not in {x["regla"] for x in o4 if x["_cod"] == "A"}:
+        FALLAS.append(f"super externas: el fallo de una estación debía registrarse sin tumbar a las demás → {err4}, {[x['regla'] for x in o4]}")
+
+
+def prueba_pruebas_vecinas_lluvia_externas():
+    import pruebas as P
+    ids = ["INIA:1", "INIA:2", "INIA:3"]
+    E, V, H, horas = _red(["A", "B", "C"], T={"A": 25.0})
+    V = {"A": ["B", "C"], "B": ["A", "C"], "C": ["A", "B"]}
+    X = _ext({"A": ids, "B": [], "C": []}, horas, T={i: 15.0 for i in ids}, Td={i: 8.0 for i in ids})
+    if [a for a in P.vecinas(H, E, V) if a["codigo"] == "A"]:
+        FALLAS.append("pruebas.vecinas: con 2 vecinas no debía comparar")
+    r = [a for a in P.vecinas(H, E, V, X) if a["codigo"] == "A" and a["var"] == "T"]
+    if not r or "externas" not in r[0]["msg"]:
+        FALLAS.append(f"pruebas.vecinas: con externas de apoyo debía alertar Ts → {r}")
+    # lluvia: A 0 mm, modelo 5 mm/3 h, vecinas DMC 4 mm
+    E2, V2, H2, h2 = _red(["A", "B"], rr1h={"A": 0.0, "B": 1.4})
+    M = H2[["codigo", "momento", "rr1h"]].copy(); M["rr1h"] = 1.7
+    V2 = {"A": ["B"], "B": ["A"]}
+    ext2 = _ext({"A": ["INIA:1", "INIA:2"], "B": []}, h2, rr1h={"INIA:1": 1.4, "INIA:2": 1.4})
+    if [a for a in P.lluvia(H2, M, V2) if a["codigo"] == "A"]:
+        FALLAS.append("pruebas.lluvia: con una sola vecina no debía avisar")
+    if not [a for a in P.lluvia(H2, M, V2, ext2) if a["codigo"] == "A"]:
+        FALLAS.append("pruebas.lluvia: con 1 DMC y 2 externas lloviendo debía avisar posible pluviómetro obstruido")
+
+
+def prueba_pluviometros_externas():
+    import numpy as np, pluviometros as PL
+    h = pd.date_range("2026-11-10 01:00", periods=24, freq="h")
+    cods = ["A", "C"]
+    E = pd.DataFrame({"codigo": cods, "nombre": cods, "lat": [-39.0, -39.1], "lon": [-72.0, -72.1]})
+    llueve = np.zeros(24); llueve[6:12] = 4.0
+    R = pd.DataFrame({"A": llueve.copy(), "C": 0.0}, index=h)
+    N = pd.DataFrame(100, index=h, columns=cods)
+    M = pd.DataFrame({c: llueve * 0.8 for c in cods}, index=h)
+    if {e["codigo"]: e for e in PL.analizar(R, N, E, M)}["C"]["horas_sospechosas"] != 0:
+        FALLAS.append("pluviómetros externas: con una sola vecina DMC no debe haber aviso")
+    pp = pd.DataFrame({"INIA:1": llueve.copy(), "INIA:2": llueve.copy()}, index=h)
+    EXT = dict(pp=pp, cat={"INIA:1": dict(lat=-39.02, lon=-72.02), "INIA:2": dict(lat=-39.05, lon=-72.05)})
+    r = {e["codigo"]: e for e in PL.analizar(R, N, E, M, EXT=EXT)}
+    if r["C"]["horas_sospechosas"] != 6 or r["C"]["estado"] != "sospecha_obstruccion":
+        FALLAS.append(f"pluviómetros externas: con 1 DMC y 2 externas lloviendo debía haber 6 h sospechosas → {r['C']['horas_sospechosas']}, {r['C']['estado']}")
+    if set(r) != {"A", "C"}:
+        FALLAS.append(f"pluviómetros externas: las externas no son estaciones del resultado → {set(r)}")
+    EXT["cat"]["INIA:1"] = dict(lat=-30.0, lon=-72.0); EXT["cat"]["INIA:2"] = dict(lat=-30.0, lon=-72.0)     # lejos (> 60 km)
+    if {e["codigo"]: e for e in PL.analizar(R, N, E, M, EXT=EXT)}["C"]["horas_sospechosas"] != 0:
+        FALLAS.append("pluviómetros externas: externas a más de 60 km no cuentan")
+
+
 if __name__ == "__main__":
     pruebas = [f for k, f in sorted(globals().items()) if k.startswith("prueba_")]
     for f in pruebas:

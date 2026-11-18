@@ -29,3 +29,12 @@ altura de topes ACHA y rayos GLM), últimas 12 h. `qc/satelite.py` lo lee y apli
 `qc/historial.py` guarda cada hallazgo por día UTC en `hallazgos/AAAA/MM/DD.json` (rama datos) y en el KV `qc/hist/AAAA-MM-DD`.
 Observaciones: abierto / corregido (con hora de corrección; se reabre si vuelve a fallar). Automáticas: eventos con nº de pasadas.
 Se consulta en qc.html → Historial (rango de fechas, filtros y CSV) vía `/api/historial?desde=&hasta=`.
+
+## Vecinas externas (INIA, CEAZA, SERVIMET…)
+`qc/externas.py` (cada 15 min, `externas.yml`) deja en el KV `qc/externas/cat` y `qc/externas/<VAR>`. `qc/externas_vec.py` las convierte (viento km/h → kt, QFF desde la presión de estación con la altura y sin QFF sobre 1500 m, Td desde TA y HR) y entrega, por estación DMC, hasta 4 externas a ≤ 80 km y ≤ 400 m de diferencia de altura.
+- Solo comparación: no se muestran como estaciones ni entran a contadores; una alerta que se apoyó en ellas lo dice en una línea de su detalle.
+- Pesan la mitad que una DMC (viento 0,3); cada mediana de vecinas exige ≥ 3 vecinas y peso total ≥ 2,5.
+- Desactivadas: KV `qc/externas/off` (`{"off": [id…]}`), se edita en Gestión (⚙) → Vecinas externas (`POST /api/externas`). Señal «se desvía de sus vecinas»: KV `qc/externas/desvio`.
+- Usan las externas: `superauto.comparar` (ZC01–ZC06), `pruebas.vecinas`, `pruebas.lluvia`, `pluviometros.analizar` y, en JS, Sensores (`ppx.js`) y Verificar (`verificar.js`, solo la media de la tabla horaria). La lluvia horaria de las externas se archiva en `datos/ext/pp/` (el KV guarda ~42 h).
+- No aplican a las series diarias (INIA da ~7 días).
+- Si la comparación del Super automático falla, el error queda en `errores` del resultado (`qc/super`) y en `estado.json`; un fallo en una estación no tumba las demás.

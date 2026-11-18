@@ -161,7 +161,7 @@ const f1 = x => (Math.round(x * 10) / 10).toLocaleString("es-CL");
 
 async function analizarSens(H){
   const h0 = Math.floor(Date.now() / 3600e3) * 3600e3, ts = []; for (let i = H - 1; i >= 0; i--) ts.push(h0 - i * 3600e3);
-  const [txt, cat] = await Promise.all([varias(ts), catalogo()]);
+  const [txt, cat, X] = await Promise.all([varias(ts), catalogo(), window.EXTV ? window.EXTV.datos().catch(() => null) : null]);
   const t0 = ts[0], N = H * 60, rr = new Map(); let fallas = 0, fin = -1;
   txt.forEach((tx, h) => {
     if (tx === undefined){ if (ts[h] < Date.now() - 3600e3) fallas++; return; }
@@ -182,6 +182,13 @@ async function analizarSens(H){
   const pos = c => { const e = cat.get(c); return e && isFinite(e.lat) && isFinite(e.lon) ? {lat: +e.lat, lon: +e.lon} : null; };
   const vecs = new Map(); for (const c of rr.keys()){ const p = pos(c); if (!p) continue;
     vecs.set(c, [...rr.keys()].filter(o => o !== c && pos(o)).map(o => [o, km(p, pos(o))]).filter(x => x[1] <= SEN.vecKm).sort((x, y) => x[1] - y[1]).slice(0, 6)); }
+  // vecinas externas (INIA…): solo comparación, con menor peso; nunca se listan como estaciones (a lo más una línea en el detalle)
+  const esX = o => o.includes(":"), PX = window.EXTV ? window.EXTV.PESO : 0.5, peso = L => L.reduce((s, x) => s + (esX(x[0]) ? PX : 1), 0);
+  if (X) for (const c of rr.keys()){ const p = pos(c); if (!p) continue;
+    const ex = window.EXTV.vecinas(X, p.lat, p.lon, SEN.vecKm).filter(([id]) => X.pp.has(id));
+    ex.forEach(([id]) => { if (sum.has(id)) return; const m = X.pp.get(id), s = new Float32Array(H), k = new Array(H).fill(false);
+      for (let h = 0; h < H; h++){ const v = m.get(t0 + (h + 1) * 3600e3); if (v != null){ s[h] = v; k[h] = true; } } sum.set(id, s); con.set(id, k); });
+    vecs.get(c).push(...ex); }
   const lista = [], nom = c => (cat.get(c) || {}).nombre || c;
   const horas = (c, fn) => { const out = []; let ini = -1; const s = sum.get(c), k = con.get(c);       // tramos de horas seguidas donde fn(h) es cierto
     for (let h = 0; h <= H; h++){ const ok = h < H && k[h] && fn(h); if (ok && ini < 0) ini = h; else if (!ok && ini >= 0){ out.push([ini, h - 1]); ini = -1; } } return out; };
@@ -197,13 +204,13 @@ async function analizarSens(H){
       cerrar(i, m);
     }
     // 2) cero sostenido con vecinas lloviendo
-    for (const [i, f] of horas(c, h => sum.get(c)[h] < 0.05 && vh(c, h).filter(([o]) => sum.get(o)[h] >= SEN.ceroVec).length >= SEN.vecMin)){
+    for (const [i, f] of horas(c, h => sum.get(c)[h] < 0.05 && peso(vh(c, h).filter(([o]) => sum.get(o)[h] >= SEN.ceroVec)) >= SEN.vecMin)){
       if (f - i + 1 < SEN.ceroH) continue;
-      const vs = vh(c, f).filter(([o]) => sum.get(o)[f] >= SEN.ceroVec).slice(0, 3);
+      const llu = vh(c, f).filter(([o]) => sum.get(o)[f] >= SEN.ceroVec), vs = llu.filter(([o]) => !esX(o)).slice(0, 3), nx = llu.filter(([o]) => esX(o)).length;
       let tot = {}; vs.forEach(([o]) => { let t = 0; for (let h = i; h <= f; h++) t += sum.get(o)[h]; tot[o] = t; });
-      e.hallazgos.push({k: "cero", a: t0 + i * 3600e3, b: t0 + (f + 1) * 3600e3, n: (f - i + 1) * 60, det: `0 mm durante ${f - i + 1} h; vecinas: ` + vs.map(([o, d]) => `${nom(o)} (${Math.round(d)} km) ${f1(tot[o])} mm`).join(" · "), abierto: f === H - 1}); }
+      e.hallazgos.push({k: "cero", a: t0 + i * 3600e3, b: t0 + (f + 1) * 3600e3, n: (f - i + 1) * 60, det: `0 mm durante ${f - i + 1} h; vecinas: ` + (vs.map(([o, d]) => `${nom(o)} (${Math.round(d)} km) ${f1(tot[o])} mm`).join(" · ") || "ninguna DMC") + (nx ? ` · apoyada además en ${nx} estación${nx > 1 ? "es" : ""} externa${nx > 1 ? "s" : ""} de menor peso` : ""), abierto: f === H - 1}); }
     // 3) goteo: 0,1–0,4 mm por hora con vecinas secas
-    for (const [i, f] of horas(c, h => sum.get(c)[h] >= 0.1 && sum.get(c)[h] <= 0.4 && vh(c, h).length >= SEN.vecMin && vh(c, h).every(([o]) => sum.get(o)[h] < 0.05))){
+    for (const [i, f] of horas(c, h => sum.get(c)[h] >= 0.1 && sum.get(c)[h] <= 0.4 && peso(vh(c, h)) >= SEN.vecMin && vh(c, h).every(([o]) => sum.get(o)[h] < 0.05))){
       if (f - i + 1 < SEN.goteoH) continue; let t = 0; for (let h = i; h <= f; h++) t += sum.get(c)[h];
       e.hallazgos.push({k: "gota", a: t0 + i * 3600e3, b: t0 + (f + 1) * 3600e3, n: (f - i + 1) * 60, det: `${f1(t)} mm en ${f - i + 1} h (0,1–0,4 mm por hora) con las vecinas cercanas secas`, abierto: f === H - 1}); }
     if (e.hallazgos.length){                                       // un mismo tipo repetido: se muestran los 2 más largos y cuántos más hubo
