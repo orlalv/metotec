@@ -11,8 +11,10 @@ const p2 = n => String(n).padStart(2, "0");
 const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
 const CAPAS = [
   {k: "imerg", t: "Lluvia · NASA IMERG", id: "IMERG_Precipitation_Rate", niv: [["GoogleMapsCompatible_Level6", 6]], ext: "png", op: .85},
-  {k: "ir", t: "GOES · infrarrojo", id: "GOES-East_ABI_Band13_Clean_Infrared", niv: [["GoogleMapsCompatible_Level6", 6], ["GoogleMapsCompatible_Level7", 7], ["GoogleMapsCompatible_Level8", 8]], ext: "png", op: .75},
-  {k: "goes", t: "GOES · color real", id: "GOES-East_ABI_GeoColor", niv: [["GoogleMapsCompatible_Level7", 7]], ext: "jpeg", op: .9}];
+  {k: "ir", t: "GOES · infrarrojo", id: "GOES-East_ABI_Band13_Clean_Infrared", niv: [["GoogleMapsCompatible_Level6", 6], ["GoogleMapsCompatible_Level7", 7], ["GoogleMapsCompatible_Level8", 8]], ext: "png", op: .75,
+    dia: [["MODIS_Terra_Brightness_Temp_Band31_Day", "MODIS Terra · temperatura de nubes (día)"], ["MODIS_Terra_Brightness_Temp_Band31_Night", "MODIS Terra · temperatura de nubes (noche)"], ["MODIS_Aqua_Brightness_Temp_Band31_Day", "MODIS Aqua · temperatura de nubes (día)"], ["MODIS_Aqua_Brightness_Temp_Band31_Night", "MODIS Aqua · temperatura de nubes (noche)"]], diaNiv: [["GoogleMapsCompatible_Level7", 7], ["GoogleMapsCompatible_Level6", 6]], diaExt: "png", diaOp: .8},
+  {k: "goes", t: "GOES · color real", id: "GOES-East_ABI_GeoColor", niv: [["GoogleMapsCompatible_Level7", 7]], ext: "jpeg", op: .9,
+    dia: [["VIIRS_SNPP_CorrectedReflectance_TrueColor", "VIIRS Suomi NPP · color real"], ["MODIS_Terra_CorrectedReflectance_TrueColor", "MODIS Terra · color real"], ["MODIS_Aqua_CorrectedReflectance_TrueColor", "MODIS Aqua · color real"]], diaNiv: [["GoogleMapsCompatible_Level9", 9]], diaExt: "jpeg", diaOp: 1}];
 const COL = ["#58a6ff", "#3fb950", "#d29922", "#bc8cff", "#39c5cf", "#ff7b72"];
 const RADIO_KM = 60, MAX_VEC = 6, MIN_FILAS_H = 3;
 const hoyUTC = () => new Date().toISOString().slice(0, 10);
@@ -136,12 +138,13 @@ function actualizarMapas(){
   $("#vHoraT", EL).textContent = `${ST.dia} ${p2(ST.hora)}:00 UTC · ${locD(t)} local`;
   MAPS.forEach((M, ci) => { const C = CAPAS[ci], diag = $("#vD" + ci, EL);
     if (M.capa){ M.mapa.removeLayer(M.capa); M.capa = null; } M.grupo.clearLayers();
-    let alt = 0, ok = 0, mal = 0; const info = () => { diag.innerHTML = futuro ? `<span style="color:#d29922">hora futura: sin imagen</span>` : mal && !ok ? `<span style="color:#e5534b">sin imagen para esta fecha/hora (${mal} teselas con error)</span>` : `${ok} teselas cargadas${mal ? ` · ${mal} con error` : ""}`; };
-    const mk = () => { const [niv, z] = C.niv[alt], ly = L.tileLayer(`${GIBS}${C.id}/default/${iso}/${niv}/{z}/{y}/{x}.${C.ext}`, {pane: "sat", maxNativeZoom: z, maxZoom: 12, opacity: C.op, attribution: "NASA GIBS"}).addTo(M.mapa);
-      ly.on("tileload", () => { ok++; info(); }); ly.on("tileerror", () => { mal++; info(); if (ok === 0 && mal >= 3 && alt + 1 < C.niv.length && ly === M.capa){ alt++; M.mapa.removeLayer(ly); mal = 0; M.capa = mk(); } }); return ly; };
-    const viejo = C.k !== "imerg" && t < Date.now() - 90 * 864e5;                    // GOES en NASA GIBS: solo ventana móvil de ~90 días
-    if (viejo){ diag.innerHTML = `<span style="color:#d29922">NASA solo guarda los últimos ~90 días de GOES: no hay imagen de esta fecha</span>`; }
-    else { if (!futuro) M.capa = mk(); info(); }
+    const viejo = C.k !== "imerg" && t < Date.now() - 90 * 864e5;                    // GOES en NASA GIBS: solo ventana móvil de ~90 días → imagen diaria de MODIS/VIIRS
+    const opc = viejo ? C.dia.flatMap(([id, n]) => C.diaNiv.map(([niv, z]) => ({id, n, niv, z, ext: C.diaExt, tiempo: ST.dia, op: C.diaOp}))) : C.niv.map(([niv, z]) => ({id: C.id, n: "", niv, z, ext: C.ext, tiempo: iso, op: C.op}));
+    let alt = 0, ok = 0, mal = 0;
+    const info = () => { diag.innerHTML = futuro ? `<span style="color:#d29922">hora futura: sin imagen</span>` : mal && !ok && alt >= opc.length - 1 ? `<span style="color:#e5534b">sin imagen para esta fecha/hora (${mal} teselas con error)</span>` : `${viejo ? `<span style="color:#d29922">GOES solo guarda ~90 días → imagen diaria: ${esc(opc[alt].n)}</span> · ` : ""}${ok} teselas cargadas${mal ? ` · ${mal} con error` : ""}`; };
+    const mk = () => { const o = opc[alt], ly = L.tileLayer(`${GIBS}${o.id}/default/${o.tiempo}/${o.niv}/{z}/{y}/{x}.${o.ext}`, {pane: "sat", maxNativeZoom: o.z, maxZoom: 12, opacity: o.op, attribution: "NASA GIBS"}).addTo(M.mapa);
+      ly.on("tileload", () => { ok++; info(); }); ly.on("tileerror", () => { mal++; info(); if (ok === 0 && mal >= 3 && alt + 1 < opc.length && ly === M.capa){ alt++; M.mapa.removeLayer(ly); mal = 0; M.capa = mk(); info(); } }); return ly; };
+    if (!futuro) M.capa = mk(); info();
     if (!e0) return; const g = M.grupo;
     L.circle([e0.lat, e0.lon], {radius: RADIO_KM * 1000, color: "#f85149", weight: 1, dashArray: "6 6", fill: false, interactive: false}).addTo(g);
     L.circleMarker([e0.lat, e0.lon], {radius: 15, color: "#f85149", weight: 3, fill: false, interactive: false}).addTo(g);
@@ -171,7 +174,7 @@ function pagina(el){
       <label>Hora UTC <select id="vHora">${Array.from({length: 24}, (_, h) => `<option value="${h}"${h === ST.hora ? " selected" : ""}>${p2(h)}:00</option>`).join("")}</select></label>
       <button id="vAnt">‹ hora</button><button id="vSig">hora ›</button><button id="vAyer" title="Ayer (UTC)">Ayer</button><button id="vAct">↻ Cargar</button><b id="vHoraT" style="margin-left:6px"></b></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;margin:6px 0">${CAPAS.map((C, i) => `<div><div style="font-size:12.5px;margin-bottom:2px"><b>${C.t}</b> <span id="vD${i}" style="color:var(--mu);font-size:11.5px"></span></div><div id="vM${i}" style="height:330px;border-radius:8px"></div></div>`).join("")}</div>
-    <div style="font-size:11.5px;color:var(--mu);margin-bottom:6px">Rojo = estación (anillo y cruz) · círculo punteado = ${RADIO_KM} km · puntos de color = vecinas. Los 3 mapas se mueven juntos. IMERG llega con ~5 h de retraso y existe desde el año 2000. GOES (infrarrojo y color) en NASA GIBS solo guarda los últimos ~90 días: en fechas anteriores esos dos mapas quedan sin imagen.</div>
+    <div style="font-size:11.5px;color:var(--mu);margin-bottom:6px">Rojo = estación (anillo y cruz) · círculo punteado = ${RADIO_KM} km · puntos de color = vecinas. Los 3 mapas se mueven juntos. IMERG llega con ~5 h de retraso y existe desde el año 2000. GOES (infrarrojo y color) en NASA GIBS solo guarda los últimos ~90 días: en fechas anteriores esos dos mapas muestran la imagen diaria de MODIS/VIIRS (una pasada por día, no la hora elegida).</div>
     <div id="vOut"></div></div>`;
   crearMapas();
   U().catalogo().then(cat => { const L2 = [...cat.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
