@@ -20,7 +20,9 @@ async function hora(t){                                // un archivo horario (to
   const url = RAW + k.replace(/-/g, "/").replace("T", "/") + ".csv.gz";
   const p = (async () => {
     for (let i = 0; i < 3; i++){
-      try { const r = await conTiempo(url + (i ? "?r=" + i : "")); if (r.status === 404) return null;
+      try { let r = await conTiempo("/api/emahora?h=" + k + (i ? "&r=" + i : "")).catch(() => null);       // mismo dominio (algunas redes bloquean raw.githubusercontent.com)
+        if (!r || (!r.ok && r.status !== 404)) r = await conTiempo(url + (i ? "?r=" + i : ""));
+        if (r.status === 404) return null;
         if (r.ok){ const b = await r.arrayBuffer(); return await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text(); } } catch (e) { PPX_ERR = e && e.message || String(e); }
       await new Promise(z => setTimeout(z, 700 * (i + 1)));
     }
@@ -36,10 +38,10 @@ async function varias(ts, par = 6){                    // descarga con pocas con
 }
 async function catalogo(){
   if (EST) return EST;
-  for (const u of ["https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json", "/api/minutarios?estaciones=1"]){
+  for (const u of ["/api/minutarios?estaciones=1", "https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json"]){
     try { const j = await (await conTiempo(u, 10000)).json(); const L = Array.isArray(j) ? j : j.estaciones || []; if (L.length){ EST = new Map(L.map(e => [String(e.codigo), e])); return EST; } } catch (e) {}
   }
-  return EST = new Map();
+  return new Map();                                       // sin catálogo: no se guarda, se reintenta la próxima vez
 }
 
 /* Lee la ventana y arma, por estación, los huecos de rr1m. Un «hueco del archivo» (ninguna estación tiene fila ese minuto) no se culpa a la estación. */

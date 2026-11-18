@@ -113,10 +113,12 @@ function tarjeta(e, i){
 let CAT = null, MP = null;
 async function catalogo(){
   if (CAT) return CAT;
-  try { const c = new AbortController(), t = setTimeout(() => c.abort(), 10000);
-    const L = await (await fetch("https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json", {signal: c.signal})).json(); clearTimeout(t);
-    CAT = {cod: new Map(L.map(e => [String(e.codigo), e])), nom: new Map(L.map(e => [e.nombre, e]))}; } catch (e) { CAT = {cod: new Map(), nom: new Map()}; }
-  return CAT;
+  for (const u of ["/api/minutarios?estaciones=1", "https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json"]){
+    try { const c = new AbortController(), t = setTimeout(() => c.abort(), 10000);
+      const j = await (await fetch(u, {signal: c.signal})).json(); clearTimeout(t); const L = Array.isArray(j) ? j : j.estaciones || [];
+      if (L.length) return CAT = {cod: new Map(L.map(e => [String(e.codigo), e])), nom: new Map(L.map(e => [e.nombre, e]))}; } catch (e) {}
+  }
+  return {cod: new Map(), nom: new Map()};                // falló: no se guarda, se reintenta al abrir otro mapa
 }
 const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
 const CAPAS = {imerg: ["Lluvia NASA IMERG", "IMERG_Precipitation_Rate", "GoogleMapsCompatible_Level6", 6, "png", .85], ir: ["GOES-19 infrarrojo", "GOES-East_ABI_Band13_Clean_Infrared", "GoogleMapsCompatible_Level7", 7, "png", .75],
@@ -149,7 +151,7 @@ async function abrirMapa(id, i){
     const C = CAPAS[capaSel]; if (capa) mapa.removeLayer(capa); capa = null;
     $("#pPos").innerHTML = t > Date.now() ? `<span style="color:#d29922">Hora futura: sin imagen.</span>` : "";
     if (C && t <= Date.now()) capa = L.tileLayer(`${GIBS}${C[1]}/default/${iso}/${C[2]}/{z}/{y}/{x}.${C[4]}`, {pane: "sat", maxNativeZoom: C[3], maxZoom: 12, opacity: C[5], attribution: "NASA GIBS"}).addTo(mapa);
-    let ok = 0, mal = 0; const diag = () => { const el = $("#pDiag"); if (el) el.innerHTML = `Diagnóstico v1.4 · estación ${e0 ? "ubicada (" + e0.lat.toFixed(3) + ", " + e0.lon.toFixed(3) + ")" : "<b style='color:#f85149'>sin coordenadas en el catálogo</b>"} · vecinas ubicadas ${nv}/${(dd.vecs || []).length} · capa ${C ? C[0] : "ninguna"}: ${ok} teselas cargadas, ${mal ? `<b style="color:#f85149">${mal} con error</b>` : "0 con error"}`; };
+    let ok = 0, mal = 0; const diag = () => { const el = $("#pDiag"); if (el) el.innerHTML = `Diagnóstico v1.5 · estación ${e0 ? "ubicada (" + e0.lat.toFixed(3) + ", " + e0.lon.toFixed(3) + ")" : "<b style='color:#f85149'>sin coordenadas en el catálogo</b>"} · vecinas ubicadas ${nv}/${(dd.vecs || []).length} · capa ${C ? C[0] : "ninguna"}: ${ok} teselas cargadas, ${mal ? `<b style="color:#f85149">${mal} con error</b>` : "0 con error"}`; };
     let nv = 0;
     if (capa){ capa.on("tileload", () => { ok++; diag(); }); capa.on("tileerror", () => { mal++; diag(); }); }
     grupo.clearLayers(); const pts = [];
