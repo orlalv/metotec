@@ -45,6 +45,7 @@ header h1{max-width:420px;min-width:0}header h1 small{display:block;color:var(--
 .modos button.on{background:var(--oro);color:var(--on);box-shadow:0 0 16px color-mix(in srgb,var(--oro) 35%,transparent)}
 .ppsub{display:flex;flex-wrap:wrap;gap:6px;width:100%;margin:2px 0 4px}.ppsub[hidden]{display:none}.ppsub button{background:none;border:1px solid var(--bd);color:var(--mu);font:600 13px inherit;padding:5px 13px;border-radius:8px;cursor:pointer}.ppsub button.on{border-color:var(--oro);color:var(--oro);background:color-mix(in srgb,var(--oro) 12%,transparent)}.ppsub b{margin-left:6px;font-size:11.5px;background:var(--err);color:#fff;border-radius:20px;padding:0 6px}.ppsub b:empty{display:none}
 #minu.solo #mVolver,#minu.solo #mCsv,#minu.solo>p.nota,#minu.solo #mOut>:not(h3):not(details[data-k="hue"]){display:none}
+.ppser{max-width:none;border-style:solid}.ppser .htools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.ppser .htools select,.ppser .htools button,.ppsAbrir{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:5px 10px;font:600 13px inherit;cursor:pointer}.ppser .htools label{font-size:12.5px;color:var(--mu);display:flex;gap:5px;align-items:center}.ppsAbrir:hover{border-color:var(--oro);color:var(--oro)}
 .ppx{max-width:760px;margin:18px auto;padding:16px 20px;border:1px dashed var(--bd);border-radius:10px;color:var(--mu);line-height:1.6}.ppx h3{color:var(--tx,inherit);margin:0 0 8px}
 .chip{background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:999px;padding:5px 12px;font-weight:700;font-size:14px;cursor:pointer;user-select:none}
 .chip i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}
@@ -250,7 +251,7 @@ main[hidden]{display:none}
 <script src="js/casillas.js?v=202611132150"></script>
 <script src="js/sensorgraf.js?v=202611171330"></script>
 <script src="js/huecos.js?v=202611181430"></script>
-<script src="js/ppx.js?v=202611181830"></script>
+<script src="js/ppx.js?v=202611181930"></script>
 <script src="js/minutarios.js?v=202611171420"></script>
 <script src="js/supgraf.js?v=202611131625"></script>
 <script src="js/superauto.js?v=202611131815"></script>
@@ -623,7 +624,12 @@ function ppAbrir(){                                                  // muestra 
   else if (ppSub === "relleno"){ MINU.init(); if (window.MINU && MINU.M) HUECOS.render(); }
   else PPX.pagina($("#ppx"), ppSub);
   if (ppSub !== "binaria" && ppN.binaria == null) PLU.contar(clave);
+  if (ppSub !== "series" && ppN.series == null && window.PPX) PPX.contar();
 }
+window.ppAbrirRelleno = (cod, dia) => {                              // desde «Series»: abre «Relleno de series» en esa estación y día (UTC)
+  ppElegir("relleno");
+  MINU.estaciones().then(E => { const e = E.find(x => x.codigo === cod); $("#mEst").value = e ? cod + " · " + e.nombre : cod; $("#mDia").value = dia; $("#mDiaT").value = "utc"; $("#mVer").click(); });
+};
 function cambiarModo(m){
   if (m === "plu"){ ppSub = "binaria"; m = "pp"; }                   // la antigua pestaña «Pluviómetros dudosos» ahora es «Precipitación binaria»
   const mb = document.querySelector(`.modos button[data-m="${m}"]`); if (!mb) return;
