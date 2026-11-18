@@ -1,14 +1,14 @@
 {
  "version": "0.1",
- "inicio": "2026-11-18T14:45:55+00:00",
+ "inicio": "2026-11-18T15:15:38+00:00",
  "errores": [],
- "estaciones": 138,
- "con_datos": 121,
- "registros": 4887,
- "desde": "2026-11-18 13:46:00",
- "hasta": "2026-11-18 14:40:00",
+ "estaciones": 133,
+ "con_datos": 122,
+ "registros": 4851,
+ "desde": "2026-11-18 14:16:00",
+ "hasta": "2026-11-18 15:10:00",
  "horas_archivadas": 2,
- "modelo": 6624,
+ "modelo": 6384,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026111700_ecmwf",
@@ -20,20 +20,20 @@
  "wrf_ref": 654,
  "satelite": {
   "imagenes": 32,
-  "ultima": "2026-11-18T14:30Z"
+  "ultima": "2026-11-18T15:00Z"
  },
  "calibracion": {
   "dias": 11,
   "filas": 27421,
   "activa": false
  },
- "consenso_quitados": 1,
+ "consenso_quitados": 2,
  "incendios_cerca": 1,
  "kv_incendios": "200",
- "ob_filas": 2002,
+ "ob_filas": 2009,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 509,
+  "observaciones": 520,
   "fallas": 0,
   "hallazgos": 345,
   "kv": "200",
@@ -44,8 +44,8 @@
   "2026-11-18"
  ],
  "super": {
-  "estaciones": 105,
-  "hallazgos": 52,
+  "estaciones": 100,
+  "hallazgos": 49,
   "kv": "200"
  },
  "historial": {
@@ -62,39 +62,40 @@
  },
  "pluviometros": {
   "resumen": {
-   "sospecha_obstruccion": 2,
-   "revisar": 10,
-   "sin_dato_con_lluvia": 2,
-   "ok": 114
+   "sospecha_obstruccion": 9,
+   "revisar": 16,
+   "sin_dato_con_lluvia": 1,
+   "ok": 102
   },
   "fuentes": {
    "vecinas": true,
    "modelo": true,
    "satelite": true,
-   "imerg": false,
-   "satelite_horas": 18
+   "imerg": true,
+   "satelite_horas": 19,
+   "imerg_pasos_nuevos": 96
   },
   "kv": "200"
  },
  "reputacion": {
   "resumen": {
-   "cuarentena": 3,
-   "en_revision": 30,
-   "operativa": 105,
-   "verde": 86,
-   "amarillo": 21,
-   "rojo": 31,
+   "cuarentena": 0,
+   "en_revision": 34,
+   "operativa": 99,
+   "verde": 85,
+   "amarillo": 22,
+   "rojo": 26,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 22,
+ "alertas": 21,
  "resumen": {
-  "bien": 107,
-  "sospechoso": 13,
-  "erróneo": 8,
-  "sin datos": 10
+  "bien": 109,
+  "sospechoso": 11,
+  "erróneo": 7,
+  "sin datos": 6
  },
- "fin": "2026-11-18T14:51:16+00:00"
+ "fin": "2026-11-18T15:21:11+00:00"
 }
