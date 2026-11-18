@@ -132,10 +132,10 @@ async function abrirMapa(id, i){
   m = document.createElement("div"); m.id = "pMapa"; document.body.appendChild(m);
   const e0 = cat.cod.get(String(est.codigo));
   m.innerHTML = `<div class="caja"><div class="barra"><b id="pMaT"></b><span style="flex:1"></span><button id="pMaX">✕ Cerrar</button></div>
-    <div class="barra"><button id="pMaA">‹ hora anterior</button><button id="pMaS">hora siguiente ›</button><span style="width:10px"></span>
+    <div class="barra"><button id="pMaC" title="Volver a centrar en la estación">◎ Centrar</button><button id="pMaA">‹ hora anterior</button><button id="pMaS">hora siguiente ›</button><span style="width:10px"></span>
       ${Object.entries(CAPAS).map(([k, c]) => `<button data-cp="${k}" class="${capaSel === k ? "on" : ""}">${c[0]}</button>`).join("")}</div>
     <div id="pMaV" style="font-size:12.5px;margin:4px 0"></div><div id="pPos" style="margin:0 0 4px"></div><div id="pMapaM"></div>
-    <div style="font-size:11.5px;color:var(--mu);margin-top:4px">Rojo = estación · azul = vecinas (mm de esa hora). IMERG llega con ~5 h de retraso: si la capa sale vacía, la hora es muy reciente. Fuente: NASA GIBS.</div></div>`;
+    <div style="font-size:11.5px;color:var(--mu);margin-top:4px">Rojo (anillo y cruz) = la estación; el círculo punteado marca los 60 km de búsqueda de vecinas · azul = vecinas (mm de esa hora). IMERG llega con ~5 h de retraso: si la capa sale vacía, la hora es muy reciente. Fuente: NASA GIBS.</div></div>`;
   m.addEventListener("click", ev => { if (ev.target === m) cerrarMapa(); });
   document.addEventListener("keydown", esc_);
   const mapa = L.map("pMapaM", {zoomControl: true}); MP = mapa;
@@ -150,14 +150,19 @@ async function abrirMapa(id, i){
     $("#pPos").innerHTML = t > Date.now() ? `<span style="color:#d29922">Hora futura: sin imagen.</span>` : "";
     if (C && t <= Date.now()) capa = L.tileLayer(`${GIBS}${C[1]}/default/${iso}/${C[2]}/{z}/{y}/{x}.${C[4]}`, {pane: "sat", maxNativeZoom: C[3], maxZoom: 12, opacity: C[5], attribution: "NASA GIBS"}).addTo(mapa);
     grupo.clearLayers(); const pts = [];
-    if (e0){ pts.push([e0.lat, e0.lon]); L.circleMarker([e0.lat, e0.lon], {radius: 9, color: "#fff", weight: 2, fillColor: "#f85149", fillOpacity: 1}).bindTooltip(`${est.nombre} · ${dd.est == null ? "s/d" : n1(dd.est) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); }
+    if (e0){ pts.push([e0.lat, e0.lon]);
+      L.circle([e0.lat, e0.lon], {radius: 60000, color: "#f85149", weight: 1, dashArray: "6 6", fill: false, interactive: false}).addTo(grupo);          // alcance de las vecinas (60 km)
+      L.circleMarker([e0.lat, e0.lon], {radius: 17, color: "#f85149", weight: 3, fill: false, interactive: false}).addTo(grupo);
+      L.polyline([[e0.lat - 0.12, e0.lon], [e0.lat + 0.12, e0.lon]], {color: "#f85149", weight: 1, interactive: false}).addTo(grupo);
+      L.polyline([[e0.lat, e0.lon - 0.12], [e0.lat, e0.lon + 0.12]], {color: "#f85149", weight: 1, interactive: false}).addTo(grupo);
+      L.circleMarker([e0.lat, e0.lon], {radius: 8, color: "#fff", weight: 2, fillColor: "#f85149", fillOpacity: 1}).bindTooltip(`${est.nombre} · ${dd.est == null ? "s/d" : n1(dd.est) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); }
     (dd.vecs || []).forEach(([n, km, mm]) => { const e = cat.nom.get(n); if (!e) return; pts.push([e.lat, e.lon]);
       L.circleMarker([e.lat, e.lon], {radius: 7, color: "#fff", weight: 2, fillColor: "#58a6ff", fillOpacity: 1}).bindTooltip(`${n} (${km} km) · ${mm == null ? "s/d" : n1(mm) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); });
-    if (ult == null){ if (pts.length) mapa.fitBounds(pts, {padding: [60, 60], maxZoom: 9}); else mapa.setView([-33.4, -70.7], 5); }
+    if (ult == null){ if (pts.length) (e0 ? mapa.setView([e0.lat, e0.lon], 8) : mapa.fitBounds(pts, {padding: [60, 60], maxZoom: 9})); else mapa.setView([-33.4, -70.7], 5); }
     ult = idx; $("#pMaA").disabled = idx === 0; $("#pMaS").disabled = idx === det.length - 1;
   };
   let idx = i; pintar(idx);
-  $("#pMaA").onclick = () => pintar(--idx); $("#pMaS").onclick = () => pintar(++idx); $("#pMaX").onclick = cerrarMapa;
+  $("#pMaA").onclick = () => pintar(--idx); $("#pMaS").onclick = () => pintar(++idx); $("#pMaX").onclick = cerrarMapa; $("#pMaC").onclick = () => { if (e0) mapa.setView([e0.lat, e0.lon], 8); };
   m.querySelectorAll("[data-cp]").forEach(b => b.onclick = () => { capaSel = b.dataset.cp; try { localStorage.setItem("qcPluCapa", capaSel); } catch (e) {}
     m.querySelectorAll("[data-cp]").forEach(x => x.classList.toggle("on", x === b)); pintar(idx); });
   setTimeout(() => mapa.invalidateSize(), 50);
