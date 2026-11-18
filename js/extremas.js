@@ -78,5 +78,10 @@ async function pintarRecords(){
     }).join("")}</table><p style="color:var(--mu);font-size:12px;margin-top:6px">Temperatura: serie de 1990 en adelante. Lluvia: 1995 en adelante (2026 solo en las estaciones con archivo SACLIM). Viento: solo seis estaciones con archivo horario SACLIM (viento medio, no racha).</p>`;
   } catch (err){ el.innerHTML = `<p style="color:var(--mu)">Aún no hay récords publicados (se generan en la próxima pasada del control).</p>`; }
 }
-window.EXT = {init, pintar};
+function contar(R, t){                          // cuántas alertas visibles tiene un grupo de pestaña (para el contador de las subopciones)
+  const O = (R && R.observaciones) || {}; let n = 0;
+  (O.estaciones || []).filter(e => !window.EQ || EQ.filtra(e.codigo)).forEach(e => (e.hallazgos || []).forEach(h => { if (REGLAS.pestana(h.regla) === t && MARCA.estado(e.codigo, h) !== "oculta") n++; }));
+  return n;
+}
+window.EXT = {init, pintar, contar};
 })();

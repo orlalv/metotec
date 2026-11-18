@@ -212,13 +212,13 @@ if (typeof window === "undefined") return;
 
 /* ---------- pantalla ---------- */
 const $ = s => document.querySelector(s);
-let ST = null, VAR = "T", SEL = null, TOK = 0, VIEW = {}, LAST = null, MODO = "libre";       // por defecto se dibuja a mano alzada con el botón izquierdo apretado
+let ST = null, VAR = "T", SEL = null, TOK = 0, VIEW = {}, LAST = null, MODO = "libre", SOLO = false;   // SOLO: «Relleno de series» de Precipitación (solo agua caída)       // por defecto se dibuja a mano alzada con el botón izquierdo apretado
 const W = 1100, H = 270, iz = 58, de = 12, ar = 16, ab = 26, COL = "#C9A54C", EST = "#F2994A";
 
 async function render(){
   const el = $("#mHue"); if (!el || !window.MINU) return;
   const mi = window.MINU, M = mi.M; if (!M) return;
-  const tok = ++TOK, vars = VARS_H.filter(x => M.F.some(o => o[x[0]] != null)); if (!vars.length){ el.innerHTML = '<p style="color:var(--mu)">Sin variables para completar.</p>'; return; }
+  const tok = ++TOK, vars = VARS_H.filter(x => M.F.some(o => o[x[0]] != null) && (!SOLO || x[0] === "rr1m")); if (!vars.length){ el.innerHTML = `<p style="color:var(--mu)">${SOLO ? "Esta estación no tiene datos de agua caída para este día." : "Sin variables para completar."}</p>`; return; }
   if (!vars.some(x => x[0] === VAR)) VAR = vars[0][0];
   el.innerHTML = '<p style="color:var(--mu)">Buscando huecos y estaciones vecinas…</p>';
   const vecD = await mi.vecD(); if (tok !== TOK) return;
@@ -475,5 +475,5 @@ function grafico(){
     svg.addEventListener("pointerup", () => { bajo = false; ult = null; if (SEL != null) tabla(); });
   }
 }
-window.HUECOS = Object.assign({render}, API);
+window.HUECOS = Object.assign({render, solo: v => { SOLO = !!v; if (SOLO) VAR = "rr1m"; }}, API);
 })();

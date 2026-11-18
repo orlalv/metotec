@@ -43,6 +43,9 @@ header h1{max-width:420px;min-width:0}header h1 small{display:block;color:var(--
 .modos{display:flex;flex-wrap:wrap;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:10px;padding:3px}
 .modos button{background:none;border:0;color:var(--mu);font:700 13.5px inherit;padding:6px 12px;border-radius:7px;cursor:pointer}
 .modos button.on{background:var(--oro);color:var(--on);box-shadow:0 0 16px color-mix(in srgb,var(--oro) 35%,transparent)}
+.ppsub{display:flex;flex-wrap:wrap;gap:6px;width:100%;margin:2px 0 4px}.ppsub[hidden]{display:none}.ppsub button{background:none;border:1px solid var(--bd);color:var(--mu);font:600 13px inherit;padding:5px 13px;border-radius:8px;cursor:pointer}.ppsub button.on{border-color:var(--oro);color:var(--oro);background:color-mix(in srgb,var(--oro) 12%,transparent)}.ppsub b{margin-left:6px;font-size:11.5px;background:var(--err);color:#fff;border-radius:20px;padding:0 6px}.ppsub b:empty{display:none}
+#minu.solo #mVolver,#minu.solo #mCsv,#minu.solo>p.nota,#minu.solo #mOut>:not(h3):not(details[data-k="hue"]){display:none}
+.ppx{max-width:760px;margin:18px auto;padding:16px 20px;border:1px dashed var(--bd);border-radius:10px;color:var(--mu);line-height:1.6}.ppx h3{color:var(--tx,inherit);margin:0 0 8px}
 .chip{background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:999px;padding:5px 12px;font-weight:700;font-size:14px;cursor:pointer;user-select:none}
 .chip i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}
 .chip.off{opacity:.4}
@@ -207,7 +210,8 @@ main[hidden]{display:none}
  <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
  <div class="salto"></div>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="super">Super automático</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
- <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="rec" data-g="real">Récord histórico</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="est" data-g="real">Estado de estaciones</button><button data-m="plu" data-g="real">Pluviómetros dudosos</button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="sup" data-g="super" hidden>Estaciones</button><button data-m="sup_pp" data-g="super" hidden>Agua caída</button><button data-m="sup_prc" data-g="super" hidden>Precipitación</button><button data-m="sup_ext" data-g="super" hidden>Extremas</button><button data-m="sup_pre" data-g="super" hidden>Presiones</button><button data-m="sup_tem" data-g="super" hidden>Temperaturas</button><button data-m="sup_vie" data-g="super" hidden>Viento</button><button data-m="sup_est" data-g="super" hidden>Estación</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
+ <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="rec" data-g="real">Récord histórico</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="est" data-g="real">Estado de estaciones</button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="sup" data-g="super" hidden>Estaciones</button><button data-m="sup_pp" data-g="super" hidden>Agua caída</button><button data-m="sup_prc" data-g="super" hidden>Precipitación</button><button data-m="sup_ext" data-g="super" hidden>Extremas</button><button data-m="sup_pre" data-g="super" hidden>Presiones</button><button data-m="sup_tem" data-g="super" hidden>Temperaturas</button><button data-m="sup_vie" data-g="super" hidden>Viento</button><button data-m="sup_est" data-g="super" hidden>Estación</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
+ <div class="salto"></div><div id="ppSub" class="ppsub" hidden></div>
  <div class="chips" id="chips"></div>
 </header>
 <main>
@@ -235,6 +239,7 @@ main[hidden]{display:none}
 <section id="inf" hidden></section>
 <section id="est" hidden></section>
 <section id="plu" hidden></section>
+<section id="ppx" hidden></section>
 <section id="reg" hidden></section>
 <section id="equ" hidden></section>
 <section id="mis" hidden></section>
@@ -244,17 +249,18 @@ main[hidden]{display:none}
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
 <script src="js/casillas.js?v=202611132150"></script>
 <script src="js/sensorgraf.js?v=202611171330"></script>
-<script src="js/huecos.js?v=202611181700"></script>
+<script src="js/huecos.js?v=202611181830"></script>
+<script src="js/ppx.js?v=202611181830"></script>
 <script src="js/minutarios.js?v=202611171420"></script>
 <script src="js/supgraf.js?v=202611131625"></script>
 <script src="js/superauto.js?v=202611131815"></script>
-<script src="js/extremas.js?v=202611171520"></script>
+<script src="js/extremas.js?v=202611181830"></script>
 <script src="js/boletin.js?v=202611171230"></script>
 <script src="js/series.js?v=202611101600"></script>
 <script src="js/reglas.js?v=202611171350"></script>
 <script src="js/fallas.js?v=202611131300"></script>
 <script src="js/estaciones.js?v=202611172300"></script>
-<script src="js/pluviometros.js?v=202611181100"></script>
+<script src="js/pluviometros.js?v=202611181830"></script>
 <script src="js/equipo.js?v=202611161000"></script>
 <script src="js/servicios.js?v=202611131500"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
@@ -481,6 +487,7 @@ function visibles(){
 function pintar(){
   if (modo === "hist" || modo === "reg" || modo === "minu" || modo === "bol" || modo === "est" || modo === "plu") return;
   if (modo === "equ" || modo === "mis" || modo === "comp") return EQ.pagina(modo);
+  if (modo === "pp"){ if (R && window.EXT) ppContar("alertas", EXT.contar(R, "pp")); if (ppSub !== "alertas") return; }
   if (modo === "ext" || modo === "pp" || modo === "tem" || modo === "rec") return EXT.init(() => R, modo);
   if (modo === "sup") return pintarSup();
   if (SUPER.modos.has(modo)) return SUPER.init(() => R, modo);
@@ -595,22 +602,46 @@ function aplicarPestanas(){
 }
 window.aplicarPestanas = aplicarPestanas;
 const MAPA_MODOS = new Set(["ema", "obs", "mod", "sup"]);
+/* Precipitación con subopciones: Alertas (las de siempre) · Series · Relleno de series · Precipitación binaria · Sensores */
+const PP_SUBS = [["alertas", "Alertas", "ext"], ["series", "Series", "ppx"], ["relleno", "Relleno de series", "minu"], ["binaria", "Precipitación binaria", "plu"], ["sensores", "Sensores", "ppx"]];
+let ppSub = (() => { try { return localStorage.getItem("qcPpSub") || "alertas"; } catch (e) { return "alertas"; } })();
+const ppN = {};                                                      // contadores por subopción (las que se conocen)
+window.ppContar = (k, n) => { ppN[k] = n; ppBarra(); };
+function ppBarra(){
+  const el = $("#ppSub"); if (!el) return;
+  el.hidden = modo !== "pp";
+  el.innerHTML = PP_SUBS.map(([k, t]) => `<button data-pp="${k}" class="${ppSub === k ? "on" : ""}">${t}<b>${ppN[k] || ""}</b></button>`).join("");
+}
+document.addEventListener("click", ev => { const b = ev.target.closest("#ppSub button[data-pp]"); if (b) ppElegir(b.dataset.pp); });
+function ppElegir(k){ ppSub = k; try { localStorage.setItem("qcPpSub", k); } catch (e) {} cambiarModo("pp"); }
+function ppAbrir(){                                                  // muestra la sección de la subopción elegida y la carga
+  const sec = (PP_SUBS.find(x => x[0] === ppSub) || PP_SUBS[0])[2];
+  ["ext", "minu", "plu", "ppx"].forEach(i => $("#" + i).hidden = i !== sec);
+  const solo = ppSub === "relleno"; $("#minu").classList.toggle("solo", solo); if (window.HUECOS) HUECOS.solo(solo);
+  if (ppSub === "alertas") EXT.init(() => R, "pp");
+  else if (ppSub === "binaria") PLU.init(clave);
+  else if (ppSub === "relleno"){ MINU.init(); if (window.MINU && MINU.M) HUECOS.render(); }
+  else PPX.pagina($("#ppx"), ppSub);
+  if (ppSub !== "binaria" && ppN.binaria == null) PLU.contar(clave);
+}
 function cambiarModo(m){
+  if (m === "plu"){ ppSub = "binaria"; m = "pp"; }                   // la antigua pestaña «Pluviómetros dudosos» ahora es «Precipitación binaria»
   const mb = document.querySelector(`.modos button[data-m="${m}"]`); if (!mb) return;
   $("#gear").classList.toggle("on", mb.dataset.g === "gestion");
   if (mb.hidden){ const g = mb.dataset.g; document.querySelectorAll(".grupos button").forEach(x => x.classList.toggle("on", x.dataset.g === g)); document.querySelectorAll(".modos button").forEach(x => x.hidden = x.dataset.g !== g); }
   if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
-  modo = m; $("#det").style.display = "none";
+  modo = m; $("#det").style.display = "none"; ppBarra(); if (m !== "pp"){ $("#minu").classList.remove("solo"); if (window.HUECOS) HUECOS.solo(false); }
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
   const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", rec: "ext", ser: "ser", serh: "ser", inf: "inf", est: "est", plu: "plu", reg: "reg", equ: "equ", mis: "mis", comp: "comp", sup_pp: "sup", sup_prc: "sup", sup_est: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup"}[m];
   document.querySelector("main").hidden = h;
-  ["hist", "minu", "bol", "ext", "ser", "inf", "est", "plu", "reg", "equ", "mis", "comp", "sup"].forEach(i => $("#" + i).hidden = i !== sec);
+  ["hist", "minu", "bol", "ext", "ser", "inf", "est", "plu", "reg", "equ", "mis", "comp", "sup", "ppx"].forEach(i => $("#" + i).hidden = i !== sec);
   $("#chips").style.display = h ? "none" : "";
   $("#mvar").hidden = $("#mref").hidden = m !== "mod"; leyenda(m === "mod");
   $("#sub").hidden = $("#grupo").hidden = $("#vars").hidden = m !== "ema"; $("#gobs").hidden = m !== "obs";
   guardarVista();
   try { history.replaceState(null, "", "#" + m); } catch (e) {}      // la pestaña también queda en la dirección: F5 vuelve a la misma
   if (h){
+    if (m === "pp"){ ppAbrir(); return; }
     if (m === "hist"){ hInit(); if (!HI) hCargar(); } else if (m === "minu") MINU.init(); else if (m === "bol") BOL.init(clave);
     else if (sec === "ext") EXT.init(() => R, m); else if (sec === "ser") SER.init(clave, m === "ser" ? "dia" : "hora");
     else if (sec === "equ" || sec === "mis" || sec === "comp") EQ.pagina(m);

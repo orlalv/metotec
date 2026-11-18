@@ -75,6 +75,7 @@ function pintar(){
   const chip = (f, t, n, c) => `<button data-f="${f}" class="${filtro === f ? "on" : ""}" style="${c ? `border-color:${c};` : ""}">${t}<b>${n ?? ""}</b></button>`;
   $("#pRes").innerHTML = chip("todas", "Todas las dudosas", L0.length) + chip("sospecha_obstruccion", "Sospecha de obstrucción", R.sospecha_obstruccion, COL.sospecha_obstruccion)
     + chip("revisar", "Revisar", R.revisar, COL.revisar) + chip("sin_dato_con_lluvia", "Sin dato con lluvia", R.sin_dato_con_lluvia, COL.sin_dato_con_lluvia);
+  if (window.ppContar) ppContar("binaria", L0.length);
   let L = L0.filter(e => !q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q));
   if (filtro !== "todas") L = L.filter(e => e.estado === filtro);
   const f = D.fuentes || {};
@@ -84,5 +85,10 @@ function pintar(){
     Una hora es sospechosa si la estación marcó menos de 0,2 mm (o no tuvo dato) y coinciden al menos 2 evidencias de lluvia, una de ellas las estaciones vecinas con dato. Si las vecinas están secas, no se sospecha. Es una sospecha para revisar en terreno, no una corrección.</p>
     ${L.map(tarjeta).join("") || `<p style="color:var(--mu)">Ningún pluviómetro dudoso con este filtro en el periodo analizado.</p>`}`;
 }
-window.PLU = {init};
+async function contar(fclave){                  // solo el número de estaciones dudosas, para el contador de la subopción (sin pintar nada)
+  clave = fclave || clave;
+  try { const r = await fetch("/api/reputacion", {headers: {"x-clave": clave()}, cache: "no-store"}); if (!r.ok) return; const d = (await r.json()).pluviometros;
+    if (window.ppContar) ppContar("binaria", ((d && d.estaciones) || []).filter(e => e.estado !== "ok").length); } catch (e){}
+}
+window.PLU = {init, contar};
 })();
