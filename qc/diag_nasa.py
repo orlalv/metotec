@@ -58,4 +58,42 @@ if tok:
     r = get("https://gpm1.gesdisc.eosdis.nasa.gov/data/GPM_L3/GPM_3IMERGHHE.07/2026/322/", headers={"Authorization": f"Bearer {tok}"})
     if r is not None and r.ok:
         print("   ", re.findall(r'href="(3B-HHR-E[^"]+\.HDF5)"', r.text)[:2])
+paso("GIBS: bloque crudo de la capa IMERG 30 min y plantilla de mosaicos")
+if r is not None:
+    pass
+rc = get("https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetCapabilities", timeout=120)
+if rc is not None and rc.ok:
+    x = rc.text
+    i = x.find("<ows:Identifier>IMERG_Precipitation_Rate_30min</ows:Identifier>")
+    ini = x.rfind("<Layer", 0, i)
+    blk = x[ini:x.find("</Layer>", i) + 8]
+    print(re.sub(r"\s+", " ", re.sub(r"<Value>[^<]+</Value>", "", blk))[:2500])
+    m = re.search(r"<ResourceURL[^>]*>", blk)
+    print("ResourceURL:", m.group(0) if m else None)
+    tm = re.search(r"<TileMatrixSet>\s*<ows:Identifier>2km</ows:Identifier>.*?</TileMatrixSet>", x, flags=re.S)
+    if tm:
+        print("2km:", re.sub(r"\s+", " ", tm.group(0))[:900])
+        print("matrices z:", re.findall(r"<ows:Identifier>(\d+)</ows:Identifier>\s*<ScaleDenominator>([\d.e+]+)</ScaleDenominator>\s*<TopLeftCorner>([^<]+)</TopLeftCorner>\s*<TileWidth>(\d+)</TileWidth>\s*<TileHeight>(\d+)</TileHeight>\s*<MatrixWidth>(\d+)</MatrixWidth>\s*<MatrixHeight>(\d+)", tm.group(0))[:8])
+
+paso("GIBS: mapas de colores (probar nombres)")
+for n in ("IMERG_Precipitation_Rate_30min", "IMERG_Precipitation_Rate", "IMERG_Precipitation_Rate_Early"):
+    for v in ("v1.3", "v1.2", "v1.0"):
+        rr = get(f"https://gibs.earthdata.nasa.gov/colormaps/{v}/{n}.xml")
+        if rr is not None and rr.ok:
+            print(rr.text[:900].replace("\n", " "))
+            break
+
+paso("GIBS: un mosaico real sobre Chile central (zoom 2, 2 km)")
+try:
+    from PIL import Image
+    t = "2026-11-18T09:30:00Z"
+    tms = None
+    for z in (2, 3):
+        for u in (f"https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/IMERG_Precipitation_Rate_30min/default/{t}/2km/{z}/{1 if z==2 else 2}/{1 if z==2 else 2}.png",):
+            q = get(u)
+            if q is not None and q.ok:
+                im = Image.open(io.BytesIO(q.content)).convert("RGBA")
+                print("   tamaño", im.size, "colores distintos:", sorted(im.getcolors(100000), reverse=True)[:12])
+except Exception as e:
+    print("ERROR mosaico", type(e).__name__, str(e)[:200])
 paso("fin")
