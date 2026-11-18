@@ -416,7 +416,7 @@ def main():
     A10 = leer_archivo(a.datos, fin, horas=10)     # la HR pegada se avisa desde 10 h
     for nombre, f in [("rango", lambda: P.rango(A)), ("rango_zona", lambda: P.rango_zona(A, E)), ("salto", lambda: P.saltos(A)), ("pegado", lambda: P.pegados(A10)),
                       ("coherencia", lambda: P.coherencia(H.groupby("codigo").tail(1), E)), ("vecinas", lambda: P.vecinas(H, E, V, XEXT)),
-                      ("modelo", lambda: P.modelo(H, M, aisladas, cal, E)), ("wrf", lambda: P.modelo_dmc(H, W, aisladas, cal, E)), ("lluvia", lambda: P.lluvia(H, M, V, X)),
+                      ("modelo", lambda: P.modelo(H, M, aisladas, cal, E)), ("wrf", lambda: P.modelo_dmc(H, W, aisladas, cal, E)), ("lluvia", lambda: P.lluvia(H, M, V, XEXT)),
                       ("satelite", lambda: SAT.ema(H, A, E, sat)), ("extremas", lambda: P.extremas(leer_archivo(a.datos, fin, horas=48)))]:
         try:
             alertas += f()
