@@ -78,11 +78,12 @@ function svgBarras(vals, ref, sel, onKey, etiq, titulo){      // barras superpue
     return `<g class="vclick" data-k="${onKey(i)}" style="cursor:pointer"><title>${esc(etiq(i))}${v == null ? " · sin dato" : " · estación " + n1(v) + " mm"}${ref.map(([c, a]) => a[i] == null ? "" : " · vecina " + n1(a[i])).join("")}</title>
       <rect x="${x}" y="2" width="${W - 2}" height="${base - 2}" fill="${i === sel ? "#58a6ff26" : "transparent"}"/>
       ${ref.map(([c, a]) => a[i] == null || a[i] <= 0 ? "" : `<rect x="${x + 3}" y="${y(a[i])}" width="${W - 8}" height="${Math.max(1, base - y(a[i]))}" fill="${c}" fill-opacity=".5" stroke="${c}" stroke-opacity=".9"/>`).join("")}
-      ${v == null ? `<text x="${x + W / 2 - 1}" y="${base - 4}" text-anchor="middle" font-size="9" fill="#8b949e">s/d</text>` : v <= 0 ? "" : `<rect x="${x + 3}" y="${y(v)}" width="${W - 8}" height="${Math.max(1, base - y(v))}" fill="#f85149" fill-opacity=".5" stroke="#f85149" stroke-opacity=".9"/>`}
+      ${v == null ? `<text x="${x + W / 2 - 1}" y="${base - 4}" text-anchor="middle" font-size="9" fill="#8b949e">s/d</text>` : v <= 0 ? "" : `<rect x="${x + 3}" y="${y(v)}" width="${W - 8}" height="${Math.max(1, base - y(v))}" fill="#f85149" fill-opacity=".5" stroke="#f85149" stroke-opacity=".9"/>${n <= 36 ? `<text x="${x + W / 2 - 1}" y="${y(v) - 3}" text-anchor="middle" font-size="8.5" fill="#ff9b94">${n1(v)}</text>` : ""}`}
       <text x="${x + W / 2 - 1}" y="${base + 13}" text-anchor="middle" font-size="9.5" fill="${i === sel ? "#58a6ff" : "#8b949e"}">${esc(etiq(i, true))}</text></g>`; }).join("");
-  const w = 44 + n * W;
+  const w = 44 + n * W, tope = mx / 1.12, paso = [.1, .2, .5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000].find(p => tope / p <= 5) || 1000;
+  let rejilla = ""; for (let v = 0; v <= tope * 1.05; v += paso){ const yy = y(v); rejilla += `<line x1="30" y1="${yy}" x2="${w}" y2="${yy}" stroke="#30363d" stroke-dasharray="${v ? "3 4" : "0"}" stroke-opacity=".8"/><text x="27" y="${yy + 3}" text-anchor="end" font-size="9" fill="#8b949e">${n1(Math.round(v * 10) / 10)}</text>`; }
   return `<div style="overflow-x:auto"><svg viewBox="0 0 ${w} ${H + 4}" style="width:${w}px;max-width:100%;min-width:${Math.min(w, 520)}px;height:auto" role="img" aria-label="${esc(titulo)}">
-    <line x1="30" y1="${base}" x2="${w}" y2="${base}" stroke="#30363d"/><text x="2" y="${y(mx / 1.12) + 3}" font-size="9" fill="#8b949e">${n1(mx / 1.12)}</text><text x="2" y="${base}" font-size="9" fill="#8b949e">0</text>${cols}</svg></div>`;
+    ${rejilla}<line x1="30" y1="${base}" x2="${w}" y2="${base}" stroke="#30363d"/>${cols}</svg></div>`;
 }
 const leyenda = (D) => `<div style="font-size:12px;color:var(--mu);margin:2px 0 8px"><span style="color:#f85149">■</span> <b style="color:var(--tx)">${esc(D.e0.nombre)}</b> (estación) ${D.vec.map(v => `· <span style="color:${v.color}">●</span> ${esc(v.nombre)} (${Math.round(v.km)} km)`).join(" ")}</div>`;
 function pintar(){
