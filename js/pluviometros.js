@@ -139,7 +139,7 @@ async function abrirMapa(id, i){
   m.addEventListener("click", ev => { if (ev.target === m) cerrarMapa(); });
   document.addEventListener("keydown", esc_);
   const mapa = L.map("pMapaM", {zoomControl: true}); MP = mapa;
-  L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", {maxZoom: 12, attribution: "© OpenStreetMap © CARTO"}).addTo(mapa);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 12, attribution: "© OpenStreetMap"}).addTo(mapa);
   mapa.createPane("sat").style.zIndex = 250;
   let capa = null, grupo = L.layerGroup().addTo(mapa), ult = null;
   const pintar = idx => {
