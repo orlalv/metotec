@@ -158,9 +158,9 @@ def tablas_satelite(resumen, horas):
     return ev, desp
 
 
-def analizar(R, N, E, M=None, S=None, I=None, C=None):
+def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
     """R, N: mm y minutos con dato (hora × código). E: estaciones (codigo, nombre, lat, lon). M: modelo (hora × código, mm).
-    S: satélite, evidencia de lluvia (hora × código, bool). C: satélite, cielo despejado (hora × código, bool). I: IMERG (hora × código, mm). Devuelve la lista de estaciones con su diagnóstico."""
+    S: satélite, evidencia de lluvia (hora × código, bool). C: satélite, cielo despejado (hora × código, bool). T: resumen satelital archivado ({hora: {código: [lluvia, fría, despejado, tope, rayos]}}) solo para el detalle. I: IMERG (hora × código, mm). Devuelve la lista de estaciones con su diagnóstico."""
     E = E.copy()
     E["codigo"] = E["codigo"].astype(str)
     E = E[E["codigo"].isin(R.columns)].dropna(subset=["lat", "lon"]).reset_index(drop=True)
@@ -210,7 +210,13 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None):
             n_sosp = int(sosp[seg].sum())
             n_sd = int((sosp[seg] & sin_dato[seg]).sum())
             sigue = (b + 1 < len(horas) and np.isfinite(mi[b + 1]) and mi[b + 1] >= DESCARGA_MM and mm_vec[seg].sum() > 0 and mi[b + 1] >= 0.5 * mm_vec[seg].sum())
-            eps.append(dict(inicio=f"{horas[a] - pd.Timedelta(hours=1):%Y-%m-%d %H:%M}", fin=f"{horas[b]:%Y-%m-%d %H:%M}", horas=n_sosp, sin_dato=n_sd,
+            det = []
+            for i2 in seg[-24:]:
+                t = (T or {}).get(horas[i2], {}).get(c)
+                det.append(dict(hora=f"{horas[i2]:%m-%d %H:%M}", est=None if np.isnan(mi[i2]) else round(float(mi[i2]), 1), vec=round(float(mm_vec[i2]), 1),
+                                n_vec=int(llu[i2]), n_tot=int(tot[i2]), mod=round(float(mm_mod[i2]), 1), sat=bool(ev_sat[i2]),
+                                fria=(t[1] if t else None), tope=(t[3] if t else None), ray=(t[4] if t else None), sospechosa=bool(sosp[i2])))
+            eps.append(dict(detalle=det, inicio=f"{horas[a] - pd.Timedelta(hours=1):%Y-%m-%d %H:%M}", fin=f"{horas[b]:%Y-%m-%d %H:%M}", horas=n_sosp, sin_dato=n_sd,
                             evidencia=dict(vecinas=bool(ev_vec[seg].any()), modelo=bool(ev_mod[seg].any()), satelite=bool(ev_sat[seg].any()), imerg=bool(ev_imerg[seg].any())),
                             mm_vecinas=round(float(mm_vec[seg].sum()), 1), mm_modelo=round(float(mm_mod[seg].sum()), 1),
                             descarga_tardia=bool(sigue)))
@@ -305,6 +311,7 @@ def correr(raiz, ahora=None, dias=30, subir=None, sat=None, imerg=None, con_mode
         except Exception:
             M = None
     S = C = None
+    arch = {}
     try:
         if sat:
             frames = resumen_satelite(sat, sorted({pd.Timestamp(f["t"]).tz_localize(None).ceil("h") for f in sat.get("frames", [])}))
@@ -317,7 +324,7 @@ def correr(raiz, ahora=None, dias=30, subir=None, sat=None, imerg=None, con_mode
     except Exception:
         S = C = None
     fuentes["imerg"] = imerg is not None
-    est = analizar(R, N, E, M, S, imerg, C)
+    est = analizar(R, N, E, M, S, imerg, C, arch)
     cuenta = {k: sum(1 for e in est if e["estado"] == k) for k in ("sospecha_obstruccion", "revisar", "sin_dato_con_lluvia", "ok")}
     res = dict(generado=f"{ahora:%Y-%m-%d %H:%M}", desde=f"{desde:%Y-%m-%d %H:%M}", hasta=f"{ahora:%Y-%m-%d %H:%M}", dias=dias,
                horas=len(R.index), fuentes=fuentes, resumen=cuenta, estaciones=est)

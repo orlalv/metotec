@@ -606,7 +606,10 @@ def prueba_pluviometros_satelite():
     S, C = PL.tablas_satelite(res, list(h))
     # vecinas lluevendo + nube fría + modelo, y C marca 0 → sospechoso
     R = pd.DataFrame(0.0, index=h, columns=cods); R.loc[h[5:9], ["A", "B"]] = 3.0
-    c = {e["codigo"]: e for e in PL.analizar(R, N, E, M, S, None, C)}["C"]
+    c = {e["codigo"]: e for e in PL.analizar(R, N, E, M, S, None, C, res)}["C"]
+    det = (c["episodios"] or [{}])[0].get("detalle") or []
+    if not det or not any(d["tope"] == -45.0 and d["fria"] and d["sospechosa"] for d in det):
+        FALLAS.append(f"pluviómetros: el detalle del episodio debía traer el tope de nube del satélite → {det[:2]}")
     if c["horas_sospechosas"] != 4:
         FALLAS.append(f"pluviómetros: vecinas con lluvia + nube fría + modelo y 0 mm debía dar 4 h sospechosas → {c['horas_sospechosas']}")
     # las vecinas miden 0 aunque el modelo y el satélite digan lluvia → no se sospecha de C (coherente con sus vecinas)
