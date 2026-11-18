@@ -14,4 +14,4 @@ jobs:
       - env:
           DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
           DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
-        run: python qc/diag_redes.py
+        run: python qc/diag_redes2.py
