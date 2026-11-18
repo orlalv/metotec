@@ -392,14 +392,14 @@ def main():
     V = P.vecinas_de(E, clusters=clusters)
     aisladas = {c for c, L in V.items() if len(L) < 3}
 
-    X = None       # vecinas externas (INIA…): solo para comparar, nunca se muestran como estaciones
+    XEXT = None       # vecinas externas (INIA…): solo para comparar, nunca se muestran como estaciones
     try:
-        X = EV.cargar(leer_kv, E, ahora=fin)
-        if X is not None:
-            estado["externas"] = dict(estaciones=len(X.cat), con_vecinas=sum(1 for L in X.vec.values() if L), desactivadas=len(X.off), generado=X.generado,
-                                      pp_archivadas=EV.archivar_pp(a.datos, X))
+        XEXT = EV.cargar(leer_kv, E, ahora=fin)
+        if XEXT is not None:
+            estado["externas"] = dict(estaciones=len(XEXT.cat), con_vecinas=sum(1 for L in XEXT.vec.values() if L), desactivadas=len(XEXT.off), generado=XEXT.generado,
+                                      pp_archivadas=EV.archivar_pp(a.datos, XEXT))
             H26 = P.horario(leer_archivo(a.datos, fin, horas=26))
-            dsv = EV.desvios(X, H26, E, V) if len(H26) else {}
+            dsv = EV.desvios(XEXT, H26, E, V) if len(H26) else {}
             estado["externas"]["desviadas"] = len(dsv)
             estado["externas"]["kv_desvio"] = subir_kv(EV.KV_DESVIO, json.dumps({"generado": datetime.now(timezone.utc).isoformat(timespec="seconds"), "desvios": dsv}, ensure_ascii=False))
     except Exception:
@@ -415,7 +415,7 @@ def main():
     alertas = []
     A10 = leer_archivo(a.datos, fin, horas=10)     # la HR pegada se avisa desde 10 h
     for nombre, f in [("rango", lambda: P.rango(A)), ("rango_zona", lambda: P.rango_zona(A, E)), ("salto", lambda: P.saltos(A)), ("pegado", lambda: P.pegados(A10)),
-                      ("coherencia", lambda: P.coherencia(H.groupby("codigo").tail(1), E)), ("vecinas", lambda: P.vecinas(H, E, V, X)),
+                      ("coherencia", lambda: P.coherencia(H.groupby("codigo").tail(1), E)), ("vecinas", lambda: P.vecinas(H, E, V, XEXT)),
                       ("modelo", lambda: P.modelo(H, M, aisladas, cal, E)), ("wrf", lambda: P.modelo_dmc(H, W, aisladas, cal, E)), ("lluvia", lambda: P.lluvia(H, M, V, X)),
                       ("satelite", lambda: SAT.ema(H, A, E, sat)), ("extremas", lambda: P.extremas(leer_archivo(a.datos, fin, horas=48)))]:
         try:
@@ -535,7 +535,7 @@ def main():
         sj = Path(a.datos) / "sensoriales.json"
         cods_obs = [x["codigo"] for x in json.loads(sj.read_text())["estaciones"] if x["horas"] > 0] if sj.exists() else []
         cods_obs += [c for c in ESTACIONES_OBS if c not in cods_obs]
-        sup = SUP.correr(a.datos, E, set(cods_obs) | set(ESTACIONES_OBS), leer_archivo, V=V, M=M, aisladas=aisladas, X=X)
+        sup = SUP.correr(a.datos, E, set(cods_obs) | set(ESTACIONES_OBS), leer_archivo, V=V, M=M, aisladas=aisladas, X=XEXT)
         for e_ in sup.get("errores", []):      # fallos de la comparación con vecinas: se registran, no se ocultan
             estado["errores"].append(f"super: {e_}")
         estado["diario"] = SUP.diario(a.datos)
@@ -572,7 +572,7 @@ def main():
             pv = json.loads(pf.read_text(encoding="utf-8")) if pf.exists() else {}
             prev = pv.get("generado", "")
             if not prev or pv.get("version") != PLU.VERSION or (datetime.now(timezone.utc).replace(tzinfo=None) - datetime.strptime(prev, "%Y-%m-%d %H:%M")).total_seconds() >= 6 * 3600:
-                estado["pluviometros"] = PLU.correr(a.datos, subir=subir_kv, sat=sat, ext=X)
+                estado["pluviometros"] = PLU.correr(a.datos, subir=subir_kv, sat=sat, ext=XEXT)
         except Exception:
             estado["errores"].append(f"pluviometros: {traceback.format_exc(limit=2)}")
         try:   # reputación y estado de las estaciones (semáforo, cuarentena, en revisión)
