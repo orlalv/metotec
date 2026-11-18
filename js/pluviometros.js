@@ -113,7 +113,7 @@ function tarjeta(e, i){
 let CAT = null, MP = null;
 async function catalogo(){
   if (CAT) return CAT;
-  for (const u of ["/api/minutarios?estaciones=1", "https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json"]){
+  for (const u of ["/api/minutarios?estaciones=1", "/api/datosraw?p=estaciones.json"]){
     try { const c = new AbortController(), t = setTimeout(() => c.abort(), 10000);
       const j = await (await fetch(u, {signal: c.signal})).json(); clearTimeout(t); const L = Array.isArray(j) ? j : j.estaciones || [];
       if (L.length) return CAT = {cod: new Map(L.map(e => [String(e.codigo), e])), nom: new Map(L.map(e => [e.nombre, e]))}; } catch (e) {}

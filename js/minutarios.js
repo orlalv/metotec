@@ -3,7 +3,7 @@
    Fuente: archivo propio de METOTEC (rama «datos», una hoja por hora con todas las estaciones), que guarda el servicio
    de la DMC cada 30 minutos desde el 8 de noviembre de 2026. */
 (function(){
-const RAW = "https://raw.githubusercontent.com/orlalv/metotec/datos/";
+const RAW = "/api/datosraw?p=";   // mismo dominio: algunas redes bloquean raw.githubusercontent.com
 const VARS = [["T", "Ts (temp. seca)", "°C"], ["Td", "Td (punto de rocío)", "°C"], ["HR", "Humedad", "%"], ["P_est", "QFE", "hPa"], ["P_mar", "QFF", "hPa"],
   ["P_std", "QNH", "hPa"], ["dd10", "Dir. 10 min", "°"], ["ff10", "Viento 10 min", "kt"], ["fx10", "Racha", "kt"], ["rr1m", "Agua caída", "mm"],
   ["rr6", "RRR6 informada", "mm"], ["rr24", "RRR24 informada", "mm"], ["Tn12", "Tmín 12 h informada", "°C"], ["Tx12", "Tmáx 12 h informada", "°C"], ["Rad", "Radiación", "W/m²"]];

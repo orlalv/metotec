@@ -21,7 +21,7 @@ function km(a, b){
   return 6371 * Math.hypot(dx, dy);
 }
 async function estaciones(){
-  for (const url of ["/api/minutarios?estaciones=1", "https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json"]){
+  for (const url of ["/api/minutarios?estaciones=1", "/api/datosraw?p=estaciones.json"]){
     try { const j = await (await fetch(url)).json(); EST = (Array.isArray(j) ? j : j.estaciones || []).filter(e => e.lat != null).sort((a, b) => a.codigo.localeCompare(b.codigo)); if (EST.length) break; } catch (e){}
   }
   $("#lst").innerHTML = EST.map(e => `<option value="${esc(e.nombre)} — ${e.codigo}">`).join("");

@@ -5,7 +5,7 @@
 (function(){
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
-const RAW = "https://raw.githubusercontent.com/orlalv/metotec/datos/";
+const RAW = "/api/datosraw?p=";   // mismo dominio: algunas redes bloquean raw.githubusercontent.com
 const V = {T: ["Ts", "°C", "#e7b03b"], Td: ["Td", "°C", "#5aa9e6"], HR: ["HR", "%", "#5aa9e6"], P_est: ["QFE", "hPa", "#e7b03b"], P_mar: ["QFF", "hPa", "#5aa9e6"], ff10: ["Viento 10 min", "kt", "#e7b03b"], fx10: ["Racha", "kt", "#e5534b"],
   dd10: ["Dirección", "°", "#5aa9e6"], rr1m: ["Agua caída 1 min", "mm", "#5aa9e6"], rr6: ["RRR6 informada", "mm", "#e7b03b"], Tn12: ["Tn12 (mínima 12 h)", "°C", "#5aa9e6"], Tx12: ["Tx12 (máxima 12 h)", "°C", "#e5534b"],
   rrh: ["Agua caída (suma)", "mm", "#5aa9e6"],
@@ -191,5 +191,5 @@ document.addEventListener("click", ev => {
   if (a){ ev.preventDefault(); return alerta(box, e, e.hallazgos, box.dataset.g, ""); }
   alerta(box, e, e.hallazgos, bg.dataset.sg2, box.dataset.h);
 });
-window.SG = {alerta, estacion, GR, PER, diarioMes: async m => { if (!CD.has(m)) CD.set(m, fetch(`${RAW}diario/${m}.json`).then(r => r.ok ? r.json() : null).catch(() => null)); return CD.get(m); }};
+window.SG = {alerta, estacion, GR, PER, diarioMes: async m => { if (!CD.has(m)) CD.set(m, fetch(`${RAW}diario/${m}.json`, {cache: "no-store"}).then(r => r.ok ? r.json() : null).catch(() => null)); const v = await CD.get(m); if (!v) CD.delete(m); return v; }};
 })();

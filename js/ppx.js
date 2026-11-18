@@ -58,7 +58,7 @@ async function rellenos(){
 }
 async function catalogo(){
   if (EST) return EST;
-  for (const u of ["/api/minutarios?estaciones=1", "https://raw.githubusercontent.com/orlalv/metotec/datos/estaciones.json"]){
+  for (const u of ["/api/minutarios?estaciones=1", "/api/datosraw?p=estaciones.json"]){
     try { const j = await (await conTiempo(u, 10000)).json(); const L = Array.isArray(j) ? j : j.estaciones || []; if (L.length){ EST = new Map(L.map(e => [String(e.codigo), e])); return EST; } } catch (e) {}
   }
   return new Map();                                       // sin catálogo: no se guarda, se reintenta la próxima vez
