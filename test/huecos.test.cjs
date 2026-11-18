@@ -69,3 +69,10 @@ assert(Math.abs(incs.reduce((a, b) => a + b, 0) - gl.total) < 0.02);
 // 16) CSV de lluvia con 3 decimales y marcado como estimado
 assert(/,rr1m,0\.\d{1,3},manual,/.test(H.csv(SL, "rr1m", "430002", "Futaleufú", "2026-11-17")));
 console.log("huecos lluvia: 8 pruebas OK");
+// 17) mover un punto de lluvia arrastra a los vecinos: la acumulada no baja y respeta el total
+FL = mkL(k => k >= 720 && k < 1080 ? .02 : 0, rango(900, 914), {1079: {rr6: 8}}); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
+gl.hand = H.manoInicial(gl, SL.g, gl.est, SL.L); const hm = gl.hand[2];
+H.moverLluvia(gl, hm, 0.9, 5); assert(Math.abs(hm.y - 0.9) < 1e-9); assert(gl.hand.every((q, i, a) => !i || q.y >= a[i - 1].y));
+H.moverLluvia(gl, hm, 99, 5); assert(Math.abs(hm.y - gl.total) < 1e-9);           // no pasa del total anclado
+H.moverLluvia(gl, hm, -3, 5); assert(hm.y === 0 && gl.hand.slice(0, 3).every(q => q.y === 0));
+console.log("huecos lluvia (mover): OK");

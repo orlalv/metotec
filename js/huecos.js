@@ -111,6 +111,12 @@ function manoLluvia(gp, g, est){                    // puntos de control = lluvi
   if (!ks.length) ks.push(Math.floor((gp.k0 + gp.k1) / 2));
   return ks.map(k => ({k, y: est ? r3(est.slice(0, k - gp.k0 + 1).reduce((s, x) => s + (x ?? 0), 0)) : 0}));
 }
+function moverLluvia(gp, h, y, tope){               // sube/baja un punto de la acumulada; los vecinos se arrastran para que la curva nunca baje
+  const hs = gp.hand, i = hs.indexOf(h), mx = Math.min(tope ?? Infinity, gp.total ?? Infinity);
+  h.y = Math.max(0, Math.min(mx, y));
+  for (let j = i + 1; j < hs.length; j++) if (hs[j].y < h.y) hs[j].y = h.y;
+  for (let j = i - 1; j >= 0; j--) if (hs[j].y > h.y) hs[j].y = h.y;
+}
 function incLluvia(gp, hand){                       // curva acumulada por tramos (no decreciente) → mm de cada minuto
   const P = [[gp.k0 - 1, 0]]; hand.slice().sort((a, b) => a.k - b.k).forEach(h => P.push([h.k, Math.max(0, h.y)])); if (gp.total != null) P.push([gp.k1, gp.total]);
   const cum = []; let mxAcum = 0;
@@ -153,7 +159,7 @@ function csv(S, v, cod, nombre, dia){
     L.push(`${new Date(S.g.t(gp.k0 + i)).toISOString().slice(0, 16).replace("T", " ")},${v},${redondeo(Math.min(S.L[1], Math.max(S.L[0], x)), v)},${gp.tocado ? "manual" : gp.met},"${f(gp.tocado ? "curva dibujada con el mouse" : gp.det)}",sí`); }); });
   return L.join("\n");
 }
-const API = {rejilla, detectar, interp, ajuste, regresion, auto, autoLluvia, totalRR6, incLluvia, manoInicial, curvaMano, analizar, valores, csv, VARS_H, LIM, MAX_INT};
+const API = {rejilla, detectar, interp, ajuste, regresion, auto, autoLluvia, totalRR6, incLluvia, moverLluvia, manoInicial, curvaMano, analizar, valores, csv, VARS_H, LIM, MAX_INT};
 if (typeof module !== "undefined") module.exports = API;
 if (typeof window === "undefined") return;
 
@@ -266,10 +272,9 @@ function grafico(){
     let bajo = false;
     const mover = ev => { const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width, py = (ev.clientY - r.top) * H / r.height;
       const t = v0 + (px - iz) / (W - iz - de) * span, k = Math.round((t - M.ini) / g.cad) - 1;
-      if (k < sel.k0 - 1 || k > sel.k1 + 1) return;
-      let h = sel.hand[0]; sel.hand.forEach(q => { if (Math.abs(q.k - k) < Math.abs(h.k - k)) h = q; });
-      if (ll){ const i = sel.hand.indexOf(h), lo = i ? sel.hand[i - 1].y : 0, hi = Math.min(i < sel.hand.length - 1 ? sel.hand[i + 1].y : Infinity, sel.total ?? Infinity, y1 - base);
-        h.y = Math.max(lo, Math.min(hi, invY(py) - base)); }
+      const kk = Math.min(sel.k1, Math.max(sel.k0, k));       // el mouse puede estar fuera de la banda: se usa el punto más cercano
+      let h = sel.hand[0]; sel.hand.forEach(q => { if (Math.abs(q.k - kk) < Math.abs(h.k - kk)) h = q; });
+      if (ll) moverLluvia(sel, h, invY(py) - base, y1 - base);
       else h.y = Math.min(S.L[1], Math.max(S.L[0], Math.min(y1, Math.max(y0, invY(py)))));
       const primera = !sel.tocado; sel.tocado = true; dinamica(); if (primera) tabla(); };
     svg.addEventListener("pointerdown", ev => { bajo = true; try { svg.setPointerCapture(ev.pointerId); } catch (e) {} mover(ev); });
