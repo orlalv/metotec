@@ -395,7 +395,21 @@ function grafico(){
   const ticks = [], paso = [1, 2, 5, 10, 15, 30, 60, 180].map(m => m * 60e3).find(p => span / p <= 10) || 180 * 60e3;
   for (let t = M.ini + Math.ceil((v0 - M.ini) / paso) * paso; t <= v1 && t <= M.fin; t += paso) ticks.push(`<line x1="${X(t)}" x2="${X(t)}" y1="${ar}" y2="${H - ab}" stroke="#ffffff" opacity=".07"/><text x="${X(t)}" y="${H - 8}" fill="#9fb0cc" font-size="11" text-anchor="middle">${mi.hhmm(t)}</text>`);
   const yt = [y0 + dy * .08, (y0 + y1) / 2, y1 - dy * .08].map(y => `<text x="${iz - 6}" y="${Y(y) + 4}" fill="#9fb0cc" font-size="11" text-anchor="end">${(ll ? mi.f1 && Math.abs(y1 - y0) < 3 ? y.toFixed(2) : mi.f1(y) : mi.f1(y))}</text>`).join("");
-  $("#hGraf").innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:var(--panel);border:1px solid var(--bd);border-radius:8px;touch-action:none;user-select:none"><defs><clipPath id="hClip"><rect x="${iz}" y="${ar}" width="${W - iz - de}" height="${H - ar - ab}"/></clipPath></defs>${ticks.join("")}${yt}<g clip-path="url(#hClip)">${bandas}
+  /* cuadrícula al acercar: líneas finas punteadas verticales en cada minuto; horizontales de 1 en 1 (marcadas, con su valor) y de 0,1 en 0,1 (más finas) */
+  let grilla = "", ejeY = "";
+  if (sel){
+    const pm = [1, 2, 5, 10, 15, 30, 60].map(m => m * 60e3).find(p => span / p <= 180) || 60 * 60e3;
+    for (let t = M.ini + Math.ceil((v0 - M.ini) / pm) * pm; t <= v1; t += pm) grilla += `<line x1="${X(t).toFixed(1)}" x2="${X(t).toFixed(1)}" y1="${ar}" y2="${H - ab}" stroke="#ffffff" stroke-opacity=".2" stroke-width=".6" stroke-dasharray="1.5 3.5"/>`;
+    const R = y1 - y0; let mayor = 1; for (const m of [1, 2, 5, 10, 20, 50, 100, 200, 500]){ mayor = m; if (R / m <= 14) break; }
+    const menor = mayor / 10, sub = R / menor <= 160;
+    for (let i = Math.ceil(y0 / (sub ? menor : mayor) - 1e-9), i1 = Math.floor(y1 / (sub ? menor : mayor) + 1e-9); i <= i1; i++){
+      const y = i * (sub ? menor : mayor), may = !sub || i % 10 === 0, py = Y(y).toFixed(1);
+      grilla += `<line x1="${iz}" x2="${W - de}" y1="${py}" y2="${py}" stroke="#ffffff" stroke-opacity="${may ? .3 : .11}" stroke-width="${may ? 1 : .5}"/>`;
+      if (may) ejeY += `<text x="${iz - 6}" y="${+py + 4}" fill="#cfdcf3" font-size="11" text-anchor="end">${y.toFixed(mayor < 1 ? 1 : 0)}</text>`;
+      else if (R <= 4 * mayor && i % 5 === 0) ejeY += `<text x="${iz - 6}" y="${+py + 3}" fill="#9fb0cc" font-size="9" text-anchor="end">${y.toFixed(1)}</text>`;
+    }
+  }
+  $("#hGraf").innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:var(--panel);border:1px solid var(--bd);border-radius:8px;touch-action:none;user-select:none"><defs><clipPath id="hClip"><rect x="${iz}" y="${ar}" width="${W - iz - de}" height="${H - ar - ab}"/></clipPath></defs>${grilla}${ticks.join("")}${sel ? ejeY : yt}<g clip-path="url(#hClip)">${bandas}
     <path id="hObs" d="${ruta}" fill="none" stroke="${COL}" stroke-width="1.6"/><g id="hDin"></g></g>${miniHtml()}
     <text x="${iz}" y="${ar - 3}" fill="#9fb0cc" font-size="11">${mi.NOM[VAR] || VAR}${ll ? " acumulada" : ""} (${uni}) · hora UTC · <tspan fill="${COL}">━ observado</tspan>  <tspan fill="${EST}">╍ estimado</tspan>${sel ? `  ·  vista ampliada del hueco · ${MODO === "libre" ? "dibuje con el botón izquierdo apretado dentro de la banda naranja" : "arrastre los puntos"}${ll ? " (la lluvia acumulada no baja)" : ""}` : ""}</text>
     <rect id="hHit" x="${iz}" y="${ar}" width="${W - iz - de}" height="${H - ar - ab}" fill="transparent" style="${sel ? "cursor:crosshair" : ""}"/></svg>`;
