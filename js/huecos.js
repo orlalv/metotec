@@ -334,11 +334,11 @@ function grafico(){
     }
     return {pts, cumK};
   };
-  const rutasLl = () => {
+  const rutasLl = (Xf = X, Yf = Y) => {
     const {pts} = cumul(); let sol = "", ant = null, est = "";
-    pts.forEach(p => { if (p.e) return; sol += (ant == null || p.t - ant > 1.5 * g.cad ? "M" : "L") + X(p.t).toFixed(1) + " " + Y(p.c).toFixed(1); ant = p.t; });
+    pts.forEach(p => { if (p.e) return; sol += (ant == null || p.t - ant > 1.5 * g.cad ? "M" : "L") + Xf(p.t).toFixed(1) + " " + Yf(p.c).toFixed(1); ant = p.t; });
     for (let i = 0; i < pts.length; i++){ if (!pts[i].e) continue; let j = i; while (j + 1 < pts.length && pts[j + 1].e) j++;
-      const seg = pts.slice(Math.max(0, i - 1), Math.min(pts.length, j + 2)); est += seg.map((p, q) => (q ? "L" : "M") + X(p.t).toFixed(1) + " " + Y(p.c).toFixed(1)).join(""); i = j; }
+      const seg = pts.slice(Math.max(0, i - 1), Math.min(pts.length, j + 2)); est += seg.map((p, q) => (q ? "L" : "M") + Xf(p.t).toFixed(1) + " " + Yf(p.c).toFixed(1)).join(""); i = j; }
     return {sol, est};
   };
   const obs = g.y.map((y, k) => y == null ? null : [g.t(k), y]).filter(Boolean);
@@ -358,21 +358,45 @@ function grafico(){
   const X = t => iz + (W - iz - de) * (t - v0) / span, Y = y => ar + (H - ar - ab) * (1 - (y - y0) / (y1 - y0)), invY = py => y0 + (1 - (py - ar) / (H - ar - ab)) * (y1 - y0);
   let ruta = "", ant = null; if (!ll) obs.forEach(p => { if (!enV(p[0])) { ant = null; return; } ruta += (ant == null || p[0] - ant > 1.5 * g.cad ? "M" : "L") + X(p[0]).toFixed(1) + " " + Y(p[1]).toFixed(1); ant = p[0]; });
   const bandas = S.gaps.map((gp, i) => `<rect x="${X(g.t(gp.k0) - g.cad)}" y="${ar}" width="${Math.max(2, X(g.t(gp.k1)) - X(g.t(gp.k0) - g.cad))}" height="${H - ar - ab}" fill="${EST}" opacity="${SEL === i ? .22 : .1}"/>`).join("");
+  const estSuave = (Xf, Yf, sw) => S.gaps.map(gp => { const e = valores(gp); if (!e) return ""; let p = "";
+    if (gp.izq != null) p += "M" + Xf(g.t(gp.k0 - 1)).toFixed(1) + " " + Yf(gp.izq).toFixed(1);
+    e.forEach((x, j) => { if (x != null) p += (p ? "L" : "M") + Xf(g.t(gp.k0 + j)).toFixed(1) + " " + Yf(Math.min(S.L[1], Math.max(S.L[0], x))).toFixed(1); });
+    if (gp.der != null) p += "L" + Xf(g.t(gp.k1 + 1)).toFixed(1) + " " + Yf(gp.der).toFixed(1);
+    return `<path d="${p}" fill="none" stroke="${EST}" stroke-width="${sw}" stroke-dasharray="${sw > 1.5 ? "5 4" : "3 2"}"/>`; }).join("");
+  /* minigráfico del día completo (arriba a la derecha, solo con un hueco abierto): muestra cómo va quedando la serie entera */
+  const MW = 260, MH = 96, mx0 = W - de - MW - 6, my0 = ar + 4, mi0 = mx0 + 6, mw = MW - 12, mj0 = my0 + 15, mh = MH - 28, spanD = Math.max(1, M.fin - M.ini);
+  let ya = 0, yb = 1;
+  if (sel){
+    if (ll){ const {pts} = cumul(); yb = Math.max(...pts.map(p => p.c), 0) + Math.max(.3, (sel.res || .1) * 3); ya = 0; }
+    else { const v = obs.map(p => p[1]); S.gaps.forEach(gp => (valores(gp) || []).forEach(x => x != null && v.push(x))); ya = Math.min(...v); yb = Math.max(...v); const d = Math.max(yb - ya, MINY[VAR] || 0) || 1; ya -= d * .1; yb = ya + d * 1.2; }
+  }
+  const Xm = t => mi0 + mw * (t - M.ini) / spanD, Ym = y => mj0 + mh * (1 - (y - ya) / ((yb - ya) || 1));
+  const miniHtml = () => {
+    if (!sel) return "";
+    let o = ""; if (!ll){ let ant = null; obs.forEach(p => { o += (ant == null || p[0] - ant > 1.5 * g.cad ? "M" : "L") + Xm(p[0]).toFixed(1) + " " + Ym(p[1]).toFixed(1); ant = p[0]; }); }
+    return `<g pointer-events="none"><rect x="${mx0}" y="${my0}" width="${MW}" height="${MH}" rx="6" fill="var(--panel)" fill-opacity=".93" stroke="#ffffff" stroke-opacity=".28"/>
+      <text x="${mx0 + 8}" y="${my0 + 11}" fill="#9fb0cc" font-size="10">Día completo${ll ? " · lluvia acumulada" : ""} · así va quedando</text>
+      <clipPath id="hMc"><rect x="${mi0}" y="${mj0}" width="${mw}" height="${mh}"/></clipPath>
+      <g clip-path="url(#hMc)"><rect x="${Xm(v0)}" y="${mj0}" width="${Math.max(2, Xm(v1) - Xm(v0))}" height="${mh}" fill="#ffffff" fill-opacity=".1" stroke="${EST}" stroke-opacity=".8"/>
+        <path id="hMo" d="${o}" fill="none" stroke="${COL}" stroke-width="1.2"/><g id="hMe"></g></g>
+      <text x="${mi0}" y="${my0 + MH - 3}" fill="#9fb0cc" font-size="9">${mi.hhmm(M.ini)}</text><text x="${mi0 + mw / 2}" y="${my0 + MH - 3}" fill="#9fb0cc" font-size="9" text-anchor="middle">${mi.hhmm(M.ini + spanD / 2)}</text><text x="${mi0 + mw}" y="${my0 + MH - 3}" fill="#9fb0cc" font-size="9" text-anchor="end">${mi.hhmm(M.fin)}</text></g>`;
+  };
   const dinamica = () => {
     let estim = "";
     if (ll){ const r = rutasLl(); $("#hObs").setAttribute("d", r.sol); estim = r.est ? `<path d="${r.est}" fill="none" stroke="${EST}" stroke-width="2" stroke-dasharray="5 4"/>` : ""; }
-    else estim = S.gaps.map(gp => { const e = valores(gp); if (!e) return ""; let p = "";
-      if (gp.izq != null) p += "M" + X(g.t(gp.k0 - 1)).toFixed(1) + " " + Y(gp.izq).toFixed(1);
-      e.forEach((x, j) => { if (x != null) p += (p ? "L" : "M") + X(g.t(gp.k0 + j)).toFixed(1) + " " + Y(Math.min(S.L[1], Math.max(S.L[0], x))).toFixed(1); });
-      if (gp.der != null) p += "L" + X(g.t(gp.k1 + 1)).toFixed(1) + " " + Y(gp.der).toFixed(1);
-      return `<path d="${p}" fill="none" stroke="${EST}" stroke-width="2" stroke-dasharray="5 4"/>`; }).join("");
+    else estim = estSuave(X, Y, 2);
     const manos = sel && sel.hand && MODO === "puntos" && sel.hand.length <= 12 ? sel.hand.map(h => `<circle cx="${X(g.t(h.k))}" cy="${Y(ll ? base + h.y : h.y)}" r="6" fill="${EST}" fill-opacity=".22" stroke="${EST}" stroke-opacity=".9" stroke-width="1.8" style="cursor:ns-resize"/>`).join("") : "";
-    $("#hDin").innerHTML = estim + manos; valoresTabla(); };
+    $("#hDin").innerHTML = estim + manos;
+    if (sel && $("#hMe")){                                       // minigráfico: se actualiza mientras se dibuja
+      if (ll){ const r = rutasLl(Xm, Ym); $("#hMo").setAttribute("d", r.sol); $("#hMe").innerHTML = r.est ? `<path d="${r.est}" fill="none" stroke="${EST}" stroke-width="1.6"/>` : ""; }
+      else $("#hMe").innerHTML = estSuave(Xm, Ym, 1.4);
+    }
+    valoresTabla(); };
   const ticks = [], paso = [1, 2, 5, 10, 15, 30, 60, 180].map(m => m * 60e3).find(p => span / p <= 10) || 180 * 60e3;
   for (let t = M.ini + Math.ceil((v0 - M.ini) / paso) * paso; t <= v1 && t <= M.fin; t += paso) ticks.push(`<line x1="${X(t)}" x2="${X(t)}" y1="${ar}" y2="${H - ab}" stroke="#ffffff" opacity=".07"/><text x="${X(t)}" y="${H - 8}" fill="#9fb0cc" font-size="11" text-anchor="middle">${mi.hhmm(t)}</text>`);
   const yt = [y0 + dy * .08, (y0 + y1) / 2, y1 - dy * .08].map(y => `<text x="${iz - 6}" y="${Y(y) + 4}" fill="#9fb0cc" font-size="11" text-anchor="end">${(ll ? mi.f1 && Math.abs(y1 - y0) < 3 ? y.toFixed(2) : mi.f1(y) : mi.f1(y))}</text>`).join("");
   $("#hGraf").innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;background:var(--panel);border:1px solid var(--bd);border-radius:8px;touch-action:none;user-select:none"><defs><clipPath id="hClip"><rect x="${iz}" y="${ar}" width="${W - iz - de}" height="${H - ar - ab}"/></clipPath></defs>${ticks.join("")}${yt}<g clip-path="url(#hClip)">${bandas}
-    <path id="hObs" d="${ruta}" fill="none" stroke="${COL}" stroke-width="1.6"/><g id="hDin"></g></g>
+    <path id="hObs" d="${ruta}" fill="none" stroke="${COL}" stroke-width="1.6"/><g id="hDin"></g></g>${miniHtml()}
     <text x="${iz}" y="${ar - 3}" fill="#9fb0cc" font-size="11">${mi.NOM[VAR] || VAR}${ll ? " acumulada" : ""} (${uni}) · hora UTC · <tspan fill="${COL}">━ observado</tspan>  <tspan fill="${EST}">╍ estimado</tspan>${sel ? `  ·  vista ampliada del hueco · ${MODO === "libre" ? "dibuje con el botón izquierdo apretado dentro de la banda naranja" : "arrastre los puntos"}${ll ? " (la lluvia acumulada no baja)" : ""}` : ""}</text>
     <rect id="hHit" x="${iz}" y="${ar}" width="${W - iz - de}" height="${H - ar - ab}" fill="transparent" style="${sel ? "cursor:crosshair" : ""}"/></svg>`;
   const svg = $("#hGraf svg"); dinamica();
