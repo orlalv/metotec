@@ -23,7 +23,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-VERSION = 5                      # sube cuando cambia la forma del producto: qc/correr.py lo regenera aunque no hayan pasado 6 h
+VERSION = 6                      # sube cuando cambia la forma del producto: qc/correr.py lo regenera aunque no hayan pasado 6 h
 RADIO_KM = 60
 MM_VECINA = 1.0
 FRAC_VECINAS = 0.6
@@ -38,12 +38,22 @@ EV_MIN = 2                       # evidencias necesarias
 HORAS_OBSTRUCCION = 3
 RAZON_BAJA, MM_RAZON, RADIO_RAZON = 0.3, 20.0, 40     # la razón solo vale con lluvia acumulada suficiente (≥ 20 mm en la vecina) y vecinas cercanas
 DESCARGA_MM = 2.0
+EXT_PESO, EXT_TOPE = 0.5, 3            # vecinas externas: peso de cada una y cuántas como máximo por estación
 
 
 def _km(la, lo):
     la, lo = np.radians(la), np.radians(lo)
     a = np.sin((la[:, None] - la[None]) / 2) ** 2 + np.cos(la[:, None]) * np.cos(la[None]) * np.sin((lo[:, None] - lo[None]) / 2) ** 2
     return 6371 * 2 * np.arcsin(np.sqrt(a))
+
+
+def _km1(la1, lo1, la2, lo2):
+    return float(_km(np.array([la1, la2], float), np.array([lo1, lo2], float))[0, 1])
+
+
+def _mediana_pond(v, w):
+    import externas_vec as EV
+    return float(EV.mediana_pond(v, w))
 
 
 def leer_horas(raiz, desde, hasta):
@@ -165,9 +175,9 @@ def tablas_satelite(resumen, horas):
     return ev, desp
 
 
-def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
+def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
     """R, N: mm y minutos con dato (hora × código). E: estaciones (codigo, nombre, lat, lon). M: modelo (hora × código, mm).
-    S: satélite, evidencia de lluvia (hora × código, bool). C: satélite, cielo despejado (hora × código, bool). T: resumen satelital archivado ({hora: {código: [lluvia, fría, despejado, tope, rayos, nub10, nub30, frío30, rr10, imágenes]}}) solo para el detalle. I: IMERG (hora × código, mm). Devuelve la lista de estaciones con su diagnóstico."""
+    S: satélite, evidencia de lluvia (hora × código, bool). C: satélite, cielo despejado (hora × código, bool). T: resumen satelital archivado ({hora: {código: [lluvia, fría, despejado, tope, rayos, nub10, nub30, frío30, rr10, imágenes]}}) solo para el detalle. I: IMERG (hora × código, mm). EXT: vecinas externas (INIA…), solo comparación: {pp: lluvia horaria hora × id, cat: {id: {lat, lon}}}; pesan EXT_PESO y se usan las EXT_TOPE más cercanas a ≤ RADIO_KM. Devuelve la lista de estaciones con su diagnóstico."""
     E = E.copy()
     E["codigo"] = E["codigo"].astype(str)
     E = E[E["codigo"].isin(R.columns)].dropna(subset=["lat", "lon"]).reset_index(drop=True)
@@ -181,10 +191,22 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
     for j, c in enumerate(cods):
         vec = np.where(D[j] <= RADIO_KM)[0]
         X = V.iloc[:, vec].values if len(vec) else np.empty((len(horas), 0))
-        tot = np.isfinite(X).sum(1)
-        llu = np.nansum(np.where(np.isfinite(X), X >= MM_VECINA, False), 1)
+        tot_d = np.isfinite(X).sum(1)                                  # solo DMC: lo que se muestra en el detalle
+        llu_d = np.nansum(np.where(np.isfinite(X), X >= MM_VECINA, False), 1)
+        XE = np.empty((len(horas), 0))
+        if EXT and EXT.get("pp") is not None and len(EXT["pp"].columns):
+            ids = [i for i, c in EXT["cat"].items() if i in EXT["pp"].columns and _km1(E["lat"].values[j], E["lon"].values[j], c["lat"], c["lon"]) <= RADIO_KM]
+            ids = sorted(ids, key=lambda i: _km1(E["lat"].values[j], E["lon"].values[j], EXT["cat"][i]["lat"], EXT["cat"][i]["lon"]))[:EXT_TOPE]
+            XE = EXT["pp"][ids].reindex(horas).values.astype(float) if ids else XE
+        XA = np.hstack([X, XE])                                        # DMC y externas; las externas pesan menos
+        w = np.concatenate([np.ones(X.shape[1]), np.full(XE.shape[1], EXT_PESO)])
+        fin_ = np.isfinite(XA)
+        tot = (fin_ * w).sum(1)
+        llu = (np.where(fin_, XA >= MM_VECINA, False) * w).sum(1)
         ev_vec = (tot >= 2) & (llu >= 2) & (llu >= FRAC_VECINAS * np.maximum(tot, 1))
-        mm_vec = np.array([np.nanmedian(r[np.isfinite(r) & (r >= MM_VECINA)]) if ev_vec[i] else 0.0 for i, r in enumerate(X)])
+        mm_vec = np.array([_mediana_pond(r[fin_[i] & (r >= MM_VECINA)], w[fin_[i] & (r >= MM_VECINA)]) if ev_vec[i] else 0.0 for i, r in enumerate(XA)])
+        n_ext = np.isfinite(XE).sum(1) if XE.shape[1] else np.zeros(len(horas), int)
+        ext_llu = np.nansum(np.where(np.isfinite(XE), XE >= MM_VECINA, False), 1) if XE.shape[1] else np.zeros(len(horas), int)
         ev_mod = np.zeros(len(horas), bool)
         mm_mod = np.zeros(len(horas))
         if M is not None and c in M.columns:
@@ -228,7 +250,7 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
                 sx = (t[5:] + [None] * 5)[:5] if t else [None] * 5
                 det.append(dict(vecs=vecs, mod3=[round(float(mm_mod[i2 - 1]), 1) if i2 > 0 else None, round(float(mm_mod[i2]), 1), round(float(mm_mod[i2 + 1]), 1) if i2 + 1 < len(horas) else None],
                                 nub10=sx[0], nub30=sx[1], frio30=sx[2], rr10=sx[3], imagenes=sx[4] if t else None, hora=f"{horas[i2]:%m-%d %H:%M}", est=None if np.isnan(mi[i2]) else round(float(mi[i2]), 1), vec=round(float(mm_vec[i2]), 1),
-                                n_vec=int(llu[i2]), n_tot=int(tot[i2]), mod=round(float(mm_mod[i2]), 1), imerg=(None if np.isnan(mm_imerg[i2]) else round(float(mm_imerg[i2]), 1)), sat=bool(ev_sat[i2]),
+                                n_vec=int(llu_d[i2]), n_tot=int(tot_d[i2]), n_ext=int(n_ext[i2]), ext_llu=int(ext_llu[i2]), mod=round(float(mm_mod[i2]), 1), imerg=(None if np.isnan(mm_imerg[i2]) else round(float(mm_imerg[i2]), 1)), sat=bool(ev_sat[i2]),
                                 fria=(t[1] if t else None), tope=(t[3] if t else None), ray=(t[4] if t else None), sospechosa=bool(sosp[i2])))
             eps.append(dict(detalle=det, inicio=f"{horas[a] - pd.Timedelta(hours=1):%Y-%m-%d %H:%M}", fin=f"{horas[b]:%Y-%m-%d %H:%M}", horas=n_sosp, sin_dato=n_sd,
                             evidencia=dict(vecinas=bool(ev_vec[seg].any()), modelo=bool(ev_mod[seg].any()), satelite=bool(ev_sat[seg].any()), imerg=bool(ev_imerg[seg].any())),
@@ -309,7 +331,7 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None):
     return out
 
 
-def correr(raiz, ahora=None, dias=30, subir=None, sat=None, imerg=None, con_modelo=True):
+def correr(raiz, ahora=None, dias=30, subir=None, sat=None, imerg=None, con_modelo=True, ext=None):
     """Calcula el diagnóstico de los últimos días, lo guarda en datos/productos/pluviometros.json y lo sube al KV."""
     ahora = (ahora or datetime.now(timezone.utc)).replace(tzinfo=None, minute=0, second=0, microsecond=0)
     desde = ahora - timedelta(days=dias)
@@ -349,7 +371,15 @@ def correr(raiz, ahora=None, dias=30, subir=None, sat=None, imerg=None, con_mode
             fuentes["imerg_error"] = f"{type(e).__name__}: {str(e)[:120]}"
             imerg = None
     fuentes["imerg"] = imerg is not None
-    est = analizar(R, N, E, M, S, imerg, C, arch)
+    EXT = None
+    if ext is not None:       # vecinas externas (solo comparación): lluvia horaria archivada + lo más reciente del KV
+        try:
+            import externas_vec as EV
+            EXT = dict(pp=EV.leer_pp(raiz, desde, ahora, ext), cat=ext.cat)
+            fuentes["externas"] = int(EXT["pp"].shape[1])
+        except Exception as e:
+            fuentes["externas_error"] = f"{type(e).__name__}: {str(e)[:120]}"
+    est = analizar(R, N, E, M, S, imerg, C, arch, EXT=EXT)
     cuenta = {k: sum(1 for e in est if e["estado"] == k) for k in ("sospecha_obstruccion", "revisar", "sin_dato_con_lluvia", "ok")}
     res = dict(version=VERSION, generado=f"{ahora:%Y-%m-%d %H:%M}", desde=f"{desde:%Y-%m-%d %H:%M}", hasta=f"{ahora:%Y-%m-%d %H:%M}", dias=dias,
                horas=len(R.index), fuentes=fuentes, resumen=cuenta, estaciones=est)

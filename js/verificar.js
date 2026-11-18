@@ -38,15 +38,15 @@ async function cargar(){
   const pos = e => ({lat: +e.lat, lon: +e.lon}), p0 = pos(e0);
   const cand = [...cat.values()].filter(e => e.codigo !== e0.codigo && isFinite(e.lat) && isFinite(e.lon)).map(e => ({e, km: km(p0, pos(e))})).sort((a, b) => a.km - b.km);
   const ts = Array.from({length: 24}, (_, h) => ms(ST.dia, h));
-  const txt = await U().varias(ts, 6); if (tok !== TOK) return;
+  const [txt, X] = await Promise.all([U().varias(ts, 6), window.EXTV ? window.EXTV.datos().catch(() => null) : null]); if (tok !== TOK) return;
   const hay = txt.some(t => typeof t === "string" && t.length > 50), falla = txt.some(t => t === undefined);
-  if (hay){ D = leerMinutos(txt, e0, cand); }
+  if (hay){ D = leerMinutos(txt, e0, cand, X); }
   else if (falla && !txt.some(t => t === null)){ out.innerHTML = `<p style="color:#e5534b">No pude leer los archivos de ese día (${esc(U().dg())}). Pruebe de nuevo.</p>`; actualizarMapas(); return; }
   else { D = await leerDiario(e0, cand); if (tok !== TOK) return; }
   if (D) D.e0 = e0;
   actualizarMapas(); pintar();
 }
-function leerMinutos(txt, e0, cand){
+function leerMinutos(txt, e0, cand, X){
   const por = new Map();                                   // cod -> Float32Array(1440) con rr1m por minuto UTC del día
   txt.forEach((tx, h) => { if (typeof tx !== "string" || !tx) return;
     const ls = tx.split("\n"), iR = ls[0].split(",").indexOf("rr1m"); if (iR < 0) return;
@@ -55,7 +55,10 @@ function leerMinutos(txt, e0, cand){
   const mia = por.get(e0.codigo);
   const vec = cand.filter(c => c.km <= RADIO_KM && por.has(c.e.codigo)).slice(0, MAX_VEC).map((c, i) => ({cod: c.e.codigo, nombre: c.e.nombre, km: c.km, lat: +c.e.lat, lon: +c.e.lon, color: COL[i % COL.length], min: por.get(c.e.codigo)}));
   const horas = a => Array.from({length: 24}, (_, h) => { let s = 0, n = 0; for (let m = h * 60; m < h * 60 + 60; m++) if (a[m] === a[m]){ s += a[m]; n++; } return n >= MIN_FILAS_H ? s : null; });
-  return {modo: "min", mia, vec, hs: mia ? horas(mia) : null, hv: vec.map(v => horas(v.min)), sinPluvio: !mia};
+  // vecinas externas (INIA…): solo entran a la media y al aviso de la tabla, con menor peso; no se dibujan ni se listan como estaciones
+  const ext = X ? window.EXTV.vecinas(X, +e0.lat, +e0.lon, RADIO_KM) : [];
+  const hx = Array.from({length: 24}, (_, i) => ext.map(([id]) => { const m = X.pp.get(id); const v = m && m.get(ms(ST.dia, i) + 3600e3); return v == null ? null : {id, v}; }).filter(Boolean));
+  return {modo: "min", mia, vec, hs: mia ? horas(mia) : null, hv: vec.map(v => horas(v.min)), hx, X, sinPluvio: !mia};
 }
 async function leerDiario(e0, cand){
   const k = clave(); if (!k) return {modo: "dia", error: "Sin clave: para días sin archivo minutario hace falta la clave de qc.html (la lluvia diaria viene del servicio de la DMC)."};
@@ -95,7 +98,10 @@ function pintar(){
 function pintarMin(out){
   if (D.sinPluvio){ out.innerHTML = `<p style="color:#e7b03b">Esta estación no informó agua caída (rr1m) ese día. Se muestran igual las imágenes.</p>`; return; }
   const h = ST.hora, v = D.mia, tot = D.hs.reduce((s, x) => s + (x || 0), 0), sel = D.hs[h];
-  const mh = D.vec.map((vv, i) => D.hv[i][h]), medH = a => { const x = a.filter(z => z != null); return x.length ? x.reduce((s, z) => s + z, 0) / x.length : null; };
+  const mh = D.vec.map((vv, i) => D.hv[i][h]), PX = window.EXTV ? window.EXTV.PESO : 0.5;
+  const medH = (a, ex) => { const x = a.filter(z => z != null), e = (ex || []).map(o => o.v); const w = x.length + PX * e.length; return w ? (x.reduce((s, z) => s + z, 0) + PX * e.reduce((s, z) => s + z, 0)) / w : null; };
+  const idsX = new Set(D.hx.flat().map(o => o.id)), inst = {}, nExt = idsX.size; idsX.forEach(id => { const c = D.X.cat.get(id); if (c) inst[c.inst] = (inst[c.inst] || 0) + 1; });
+  const notaX = nExt ? ` La media de vecinas incluye ${nExt} estaciones externas de menor peso (${Object.entries(inst).map(([k, n]) => `${esc(k)} ${n}`).join(", ")}).` : "";
   const resumen = `Hora ${p2(h)}:00 UTC (${loc(ms(ST.dia, h))} local): estación <b>${sel == null ? "sin dato" : n1(sel) + " mm"}</b> · vecinas ${D.vec.length ? mh.map((x, i) => `<span style="color:${D.vec[i].color}">${x == null ? "s/d" : n1(x)}</span>`).join(" / ") + " mm" : "sin vecinas con dato a ≤ " + RADIO_KM + " km"} · total del día en la estación <b>${n1(tot)} mm</b>.`;
   const hs = svgBarras(D.hs, D.vec.map((vv, i) => [vv.color, D.hv[i]]), h, i => i, (i, c) => c ? p2(i) : `${p2(i)}:00 UTC (${loc(ms(ST.dia, i))} local)`, "mm por hora");
   // minuto a minuto de la hora elegida
@@ -111,7 +117,7 @@ function pintarMin(out){
     ${mm.map((z, i) => z !== z ? `<rect x="${30 + i * W}" y="${base - 3}" width="${W - 1}" height="3" fill="#8b949e55"><title>${p2(h)}:${p2(i)} sin dato</title></rect>` : `<rect x="${30 + i * W}" y="${y(z)}" width="${W - 2}" height="${Math.max(0.5, base - y(z))}" fill="#f85149" fill-opacity=".5" stroke="#f85149" stroke-opacity=".9"><title>${p2(h)}:${p2(i)} · ${n1(z)} mm</title></rect>`).join("")}
     ${[0, 10, 20, 30, 40, 50].map(i => `<text x="${30 + i * W}" y="${base + 13}" font-size="9.5" fill="#8b949e">${p2(h)}:${p2(i)}</text>`).join("")}</svg>`;
   // tabla horaria
-  const filas = D.hs.map((x, i) => { const mv = medH(D.hv.map(a => a[i])), sosp = x != null && x < 0.2 && mv != null && mv >= 1;
+  const filas = D.hs.map((x, i) => { const mv = medH(D.hv.map(a => a[i]), D.hx[i]), sosp = x != null && x < 0.2 && mv != null && mv >= 1;
     return `<tr class="vclick" data-k="${i}" style="cursor:pointer;${i === h ? "background:#1f6feb33;" : sosp ? "background:#f8514916;" : ""}"><td>${p2(i)}:00</td><td style="white-space:nowrap">${loc(ms(ST.dia, i))}</td><td style="text-align:right;font-weight:600">${x == null ? "s/d" : n1(x)}</td>
       ${D.hv.map(a => `<td style="text-align:right">${a[i] == null ? "s/d" : n1(a[i])}</td>`).join("")}<td style="text-align:right">${mv == null ? "—" : n1(mv)}</td></tr>`; }).join("");
   const tot2 = D.hv.map(a => a.reduce((s, z) => s + (z || 0), 0));
@@ -120,7 +126,7 @@ function pintarMin(out){
     <h4 style="margin:12px 0 2px">Minuto a minuto · ${p2(h)}:00–${p2(h)}:59 UTC</h4>${minG}
     <details open style="margin-top:10px"><summary style="cursor:pointer"><b>Tabla de precipitación por hora (mm)</b></summary><div style="overflow-x:auto"><table class="tb" style="margin-top:4px"><tr><th>Hora UTC</th><th>Hora local</th><th>${esc(D.e0.nombre)}</th>${D.vec.map(x => `<th style="color:${x.color};text-align:right">${esc(x.nombre)}<br><small>${Math.round(x.km)} km</small></th>`).join("")}<th style="text-align:right">Media vecinas</th></tr>${filas}
       <tr style="font-weight:700"><td colspan="2">Total del día</td><td style="text-align:right">${n1(tot)}</td>${tot2.map(z => `<td style="text-align:right">${n1(z)}</td>`).join("")}<td></td></tr></table></div>
-      <small style="color:var(--mu)">Fila rosada = la estación marcó menos de 0,2 mm mientras las vecinas marcaron 1 mm o más en promedio. s/d = menos de ${MIN_FILAS_H} datos en la hora.</small></details>`;
+      <small style="color:var(--mu)">Fila rosada = la estación marcó menos de 0,2 mm mientras las vecinas marcaron 1 mm o más en promedio. s/d = menos de ${MIN_FILAS_H} datos en la hora.${notaX}</small></details>`;
 }
 function pintarDia(out){
   const f = D.fechas, sel = f.indexOf(ST.dia), val = d => { const r = D.mia.get(d); return r ? r[2] ?? r[1] : null; };

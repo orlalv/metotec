@@ -254,7 +254,9 @@ def vecinas_de(E, radio=120, dz=500, clusters=None):
     return V
 
 
-def vecinas(H, E, V):
+def vecinas(H, E, V, X=None):
+    """X: externas (externas_vec.Ext), vecinas de menor peso: la referencia es la mediana ponderada y la dispersión la MAD ponderada."""
+    import externas_vec as EV
     out = []
     alt = E.set_index("codigo")["alt"].to_dict()
     ult = H.sort_values("momento").groupby("codigo").tail(1).set_index("codigo")
@@ -265,24 +267,31 @@ def vecinas(H, E, V):
         for v, (piso, s1, s2, corr) in VEC.items():
             if pd.isna(r[v]):
                 continue
-            ref = []
+            ref, pes = [], []
             for c in vs:
                 x = ult.at[c, v]
                 if pd.isna(x):
                     continue
                 if corr:
                     x = x + 0.0065 * ((alt.get(c) or 0) - (alt.get(cod) or 0))
-                ref.append(x)
-            if len(ref) < 3:
+                ref.append(x); pes.append(1.0)
+            nd = len(ref)
+            if X is not None:
+                for i, x, w in X.valores(v, hora, cod):
+                    if corr:
+                        x = x + 0.0065 * ((X.alt.get(i) or 0) - (alt.get(cod) or 0))
+                    ref.append(x); pes.append(w)
+            if not EV.suficiente(pes):
                 continue
             ref = np.array(ref)
-            med = np.median(ref)
-            sig = max(1.4826 * np.median(np.abs(ref - med)), piso)
+            med = EV.mediana_pond(ref, pes)
+            sig = max(1.4826 * EV.mad_pond(ref, pes, med), piso)
             d = abs(r[v] - med)
             z = d / sig
             if z > 4 and d > s1:
+                ne = len(ref) - nd
                 out.append(alerta(cod, "vecinas", v, 2 if (z > 7 and d > s2) else 1, hora, r[v], med,
-                                  f"distinta a sus {len(ref)} vecinas (z = {z:.1f})"))
+                                  f"distinta a sus {nd} vecinas (z = {z:.1f})" + (f"; la referencia incluye {ne} estaciones externas de menor peso" if ne else "")))
     return out
 
 
@@ -334,13 +343,16 @@ def modelo(H, M, aisladas=(), cal=None, E=None):
 
 
 # ------------------------------------------------------------------ 7. lluvia (modelo y vecinas; el satélite se agrega después)
-def lluvia(H, M, V):
+def lluvia(H, M, V, X=None):
+    """X: externas (externas_vec.Ext): su lluvia de las 3 h entra con menor peso en la mediana de vecinas."""
+    import externas_vec as EV
     out = []
     if H.empty:
         return out
     fin = H["momento"].max()
     W = H[H["momento"] > fin - pd.Timedelta(hours=3)]
     obs = W.groupby("codigo")["rr1h"].sum(min_count=1)
+    horas3 = [fin - pd.Timedelta(hours=k) for k in (2, 1, 0)]
     mod = None
     if M is not None and not M.empty:
         Wm = M[(M["momento"] > fin - pd.Timedelta(hours=3)) & (M["momento"] <= fin)]
@@ -348,8 +360,10 @@ def lluvia(H, M, V):
     for cod, o in obs.items():
         if pd.isna(o):
             continue
-        vs = [obs.get(c) for c in V.get(cod, []) if pd.notna(obs.get(c))]
-        vm = float(np.median(vs)) if len(vs) >= 2 else None
+        vv = [(float(obs.get(c)), 1.0) for c in V.get(cod, []) if pd.notna(obs.get(c))]
+        if X is not None:
+            vv += [(x, w) for _, x, w in X.lluvia(horas3, cod)]
+        vm = EV.mediana_pond([x for x, _ in vv], [w for _, w in vv]) if len(vv) >= 2 and sum(w for _, w in vv) >= 2 else None
         m = None if mod is None else mod.get(cod)
         if o >= 3 and (m is not None and m < 0.2) and (vm is None or vm < 0.2):
             out.append(alerta(cod, "lluvia", "rr3h", 1, fin, o, m, "lluvia sin respaldo del modelo ni de las vecinas"))
