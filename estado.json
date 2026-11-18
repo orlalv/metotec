@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-18T09:45:40+00:00",
+ "inicio": "2026-11-18T10:15:47+00:00",
  "errores": [],
  "estaciones": 136,
- "con_datos": 121,
- "registros": 4825,
- "desde": "2026-11-18 08:45:01",
- "hasta": "2026-11-18 09:40:00",
+ "con_datos": 122,
+ "registros": 4927,
+ "desde": "2026-11-18 09:15:01",
+ "hasta": "2026-11-18 10:10:00",
  "horas_archivadas": 2,
  "modelo": 6528,
  "wrf": "sin corridas nuevas",
@@ -29,12 +29,12 @@
  "consenso_quitados": 0,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1375,
+ "ob_filas": 1382,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 451,
+  "observaciones": 455,
   "fallas": 0,
-  "hallazgos": 338,
+  "hallazgos": 340,
   "kv": "200",
   "completitud": "200"
  },
@@ -44,7 +44,7 @@
  ],
  "super": {
   "estaciones": 103,
-  "hallazgos": 62,
+  "hallazgos": 64,
   "kv": "200"
  },
  "historial": {
@@ -55,7 +55,13 @@
   "2026-11-17": "200",
   "2026-11-18": "200"
  },
- "boletin": "fuera de horario",
+ "boletin": {
+  "dia": "2026-11-18",
+  "estaciones": 26,
+  "hallazgos": 5,
+  "cambios": 0,
+  "kv": "200"
+ },
  "productos": {
   "extremas": "200",
   "lluvia_obs": "200"
@@ -65,20 +71,20 @@
    "cuarentena": 3,
    "en_revision": 28,
    "operativa": 105,
-   "verde": 62,
-   "amarillo": 45,
+   "verde": 63,
+   "amarillo": 44,
    "rojo": 29,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 19,
+ "alertas": 22,
  "resumen": {
-  "bien": 111,
-  "sospechoso": 8,
+  "bien": 108,
+  "sospechoso": 10,
   "erróneo": 9,
-  "sin datos": 8
+  "sin datos": 9
  },
- "fin": "2026-11-18T09:50:26+00:00"
+ "fin": "2026-11-18T10:20:34+00:00"
 }
