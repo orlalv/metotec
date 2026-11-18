@@ -134,7 +134,7 @@ async function abrirMapa(id, i){
   m = document.createElement("div"); m.id = "pMapa"; document.body.appendChild(m);
   const e0 = cat.cod.get(String(est.codigo));
   m.innerHTML = `<div class="caja"><div class="barra"><b id="pMaT"></b><span style="flex:1"></span><button id="pMaX">✕ Cerrar</button></div>
-    <div class="barra"><button id="pMaC" title="Volver a centrar en la estación">◎ Centrar</button><button id="pMaA">‹ hora anterior</button><button id="pMaS">hora siguiente ›</button><span style="width:10px"></span>
+    <div class="barra"><button id="pMaC" title="Volver a centrar en la estación">◎ Centrar</button><button id="pMaV2" title="Abre la pantalla Verificar: 3 imágenes a la vez, vecinas y tablas">Ver las 3 imágenes + tablas (Verificar)</button><button id="pMaA">‹ hora anterior</button><button id="pMaS">hora siguiente ›</button><span style="width:10px"></span>
       ${Object.entries(CAPAS).map(([k, c]) => `<button data-cp="${k}" class="${capaSel === k ? "on" : ""}">${c[0]}</button>`).join("")}</div>
     <div id="pMaV" style="font-size:12.5px;margin:4px 0"></div><div id="pPos" style="margin:0 0 4px"></div><div id="pDiag" style="font-size:11.5px;color:var(--mu);margin:0 0 4px"></div><div id="pMapaM"></div>
     <div style="font-size:11.5px;color:var(--mu);margin-top:4px">Rojo (anillo y cruz) = la estación; el círculo punteado marca los 60 km de búsqueda de vecinas · azul = vecinas (mm de esa hora). IMERG llega con ~5 h de retraso: si la capa sale vacía, la hora es muy reciente. Fuente: NASA GIBS.</div></div>`;
@@ -172,7 +172,7 @@ async function abrirMapa(id, i){
     diag(); ult = idx; $("#pMaA").disabled = idx === 0; $("#pMaS").disabled = idx === det.length - 1;
   };
   let idx = i; pintar(idx);
-  $("#pMaA").onclick = () => pintar(--idx); $("#pMaS").onclick = () => pintar(++idx); $("#pMaX").onclick = cerrarMapa; $("#pMaC").onclick = () => { if (e0) mapa.setView([e0.lat, e0.lon], 8); };
+  $("#pMaA").onclick = () => pintar(--idx); $("#pMaS").onclick = () => pintar(++idx); $("#pMaX").onclick = cerrarMapa; $("#pMaV2").onclick = () => { const t = instante(det[idx].hora), f = new Date(t).toISOString(); cerrarMapa(); if (window.ppVerificar) ppVerificar(est.codigo, f.slice(0, 10), +f.slice(11, 13)); }; $("#pMaC").onclick = () => { if (e0) mapa.setView([e0.lat, e0.lon], 8); };
   m.querySelectorAll("[data-cp]").forEach(b => b.onclick = () => { capaSel = b.dataset.cp; try { localStorage.setItem("qcPluCapa", capaSel); } catch (e) {}
     m.querySelectorAll("[data-cp]").forEach(x => x.classList.toggle("on", x === b)); pintar(idx); });
   setTimeout(() => mapa.invalidateSize(), 50);

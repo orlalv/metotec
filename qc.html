@@ -251,7 +251,8 @@ main[hidden]{display:none}
 <script src="js/casillas.js?v=202611132150"></script>
 <script src="js/sensorgraf.js?v=202611171330"></script>
 <script src="js/huecos.js?v=202611181430"></script>
-<script src="js/ppx.js?v=202611181820"></script>
+<script src="js/ppx.js?v=202611181900"></script>
+<script src="js/verificar.js?v=202611181900"></script>
 <script src="js/minutarios.js?v=202611171420"></script>
 <script src="js/supgraf.js?v=202611131625"></script>
 <script src="js/superauto.js?v=202611131815"></script>
@@ -604,7 +605,7 @@ function aplicarPestanas(){
 window.aplicarPestanas = aplicarPestanas;
 const MAPA_MODOS = new Set(["ema", "obs", "mod", "sup"]);
 /* Precipitación con subopciones: Alertas (las de siempre) · Series · Relleno de series · Precipitación binaria · Sensores */
-const PP_SUBS = [["alertas", "Alertas", "ext"], ["series", "Series", "ppx"], ["relleno", "Relleno de series", "minu"], ["binaria", "Precipitación binaria", "plu"], ["sensores", "Sensores", "ppx"]];
+const PP_SUBS = [["alertas", "Alertas", "ext"], ["series", "Series", "ppx"], ["relleno", "Relleno de series", "minu"], ["binaria", "Precipitación binaria", "plu"], ["sensores", "Sensores", "ppx"], ["verificar", "Verificar", "ppx"]];
 let ppSub = (() => { try { return localStorage.getItem("qcPpSub") || "alertas"; } catch (e) { return "alertas"; } })();
 const ppN = {};                                                      // contadores por subopción (las que se conocen)
 window.ppContar = (k, n) => { ppN[k] = n; ppBarra(); };
@@ -626,6 +627,7 @@ function ppAbrir(){                                                  // muestra 
   if (ppSub !== "binaria" && ppN.binaria == null) PLU.contar(clave);
   if (window.PPX){ const f = []; if (ppSub !== "series" && ppN.series == null) f.push("series"); if (ppSub !== "sensores" && ppN.sensores == null) f.push("sensores"); if (f.length) PPX.contar(f.length === 2 ? null : f[0] === "series" ? "series" : "sensores"); }
 }
+window.ppVerificar = (cod, dia, hora) => { if (window.VERIF) VERIF.fijar(cod, dia, hora); ppElegir("verificar"); };
 window.ppAbrirRelleno = (cod, dia) => {                              // desde «Series»: abre «Relleno de series» en esa estación y día (UTC)
   ppElegir("relleno");
   MINU.estaciones().then(E => { const e = E.find(x => x.codigo === cod); $("#mEst").value = e ? cod + " · " + e.nombre : cod; $("#mDia").value = dia; $("#mDiaT").value = "utc"; $("#mVer").click(); });

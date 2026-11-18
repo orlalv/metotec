@@ -251,8 +251,9 @@ function contarSens(){
   analizarSens(senH).then(r => { SRES = r; window.ppContar && window.ppContar("sensores", r.lista.length); }).catch(() => {});
 }
 function pagina(el, sub){
+  if (sub === "verificar") return window.VERIF ? window.VERIF.pagina(el) : (el.innerHTML = `<div class="ppx"><p style="color:var(--mu)">Cargando…</p></div>`);
   if (sub === "sensores") return sensores(el);
   return serie(el);
 }
-window.PPX = {pagina, contar: k => { if (k !== "sensores") contar(); if (k !== "series") contarSens(); }};
+window.PPX = {util: {varias, catalogo, catalogoSync: () => EST, conTiempo, dg: dgTxt}, pagina, contar: k => { if (k !== "sensores") contar(); if (k !== "series") contarSens(); }};
 })();
