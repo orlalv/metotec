@@ -76,3 +76,24 @@ H.moverLluvia(gl, hm, 0.9, 5); assert(Math.abs(hm.y - 0.9) < 1e-9); assert(gl.ha
 H.moverLluvia(gl, hm, 99, 5); assert(Math.abs(hm.y - gl.total) < 1e-9);           // no pasa del total anclado
 H.moverLluvia(gl, hm, -3, 5); assert(hm.y === 0 && gl.hand.slice(0, 3).every(q => q.y === 0));
 console.log("huecos lluvia (mover): OK");
+// 18) rellenos automáticos de lluvia: sin RRR6 el total cambia (conservador < moderado < optimista); con RRR6 el total es el mismo y solo cambia la forma
+FL = mkL(k => k >= 960 && k < 1100 ? .02 : 0, rango(990, 1004)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
+const tot = e => e.est.reduce((a, b) => a + b, 0), E = x => H.escenarioLluvia(gl, SL.g, x);
+assert(tot(E("conservador")) < tot(E("moderado")) && tot(E("moderado")) < tot(E("optimista"))); assert(Math.abs(tot(E("moderado")) - .3) < 1e-6);
+assert(E("conservador").est[0] > E("conservador").est[14] && E("optimista").est[0] < E("optimista").est[14]);   // afloja / se intensifica
+FL = mkL(k => k >= 720 && k < 1080 ? .02 : 0, rango(900, 914), {1079: {rr6: 8}}); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
+["conservador", "moderado", "optimista"].forEach(x => assert(Math.abs(tot(H.escenarioLluvia(gl, SL.g, x)) - gl.total) < .02, x));
+// hueco de lluvia > 3 h sin RRR6: no hay relleno automático
+FL = mkL(k => .03, rango(300, 520)); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); assert.equal(H.escenarioLluvia(SL.gaps[0], SL.g, "moderado"), null);
+// 19) suavizar: reduce las diferencias entre puntos vecinos y se queda entre los bordes; densificar/adelgazar conservan la curva
+F = mk(k => 10, [50, 51, 52, 53, 54, 55]); S = H.analizar(F, "T", ini, lim, cad, true, []); const gs = S.gaps[0];
+gs.hand = H.manoInicial(gs, S.g, gs.est, L); gs.hand[2].y = 14; gs.tocado = true; const antes = Math.abs(gs.hand[2].y - gs.hand[1].y);
+H.suavizar(gs, 2); assert(Math.abs(gs.hand[2].y - gs.hand[1].y) < antes); assert(gs.hand.every(h => h.y >= 10 - 1e-9 && h.y <= 14 + 1e-9));
+const cA = H.curvaMano(gs, gs.hand); H.densificar(gs); assert.equal(gs.hand.length, gs.n); H.curvaMano(gs, gs.hand).forEach((x, i) => assert(Math.abs(x - cA[i]) < 1e-9));
+FL = mkL(k => k >= 720 && k < 1080 ? .02 : 0, rango(900, 914), {1079: {rr6: 8}}); SL = H.analizar(FL, "rr1m", ini1, lim1, cad1, true, []); gl = SL.gaps[0];
+gl.hand = H.manoInicial(gl, SL.g, gl.est, SL.L); gl.tocado = true; H.suavizar(gl); assert(gl.hand.every((q, i, a) => !i || q.y >= a[i - 1].y - 1e-12) && gl.hand.every(q => q.y <= gl.total + 1e-9));
+H.densificar(gl); H.adelgazar(gl); assert(gl.hand.length <= 8 && gl.hand.length >= 5);
+// 20) recta: lluvia sube pareja hasta el total; otras variables, recta entre los bordes
+assert(Math.abs(H.rectaHueco(gl).reduce((a, b) => a + b, 0) - gl.total) < .02); S = H.analizar(mk(k => 10 + k * .1, [50, 51, 52]), "T", ini, lim, cad, true, []);
+H.rectaHueco(S.gaps[0]).forEach((x, i) => assert(Math.abs(x - (10 + (50 + i) * .1)) < 1e-9));
+console.log("huecos (modos de dibujo, rellenos, suavizar): OK");

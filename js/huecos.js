@@ -117,6 +117,38 @@ function moverLluvia(gp, h, y, tope){               // sube/baja un punto de la 
   for (let j = i + 1; j < hs.length; j++) if (hs[j].y < h.y) hs[j].y = h.y;
   for (let j = i - 1; j >= 0; j--) if (hs[j].y > h.y) hs[j].y = h.y;
 }
+function escenarioLluvia(gp, g, esc){               // relleno de lluvia: conservador (afloja), moderado (sigue igual), optimista (se intensifica)
+  const mx = LIM.rr1m[1], nW = Math.max(1, Math.round(VENT_LL / g.cad)), media = a => a.reduce((s, x) => s + x, 0) / a.length, n = gp.n, pre = [], pos = [];
+  for (let k = gp.k0 - 1; k >= 0 && pre.length < nW; k--){ if (g.y[k] == null) break; pre.push(g.y[k]); }
+  for (let k = gp.k1 + 1; k < g.n && pos.length < nW; k++){ if (g.y[k] == null) break; pos.push(g.y[k]); }
+  const r = pre.length && media(pre) > 0 ? media(pre) : (pos.length ? media(pos) : 0), F = {conservador: .5, moderado: 1, optimista: 1.5}[esc], anclado = gp.total != null;
+  if (!F) return null;
+  if (!anclado && n * g.cad > MAX_INT) return null;
+  const w = Array.from({length: n}, (_, i) => { const t = n > 1 ? i / (n - 1) : .5; return esc === "conservador" ? 1.5 - t : esc === "optimista" ? .5 + t : 1; });
+  const sw = w.reduce((a, b) => a + b, 0);
+  const est = anclado ? w.map(x => Math.min(mx, r3(gp.total * x / sw))) : w.map(x => Math.min(mx, r3(r * F * x)));
+  const forma = esc === "conservador" ? "la lluvia afloja durante el hueco" : esc === "optimista" ? "la lluvia se intensifica durante el hueco" : "la lluvia sigue igual que antes";
+  return {est, det: anclado ? `${esc}: total fijo por la RRR6 (${gp.total.toFixed(2)} mm); ${forma}` : `${esc}: ${(F * 100).toFixed(0)} % de la intensidad previa (${(r * 3600e3 / g.cad).toFixed(1)} mm/h); ${forma}`};
+}
+function curvaActual(gp){                           // lo que vale hoy en el hueco, listo para editar: en lluvia la ACUMULADA, en el resto el valor
+  const e = valores(gp) || (gp.hand ? curvaMano(gp, gp.hand) : new Array(gp.n).fill(0)); if (!gp.lluvia) return e.slice();
+  let c = 0; return e.map(x => c += x ?? 0);
+}
+function densificar(gp){ gp.hand = curvaActual(gp).map((y, i) => ({k: gp.k0 + i, y})); }                // un punto por paso (para dibujar a mano alzada)
+function adelgazar(gp){                             // vuelve a ~8 puntos de control tomados de la curva densa
+  if (!gp.hand || gp.hand.length <= 8) return;
+  const saltos = Math.max(1, Math.ceil(gp.n / 8)), ks = []; for (let k = gp.k0 + Math.floor(saltos / 2); k <= gp.k1; k += saltos) ks.push(k);
+  const D = gp.hand; gp.hand = ks.map(k => D.find(h => h.k === k) || D[D.length - 1]).map(h => ({k: h.k, y: h.y}));
+}
+function suavizar(gp, it){                          // media móvil sobre los puntos de control, anclada a los bordes (en lluvia: 0 al inicio y el total al final)
+  const hs = gp.hand, N = hs ? hs.length : 0; if (!N) return;
+  const izq = gp.lluvia ? 0 : (gp.izq ?? hs[0].y), der = gp.lluvia ? (gp.total ?? hs[N - 1].y) : (gp.der ?? hs[N - 1].y);
+  for (let r = 0; r < (it ?? (N > 12 ? 6 : 2)); r++){ const y = hs.map(h => h.y); hs.forEach((h, i) => { h.y = (( i ? y[i - 1] : izq) + 2 * y[i] + (i < N - 1 ? y[i + 1] : der)) / 4; }); }
+}
+function rectaHueco(gp){                            // recta entre los bordes (en lluvia: la acumulada sube pareja hasta el total)
+  if (gp.lluvia){ const tot = gp.total ?? (valores(gp) || []).reduce((a, x) => a + (x ?? 0), 0); return new Array(gp.n).fill(Math.min(LIM.rr1m[1], r3(tot / gp.n))); }
+  return gp.izq != null && gp.der != null ? interp(gp) : new Array(gp.n).fill(gp.izq ?? gp.der);
+}
 function incLluvia(gp, hand){                       // curva acumulada por tramos (no decreciente) → mm de cada minuto
   const P = [[gp.k0 - 1, 0]]; hand.slice().sort((a, b) => a.k - b.k).forEach(h => P.push([h.k, Math.max(0, h.y)])); if (gp.total != null) P.push([gp.k1, gp.total]);
   const cum = []; let mxAcum = 0;
@@ -156,16 +188,16 @@ const redondeo = (x, v) => v === "rr1m" ? Math.round(x * 1000) / 1000 : Math.rou
 function csv(S, v, cod, nombre, dia){
   const f = x => String(x).replace(/"/g, '""'); const L = [`# ${nombre} (${cod}) · ${dia} · ${v} · VALORES ESTIMADOS, no observados`, "t_utc,variable,valor,metodo,detalle,estimado"];
   S.gaps.forEach(gp => { const e = valores(gp); if (!e) return; e.forEach((x, i) => { if (x == null) return;
-    L.push(`${new Date(S.g.t(gp.k0 + i)).toISOString().slice(0, 16).replace("T", " ")},${v},${redondeo(Math.min(S.L[1], Math.max(S.L[0], x)), v)},${gp.tocado ? "manual" : gp.met},"${f(gp.tocado ? "curva dibujada con el mouse" : gp.det)}",sí`); }); });
+    L.push(`${new Date(S.g.t(gp.k0 + i)).toISOString().slice(0, 16).replace("T", " ")},${v},${redondeo(Math.min(S.L[1], Math.max(S.L[0], x)), v)},${gp.tocado ? "manual" : gp.met},"${f(gp.tocado ? (gp.nota || "curva dibujada con el mouse") : gp.det)}",sí`); }); });
   return L.join("\n");
 }
-const API = {rejilla, detectar, interp, ajuste, regresion, auto, autoLluvia, totalRR6, incLluvia, moverLluvia, manoInicial, curvaMano, analizar, valores, csv, VARS_H, LIM, MAX_INT};
+const API = {rejilla, detectar, interp, ajuste, regresion, auto, autoLluvia, totalRR6, incLluvia, moverLluvia, escenarioLluvia, curvaActual, densificar, adelgazar, suavizar, rectaHueco, manoInicial, curvaMano, analizar, valores, csv, VARS_H, LIM, MAX_INT};
 if (typeof module !== "undefined") module.exports = API;
 if (typeof window === "undefined") return;
 
 /* ---------- pantalla ---------- */
 const $ = s => document.querySelector(s);
-let ST = null, VAR = "T", SEL = null, TOK = 0;
+let ST = null, VAR = "T", SEL = null, TOK = 0, MODO = "puntos";
 const W = 1100, H = 270, iz = 58, de = 12, ar = 16, ab = 26, COL = "#C9A54C", EST = "#F2994A";
 
 async function render(){
@@ -188,7 +220,7 @@ function pintar(){
   $("#mHue").innerHTML = `<div class="htools"><span style="color:var(--mu);font-size:12.5px">Variable:</span>${ST.vars.map(x => `<button data-hv="${x[0]}" style="${x[0] === VAR ? "border-color:var(--oro);color:var(--oro)" : ""}">${x[1]}</button>`).join("")}
     <button id="hCsv" ${nOk ? "" : "disabled"} title="Descarga solo los valores estimados, marcados como tales">Descargar estimados (CSV)</button></div>
     <p class="nota" id="hNota" style="margin:0 0 8px"></p>
-    ${S.gaps.length ? `<div id="hGraf"></div><div id="hTab" style="overflow:auto;margin-top:8px"></div>` : `<p style="color:var(--mu)">No hay huecos en ${esc(mi.NOM[VAR] || VAR)} para este día.</p>`}`;
+    ${S.gaps.length ? `<div id="hBar"></div><div id="hGraf"></div><div id="hTab" style="overflow:auto;margin-top:8px"></div>` : `<p style="color:var(--mu)">No hay huecos en ${esc(mi.NOM[VAR] || VAR)} para este día.</p>`}`;
   document.querySelectorAll("#mHue [data-hv]").forEach(b => b.onclick = () => { VAR = b.dataset.hv; SEL = null; pintar(); });
   const cb = $("#hCsv"); if (cb) cb.onclick = () => { const M = ST.M, t = csv(datos(), VAR, M.cod, M.nombre, M.dia), a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob(["\ufeff" + t], {type: "text/csv"})); a.download = `estimados_${M.cod}_${M.dia}_${VAR}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
@@ -202,19 +234,38 @@ function tabla(){                                    // la tabla se repinta sola
   $("#hTab").innerHTML = `<table><tr><th>Desde (UTC)</th><th>Hasta</th><th>Duración</th><th>Método</th><th>Detalle</th><th></th></tr>
     ${S.gaps.map((gp, i) => { const d = gp.n * S.g.cad / 60e3;
       return `<tr style="${SEL === i ? "background:#16264a" : ""}"><td>${mi.hhmm(S.g.t(gp.k0))}</td><td>${mi.hhmm(S.g.t(gp.k1))}</td><td>${d >= 120 ? (d / 60).toFixed(1) + " h" : Math.round(d) + " min"}</td>
-      <td><b>${gp.tocado ? "manual" : esc(gp.met)}</b></td><td style="color:var(--mu)">${esc(gp.tocado ? "curva dibujada con el mouse" : gp.det)}</td>
-      <td style="white-space:nowrap"><button data-hs="${i}">${SEL === i ? "Cerrar" : "Dibujar a mano"}</button>${gp.tocado ? ` <button data-hr="${i}">Volver al automático</button>` : ""}</td></tr>`; }).join("")}</table>`;
+      <td><b>${gp.tocado ? "manual" : esc(gp.met)}</b></td><td style="color:var(--mu)">${esc(gp.tocado ? (gp.nota || "curva dibujada con el mouse") : gp.det)}</td>
+      <td style="white-space:nowrap"><button data-hs="${i}">${SEL === i ? "Cerrar" : "Dibujar a mano"}</button>${gp.tocado || gp.esc ? ` <button data-hr="${i}">Volver al automático</button>` : ""}</td></tr>`; }).join("")}</table>`;
   document.querySelectorAll("#hTab [data-hs]").forEach(b => b.onclick = () => { const i = +b.dataset.hs, gp = S.gaps[i];
+    MODO = "puntos";
     if (SEL === i){ if (!gp.tocado) gp.hand = null; SEL = null; tabla(); grafico(); return; }
     const ant = SEL != null ? S.gaps[SEL] : null; if (ant && !ant.tocado) ant.hand = null;
     if (!gp.hand){ const h = manoInicial(gp, S.g, gp.est, S.L); if (!h){ b.textContent = "Sin borde de referencia"; return; } gp.hand = h; }
     SEL = i; tabla(); grafico(); });
-  document.querySelectorAll("#hTab [data-hr]").forEach(b => b.onclick = () => { const gp = S.gaps[+b.dataset.hr]; gp.hand = null; gp.tocado = false; SEL = null; tabla(); grafico(); });
+  document.querySelectorAll("#hTab [data-hr]").forEach(b => b.onclick = () => { const gp = S.gaps[+b.dataset.hr]; gp.hand = null; gp.tocado = false; gp.esc = null; gp.nota = null; gp.est = gp.auto.est; gp.met = gp.auto.met; gp.det = gp.auto.det; SEL = null; tabla(); grafico(); });
+}
+function barra(){                                    // herramientas del hueco elegido: modo de dibujo, suavizar, recta y rellenos automáticos
+  const el = $("#hBar"); if (!el) return; const S = datos(), sel = SEL != null ? S.gaps[SEL] : null;
+  if (!sel){ el.innerHTML = ""; return; }
+  const b = (id, txt, tit, on) => `<button data-hb="${id}" title="${tit}" style="${on ? "border-color:var(--oro);color:var(--oro)" : ""}">${txt}</button>`;
+  el.innerHTML = `<div class="htools" style="margin:6px 0;align-items:center"><span style="color:var(--mu);font-size:12.5px">Dibujo:</span>
+    ${b("puntos", "Puntos", "Arrastre los puntos; se unen con rectas", MODO === "puntos")}${b("libre", "A mano alzada", "Mantenga el mouse apretado y dibuje la curva", MODO === "libre")}
+    <span style="color:var(--mu)">·</span>${b("suavizar", "Suavizar", "Alisa la curva actual (se puede repetir)", false)}${b("recta", "Recta", "Une los bordes del hueco con una recta", false)}
+    ${sel.lluvia ? `<span style="color:var(--mu);font-size:12.5px">· Rellenar:</span>${b("conservador", "Conservador", "La lluvia afloja durante el hueco (la mitad de la intensidad previa si no hay RRR6)", sel.esc === "conservador")}${b("moderado", "Moderado", "La lluvia sigue igual que antes del hueco", sel.esc === "moderado")}${b("optimista", "Optimista", "La lluvia se intensifica durante el hueco (1,5 × la intensidad previa si no hay RRR6)", sel.esc === "optimista")}` : ""}</div>`;
+  el.querySelectorAll("[data-hb]").forEach(x => x.onclick = () => { const id = x.dataset.hb, T = {conservador: 1, moderado: 1, optimista: 1};
+    if (id === "puntos"){ if (MODO === "libre") adelgazar(sel); MODO = "puntos"; }
+    else if (id === "libre"){ MODO = "libre"; if (sel.hand.length < sel.n) densificar(sel); }
+    else if (id === "suavizar"){ sel.tocado = true; sel.nota = "curva suavizada"; suavizar(sel); }
+    else if (id === "recta"){ sel.est = rectaHueco(sel); sel.met = "recta"; sel.det = "recta entre los bordes del hueco"; sel.esc = "recta"; sel.tocado = false; sel.nota = null; sel.hand = manoInicial(sel, S.g, sel.est, S.L); MODO = "puntos"; }
+    else if (T[id]){ const r = escenarioLluvia(sel, S.g, id); if (!r){ x.textContent = "Hueco muy largo sin RRR6"; return; }
+      sel.est = r.est; sel.met = "escenario " + id; sel.det = r.det; sel.esc = id; sel.tocado = false; sel.nota = null; sel.hand = manoInicial(sel, S.g, sel.est, S.L); MODO = "puntos"; }
+    tabla(); grafico(); });
 }
 function grafico(){
   const mi = window.MINU, M = ST.M, S = datos(), g = S.g, ll = VAR === "rr1m", uni = (VARS_H.find(x => x[0] === VAR) || [])[2], sel = SEL != null ? S.gaps[SEL] : null;
   let v0 = M.ini, v1 = M.fin;                        // con un hueco elegido se acerca: el hueco más un margen a cada lado (al menos 30 min)
   if (sel){ const mg = Math.max(30 * 60e3, sel.n * g.cad); v0 = Math.max(M.ini, g.t(sel.k0) - g.cad - mg); v1 = Math.min(M.fin, g.t(sel.k1) + mg); }
+  barra();
   const span = Math.max(1, v1 - v0), enV = t => t >= v0 - g.cad && t <= v1 + g.cad;
   const cumul = () => {                              // lluvia acumulada del día: observado + estimado vigente de cada hueco
     const porK = new Map(); S.gaps.forEach(gp => { const e = valores(gp); for (let k = gp.k0; k <= gp.k1; k++) porK.set(k, e ? e[k - gp.k0] : null); });
@@ -258,7 +309,7 @@ function grafico(){
       e.forEach((x, j) => { if (x != null) p += (p ? "L" : "M") + X(g.t(gp.k0 + j)).toFixed(1) + " " + Y(Math.min(S.L[1], Math.max(S.L[0], x))).toFixed(1); });
       if (gp.der != null) p += "L" + X(g.t(gp.k1 + 1)).toFixed(1) + " " + Y(gp.der).toFixed(1);
       return `<path d="${p}" fill="none" stroke="${EST}" stroke-width="2" stroke-dasharray="5 4"/>`; }).join("");
-    const manos = sel && sel.hand ? sel.hand.map(h => `<circle cx="${X(g.t(h.k))}" cy="${Y(ll ? base + h.y : h.y)}" r="6" fill="${EST}" stroke="var(--panel)" stroke-width="2" style="cursor:ns-resize"/>`).join("") : "";
+    const manos = sel && sel.hand && MODO === "puntos" && sel.hand.length <= 12 ? sel.hand.map(h => `<circle cx="${X(g.t(h.k))}" cy="${Y(ll ? base + h.y : h.y)}" r="6" fill="${EST}" fill-opacity=".22" stroke="${EST}" stroke-opacity=".9" stroke-width="1.8" style="cursor:ns-resize"/>`).join("") : "";
     $("#hDin").innerHTML = estim + manos; };
   const ticks = [], paso = [1, 2, 5, 10, 15, 30, 60, 180].map(m => m * 60e3).find(p => span / p <= 10) || 180 * 60e3;
   for (let t = M.ini + Math.ceil((v0 - M.ini) / paso) * paso; t <= v1 && t <= M.fin; t += paso) ticks.push(`<line x1="${X(t)}" x2="${X(t)}" y1="${ar}" y2="${H - ab}" stroke="#ffffff" opacity=".07"/><text x="${X(t)}" y="${H - 8}" fill="#9fb0cc" font-size="11" text-anchor="middle">${mi.hhmm(t)}</text>`);
@@ -270,16 +321,21 @@ function grafico(){
   const svg = $("#hGraf svg"); dinamica();
   if (sel && sel.hand){
     let bajo = false;
+    let ult = null;
     const mover = ev => { const r = svg.getBoundingClientRect(), px = (ev.clientX - r.left) * W / r.width, py = (ev.clientY - r.top) * H / r.height;
       const t = v0 + (px - iz) / (W - iz - de) * span, k = Math.round((t - M.ini) / g.cad) - 1;
-      const kk = Math.min(sel.k1, Math.max(sel.k0, k));       // el mouse puede estar fuera de la banda: se usa el punto más cercano
-      let h = sel.hand[0]; sel.hand.forEach(q => { if (Math.abs(q.k - kk) < Math.abs(h.k - kk)) h = q; });
-      if (ll) moverLluvia(sel, h, invY(py) - base, y1 - base);
-      else h.y = Math.min(S.L[1], Math.max(S.L[0], Math.min(y1, Math.max(y0, invY(py)))));
-      const primera = !sel.tocado; sel.tocado = true; dinamica(); if (primera) tabla(); };
-    svg.addEventListener("pointerdown", ev => { bajo = true; try { svg.setPointerCapture(ev.pointerId); } catch (e) {} mover(ev); });
+      const kk = Math.min(sel.k1, Math.max(sel.k0, k)), yv = invY(py);     // el mouse puede estar fuera de la banda: se usa el punto más cercano
+      const poner = (h, y) => { if (ll) moverLluvia(sel, h, y - base, y1 - base); else h.y = Math.min(S.L[1], Math.max(S.L[0], Math.min(y1, Math.max(y0, y)))); };
+      if (MODO === "libre"){                                              // a mano alzada: un punto por paso, con relleno entre dos posiciones del mouse
+        if (sel.hand.length < sel.n) densificar(sel);
+        const k0 = ult ? ult.k : kk, y0u = ult ? ult.y : yv, d = kk - k0, pasos = Math.abs(d) || 1;
+        for (let j = 1; j <= pasos; j++){ const kx = d ? k0 + Math.sign(d) * j : kk; poner(sel.hand[kx - sel.k0], y0u + (yv - y0u) * (d ? j / pasos : 1)); }
+        ult = {k: kk, y: yv};
+      } else { let h = sel.hand[0]; sel.hand.forEach(q => { if (Math.abs(q.k - kk) < Math.abs(h.k - kk)) h = q; }); poner(h, yv); }
+      const primera = !sel.tocado; sel.tocado = true; sel.nota = null; dinamica(); if (primera) tabla(); };
+    svg.addEventListener("pointerdown", ev => { bajo = true; ult = null; try { svg.setPointerCapture(ev.pointerId); } catch (e) {} mover(ev); });
     svg.addEventListener("pointermove", ev => { if (bajo) mover(ev); });
-    svg.addEventListener("pointerup", () => { bajo = false; if (SEL != null) tabla(); });
+    svg.addEventListener("pointerup", () => { bajo = false; ult = null; if (SEL != null) tabla(); });
   }
 }
 window.HUECOS = Object.assign({render}, API);
