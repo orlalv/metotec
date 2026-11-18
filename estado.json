@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-18T18:15:51+00:00",
+ "inicio": "2026-11-18T18:45:28+00:00",
  "errores": [],
  "estaciones": 134,
- "con_datos": 124,
- "registros": 4896,
- "desde": "2026-11-18 17:16:00",
- "hasta": "2026-11-18 18:10:00",
+ "con_datos": 122,
+ "registros": 4843,
+ "desde": "2026-11-18 17:45:01",
+ "hasta": "2026-11-18 18:40:00",
  "horas_archivadas": 2,
  "modelo": 6432,
  "wrf": "sin corridas nuevas",
@@ -19,23 +19,23 @@
  ],
  "wrf_ref": 654,
  "satelite": {
-  "imagenes": 41,
-  "ultima": "2026-11-18T18:00Z"
+  "imagenes": 44,
+  "ultima": "2026-11-18T18:30Z"
  },
  "calibracion": {
   "dias": 11,
   "filas": 27421,
   "activa": false
  },
- "consenso_quitados": 5,
+ "consenso_quitados": 2,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 2383,
+ "ob_filas": 2502,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 534,
   "fallas": 0,
-  "hallazgos": 346,
+  "hallazgos": 345,
   "kv": "200",
   "completitud": "200"
  },
@@ -45,12 +45,11 @@
  ],
  "super": {
   "estaciones": 101,
-  "hallazgos": 54,
+  "hallazgos": 51,
   "kv": "200"
  },
  "historial": {
   "2026-11-13": "200",
-  "2026-11-14": "200",
   "2026-11-15": "200",
   "2026-11-16": "200",
   "2026-11-17": "200",
@@ -76,10 +75,10 @@
  "kv": "200",
  "alertas": 25,
  "resumen": {
-  "bien": 107,
-  "sospechoso": 15,
+  "bien": 106,
+  "sospechoso": 16,
   "erróneo": 6,
   "sin datos": 6
  },
- "fin": "2026-11-18T18:19:33+00:00"
+ "fin": "2026-11-18T18:49:59+00:00"
 }
