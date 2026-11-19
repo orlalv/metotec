@@ -15,9 +15,9 @@ function init(fclave){
     s.dataset.ok = 1;
     const st = document.createElement("style");
     st.textContent = `#plu .tb{width:auto;min-width:380px}#plu .tb th:not(:first-child){text-align:right}#plu .pmk:hover rect:first-child{fill:#58a6ff22}
-      #pMapa{position:fixed;inset:0;background:#000a;z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px}
-      #pMapa .caja{background:var(--bg,#0d1117);color:var(--tx,#e6edf3);border:1px solid var(--bd,#30363d);border-radius:10px;width:min(860px,100%);max-height:100%;overflow:auto;padding:12px 14px}
-      #pMapa .barra{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}#pMapa .barra button.on{background:#1f6feb55}#pMapaM{height:min(60vh,470px);border-radius:8px}`;
+      #pMapa{position:fixed;inset:0;background:#000a;z-index:9999;display:flex;align-items:center;justify-content:center;padding:8px}
+      #pMapa .caja{background:var(--bg,#0d1117);color:var(--tx,#e6edf3);border:1px solid var(--bd,#30363d);border-radius:10px;width:min(1600px,100%);height:100%;max-height:100%;overflow:auto;padding:12px 16px;display:flex;flex-direction:column}
+      #pMapa .barra{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0}#pMapa .barra button.on{background:#1f6feb55}#pMapaM{flex:1;min-height:420px;border-radius:8px}`;
     document.head.appendChild(st);
     s.innerHTML = `<div class="htools"><span id="pRes"></span><input id="pQ" placeholder="Buscar estación o código" style="min-width:200px"><button id="pRec">↻ Actualizar</button></div>
       <div id="pOut"><p style="color:var(--mu)">Cargando…</p></div>`;
@@ -123,13 +123,14 @@ async function catalogo(){
 const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
 const CAPAS = {imerg: ["Lluvia NASA IMERG", "IMERG_Precipitation_Rate", "GoogleMapsCompatible_Level6", 6, "png", .85], ir: ["GOES-19 infrarrojo", "GOES-East_ABI_Band13_Clean_Infrared", "GoogleMapsCompatible_Level6", 6, "png", .75, [["GoogleMapsCompatible_Level7", 7], ["GoogleMapsCompatible_Level8", 8]]],
   goes: ["GOES-19 color real", "GOES-East_ABI_GeoColor", "GoogleMapsCompatible_Level7", 7, "jpeg", .9]};
-let capaSel = (() => { try { return localStorage.getItem("qcPluCapa") || "imerg"; } catch (e) { return "imerg"; } })();
+let capaSel = "imerg";
 function instante(h){                                   // "11-17 18:00" (UTC) -> ms; el año sale de la fecha de generación del análisis
   const g = String(D.generado || ""), y = +g.slice(0, 4) || new Date().getUTCFullYear(); let t = Date.parse(`${y}-${h.slice(0, 5)}T${h.slice(6, 11)}:00Z`);
   if (t > Date.now() + 864e5) t = Date.parse(`${y - 1}-${h.slice(0, 5)}T${h.slice(6, 11)}:00Z`); return t;
 }
 async function abrirMapa(id, i){
   const cx = CTX[id]; if (!cx || !window.L) return; const {est, det} = cx, d = det[i], cat = await catalogo();
+  capaSel = "imerg";                                      // siempre se abre con el radar de lluvia de la NASA (IMERG); las otras capas se eligen con los botones
   let m = document.getElementById("pMapa"); if (m) cerrarMapa();
   m = document.createElement("div"); m.id = "pMapa"; document.body.appendChild(m);
   const e0 = cat.cod.get(String(est.codigo));
@@ -173,7 +174,7 @@ async function abrirMapa(id, i){
   };
   let idx = i; pintar(idx);
   $("#pMaA").onclick = () => pintar(--idx); $("#pMaS").onclick = () => pintar(++idx); $("#pMaX").onclick = cerrarMapa; $("#pMaV2").onclick = () => { const t = instante(det[idx].hora), f = new Date(t).toISOString(); cerrarMapa(); if (window.ppVerificar) ppVerificar(est.codigo, f.slice(0, 10), +f.slice(11, 13)); }; $("#pMaC").onclick = () => { if (e0) mapa.setView([e0.lat, e0.lon], 8); };
-  m.querySelectorAll("[data-cp]").forEach(b => b.onclick = () => { capaSel = b.dataset.cp; try { localStorage.setItem("qcPluCapa", capaSel); } catch (e) {}
+  m.querySelectorAll("[data-cp]").forEach(b => b.onclick = () => { capaSel = b.dataset.cp;
     m.querySelectorAll("[data-cp]").forEach(x => x.classList.toggle("on", x === b)); pintar(idx); });
   setTimeout(() => mapa.invalidateSize(), 50);
 }
