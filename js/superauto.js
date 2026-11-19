@@ -9,7 +9,7 @@ const ESP = new Set(["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZE
 const TABS = {sup_esp: ["esp", "control espacial"], sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
 const COLS = [["pp", "Precipitación", "sup_prc"], ["ext", "Extremas", "sup_ext"], ["pre", "Presiones", "sup_pre"], ["tem", "Temperaturas", "sup_tem"], ["vie", "Viento", "sup_vie"]];
 const NOTA = {
-  pp: "Agua caída del pluviómetro: lluvia con aire seco, más de 2 mm en un minuto, el mismo valor repetido 10 minutos (pluviómetro pegado) y el acumulado de 6 h contra la suma de los minutos.",
+  pp: "Agua caída del pluviómetro: lluvia con aire seco, más de 2 mm en un minuto, el mismo valor repetido 10 minutos (pluviómetro pegado) el acumulado de 6 h contra la suma de los minutos y, contra el satélite GOES, lluvia con cielo despejado o pluviómetro en 0 bajo nube fría.",
   esp: "Comparación con todas las estaciones cercanas (DMC e INIA y otras externas, con menor peso): Ts, Td, HR y QFF (diferencia sostenida), viento medio y calma prolongada, lluvia sí/no, y mínima, máxima y amplitud del día. Solo estaciones automáticas sin observador.",
   ext: "Extremas: Tn12/Tx12 de la mañana (12 UTC) y de la tarde (00 UTC) contra los minutos de esas 12 h, mínima y máxima de 24 h fuera de rango físico (picos del sensor), contra las vecinas (> 6 °C sospechoso, > 10 °C erróneo), amplitud del día contra las vecinas, el mismo valor 3 días seguidos y Tn12 mayor que Tx12.",
   pre: "QFF contra la mediana de las vecinas y contra el modelo (diferencia sostenida en 2 de las últimas 3 horas), QFE pegado 3 h, QFE lejos de lo esperado por altura, saltos groseros, cambio sobre 10 hPa en 3 h y QFF contra el QFE reducido.",
@@ -22,7 +22,29 @@ const DATOS = {
   pre: [["P_est", "QFE", "hPa"], ["P_mar", "QFF", "hPa"], ["dP3", "Cambio del QFE en 3 h", "hPa"]],
   tem: [["T", "Ts", "°C"], ["Td", "Td", "°C"], ["HR", "HR", "%"], ["Tmin24", "Ts mín. 24 h", "°C"], ["Tmax24", "Ts máx. 24 h", "°C"]],
   vie: [["ff10", "Viento medio 10 min", "kt"], ["fx10", "Racha", "kt"], ["dd10", "Dirección", "°"], ["ffmax24", "Viento máx. 24 h", "kt"], ["fxmax24", "Racha máx. 24 h", "kt"]]};
-let getR = () => null, modo = "sup", q = "";
+let getR = () => null, modo = "sup", q = "", ctlSel = null;
+// índice por tipo de control (de más seguro a más blando)
+const CTL = [["fis", "Límites físicos", "¿El valor es posible?", ["ZT09", "ZP03", "ZV05", "ZV08", "ZE04"]],
+  ["int", "Consistencia interna", "¿Las variables de la estación calzan entre sí?", ["ZT04", "ZT05", "ZP05", "ZV06", "ZV09", "ZE03", "ZR05", "ZR01"]],
+  ["sal", "Temporal: saltos", "¿Cambió de golpe?", ["ZT01", "ZT02", "ZT03", "ZP01", "ZP04", "ZV01", "ZR02"]],
+  ["peg", "Temporal: pegados o sin variación", "¿El sensor se quedó fijo?", ["ZT06", "ZT07", "ZT08", "ZT10", "ZP02", "ZV02", "ZV03", "ZR03", "ZR04", "ZE07"]],
+  ["exm", "Extremas contra minutos", "¿La Tn12/Tx12 calza con lo medido?", ["ZE01", "ZE06"]],
+  ["esp", "Control espacial", "¿Calza con las estaciones cercanas (DMC e INIA)?", ["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZE05", "ZE08"]],
+  ["mod", "Contra modelo", "¿Calza con lo que da el modelo?", ["ZM01", "ZM02", "ZM03", "ZM04", "ZM05"]],
+  ["sat", "Contra satélite", "¿Calza con lo que se ve desde el GOES?", ["ZS01", "ZS02"]]];
+const tipoCtl = r => (CTL.find(c => c[3].includes(r)) || [null])[0];
+function indiceCtl(F){
+  const filasI = CTL.map(([k, n, p, R]) => { const A = F.flatMap(x => x.H.filter(h => R.includes(h.regla)).map(h => ({...h, e: x.e}))), est = new Set(A.map(a => a.e.codigo)), err = A.filter(a => a.nivel >= 2).length;
+    return `<tr data-ctl="${k}" style="cursor:pointer;${ctlSel === k ? "background:color-mix(in srgb,var(--oro) 18%,transparent)" : ""}"><td><b>${esc(n)}</b><br><small style="color:var(--mu)">${esc(p)}</small></td><td class="n">${est.size || "—"}</td><td class="n">${A.length || "—"}</td><td class="n" style="color:${err ? "var(--err)" : "var(--mu)"};font-weight:600">${err || "—"}</td><td style="font-size:11.5px;color:var(--mu)">${R.join(" · ")}</td></tr>`; }).join("");
+  let det = "";
+  if (ctlSel){ const c = CTL.find(x => x[0] === ctlSel), A = F.flatMap(x => x.H.filter(h => c[3].includes(h.regla)).map(h => ({...h, e: x.e}))).sort((a, b) => b.nivel - a.nivel || b.hora.localeCompare(a.hora));
+    det = `<h3 style="margin:14px 0 6px;font:600 15px var(--titulo)">${esc(c[1])} · ${A.length} alertas</h3>` + (A.length ? `<div class="bcard" style="padding:0;max-height:520px;overflow:auto"><table class="xtab"><tr><th>Estación</th><th>Obs. UTC</th><th>Alerta</th><th>Ingresado</th><th>Debería ir</th><th>Detalle</th></tr>
+      ${A.map(f => `<tr data-ir="${f.e.codigo}" data-tp="${f.tipo}" style="cursor:pointer"><td class="nom"><b>${esc(f.e.nombre)}</b><br><small>${f.e.codigo}</small></td><td style="white-space:nowrap">${hora(f)}</td><td style="color:${NIVC[f.nivel] || "inherit"};font-weight:600">${REGLAS.html(f.regla, esc)}</td><td class="n">${esc(f.ingresado || "—")}</td><td class="n" style="color:var(--oro)">${esc(f.deberia || "")}</td><td>${esc(f.msg)}</td></tr>`).join("")}</table></div>` : `<p style="color:var(--ok)">Sin alertas de este tipo.</p>`); }
+  return `<h3 style="margin:18px 0 6px;font:600 15px var(--titulo)">Índice por tipo de control</h3>
+    <div class="bcard" style="padding:0"><table class="xtab"><tr><th>Tipo de control</th><th>Estaciones</th><th>Alertas</th><th>Erróneas</th><th>Reglas</th></tr>${filasI}</table></div>
+    <p class="nota" style="color:var(--mu);font-size:12px;margin:4px 0">De arriba hacia abajo, de más seguro a más blando: los primeros casi siempre son errores reales; los últimos dependen de una referencia externa (vecinas, modelo o satélite) que también puede fallar. Haga clic en un tipo para ver sus alertas.</p>${det}`;
+}
+document.addEventListener("click", ev => { const t = ev.target.closest("tr[data-ctl]"); if (!t) return; ctlSel = ctlSel === t.dataset.ctl ? null : t.dataset.ctl; pintar(); });
 
 function init(fR, m){
   getR = fR || getR; if (m) modo = m;
@@ -91,6 +113,7 @@ function pintar(){
         ${COLS.map(([k, n, m]) => `<td class="n">${c[k] ? `<a href="#${m}" data-sup="${m}" data-c="${x.e.codigo}" style="color:var(--oro)">${c[k]}</a>` : "—"}</td>`).join("")}
         <td style="color:${NIVC[niv] || "inherit"};font-weight:600">${x.H.length ? ["", "Sospechoso", "Erróneo"][niv] : ""}</td></tr>`; }).join("")}</table></div>`
         : `<p style="color:var(--ok)">Sin alertas en las estaciones sin observador.</p>`}
+      ${indiceCtl(F)}
       <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Control más estricto que el de «Estaciones automáticas» (umbrales cerca de la mitad), solo para estaciones sin observador. Avisa antes y puede dar más falsas alarmas: use ✗ para registrarlas. Cada pestaña muestra el detalle por variable.</p>`;
     return;
   }

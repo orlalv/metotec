@@ -525,6 +525,41 @@ def _extremas_red(est, V):
         f["nivel"] = max([h["nivel"] for h in f["hallazgos"]], default=f["nivel"])
 
 
+def _satelite(raiz, A, est, fin):
+    """ZS01: lluvia en el pluviómetro con el cielo despejado según GOES (≥ 2 h en 24 h).
+    ZS02: pluviómetro en 0 durante ≥ 3 h seguidas con lluvia estimada o nube fría sobre la estación."""
+    import pluviometros as PL
+    arch = PL.leer_satelite(raiz, (fin - pd.Timedelta(hours=24)).to_pydatetime(), fin.to_pydatetime())
+    if not arch or A is None or not len(A) or "rr1m" not in A:
+        return
+    W = A[A["momento"] > fin - pd.Timedelta(hours=24)]
+    W = W.assign(h=W["momento"].dt.ceil("h"))
+    g = W.groupby(["codigo", "h"])["rr1m"].agg(["sum", "count"]).reset_index()
+    g = g[g["count"] >= 50]
+    rr = {c: dict(zip(x["h"], x["sum"])) for c, x in g.groupby("codigo")}
+    for f in est:
+        c = f["codigo"]; mio = rr.get(c)
+        if not mio:
+            continue
+        horas = sorted(h for h in mio if h in arch and c in arch[h])
+        desp = [h for h in horas if mio[h] >= 0.5 and arch[h][c][2] and not (arch[h][c][0] or arch[h][c][1])]
+        if len(desp) >= 2:
+            f["hallazgos"].append(_h(None, "ZS01", 1, "pp", desp[-1], f"El pluviómetro marcó lluvia en {len(desp)} h con el cielo despejado según el satélite GOES (" + ", ".join(f"{h:%H}h {mio[h]:.1f} mm" for h in desp[-4:]) + "): riego, mantención o falla",
+                                     ingresado=f"{sum(mio[h] for h in desp):.1f} mm", deberia="0 mm (cielo despejado)"))
+        racha, mejor = [], []
+        for h in horas:
+            if mio[h] == 0 and (arch[h][c][0] or arch[h][c][1]):
+                racha.append(h)
+                if len(racha) > len(mejor):
+                    mejor = list(racha)
+            else:
+                racha = []
+        if len(mejor) >= 3:
+            f["hallazgos"].append(_h(None, "ZS02", 1, "pp", mejor[-1], f"El pluviómetro marcó 0 mm durante {len(mejor)} h seguidas ({mejor[0]:%H}–{mejor[-1]:%H} UTC) con lluvia estimada o nube fría sobre la estación según GOES: posible pluviómetro obstruido",
+                                     ingresado="0 mm", deberia="lluvia (satélite)"))
+        f["nivel"] = max([h["nivel"] for h in f["hallazgos"]], default=f["nivel"])
+
+
 def _boletin(A, est, fin):
     if A is None or not len(A):
         return
@@ -617,6 +652,11 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
     except Exception:
         import traceback
         errores.append(f"boletin: {traceback.format_exc(limit=3)}")
+    try:
+        _satelite(raiz, A, est, fin)
+    except Exception:
+        import traceback
+        errores.append(f"satelite: {traceback.format_exc(limit=3)}")
     try:
         _repetidas(raiz, est, fin)
     except Exception:
