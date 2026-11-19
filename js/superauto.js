@@ -5,8 +5,8 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
 const NIVC = ["var(--ok)", "var(--sos)", "var(--err)"];
-const ESP = new Set(["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZC08", "ZC09", "ZC10", "ZE05", "ZE08"]);     // controles espaciales (vecinas DMC y externas)
-const TABS = {sup_esp: ["esp", "control espacial"], obs_esp: ["esp", "control espacial (estaciones con observador)"], sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
+const ESP = new Set(["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZC08", "ZC09", "ZC10", "ZE05", "ZE08", "ZK01"]);     // controles espaciales (vecinas DMC y externas)
+const TABS = {sup_six: ["six", "Six Sigma"], obs_six: ["six", "Six Sigma (estaciones con observador)"], sup_esp: ["esp", "control espacial"], obs_esp: ["esp", "control espacial (estaciones con observador)"], sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
 const COLS = [["pp", "Precipitación", "sup_prc"], ["ext", "Extremas", "sup_ext"], ["pre", "Presiones", "sup_pre"], ["tem", "Temperaturas", "sup_tem"], ["vie", "Viento", "sup_vie"]];
 const NOTA = {
   pp: "Agua caída del pluviómetro: lluvia con aire seco, más de 2 mm en un minuto, el mismo valor repetido 10 minutos (pluviómetro pegado) el acumulado de 6 h contra la suma de los minutos y, contra el satélite GOES, lluvia con cielo despejado o pluviómetro en 0 durante 4 h o más con lluvia estimada y nube fría.",
@@ -29,7 +29,7 @@ const CTL = [["fis", "Límites físicos", "¿El valor es posible?", ["ZT09", "ZP
   ["sal", "Temporal: saltos", "¿Cambió de golpe?", ["ZT01", "ZT02", "ZT03", "ZP01", "ZP04", "ZV01", "ZR02"]],
   ["peg", "Temporal: pegados o sin variación", "¿El sensor se quedó fijo?", ["ZT06", "ZT07", "ZT08", "ZT10", "ZP02", "ZV02", "ZV03", "ZR03", "ZR04", "ZE07"]],
   ["exm", "Extremas contra minutos", "¿La Tn12/Tx12 calza con lo medido?", ["ZE01", "ZE06"]],
-  ["esp", "Control espacial", "¿Calza con las estaciones cercanas (DMC e INIA)?", ["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZC08", "ZC09", "ZC10", "ZE05", "ZE08"]],
+  ["esp", "Control espacial", "¿Calza con las estaciones cercanas (DMC e INIA)?", ["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZC08", "ZC09", "ZC10", "ZE05", "ZE08", "ZK01"]],
   ["mod", "Contra modelo", "¿Calza con lo que da el modelo?", ["ZM01", "ZM02", "ZM03", "ZM04", "ZM05"]],
   ["sat", "Contra satélite", "¿Calza con lo que se ve desde el GOES?", ["ZS01", "ZS02"]]];
 const tipoCtl = r => (CTL.find(c => c[3].includes(r)) || [null])[0];
@@ -61,7 +61,7 @@ function init(fR, m){
 function filas(){
   const R = getR(), S = (R && R.super) || {};
   const out = [];
-  (modo === "obs_esp" ? S.obs_esp || [] : S.estaciones || []).forEach(e => {
+  (modo === "obs_esp" || modo === "obs_six" ? S.obs_esp || [] : S.estaciones || []).forEach(e => {
     const H = [];
     (e.hallazgos || []).forEach(h => { const x = {...h, gen: S.generado}; if (MARCA.estado(e.codigo, x) !== "oculta") H.push({...x, st: MARCA.estado(e.codigo, x)}); });
     out.push({e, H});
@@ -99,7 +99,7 @@ function filasDatos(F, tipo){
 function pintar(){
   if (!$("#sup") || !$("#sup").dataset.ok) return;
   const R = getR(), S = (R && R.super) || {}, g = S.generado ? new Date(S.generado + "Z") : null;
-  $("#zHora").textContent = g ? `${modo === "obs_esp" ? "Estaciones con observador (su sensor) contra todas las cercanas: DMC, INIA y otras" : "Estaciones sin observador"} · revisadas a las ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})} · últimas 24 h` : "Todavía no hay revisión del Super automático";
+  $("#zHora").textContent = g ? `${modo === "obs_esp" || modo === "obs_six" ? "Estaciones con observador (su sensor) contra todas las cercanas: DMC, INIA y otras" : "Estaciones sin observador"} · revisadas a las ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})} · últimas 24 h` : "Todavía no hay revisión del Super automático";
   const F = filas();
   if (modo === "sup"){
     const nEst = F.length, con = F.filter(x => x.H.length).length, sin = F.filter(x => x.e.nivel === 3).length;
@@ -122,14 +122,14 @@ function pintar(){
   if (modo === "sup_bol") return pintarBol(F);
   const [tipo, nom] = TABS[modo];
   const todas = [], calza = [];
-  F.forEach(({e, H}) => { H.filter(h => tipo === "esp" ? ESP.has(h.regla) : h.tipo === tipo).forEach(h => todas.push({...h, e}));
+  F.forEach(({e, H}) => { H.filter(h => tipo === "esp" ? ESP.has(h.regla) : tipo === "six" ? h.regla === "ZK01" : h.tipo === tipo).forEach(h => todas.push({...h, e}));
     if (tipo === "pp") ((e.res || {}).blq6 || []).forEach(([hr, inf, suma]) => { if (inf != null && suma != null && !H.some(h => h.regla === "ZR05" && h.hora === hr)) calza.push({e, hora: hr, nivel: 0, regla: "ZR05ok", tipo: "pp", ingresado: `RRR6 ${inf} mm`, deberia: `${suma} mm`, msg: "El RRR6 de la estación coincide con la suma del agua caída por minuto."}); }); });
-  todas.sort((a, b) => b.hora.localeCompare(a.hora) || b.nivel - a.nivel || (a.e.nombre || "").localeCompare(b.e.nombre || ""));
+  todas.sort((a, b) => tipo === "six" ? (b.sigma || 0) - (a.sigma || 0) : b.hora.localeCompare(a.hora) || b.nivel - a.nivel || (a.e.nombre || "").localeCompare(b.e.nombre || ""));     // Six Sigma: de la más rara a la menos rara
   calza.sort((a, b) => b.hora.localeCompare(a.hora) || (a.e.nombre || "").localeCompare(b.e.nombre || ""));
   const cnt = {}; todas.forEach(f => cnt[f.regla] = (cnt[f.regla] || 0) + 1);
   const est = new Set(todas.map(f => f.e.codigo));
   const fila = f => `<tr class="supal" data-c="${f.e.codigo}" data-r="${f.regla}" data-h="${esc(f.hora)}" data-tp="${f.tipo}" style="cursor:pointer" title="Ver gráfico y tabla"><td class="nom"><b>${esc(f.e.nombre)}</b><br><small>${f.e.codigo}</small><br>${enlinea(f.e.codigo)}</td><td style="white-space:nowrap">${hora(f)}</td>
-        <td style="color:${f.regla === "ZR05ok" ? "var(--ok)" : NIVC[f.nivel] || "inherit"};font-weight:600">${f.regla === "ZR05ok" ? "✓ RRR6 calza" : REGLAS.html(f.regla, esc)}</td><td class="n">${esc(f.ingresado || "—")}</td><td class="n" style="color:var(--oro)">${esc(f.deberia || "")}</td>
+        <td style="color:${f.regla === "ZR05ok" ? "var(--ok)" : NIVC[f.nivel] || "inherit"};font-weight:600">${f.regla === "ZR05ok" ? "✓ RRR6 calza" : REGLAS.html(f.regla, esc)}${f.sigma ? ` <b style="color:var(--oro);white-space:nowrap">${f.sigma}σ</b>` : ""}</td><td class="n">${esc(f.ingresado || "—")}</td><td class="n" style="color:var(--oro)">${esc(f.deberia || "")}</td>
         <td>${esc(f.msg)}${f.st === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${f.regla === "ZR05ok" ? "" : MARCA.botones(f.e.codigo, f)}</td></tr>`;
   const cab = `<tr><th>Estación</th><th>Obs. UTC</th><th>Alerta</th><th>Ingresado</th><th>Debería ir</th><th>Detalle</th><th></th></tr>`;
   $("#zOut").innerHTML = `
@@ -137,7 +137,7 @@ function pintar(){
     ${tipo === "pp" || !DATOS[tipo] ? "" : `<div class="supDatosSec"><h3 style="margin:16px 0 6px;font:600 15px var(--titulo)">Datos de las estaciones sin observador · ${esc(nom)}</h3>
     <div class="bcard" style="padding:0;max-height:520px;overflow:auto"><table class="xtab"><tr><th>Estación</th><th>Último dato UTC</th>${DATOS[tipo].map(c => `<th>${esc(c[1])}${c[2] ? ` <small>(${c[2]})</small>` : ""}</th>`).join("")}<th>Alertas</th></tr>
       ${filasDatos(F, tipo)}</table></div></div>`}
-    <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Haga clic en una fila para ver su gráfico y su tabla. ${modo === "obs_esp" ? "Sensor de las estaciones con observador contra todas las estaciones cercanas (DMC con y sin observador, INIA y otras externas, con menor peso): Ts, Td, HR y QFF (diferencia sostenida), viento medio, calma prolongada y lluvia sí/no. Lo que digita el observador se compara con su sensor en «Frente al sensor»." : NOTA[tipo]} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
+    <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Haga clic en una fila para ver su gráfico y su tabla. ${tipo === "six" ? "Six Sigma: la diferencia de cada estación contra la mediana de sus vecinas se mide en desviaciones estándar (σ) de su PROPIA diferencia habitual (media y σ móviles de ~30 días). ≥ 4σ sostenido 2 h = sospechoso; ≥ 6σ = erróneo. Ordenadas de la más rara a la menos rara. Lo raro no entra a la estadística. Necesita 3 días de historia por estación: al principio habrá pocas alertas." : modo === "obs_esp" ? "Sensor de las estaciones con observador contra todas las estaciones cercanas (DMC con y sin observador, INIA y otras externas, con menor peso): Ts, Td, HR y QFF (diferencia sostenida), viento medio, calma prolongada y lluvia sí/no. Lo que digita el observador se compara con su sensor en «Frente al sensor»." : NOTA[tipo]} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
 }
 // regla espacial → [grupo de gráficos, variable del minutario, nombre, unidad]
 const VAR_R = {ZC01: ["tem", "T", "Ts", "°C"], ZC02: ["tem", "Td", "Td", "°C"], ZC03: ["tem", "HR", "HR", "%"], ZC04: ["pre", "P_mar", "QFF", "hPa"], ZC05: ["vie", "ff10", "Viento", "kt"], ZC07: ["vie", "ff10", "Viento", "kt"],
@@ -146,7 +146,8 @@ let MAPE = null;
 async function mapaEsp(el, tit, e, V2, h, hora){
   if (!window.L || e.lat == null) return;
   if (MAPE){ try { MAPE.remove(); } catch (x) {} MAPE = null; }
-  const R = getR(), E = (R && R.estaciones) || [], [, v, nom, un] = VAR_R[h.regla] || ["tem", "T", "Ts", "°C"], t0 = Date.parse(hora + ":00Z");
+  const SIXV = {T: ["tem", "T", "Ts", "°C"], Td: ["tem", "Td", "Td", "°C"], HR: ["tem", "HR", "HR", "%"], P_mar: ["pre", "P_mar", "QFF", "hPa"], ff10: ["vie", "ff10", "Viento", "kt"]};
+  const R = getR(), E = (R && R.estaciones) || [], [, v, nom, un] = (h.regla === "ZK01" ? SIXV[h.var] : VAR_R[h.regla]) || ["tem", "T", "Ts", "°C"], t0 = Date.parse(hora + ":00Z");
   tit.innerHTML = `<b>${esc(nom)}</b> a las ${esc(hora.slice(11, 16))} UTC del ${esc(hora.slice(8, 10) + "/" + hora.slice(5, 7))}${v === "rr1m" ? " (suma de las 3 h previas)" : ""}`;
   const mp = L.map(el, {attributionControl: false}); MAPE = mp;
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 13}).addTo(mp);
@@ -212,7 +213,7 @@ document.addEventListener("click", ev => {
     tab.querySelectorAll("tr.supx").forEach(r => r.remove()); todas.forEach(r => r.style.display = r === al ? "" : "none"); document.querySelectorAll(".supDatosSec").forEach(d => d.style.display = "none"); al.scrollIntoView({block: "start"});
     const F = filas(), x = F.find(y => y.e.codigo === al.dataset.c); if (!x) return;
     const tr = document.createElement("tr"); tr.className = "supx";
-    if (modo === "sup_esp" || modo === "obs_esp" || ESP.has(al.dataset.r)){      // control espacial (o alerta espacial en cualquier pestaña): gráficos ya comparados con las vecinas y mapa con sus valores a la derecha
+    if (modo === "sup_esp" || modo === "obs_esp" || modo === "sup_six" || modo === "obs_six" || ESP.has(al.dataset.r)){      // control espacial (o alerta espacial en cualquier pestaña): gráficos ya comparados con las vecinas y mapa con sus valores a la derecha
       tr.innerHTML = `<td colspan="7"><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start"><div class="supbox" data-c="${al.dataset.c}" style="flex:1 1 560px;min-width:0"></div>
         <div style="flex:0 1 420px;min-width:300px"><div class="espMapT" style="font-size:12.5px;margin-bottom:4px"></div><div class="espMap" style="height:420px;border:1px solid var(--bd);border-radius:8px"></div>
         <small style="color:var(--mu)">Rojo = la estación · azul = vecinas DMC (valor a la hora de la alerta) · gris = sin dato</small></div></div></td>`; al.after(tr);

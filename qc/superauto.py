@@ -486,7 +486,7 @@ AMPL_MIN = 0.5               # °C: amplitud mínima creíble de Ts en 24 h
 FF_MAX, RAFAGA_X = 70, 4     # kt: viento medio poco probable; racha más de 4 veces el medio
 CALMA_H, CALMA_V = 6, 5      # calma ≥ 6 h seguidas con las vecinas en ≥ 5 kt
 TOL_AMPL_V = 8.0             # °C: amplitud del día contra la mediana de las vecinas
-ESPACIAL = {"ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZC08", "ZC09", "ZC10", "ZE05", "ZE08"}
+ESPACIAL = {"ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZC08", "ZC09", "ZC10", "ZE05", "ZE08", "ZK01"}
 LIM_T = (-35.0, 45.0)        # rango físico para las extremas de 24 h armadas con los minutos
 TOL_EXT_V = (6.0, 10.0)      # °C: extrema de 24 h contra la mediana de las vecinas (corregida por altura)
 
@@ -640,6 +640,66 @@ def _espaciales_extra(raiz, A, E, V, fin):
     return out
 
 
+# ------------------------------------------------------------------ Six Sigma
+# Diferencia de cada estación contra la mediana de sus vecinas, en σ de SU PROPIA diferencia habitual (media y σ móviles ~30 días, guardadas en datos/sigma/estado.json).
+SIX_VARS = {"T": ("Ts", "°C", True, 0.3), "Td": ("Td", "°C", False, 0.5), "HR": ("HR", "%", False, 3.0), "P_mar": ("QFF", "hPa", False, 0.3), "ff10": ("Viento medio", "kt", False, 1.5)}
+SIX_MIN_N, SIX_VENT, SIX_SOSP, SIX_ERR = 72, 720, 4.0, 6.0      # 3 días de horas para empezar · ventana ~30 días · 4σ sospechoso · 6σ erróneo
+SIX_TIPO = {"T": "tem", "Td": "tem", "HR": "tem", "P_mar": "pre", "ff10": "vie"}
+
+
+def _six_sigma(raiz, A, E, V, fin):
+    import json
+    from pathlib import Path
+    out = {}
+    f = Path(raiz) / "sigma" / "estado.json"
+    try:
+        S = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+    except Exception:
+        S = {}
+    st, ult = S.get("st", {}), pd.Timestamp(S["ultima"]) if S.get("ultima") else fin - pd.Timedelta(hours=6)
+    H = P.horario(A[A["momento"] > max(ult, fin - pd.Timedelta(hours=6)) - pd.Timedelta(hours=1)])
+    if H.empty:
+        return out
+    hora_fin = fin.floor("h")
+    H = H[(H["momento"] > ult) & (H["momento"] <= hora_fin)]
+    alt = {c: (None if pd.isna(z) else float(z)) for c, z in E.set_index("codigo")["alt"].items()}
+    zs = {}
+    for t, G in H.groupby("momento"):
+        G = G.set_index("codigo")
+        for cod in G.index:
+            vs = [c for c in (V or {}).get(cod, []) if c in G.index]
+            if len(vs) < 3:
+                continue
+            for v, (nom, un, corr, piso) in SIX_VARS.items():
+                if v not in G or pd.isna(G.at[cod, v]):
+                    continue
+                if v == "P_mar" and (alt.get(cod) or 0) > ALT_PMAR:
+                    continue
+                ref = [G.at[c, v] + (0.0065 * ((alt.get(c) or 0) - (alt.get(cod) or 0)) if corr else 0) for c in vs if not pd.isna(G.at[c, v])]
+                if len(ref) < 3:
+                    continue
+                d = float(G.at[cod, v] - np.median(ref)); k = f"{cod}|{v}"; e = st.get(k, [0, 0.0, 0.0])   # [n, media, varianza]
+                n, m, var = e; sd = max(math.sqrt(var), piso)
+                z = (d - m) / sd if n >= SIX_MIN_N else None
+                if z is not None:
+                    zs.setdefault(k, []).append((t, z, d, m, sd))
+                if z is None or abs(z) < SIX_SOSP:          # lo raro no entra a la estadística (no la infla)
+                    a = 1 / min(n + 1, SIX_VENT); dm = d - m
+                    st[k] = [n + 1, round(m + a * dm, 4), round((1 - a) * (var + a * dm * dm), 5)]
+    for k, L in zs.items():
+        cod, v = k.split("|"); nom, un, _, _ = SIX_VARS[v]
+        L = L[-2:]
+        if len(L) == 2 and all(abs(x[1]) >= SIX_SOSP for x in L) and np.sign(L[0][1]) == np.sign(L[1][1]):
+            t, z, d, m, sd = L[-1]
+            out.setdefault(cod, []).append(dict(_hc(cod, "ZK01", 2 if abs(z) >= SIX_ERR else 1, SIX_TIPO[v], t,
+                f"{nom} {d:+.1f} {un} contra la mediana de sus vecinas; lo habitual en esta estación es {m:+.1f} ± {sd:.1f} {un} → {abs(z):.1f}σ ({'muy' if abs(z) >= SIX_ERR else ''} poco probable, sostenido 2 h).".replace("( ", "("),
+                ingresado=f"{d:+.1f} {un} vs vecinas", deberia=f"{m:+.1f} ± {sd:.1f} {un}"), sigma=round(abs(z), 1), var=v))
+    if len(H):
+        S = {"ultima": f"{H['momento'].max():%Y-%m-%dT%H:%M}", "st": st}
+        f.parent.mkdir(parents=True, exist_ok=True); f.write_text(json.dumps(S, separators=(",", ":")), encoding="utf-8")
+    return out
+
+
 def _boletin(A, est, fin):
     if A is None or not len(A):
         return
@@ -749,6 +809,12 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
         errores.append(f"extremas_red: {traceback.format_exc(limit=3)}")
     try:      # dirección del viento, hora desfasada y deriva lenta contra vecinas (todas las estaciones)
         X_ = _espaciales_extra(raiz, A, E, V, fin)
+        try:
+            for c, L in _six_sigma(raiz, A, E, V, fin).items():
+                X_.setdefault(c, []).extend(L)
+        except Exception:
+            import traceback
+            errores.append(f"six_sigma: {traceback.format_exc(limit=3)}")
         for f in est:
             for h in X_.pop(f["codigo"], []):
                 h.pop("_cod", None); f["hallazgos"].append(h); f["nivel"] = max(f["nivel"], h["nivel"])
