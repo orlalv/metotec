@@ -369,14 +369,22 @@ def modelo(H, M, aisladas=(), cal=None, E=None):
 
 
 # ------------------------------------------------------------------ 7. lluvia (modelo y vecinas; el satélite se agrega después)
+SI_LLUVIA = 0.2      # mm en 3 h desde los que se considera «llovió» (control sí/no)
+
+
 def lluvia(H, M, V, X=None):
-    """X: externas (externas_vec.Ext): su lluvia de las 3 h entra con menor peso en la mediana de vecinas."""
+    """Control sí/no de lluvia en 3 h contra vecinas (y modelo). X: externas, entran con menor peso.
+    · la estación no marca y la mayoría de sus vecinas sí (≥ 2/3 del peso, mediana ≥ 1 mm)  → posible pluviómetro obstruido
+    · la estación marca y todas sus vecinas con dato están en 0 (≥ 3 vecinas)                 → lluvia solo en la estación
+    Sin vecinas suficientes queda el contraste con el modelo de antes."""
     import externas_vec as EV
     out = []
     if H.empty:
         return out
-    fin = H["momento"].max()
-    W = H[H["momento"] > fin - pd.Timedelta(hours=3)]
+    n = H.groupby("momento")["codigo"].nunique().sort_index()       # última hora con al menos media red (la última suele venir a medias)
+    llenas = n[n >= 0.5 * n.max()]
+    fin = llenas.index.max() if len(llenas) else n.index.max()
+    W = H[(H["momento"] > fin - pd.Timedelta(hours=3)) & (H["momento"] <= fin)]
     obs = W.groupby("codigo")["rr1h"].sum(min_count=1)
     horas3 = [fin - pd.Timedelta(hours=k) for k in (2, 1, 0)]
     mod = None
@@ -386,11 +394,25 @@ def lluvia(H, M, V, X=None):
     for cod, o in obs.items():
         if pd.isna(o):
             continue
-        vv = [(float(obs.get(c)), 1.0) for c in V.get(cod, []) if pd.notna(obs.get(c))]
+        vv = [(float(obs.get(c)), 1.0, c) for c in V.get(cod, []) if pd.notna(obs.get(c))]
         if X is not None:
-            vv += [(x, w) for _, x, w in X.lluvia(horas3, cod)]
-        vm = EV.mediana_pond([x for x, _ in vv], [w for _, w in vv]) if len(vv) >= 2 and sum(w for _, w in vv) >= 2 else None
+            vv += [(x, w, i) for i, x, w in X.lluvia(horas3, cod)]
         m = None if mod is None else mod.get(cod)
+        peso = sum(w for _, w, _ in vv)
+        det = [f"{c}: {x:.1f} mm" for x, _, c in vv]
+        if len(vv) >= 3 and peso >= 2.5:
+            si = sum(w for x, w, _ in vv if x >= SI_LLUVIA)
+            vm = EV.mediana_pond([x for x, _, _ in vv], [w for _, w, _ in vv])
+            if o < SI_LLUVIA and si >= 2 / 3 * peso and vm >= 1:
+                out.append(alerta(cod, "lluvia", "rr3h", 2 if vm >= 5 else 1, fin, o, vm,
+                                  f"no marcó lluvia en 3 h y {si / peso:.0%} de sus vecinas sí (mediana {vm:.1f} mm): posible pluviómetro obstruido"))
+                out[-1]["detalle"] = det
+            elif o >= 0.5 and si == 0:
+                out.append(alerta(cod, "lluvia", "rr3h", 2 if o >= 3 else 1, fin, o, 0,
+                                  f"marcó {o:.1f} mm en 3 h y ninguna de sus {len(vv)} vecinas con dato registró lluvia"))
+                out[-1]["detalle"] = det
+            continue
+        vm = EV.mediana_pond([x for x, _, _ in vv], [w for _, w, _ in vv]) if len(vv) >= 2 and peso >= 2 else None
         if o >= 3 and (m is not None and m < 0.2) and (vm is None or vm < 0.2):
             out.append(alerta(cod, "lluvia", "rr3h", 1, fin, o, m, "lluvia sin respaldo del modelo ni de las vecinas"))
         if o == 0 and m is not None and ((vm is not None and vm >= 3 and m >= 3) or (vm is None and m >= 8)):

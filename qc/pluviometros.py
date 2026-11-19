@@ -268,6 +268,10 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
             despejado = C[c].reindex(horas).fillna(False).astype(bool).values
         mi_ok = np.nan_to_num(mi, nan=0.0)
         raras = np.where(despejado & (mi_ok >= 0.5) & (pts == 0) & ~ev_mod)[0]
+        # lluvia solo en la estación (sí/no): marca ≥ 0,5 mm y todas sus vecinas con dato (≥ 3, peso ≥ 2,5) están en 0 y el modelo seco
+        seca_v = np.array([bool(fin_[i].any()) and bool((XA[i][fin_[i]] < 0.2).all()) for i in range(len(horas))])
+        sola = np.where((mi_ok >= 0.5) & seca_v & (tot >= 2.5) & (fin_.sum(1) >= 3) & ~ev_mod)[0]
+        sola_h = [dict(hora=f"{horas[i]:%Y-%m-%d %H:%M}", mm=round(float(mi_ok[i]), 1), vecinas=int(fin_[i].sum())) for i in sola][-6:]
         raras_h = [dict(hora=f"{horas[i]:%Y-%m-%d %H:%M}", mm=round(float(mi_ok[i]), 1)) for i in raras][-6:]
         # eventos de lluvia del entorno (≥ 2 evidencias) y si la estación marcó en cada uno; solo se juzgan las horas con dato
         ev_h = [i for i in np.where((pts >= EV_MIN) & (fuerza >= 1.0))[0] if np.isfinite(mi[i])]
@@ -319,7 +323,7 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
         comunic = any(e["sin_dato"] >= e["horas"] / 2 for e in eps)
         if obstr or goteo_largo or (razon is not None and razon < RAZON_BAJA and len(ratios) >= 3):
             estado = "sospecha_obstruccion"
-        elif gote or len(raras) >= 2 or (razon is not None and razon < RAZON_BAJA):
+        elif gote or len(raras) >= 2 or len(sola) >= 2 or (razon is not None and razon < RAZON_BAJA):
             estado = "revisar"
         elif marca0:
             estado = "revisar"
@@ -328,7 +332,7 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
         else:
             estado = "ok"
         out.append(dict(codigo=c, nombre=nom.get(c, c), estado=estado, horas_sospechosas=int(sosp.sum()), horas_sin_dato=int((sosp & sin_dato).sum()),
-                        horas_con_evidencia=int((pts >= EV_MIN).sum()), lluvia_con_cielo_despejado=raras_h, eventos_sin_marcar=seguidos, sin_marcar_desde=desde_sin, ultima_vez_que_marco=ultima_marca, goteo=gote[-3:],
+                        horas_con_evidencia=int((pts >= EV_MIN).sum()), lluvia_con_cielo_despejado=raras_h, lluvia_sola=sola_h, horas_lluvia_sola=int(len(sola)), eventos_sin_marcar=seguidos, sin_marcar_desde=desde_sin, ultima_vez_que_marco=ultima_marca, goteo=gote[-3:],
                         razon_vecinas=razon, vecinas_comparadas=len(ratios), mm_vecinas_largo=round(sv, 1),
                         episodios=sorted(eps, key=lambda e: e["inicio"], reverse=True)[:6]))
     orden = {"sospecha_obstruccion": 0, "revisar": 1, "sin_dato_con_lluvia": 2, "ok": 3}

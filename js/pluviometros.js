@@ -95,6 +95,7 @@ function tarjeta(e, i){
   const partes = [];
   if (e.eventos_sin_marcar) partes.push(`<b>Lleva ${e.eventos_sin_marcar} evento${e.eventos_sin_marcar > 1 ? "s" : ""} de lluvia sin marcar</b>, desde ${f5(e.sin_marcar_desde)} UTC${e.ultima_vez_que_marco ? ` (última vez que marcó: ${f5(e.ultima_vez_que_marco)})` : ""}`);
   (e.goteo || []).slice(-2).forEach(g => partes.push(`<b>Goteo</b>: ${g.horas} h seguidas con 0,1–0,2 mm sin lluvia alrededor (${g.mm} mm), ${f5(g.inicio)} → ${f5(g.fin)} UTC`));
+  if ((e.lluvia_sola || []).length) partes.push(`<b>Llueve solo en la estación</b> (${e.horas_lluvia_sola} h; todas sus vecinas en 0): ${e.lluvia_sola.map(x => `${f5(x.hora)} (${x.mm} mm, ${x.vecinas} vecinas secas)`).join(", ")}`);
   if ((e.lluvia_con_cielo_despejado || []).length) partes.push(`<b>Lluvia con cielo despejado</b>: ${e.lluvia_con_cielo_despejado.map(x => `${f5(x.hora)} (${x.mm} mm)`).join(", ")}`);
   if (e.razon_vecinas != null) partes.push(`En el periodo marca ${Math.round(e.razon_vecinas * 100)} % de lo que miden sus vecinas (${e.vecinas_comparadas} comparadas)`);
   const eps = (e.episodios || []).slice(0, 3), ult = eps[0], md = medido(e), ex = esperado(e);
