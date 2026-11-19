@@ -1,0 +1,20 @@
+name: Sondeo temporal vecinas externas
+on: workflow_dispatch
+jobs:
+  s:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      KV_ID: 0d6aa4b37a834b5983ac9c7f638e2dbb
+    steps:
+      - run: |
+          python3 - <<'P'
+          import os, json, math, urllib.request
+          u = f"https://api.cloudflare.com/client/v4/accounts/{os.environ['CLOUDFLARE_ACCOUNT_ID']}/storage/kv/namespaces/{os.environ['KV_ID']}/values/qc/externas/cat"
+          C = json.load(urllib.request.urlopen(urllib.request.Request(u, headers={"Authorization": "Bearer " + os.environ["CLOUDFLARE_API_TOKEN"]})))["estaciones"]
+          la0, lo0 = -38.35944, -73.48833
+          def km(a, b): return 6371*2*math.asin(math.sqrt(math.sin(math.radians(a-la0)/2)**2+math.cos(math.radians(la0))*math.cos(math.radians(a))*math.sin(math.radians(b-lo0)/2)**2))
+          L = sorted((km(v["lat"], v["lon"]), v["id"], v.get("nombre"), v.get("alt"), v.get("estado")) for v in C if v.get("lat") is not None)
+          for x in L[:10]: print(round(x[0]), "km", x[1:])
+          P
