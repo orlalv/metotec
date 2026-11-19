@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-19T15:46:15+00:00",
+ "inicio": "2026-11-19T16:15:57+00:00",
  "errores": [],
  "estaciones": 136,
- "con_datos": 120,
- "registros": 4782,
- "desde": "2026-11-19 14:46:00",
- "hasta": "2026-11-19 15:40:00",
+ "con_datos": 124,
+ "registros": 4751,
+ "desde": "2026-11-19 15:16:00",
+ "hasta": "2026-11-19 16:10:00",
  "horas_archivadas": 2,
  "modelo": 6528,
  "wrf": "sin corridas nuevas",
@@ -20,15 +20,15 @@
  ],
  "wrf_ref": 660,
  "satelite": {
-  "imagenes": 71,
-  "ultima": "2026-11-19T15:30Z"
+  "imagenes": 72,
+  "ultima": "2026-11-19T16:00Z"
  },
  "externas": {
   "estaciones": 323,
   "con_vecinas": 116,
   "desactivadas": 0,
-  "generado": "2026-11-19T15:45:54Z",
-  "pp_archivadas": 7426,
+  "generado": "2026-11-19T16:15:39Z",
+  "pp_archivadas": 7659,
   "desviadas": 4,
   "kv_desvio": "200"
  },
@@ -37,15 +37,15 @@
   "filas": 30439,
   "activa": false
  },
- "consenso_quitados": 1,
+ "consenso_quitados": 2,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 2156,
+ "ob_filas": 2166,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 517,
+  "observaciones": 523,
   "fallas": 0,
-  "hallazgos": 388,
+  "hallazgos": 390,
   "kv": "200",
   "completitud": "200"
  },
@@ -66,13 +66,7 @@
   "2026-11-18": "200",
   "2026-11-19": "200"
  },
- "boletin": {
-  "dia": "2026-11-19",
-  "estaciones": 26,
-  "hallazgos": 24,
-  "cambios": 11,
-  "kv": "200"
- },
+ "boletin": "fuera de horario",
  "productos": {
   "extremas": "200",
   "lluvia_obs": "200"
@@ -82,20 +76,20 @@
    "cuarentena": 3,
    "en_revision": 25,
    "operativa": 108,
-   "verde": 95,
-   "amarillo": 14,
+   "verde": 96,
+   "amarillo": 13,
    "rojo": 27,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 28,
+ "alertas": 31,
  "resumen": {
-  "bien": 106,
-  "sospechoso": 15,
+  "bien": 108,
+  "sospechoso": 11,
   "erróneo": 9,
-  "sin datos": 6
+  "sin datos": 8
  },
- "fin": "2026-11-19T15:50:43+00:00"
+ "fin": "2026-11-19T16:22:15+00:00"
 }
