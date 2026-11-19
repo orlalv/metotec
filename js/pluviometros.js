@@ -122,6 +122,8 @@ async function catalogo(){
   return {cod: new Map(), nom: new Map()};                // falló: no se guarda, se reintenta al abrir otro mapa
 }
 const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
+// número junto al punto, sin viñeta: lo justo para que no tape el mapa
+const numIcon = (v, col) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(6px,-50%);font:700 12px system-ui;color:${col};text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap">${String(Math.round(v * 10) / 10).replace(".", ",")}</div>`});
 const CAPAS = {imerg: ["Lluvia NASA IMERG", "IMERG_Precipitation_Rate", "GoogleMapsCompatible_Level6", 6, "png", .85], ir: ["GOES-19 infrarrojo", "GOES-East_ABI_Band13_Clean_Infrared", "GoogleMapsCompatible_Level6", 6, "png", .75, [["GoogleMapsCompatible_Level7", 7], ["GoogleMapsCompatible_Level8", 8]]],
   goes: ["GOES-19 color real", "GOES-East_ABI_GeoColor", "GoogleMapsCompatible_Level7", 7, "jpeg", .9],
   est: ["Estaciones y valores", null]};                  // sin imagen: solo la estación y sus vecinas con los mm de la hora
@@ -173,11 +175,13 @@ async function abrirMapa(id, i){
       L.circleMarker([e0.lat, e0.lon], {radius: 17, color: "#f85149", weight: 3, fill: false, interactive: false}).addTo(grupo);
       L.polyline([[e0.lat - 0.12, e0.lon], [e0.lat + 0.12, e0.lon]], {color: "#f85149", weight: 1, interactive: false}).addTo(grupo);
       L.polyline([[e0.lat, e0.lon - 0.12], [e0.lat, e0.lon + 0.12]], {color: "#f85149", weight: 1, interactive: false}).addTo(grupo);
-      L.circleMarker([e0.lat, e0.lon], {radius: 8, color: "#fff", weight: 2, fillColor: "#f85149", fillOpacity: 1}).bindTooltip(`${est.nombre} · ${dd.est == null ? "s/d" : n1(dd.est) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); }
-    (dd.vecs || []).forEach(([n, km, mm, la, lo]) => { const e = cat.nom.get(n) || (la != null ? {lat: la, lon: lo} : null); if (!e) return; nv++; pts.push([e.lat, e.lon]);
-      const ext = la != null, col = mm == null ? "#8b949e" : mm >= 0.2 ? "#58a6ff" : "#e6edf3";
-      if (soloEst) L.marker([e.lat, e.lon], {icon: L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-50%);white-space:nowrap;background:#0d1117e6;border:1.5px ${ext ? "dashed" : "solid"} ${col};border-radius:7px;padding:1px 6px;font:600 11px system-ui;color:#e6edf3;text-align:center">${esc(n)} · ${km} km<br><b style="font-size:13px;color:${col}">${mm == null ? "s/d" : n1(mm) + " mm"}</b></div>`})}).addTo(grupo);
-      else L.circleMarker([e.lat, e.lon], {radius: 7, color: "#fff", weight: 2, fillColor: ext ? "#e3b341" : "#58a6ff", fillOpacity: 1}).bindTooltip(`${n} (${km} km) · ${mm == null ? "s/d" : n1(mm) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); });
+      L.circleMarker([e0.lat, e0.lon], {radius: 8, color: "#fff", weight: 2, fillColor: "#f85149", fillOpacity: 1}).bindTooltip(`${est.nombre}`, {direction: "top"}).addTo(grupo);
+      if (dd.est != null) L.marker([e0.lat, e0.lon], {interactive: false, icon: numIcon(dd.est, "#ff7b72")}).addTo(grupo); }
+    // vecinas: solo las 6 más cercanas CON dato; punto y número (el nombre al pasar el mouse)
+    (dd.vecs || []).filter(v => v[2] != null).sort((p, q) => p[1] - q[1]).slice(0, 6).forEach(([n, km, mm, la, lo]) => { const e = cat.nom.get(n) || (la != null ? {lat: la, lon: lo} : null); if (!e) return; nv++; pts.push([e.lat, e.lon]);
+      const ext = la != null, col = mm >= 0.2 ? "#58a6ff" : "#e6edf3";
+      L.circleMarker([e.lat, e.lon], {radius: 4, color: "#0d1117", weight: 1, fillColor: ext ? "#e3b341" : "#58a6ff", fillOpacity: 1}).bindTooltip(`${n} · ${km} km · ${n1(mm)} mm`, {direction: "top"}).addTo(grupo);
+      L.marker([e.lat, e.lon], {interactive: false, icon: numIcon(mm, col)}).addTo(grupo); });
     if (soloEst && pts.length > 1) mapa.fitBounds(pts, {padding: [70, 70], maxZoom: 10});
     if (ult == null){ if (pts.length) (e0 ? mapa.setView([e0.lat, e0.lon], 8) : mapa.fitBounds(pts, {padding: [60, 60], maxZoom: 9})); else mapa.setView([-33.4, -70.7], 5); }
     diag(); ult = idx; $("#pMaA").disabled = idx === 0; $("#pMaS").disabled = idx === det.length - 1;

@@ -142,11 +142,14 @@ function mapaVecinas(h){      // mapa bajo la imagen de la derecha: estación y 
   const tt = document.getElementById("vDV"); if (tt) tt.textContent = `mm a las ${p2(h)}:00 UTC · rojo estación · punteado = externas · gris = sin dato · círculo 60 km`;
   MV = L.map(el, {attributionControl: false}); L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 13}).addTo(MV);
   L.circle([+e0.lat, +e0.lon], {radius: RADIO_KM * 1000, color: "#f85149", weight: 1, dashArray: "6 6", fill: false, interactive: false}).addTo(MV);
-  const et = (n, x, col, dash) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-50%);white-space:nowrap;background:#0d1117e6;border:1.5px ${dash ? "dashed" : "solid"} ${x == null ? "#8b949e" : col};border-radius:7px;padding:1px 6px;font:600 11px system-ui;color:#e6edf3;text-align:center">${esc(n)}<br><b style="font-size:13px;color:${x == null ? "#8b949e" : x >= 0.2 ? col : "#e6edf3"}">${x == null ? "s/d" : n1(x) + " mm"}</b></div>`});
+  // punto y número; solo las 6 más cercanas con dato (DMC y externas juntas); el nombre al pasar el mouse
+  const num = (x, col) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(6px,-50%);font:700 12px system-ui;color:${col};text-shadow:0 0 3px #000,0 0 3px #000">${n1(x)}</div>`});
   const pts = [[+e0.lat, +e0.lon]];
-  D.vec.forEach((v, i) => { pts.push([v.lat, v.lon]); L.marker([v.lat, v.lon], {icon: et(`${v.nombre} · ${Math.round(v.km)} km`, D.hv[i][h], v.color)}).addTo(MV); });
-  (D.ve || []).forEach(v => { if (!isFinite(v.lat)) return; pts.push([v.lat, v.lon]); L.marker([v.lat, v.lon], {icon: et(`${v.nombre} · ${Math.round(v.km)} km`, v.h[h], v.color, true)}).addTo(MV); });
-  L.marker([+e0.lat, +e0.lon], {icon: et(e0.nombre, D.hs ? D.hs[h] : null, "#f85149"), zIndexOffset: 1000}).addTo(MV);
+  const L2 = D.vec.map((v, i) => ({...v, x: D.hv[i][h]})).concat((D.ve || []).map(v => ({...v, x: v.h[h]}))).filter(v => v.x != null && isFinite(v.lat)).sort((p, q) => p.km - q.km).slice(0, 6);
+  L2.forEach(v => { pts.push([v.lat, v.lon]); L.circleMarker([v.lat, v.lon], {radius: 4, color: "#0d1117", weight: 1, fillColor: v.ext ? "#e3b341" : "#58a6ff", fillOpacity: 1}).bindTooltip(`${v.nombre} · ${Math.round(v.km)} km · ${n1(v.x)} mm`, {direction: "top"}).addTo(MV);
+    L.marker([v.lat, v.lon], {interactive: false, icon: num(v.x, v.x >= 0.2 ? "#58a6ff" : "#e6edf3")}).addTo(MV); });
+  L.circleMarker([+e0.lat, +e0.lon], {radius: 6, color: "#fff", weight: 2, fillColor: "#f85149", fillOpacity: 1}).bindTooltip(e0.nombre, {direction: "top"}).addTo(MV);
+  if (D.hs && D.hs[h] != null) L.marker([+e0.lat, +e0.lon], {interactive: false, icon: num(D.hs[h], "#ff7b72")}).addTo(MV);
   if (pts.length > 1) MV.fitBounds(pts, {padding: [60, 40], maxZoom: 10}); else MV.setView(pts[0], 9);
 }
 function svgLineas(series, n, sel, etiq){      // misma geometría que svgBarras; series: [[color, [n], nombre, punteada]]; al pasar el mouse muestra los valores
@@ -203,9 +206,14 @@ function actualizarMapas(){
     if (!e0) return; const g = M.grupo;
     L.circle([e0.lat, e0.lon], {radius: RADIO_KM * 1000, color: "#f85149", weight: 1, dashArray: "6 6", fill: false, interactive: false}).addTo(g);
     L.circleMarker([e0.lat, e0.lon], {radius: 15, color: "#f85149", weight: 3, fill: false, interactive: false}).addTo(g);
-    L.circleMarker([e0.lat, e0.lon], {radius: 7, color: "#fff", weight: 2, fillColor: "#f85149", fillOpacity: 1}).bindTooltip(`${e0.nombre}${D && D.modo === "min" && D.hs && D.hs[ST.hora] != null ? " · " + n1(D.hs[ST.hora]) + " mm" : ""}`, {permanent: true, direction: "right"}).addTo(g);
-    ((D && D.vec) || []).forEach((v, i) => { const x = D.modo === "min" ? D.hv[i][ST.hora] : null;
-      L.circleMarker([v.lat, v.lon], {radius: 6, color: "#fff", weight: 2, fillColor: v.color, fillOpacity: 1}).bindTooltip(x != null ? `${n1(x)} mm` : `${v.nombre} (${Math.round(v.km)} km)`, {permanent: x != null, direction: "right"}).bindPopup(`<b>${esc(v.nombre)}</b><br>${Math.round(v.km)} km${x != null ? " · " + n1(x) + " mm esa hora" : ""}`).addTo(g); });
+    const num = (x, col) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(6px,-50%);font:700 12px system-ui;color:${col};text-shadow:0 0 3px #000,0 0 3px #000">${n1(x)}</div>`});
+    const x0 = D && D.modo === "min" && D.hs ? D.hs[ST.hora] : null;
+    L.circleMarker([e0.lat, e0.lon], {radius: 6, color: "#fff", weight: 2, fillColor: "#f85149", fillOpacity: 1}).bindTooltip(e0.nombre, {direction: "top"}).addTo(g);
+    if (x0 != null) L.marker([e0.lat, e0.lon], {interactive: false, icon: num(x0, "#ff7b72")}).addTo(g);
+    // solo las 6 vecinas más cercanas con dato (DMC y externas): punto y número; nombre al pasar el mouse
+    const VV = D && D.modo === "min" ? D.vec.map((v, i) => ({...v, x: D.hv[i][ST.hora]})).concat((D.ve || []).map(v => ({...v, x: v.h[ST.hora]}))).filter(v => v.x != null && isFinite(v.lat)).sort((p, q) => p.km - q.km).slice(0, 6) : [];
+    VV.forEach(v => { L.circleMarker([v.lat, v.lon], {radius: 4, color: "#0d1117", weight: 1, fillColor: v.ext ? "#e3b341" : "#58a6ff", fillOpacity: 1}).bindTooltip(`${v.nombre} · ${Math.round(v.km)} km · ${n1(v.x)} mm`, {direction: "top"}).addTo(g);
+      L.marker([v.lat, v.lon], {interactive: false, icon: num(v.x, v.x >= 0.2 ? "#58a6ff" : "#e6edf3")}).addTo(g); });
     if (M.estacion !== ST.cod && e0){ M.estacion = ST.cod; M.sync = true; M.mapa.setView([e0.lat, e0.lon], 8, {animate: false}); M.sync = false; }
   });
 }
