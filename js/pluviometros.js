@@ -154,14 +154,18 @@ async function abrirMapa(id, i){
     const C = CAPAS[capaSel]; if (capa) mapa.removeLayer(capa); capa = null;
     $("#pPos").innerHTML = t > Date.now() ? `<span style="color:#d29922">Hora futura: sin imagen.</span>` : "";
     let alt = -1;                                        // -1 = nivel de teselas principal; luego los alternativos (si la capa de NASA usa otro nivel, las teselas dan error)
-    const mk = () => { const [nivel, z] = alt < 0 ? [C[2], C[3]] : C[6][alt];
-      return L.tileLayer(`${GIBS}${C[1]}/default/${iso}/${nivel}/{z}/{y}/{x}.${C[4]}`, {pane: "sat", maxNativeZoom: z, maxZoom: 12, opacity: C[5], attribution: "NASA GIBS"}).addTo(mapa); };
+    let atras = 0;                                       // si la imagen de esa hora aún no está publicada, se retrocede de 30 en 30 min (hasta 12 h)
+    const mk = () => { const [nivel, z] = alt < 0 ? [C[2], C[3]] : C[6][alt], iso2 = new Date(t - atras * 1800e3).toISOString().slice(0, 19) + "Z";
+      return L.tileLayer(`${GIBS}${C[1]}/default/${iso2}/${nivel}/{z}/{y}/{x}.${C[4]}`, {pane: "sat", maxNativeZoom: z, maxZoom: 12, opacity: C[5], attribution: "NASA GIBS"}).addTo(mapa); };
     if (C && C[1] && t <= Date.now()) capa = mk();
     const soloEst = capaSel === "est";
     let ok = 0, mal = 0; const diag = () => { const el = $("#pDiag"); if (el) el.innerHTML = `Diagnóstico v1.6 · estación ${e0 ? "ubicada (" + e0.lat.toFixed(3) + ", " + e0.lon.toFixed(3) + ")" : "<b style='color:#f85149'>sin coordenadas en el catálogo</b>"} · vecinas ubicadas ${nv}/${(dd.vecs || []).length} · capa ${C ? C[0] : "ninguna"}: ${ok} teselas cargadas, ${mal ? `<b style="color:#f85149">${mal} con error</b>` : "0 con error"}`; };
     let nv = 0;
     const vigilar = ly => { ly.on("tileload", () => { ok++; diag(); }); ly.on("tileerror", () => { mal++; diag();
-      if (ok === 0 && mal >= 3 && C[6] && alt + 1 < C[6].length && ly === capa){ alt++; mapa.removeLayer(capa); mal = 0; capa = mk(); vigilar(capa); } }); };
+      if (ly !== capa || ok > 0) return;
+      if (mal >= 3 && C[6] && alt + 1 < C[6].length){ alt++; mapa.removeLayer(capa); mal = 0; capa = mk(); vigilar(capa); return; }
+      if (mal >= 2 && atras < 24){ atras++; alt = -1; mapa.removeLayer(capa); mal = 0; capa = mk(); vigilar(capa);
+        $("#pPos").innerHTML = `<span style="color:#d29922">La imagen de ${C[0]} de esa hora aún no está publicada en NASA: se muestra la de ${new Date(t - atras * 1800e3).toISOString().slice(11, 16)} UTC (${atras * 30} min antes).</span>`; } }); };
     if (capa) vigilar(capa);
     grupo.clearLayers(); const pts = [];
     if (e0){ pts.push([e0.lat, e0.lon]);
