@@ -41,6 +41,10 @@ jobs:
           else
             mkdir datos && cd datos && git init -q -b datos && git remote add origin "$URL"
           fi
+      - name: Estaciones externas (INIA…) al día antes del control
+        # el cron de externas.yml casi nunca corre solo: así cada pasada del control parte con las externas frescas (si falla, sigue sin ellas)
+        continue-on-error: true
+        run: python qc/externas.py
       - name: Control de calidad
         run: python qc/correr.py --datos datos --salida qc_ultimo.json --sensorial ${{ inputs.sensorial || 'auto' }} --boletin ${{ inputs.boletin || 'auto' }}
       - name: Guardar datos
