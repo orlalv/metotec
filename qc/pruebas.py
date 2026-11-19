@@ -259,6 +259,7 @@ def vecinas(H, E, V, X=None):
     import externas_vec as EV
     out = []
     alt = E.set_index("codigo")["alt"].to_dict()
+    nomE = E.set_index("codigo")["nombre"].to_dict() if "nombre" in E else {}
     ult = H.sort_values("momento").groupby("codigo").tail(1).set_index("codigo")
     hora = ult["momento"].max()
     ult = ult[ult["momento"] == hora]
@@ -267,20 +268,22 @@ def vecinas(H, E, V, X=None):
         for v, (piso, s1, s2, corr) in VEC.items():
             if pd.isna(r[v]):
                 continue
-            ref, pes = [], []
+            ref, pes, eti = [], [], []
             for c in vs:
                 x = ult.at[c, v]
                 if pd.isna(x):
                     continue
                 if corr:
                     x = x + 0.0065 * ((alt.get(c) or 0) - (alt.get(cod) or 0))
-                ref.append(x); pes.append(1.0)
+                ref.append(x); pes.append(1.0); eti.append(f"{nomE.get(c, c)} {round(float(x), 1)}")
             nd = len(ref)
             if X is not None:
                 for i, x, w in X.valores(v, hora, cod):
                     if corr:
                         x = x + 0.0065 * ((X.alt.get(i) or 0) - (alt.get(cod) or 0))
                     ref.append(x); pes.append(w)
+                    ci = X.cat.get(i, {})
+                    eti.append(f"{(ci.get('inst', '') + ' ' + ci.get('nombre', str(i))).strip()} (ext.) {round(float(x), 1)}")
             if not EV.suficiente(pes):
                 continue
             ref = np.array(ref)
@@ -292,6 +295,7 @@ def vecinas(H, E, V, X=None):
                 ne = len(ref) - nd
                 out.append(alerta(cod, "vecinas", v, 2 if (z > 7 and d > s2) else 1, hora, r[v], med,
                                   f"distinta a sus {nd} vecinas (z = {z:.1f})" + (f"; la referencia incluye {ne} estaciones externas de menor peso" if ne else "")))
+                out[-1]["detalle"] = ["Vecinas usadas (valor" + (" llevado a la altura de la estación" if corr else "") + f"; mediana {round(float(med), 1)}):"] + eti
     return out
 
 
