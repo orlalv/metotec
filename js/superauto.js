@@ -5,14 +5,16 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
 const NIVC = ["var(--ok)", "var(--sos)", "var(--err)"];
-const TABS = {sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
+const ESP = new Set(["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZE05", "ZE08"]);     // controles espaciales (vecinas DMC y externas)
+const TABS = {sup_esp: ["esp", "control espacial"], sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
 const COLS = [["pp", "Precipitación", "sup_prc"], ["ext", "Extremas", "sup_ext"], ["pre", "Presiones", "sup_pre"], ["tem", "Temperaturas", "sup_tem"], ["vie", "Viento", "sup_vie"]];
 const NOTA = {
   pp: "Agua caída del pluviómetro: lluvia con aire seco, más de 2 mm en un minuto, el mismo valor repetido 10 minutos (pluviómetro pegado) y el acumulado de 6 h contra la suma de los minutos.",
-  ext: "La temperatura mínima y máxima de 12 h que informa la estación (Tn12 y Tx12) contra la temperatura por minuto de las últimas 24 h (avisa si pasa más de 1 °C; error sobre 1,5 °C).",
+  esp: "Comparación con todas las estaciones cercanas (DMC e INIA y otras externas, con menor peso): Ts, Td, HR y QFF (diferencia sostenida), viento medio y calma prolongada, lluvia sí/no, y mínima, máxima y amplitud del día. Solo estaciones automáticas sin observador.",
+  ext: "Extremas: Tn12/Tx12 de la mañana (12 UTC) y de la tarde (00 UTC) contra los minutos de esas 12 h, mínima y máxima de 24 h fuera de rango físico (picos del sensor), contra las vecinas (> 6 °C sospechoso, > 10 °C erróneo), amplitud del día contra las vecinas, el mismo valor 3 días seguidos y Tn12 mayor que Tx12.",
   pre: "QFF contra la mediana de las vecinas y contra el modelo (diferencia sostenida en 2 de las últimas 3 horas), QFE pegado 3 h, QFE lejos de lo esperado por altura, saltos groseros, cambio sobre 10 hPa en 3 h y QFF contra el QFE reducido.",
-  tem: "Ts, Td y HR contra la mediana de las vecinas (≥ 3, corregida por altura) y contra el modelo, con diferencia sostenida en 2 de las últimas 3 horas; Td mayor que Ts, HR que no calza con Ts y Td, valores pegados (3 h; HR 8 h), saltos groseros y Ts fuera de lo habitual para la zona.",
-  vie: "Viento contra el modelo (sostenido), cambio del viento medio sobre 15 kt en 10 min, viento o dirección pegados, dirección fuera de 0–360 y racha menor que el viento medio."};
+  tem: "Ts, Td y HR contra la mediana de las vecinas (≥ 3, corregida por altura) y contra el modelo, con diferencia sostenida en 2 de las últimas 3 horas; Td mayor que Ts, HR que no calza con Ts y Td, valores pegados (3 h; HR 8 h), saltos groseros Ts fuera de lo habitual para la zona y Ts que casi no varía en 24 h (poco probable).",
+  vie: "Viento contra las vecinas (sostenido) y contra el modelo, calma prolongada con viento en las vecinas, cambio del viento medio sobre 15 kt en 10 min, viento o dirección pegados, dirección fuera de 0–360, racha menor que el medio, viento medio sobre 70 kt o racha más de 4 veces el medio (poco probables)."};
 // columnas de la tabla de datos de cada pestaña: [campo del resumen, título, unidad]
 const DATOS = {
   pp: [["rr_24h", "Lluvia 24 h (suma de minutos)", "mm"], ["rr_1h", "Lluvia última hora", "mm"], ["rr_min", "Máx. en un minuto", "mm"], ["rr6", "RRR6 informada", "mm"], ["rr24", "RRR24 informada", "mm"], ["HR", "HR", "%"]],
@@ -94,9 +96,10 @@ function pintar(){
   }
   if (modo === "sup_pp") return pintarAgua(F);
   if (modo === "sup_est") return pintarEst(F);
+  if (modo === "sup_bol") return pintarBol(F);
   const [tipo, nom] = TABS[modo];
   const todas = [], calza = [];
-  F.forEach(({e, H}) => { H.filter(h => h.tipo === tipo).forEach(h => todas.push({...h, e}));
+  F.forEach(({e, H}) => { H.filter(h => tipo === "esp" ? ESP.has(h.regla) : h.tipo === tipo).forEach(h => todas.push({...h, e}));
     if (tipo === "pp") ((e.res || {}).blq6 || []).forEach(([hr, inf, suma]) => { if (inf != null && suma != null && !H.some(h => h.regla === "ZR05" && h.hora === hr)) calza.push({e, hora: hr, nivel: 0, regla: "ZR05ok", tipo: "pp", ingresado: `RRR6 ${inf} mm`, deberia: `${suma} mm`, msg: "El RRR6 de la estación coincide con la suma del agua caída por minuto."}); }); });
   todas.sort((a, b) => b.hora.localeCompare(a.hora) || b.nivel - a.nivel || (a.e.nombre || "").localeCompare(b.e.nombre || ""));
   calza.sort((a, b) => b.hora.localeCompare(a.hora) || (a.e.nombre || "").localeCompare(b.e.nombre || ""));
@@ -106,14 +109,43 @@ function pintar(){
         <td style="color:${f.regla === "ZR05ok" ? "var(--ok)" : NIVC[f.nivel] || "inherit"};font-weight:600">${f.regla === "ZR05ok" ? "✓ RRR6 calza" : REGLAS.html(f.regla, esc)}</td><td class="n">${esc(f.ingresado || "—")}</td><td class="n" style="color:var(--oro)">${esc(f.deberia || "")}</td>
         <td>${esc(f.msg)}${f.st === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${f.regla === "ZR05ok" ? "" : MARCA.botones(f.e.codigo, f)}</td></tr>`;
   const cab = `<tr><th>Estación</th><th>Obs. UTC</th><th>Alerta</th><th>Ingresado</th><th>Debería ir</th><th>Detalle</th><th></th></tr>`;
-  $("#zOut").innerHTML = `<div class="hres">${kpi(est.size, "estaciones con alertas", "var(--oro)")}${Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([k, n]) => kpi(n, REGLAS.nombre(k), "var(--tx)")).join("")}${tipo === "pp" ? kpi(calza.length, "bloques de 6 h que calzan", "var(--ok)") : ""}</div>
+  $("#zOut").innerHTML = `
     ${todas.length ? `<div class="bcard" style="padding:0"><table class="xtab">${cab}${todas.map(fila).join("")}</table></div>` : `<p style="color:var(--ok)">Sin alertas de ${nom}${q ? " con ese filtro" : ""}.</p>`}
     ${tipo === "pp" && calza.length ? `<h3 style="margin:16px 0 6px;font:600 15px var(--titulo)">RRR6 que calza con el pluviómetro (con lluvia)</h3><div class="bcard" style="padding:0;max-height:420px;overflow:auto"><table class="xtab">${cab}${calza.map(fila).join("")}</table></div>` : ""}
-    ${tipo === "pp" ? "" : `<h3 style="margin:16px 0 6px;font:600 15px var(--titulo)">Datos de las estaciones sin observador · ${esc(nom)}</h3>
+    ${tipo === "pp" || !DATOS[tipo] ? "" : `<h3 style="margin:16px 0 6px;font:600 15px var(--titulo)">Datos de las estaciones sin observador · ${esc(nom)}</h3>
     <div class="bcard" style="padding:0;max-height:520px;overflow:auto"><table class="xtab"><tr><th>Estación</th><th>Último dato UTC</th>${DATOS[tipo].map(c => `<th>${esc(c[1])}${c[2] ? ` <small>(${c[2]})</small>` : ""}</th>`).join("")}<th>Alertas</th></tr>
       ${filasDatos(F, tipo)}</table></div>`}
     <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Haga clic en una fila para ver su gráfico y su tabla. ${NOTA[tipo]} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
 }
+// Boletín automático: mismo formato del Boletín diario (mínima y máxima con su hora y precipitación), de las estaciones sin observador, armado con los minutos
+let diaBol = null;
+async function pintarBol(F){
+  const S = getR().super || {}, gen = (S.generado || new Date().toISOString()).slice(0, 10);
+  if (!diaBol){ const d = new Date(gen + "T12:00Z"); d.setUTCDate(d.getUTCDate() - 1); diaBol = d.toISOString().slice(0, 10); }
+  const dia = diaBol, c = $("#zOut");
+  c.innerHTML = `<div class="htools"><button id="bAnt">◀</button><input type="date" id="bDia" value="${dia}"><button id="bSig">▶</button><span class="tag">Día UTC (00–24 h) · calculado con los datos por minuto</span></div><div id="bOut"><p style="color:var(--mu)">Cargando…</p></div>`;
+  const M = await SG.diarioMes(dia.slice(0, 7).replace("-", "/")); if (diaBol !== dia || modo !== "sup_bol") return;
+  const D = M && M.dias && M.dias[dia], cm = (M || {}).campos || [], ix = k => cm.indexOf(k), f = v => v == null ? "—" : String(v);
+  const L = [...F].sort((a, b) => (b.e.lat ?? -99) - (a.e.lat ?? -99)).map(({e, H}) => { const v = D && D[e.codigo]; return {e, H, g: k => v && ix(k) >= 0 ? v[ix(k)] : null}; });
+  const fuera = v => v != null && (v < -35 || v > 45);
+  const marca = (x, k) => { const v = x.g(k); if (v == null) return ""; if (fuera(v)) return "color:var(--err);font-weight:700";
+    const r = x.H.find(h => (h.regla === "ZE04" || h.regla === "ZE05" || h.regla === "ZE07") && h.msg.includes(k === "tmin" ? "mínima" : "máxima")); return r ? `color:${NIVC[r.nivel]};font-weight:700` : ""; };
+  const tit = (x, k) => { const v = x.g(k); if (fuera(v)) return "Fuera de rango físico: picos del sensor"; const r = x.H.find(h => (h.regla === "ZE04" || h.regla === "ZE05" || h.regla === "ZE07") && h.msg.includes(k === "tmin" ? "mínima" : "máxima")); return r ? r.msg : ""; };
+  const loc = (hm) => { if (!hm) return "—"; const t = new Date(`${dia}T${hm}:00Z`); return t.toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit"}); };
+  const n = L.filter(x => x.g("n")).length, nMal = L.filter(x => fuera(x.g("tmin")) || fuera(x.g("tmax")) || x.H.some(h => ["ZE04", "ZE05", "ZE07"].includes(h.regla))).length;
+  $("#bOut").innerHTML = !D ? `<p style="color:var(--sos)">No hay resumen para el ${esc(dia)}.</p>` :
+    `<div class="hres">${kpi(n, "estaciones con datos", "var(--tx)")}${kpi(nMal, "con extremas dudosas", nMal ? "var(--err)" : "var(--ok)")}</div>
+    <div class="bcard" style="padding:0;max-height:700px;overflow:auto"><table class="xtab"><thead>
+      <tr><th rowspan="2">Estación</th><th colspan="2" style="text-align:center">Temperatura mínima (°C)</th><th colspan="2" style="text-align:center">Temperatura máxima (°C)</th><th rowspan="2">Precipitación 24 h (mm)</th><th rowspan="2">Minutos con dato</th></tr>
+      <tr><th>Valor</th><th>Hora local</th><th>Valor</th><th>Hora local</th></tr></thead>
+    <tbody>${L.map(x => `<tr data-ir="${x.e.codigo}" data-tp="ext" style="cursor:pointer"><td class="nom"><b>${esc(x.e.nombre)}</b><br><small>${x.e.codigo}</small></td>
+      <td class="n" style="${marca(x, "tmin")}" title="${esc(tit(x, "tmin"))}">${f(x.g("tmin"))}</td><td class="n">${loc(x.g("tmin_h"))}</td>
+      <td class="n" style="${marca(x, "tmax")}" title="${esc(tit(x, "tmax"))}">${f(x.g("tmax"))}</td><td class="n">${loc(x.g("tmax_h"))}</td>
+      <td class="n" style="${(x.g("rr") || 0) > 0 ? "color:var(--oro);font-weight:700" : ""}">${f(x.g("rr"))}</td><td class="n">${f(x.g("n"))}</td></tr>`).join("")}</tbody></table></div>
+    <p class="nota" style="color:var(--mu);font-size:12px;margin:4px 0">Estaciones automáticas sin observador (no incluye las DMC con observador), de norte a sur. En rojo, extremas fuera de rango físico o marcadas por el control (pase el mouse para ver el motivo). La hora de la mínima y la máxima aparece cuando el resumen del día se recalcula con el formato nuevo.</p>`;
+}
+document.addEventListener("click", ev => { const b = ev.target.closest("#bAnt, #bSig"); if (!b || !diaBol) return; const d = new Date(diaBol + "T12:00Z"); d.setUTCDate(d.getUTCDate() + (b.id === "bAnt" ? -1 : 1)); diaBol = d.toISOString().slice(0, 10); pintar(); });
+document.addEventListener("change", ev => { if (ev.target.id === "bDia" && ev.target.value){ diaBol = ev.target.value; pintar(); } });
 // Agua caída: como el Boletín diario pero de las estaciones automáticas sin observador; toda el agua caída tal cual, por día y por bloque de 6 h
 let diaAgua = null;
 async function pintarAgua(F){
@@ -141,5 +173,5 @@ document.addEventListener("click", ev => {
     const tr = document.createElement("tr"); tr.className = "supx"; tr.innerHTML = `<td colspan="5"><div class="supbox" data-c="${al.dataset.c}"></div></td>`; al.after(tr);
     SG.alerta(tr.querySelector(".supbox"), {...x.e, hallazgos: x.H}, x.H, al.dataset.tp, al.dataset.h); return; }
   const r = ev.target.closest("tr[data-ir]"); if (r && !ev.target.closest("a")){ window.supIr(r.dataset.ir, r.dataset.tp); return; } const a = ev.target.closest("a[data-sup]"); if (!a) return; ev.preventDefault(); q = ""; window.cambiarModo(a.dataset.sup); });
-window.SUPER = {init, pintar, modos: new Set(["sup", "sup_pp", "sup_est", ...Object.keys(TABS)])};
+window.SUPER = {init, pintar, modos: new Set(["sup", "sup_pp", "sup_est", "sup_bol", ...Object.keys(TABS)])};
 })();

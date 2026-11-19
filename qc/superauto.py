@@ -102,6 +102,38 @@ def _estacion(g, m):
             i = mal.index[-1]
             out.append(_h(None, "ZT09", 1, "tem", mal.at[i, "momento"], f"Ts {mal.at[i, 'T']:.1f} °C fuera de lo habitual para la zona {z} [{lo:.0f}, {hi:.0f}] ({len(mal)} minutos)"))
 
+    # Ts casi sin variar en 24 h: poco probable (sensor muerto o valor fijo)
+    T24 = g24["T"].dropna() if "T" in g24 else pd.Series(dtype=float)
+    if len(T24) >= 1200 and T24.max() - T24.min() < AMPL_MIN:
+        out.append(_h(None, "ZT10", 1, "tem", fin, f"Ts varió solo {T24.max() - T24.min():.1f} °C en 24 h ({T24.min():.1f} a {T24.max():.1f}): poco probable, revisar el sensor"))
+
+    # ---------------- extremas de 12 h (mañana 12 UTC: mínima de la noche · tarde 00 UTC: máxima del día) contra los minutos de esas 12 h
+    for var, mn, hh, nom in (("Tn12", True, 12, "mínima de la mañana"), ("Tx12", False, 0, "máxima de la tarde"), ("Tn12", True, 0, "mínima de la tarde"), ("Tx12", False, 12, "máxima de la mañana")):
+        if var not in g:
+            continue
+        R = g[(g["momento"].dt.hour == hh) & (g["momento"].dt.minute == 0)].dropna(subset=[var])
+        for _, r in R.iterrows():
+            W = g[(g["momento"] > r["momento"] - pd.Timedelta(hours=12)) & (g["momento"] <= r["momento"])]["T"].dropna()
+            if len(W) < 600:
+                continue
+            ref = float(W.min() if mn else W.max()); d = abs(float(r[var]) - ref)
+            if d > TOL_EXT[0]:
+                out.append(_h(None, "ZE06", 2 if d > TOL_EXT[1] else 1, "ext", r["momento"],
+                              f"{var} ({nom}, {r['momento']:%H} UTC) informa {r[var]:.1f} °C y la Ts por minuto de esas 12 h {'bajó' if mn else 'subió'} hasta {ref:.1f} °C (diferencia {d:.1f} °C)",
+                              ingresado=f"{var} {r[var]:.1f} °C", deberia=f"≈ {ref:.1f} °C"))
+
+    # ---------------- viento poco probable
+    if "ff10" in g24 and g24["ff10"].notna().any():
+        mx_ = g24["ff10"].max()
+        if mx_ > FF_MAX:
+            i = g24["ff10"].idxmax()
+            out.append(_h(None, "ZV08", 1, "vie", g24.at[i, "momento"], f"Viento medio de {mx_:.0f} kt: poco probable (sobre {FF_MAX} kt), revisar el anemómetro"))
+        if "fx10" in g24:
+            q = g24.dropna(subset=["ff10", "fx10"]); q = q[(q["fx10"] >= 30) & (q["fx10"] > RAFAGA_X * q["ff10"].clip(lower=1))]
+            if len(q) >= 3:
+                i = q.index[-1]
+                out.append(_h(None, "ZV09", 1, "vie", q.at[i, "momento"], f"Racha {q.at[i, 'fx10']:.0f} kt con viento medio {q.at[i, 'ff10']:.0f} kt (más de {RAFAGA_X} veces, {len(q)} minutos): poco probable"))
+
     # ---------------- presiones
     if "P_est" in g24:
         x = _salto(g24, "P_est", SALTO_P, "ZP01", "pre", "QFE", "hPa")
@@ -187,6 +219,8 @@ def _estacion(g, m):
     if "Tn12" in g and (g["momento"].max() - g["momento"].min()) >= pd.Timedelta(hours=24):
         u = g.dropna(subset=["T"])
         for var, mn in (("Tn12", True), ("Tx12", False)):
+            if var not in g:
+                continue
             x = g[var].dropna()
             if x.empty:
                 continue
@@ -203,7 +237,7 @@ def _estacion(g, m):
                               f"La estación informa una temperatura {nom} de 12 h ({var}) de {val:.1f} °C, pero en las últimas 24 h ningún minuto {'bajó' if mn else 'subió'} de {ref:.1f} °C. "
                               f"Diferencia: {dif:.1f} °C (hasta ~1 °C es normal, porque la extrema sale de muestras más finas que el minuto).",
                               ingresado=f"{var} {val:.1f} °C", deberia=(f"{ref - TOL_EXT[0]:.1f} °C o más" if mn else f"{ref + TOL_EXT[0]:.1f} °C o menos")))
-        a, b = g["Tn12"].dropna(), g["Tx12"].dropna()
+        a, b = g["Tn12"].dropna(), (g["Tx12"].dropna() if "Tx12" in g else pd.Series(dtype=float))
         if len(a) and len(b) and a.iloc[-1] > b.iloc[-1] + 0.05:
             out.append(_h(None, "ZE03", 2, "ext", g["momento"].max(), f"La temperatura mínima de 12 h (Tn12 {a.iloc[-1]:.1f} °C) es mayor que la máxima de 12 h (Tx12 {b.iloc[-1]:.1f} °C)"))
     return out
@@ -346,6 +380,12 @@ def _comparar_est(cod, Ha, alt, V, M, aisladas, horas):
                 nd = sum(1 for c in cols if not EV.es_ext(c) and bool(fin.loc[t, c]))
                 out.append(_hc(cod, "ZC05", niv, "vie", t, f"Viento medio {'mayor' if d > 0 else 'menor'} en {abs(d):.0f} kt que la mediana de sus {nd} estaciones vecinas (diferencia sostenida en 3 de las últimas 4 horas; revisar el anemómetro)." + EV.nota(cols, fin.loc[t]),
                                ingresado=f"Viento medio {val:.0f} kt", deberia=f"≈ {val - d:.0f} kt (vecinas)"))
+            # calma prolongada con viento en las vecinas
+            hc = list(Ha["ff10"].index.sort_values()[-CALMA_H:])
+            mio = [Ha["ff10"][cod].get(h) for h in hc]
+            if len(hc) == CALMA_H and all(x is not None and not pd.isna(x) and x == 0 for x in mio) and all(not pd.isna(refv.get(h)) and refv.get(h) >= CALMA_V for h in hc):
+                out.append(_hc(cod, "ZC07", 1, "vie", hc[-1], f"Calma (0 kt) {CALMA_H} h seguidas mientras la mediana de sus vecinas marca {float(np.mean([refv.get(h) for h in hc])):.0f} kt: anemómetro trabado o sin señal.",
+                               ingresado="Viento 0 kt", deberia=f"≈ {float(np.mean([refv.get(h) for h in hc])):.0f} kt (vecinas)"))
         if "rr1h" in Ha and cod in Ha["rr1h"].columns and "n" in Ha:
             u = [h for h in horas[-3:] if (Ha["n"][cod].get(h) or 0) >= 50]
             if len(u) == 3:
@@ -382,7 +422,7 @@ def _comparar_est(cod, Ha, alt, V, M, aisladas, horas):
 
 
 # ------------------------------------------------------------------ resumen diario (para las vistas Mes y Año de la pestaña «Estación»)
-CAMPOS_DIA = ["tmin", "tmax", "tmed", "hrmed", "pest", "pmar", "ffmax", "fxmax", "rr", "n", "rr_b0", "rr_b1", "rr_b2", "rr_b3", "rrmax"]
+CAMPOS_DIA = ["tmin", "tmax", "tmed", "hrmed", "pest", "pmar", "ffmax", "fxmax", "rr", "n", "rr_b0", "rr_b1", "rr_b2", "rr_b3", "rrmax", "tmin_h", "tmax_h"]
 
 
 def _dia(raiz, dia):
@@ -407,6 +447,8 @@ def _dia(raiz, dia):
             out[cod] += [r(b.get(k, 0.0)) for k in range(4)] + [r(g["rr1m"].max())]
         else:
             out[cod] += [None] * 5
+        t = g.dropna(subset=["T"])
+        out[cod] += ([f"{t.loc[t['T'].idxmin(), 'momento']:%H:%M}", f"{t.loc[t['T'].idxmax(), 'momento']:%H:%M}"] if len(t) else [None, None])
     return out
 
 
@@ -439,6 +481,11 @@ def diario(raiz, ahora=None, subir=None):
     return sorted(tocados)
 
 
+AMPL_MIN = 0.5               # °C: amplitud mínima creíble de Ts en 24 h
+FF_MAX, RAFAGA_X = 70, 4     # kt: viento medio poco probable; racha más de 4 veces el medio
+CALMA_H, CALMA_V = 6, 5      # calma ≥ 6 h seguidas con las vecinas en ≥ 5 kt
+TOL_AMPL_V = 8.0             # °C: amplitud del día contra la mediana de las vecinas
+ESPACIAL = {"ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZE05", "ZE08"}
 LIM_T = (-35.0, 45.0)        # rango físico para las extremas de 24 h armadas con los minutos
 TOL_EXT_V = (6.0, 10.0)      # °C: extrema de 24 h contra la mediana de las vecinas (corregida por altura)
 
@@ -466,7 +513,42 @@ def _extremas_red(est, V):
                 f["hallazgos"].append(_h(None, "ZE05", 2 if abs(d) > TOL_EXT_V[1] else 1, "ext", f["ultima"],
                                          f"La temperatura {nom} de 24 h ({v:.1f} °C) es {abs(d):.1f} °C {'más alta' if d > 0 else 'más baja'} que la mediana de sus {len(ref)} vecinas ({med:.1f} °C, llevada a la altura de la estación).",
                                          ingresado=f"T {nom} 24 h {v:.1f} °C", deberia=f"≈ {med:.1f} °C (vecinas)"))
+        mn_, mx_ = r.get("Tmin24"), r.get("Tmax24")
+        if mn_ is not None and mx_ is not None and LIM_T[0] <= mn_ <= LIM_T[1] and LIM_T[0] <= mx_ <= LIM_T[1]:
+            amp = [R[c]["res"]["Tmax24"] - R[c]["res"]["Tmin24"] for c in (V or {}).get(cod, []) if c in R and R[c]["res"].get("Tmin24") is not None and R[c]["res"].get("Tmax24") is not None
+                   and LIM_T[0] <= R[c]["res"]["Tmin24"] and R[c]["res"]["Tmax24"] <= LIM_T[1]]
+            if len(amp) >= 3:
+                ma = float(np.median(amp)); d = (mx_ - mn_) - ma
+                if abs(d) > TOL_AMPL_V:
+                    f["hallazgos"].append(_h(None, "ZE08", 1, "ext", f["ultima"], f"Amplitud térmica del día {mx_ - mn_:.1f} °C contra {ma:.1f} °C de la mediana de sus {len(amp)} vecinas: poco probable",
+                                             ingresado=f"{mn_:.1f} a {mx_:.1f} °C", deberia=f"amplitud ≈ {ma:.1f} °C"))
         f["nivel"] = max([h["nivel"] for h in f["hallazgos"]], default=f["nivel"])
+
+
+def _repetidas(raiz, est, ahora):
+    """ZE07: la misma mínima o máxima diaria (de los minutos) 3 días seguidos o más: valor fijo o sensor trabado."""
+    import json
+    from pathlib import Path
+    dias = [(ahora.normalize() - pd.Timedelta(days=k)) for k in range(1, 5)]
+    D = {}
+    for d in dias:
+        f = Path(raiz) / "diario" / d.strftime("%Y") / d.strftime("%m.json")
+        if f.exists():
+            M = json.loads(f.read_text(encoding="utf-8")); ix = {k: i for i, k in enumerate(M.get("campos", []))}
+            D[d] = {c: (v[ix["tmin"]], v[ix["tmax"]], v[ix["n"]]) for c, v in M["dias"].get(f"{d:%Y-%m-%d}", {}).items()}
+    for f in est:
+        serie = [D.get(d, {}).get(f["codigo"]) for d in dias]
+        for k, nom in ((0, "mínima"), (1, "máxima")):
+            vals = []
+            for x in serie:
+                if x is None or x[k] is None or (x[2] or 0) < 1000:
+                    break
+                vals.append(x[k])
+            if len(vals) >= 3 and len(set(vals[:3])) == 1:
+                f["hallazgos"].append(_h(None, "ZE07", 2, "ext", f["ultima"] or f"{ahora:%Y-%m-%dT%H:%M}",
+                                         f"La temperatura {nom} del día fue {vals[0]:.1f} °C {len([v for v in vals if v == vals[0]])} días seguidos: valor repetido, revisar el sensor o el registro",
+                                         ingresado=f"{nom} {vals[0]:.1f} °C repetida"))
+                f["nivel"] = max(f["nivel"], 2)
 
 
 def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(), X=None):
@@ -510,6 +592,11 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
         else:
             fila["nivel"] = 3
         est.append(fila)
+    try:
+        _repetidas(raiz, est, fin)
+    except Exception:
+        import traceback
+        errores.append(f"repetidas: {traceback.format_exc(limit=3)}")
     try:
         _extremas_red(est, V)
     except Exception:
