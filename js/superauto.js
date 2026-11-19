@@ -202,7 +202,10 @@ document.addEventListener("change", ev => { if (ev.target.id === "aDia" && ev.ta
 document.addEventListener("click", ev => {
   const es = ev.target.closest("tr[data-es]"); if (es){ selEst = es.dataset.es; const F = filas(); document.querySelectorAll("tr[data-es]").forEach(x => x.style.background = x === es ? "color-mix(in srgb,var(--oro) 18%,transparent)" : ""); const e = (F.find(x => x.e.codigo === selEst) || {}).e; e && abrirEst(e); return; }
   const al = ev.target.closest("tr.supal"); if (al && !ev.target.closest(".mk, a")){
-    const sig = al.nextElementSibling; if (sig && sig.classList.contains("supx")){ sig.remove(); return; }
+    const tab = al.closest("table"), todas = [...tab.querySelectorAll("tr.supal")];
+    const sig = al.nextElementSibling; if (sig && sig.classList.contains("supx")){ sig.remove(); todas.forEach(r => r.style.display = ""); al.scrollIntoView({block: "nearest"}); return; }
+    // una alerta a la vez: al abrirla se ocultan las demás; al cerrarla vuelven todas
+    tab.querySelectorAll("tr.supx").forEach(r => r.remove()); todas.forEach(r => r.style.display = r === al ? "" : "none"); al.scrollIntoView({block: "start"});
     const F = filas(), x = F.find(y => y.e.codigo === al.dataset.c); if (!x) return;
     const tr = document.createElement("tr"); tr.className = "supx";
     if (modo === "sup_esp"){      // control espacial: gráficos ya comparados con las vecinas y mapa con sus valores a la derecha
