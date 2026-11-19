@@ -84,7 +84,9 @@ tr.sgsel td{background:color-mix(in srgb,var(--oro) 22%,transparent)!important;b
 .sgtab{border-collapse:collapse;font:12px var(--mono)}.sgtab th,.sgtab td{padding:2px 5px;border:1px solid var(--bd);text-align:center;white-space:nowrap}.sgtab td:first-child{text-align:left;font-family:inherit}.sgtab .sgalerta td{background:color-mix(in srgb,var(--oro) 28%,transparent);font-weight:700}.sgtab .on{background:color-mix(in srgb,var(--oro) 22%,transparent);color:var(--tx)}
 .sgnota{color:var(--mu);font-size:12px;margin:6px 0 0}
 .hrcalc{margin-top:14px;border-top:1px solid var(--bd);padding-top:10px}.hrcalc h4{margin:0 0 4px;font:600 14px var(--titulo)}.hrin{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:8px 0}.hrin label{display:flex;flex-direction:column;font-size:12px;color:var(--mu);gap:3px}.hrin input{width:80px;background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:4px 6px;font:600 13px var(--mono)}.hrbt{background:none;border:1px solid var(--oro);color:var(--oro);border-radius:7px;padding:5px 12px;font:600 13px inherit;cursor:pointer}.hrres{font:13px var(--mono)}.hrseq table tr.on td{background:color-mix(in srgb,var(--oro) 18%,transparent)}
-main{position:relative}#supIzq{position:absolute;z-index:1100;background:var(--fondo,#0d1117);overflow:auto;padding:12px 14px;display:none;min-height:0}#supIzq.on{display:block}
+main.supSwap #mapa{display:none!important}main.supSwap aside{grid-column:2;grid-row:1}main.supSwap #supIzq{grid-column:1;grid-row:1}
+main.supSwap #lista{display:block!important;flex:1}main.supSwap #det[style*="block"]{flex:0 0 auto;max-height:45%}
+#supIzq{background:var(--fondo,#0d1117);overflow:auto;padding:12px 14px;display:none;min-height:0}#supIzq.on{display:block}
 #det{border-top:3px solid var(--oro);background:var(--panel);padding:14px;max-height:46%;overflow:auto;display:none}
 #lista:has(+ #det[style*="block"]){display:none}#det[style*="block"]{max-height:none;flex:1;border-top:0}.detX{float:right;background:none;border:1px solid var(--oro);color:var(--oro);border-radius:7px;padding:3px 10px;font:600 12.5px inherit;cursor:pointer;margin-left:8px}
 #det h2{margin:0 0 2px;font-size:18px}#det .sub{color:var(--mu);font-size:13px;margin-bottom:10px}
@@ -360,7 +362,7 @@ function detalleSup(c, mover = true){
    ${H.length ? `<table><tr><th>Dato UTC</th><th>Variable</th><th>Regla</th><th>Detalle</th><th></th></tr>${H.map(h => `<tr data-hh="${esc(h.hora)}" data-tp="${esc(h.tipo)}" style="cursor:pointer" title="Ver el dato minuto a minuto"><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td>${esc((SUPC.find(x => x[0] === h.tipo) || [0, h.tipo])[1])}</td><td style="color:${HEX[h.nivel]}">${REGLAS.html(h.regla, esc)}</td><td>${esc(h.msg)}${MARCA.estado(e.codigo, h) === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${MARCA.botones(e.codigo, h)}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin hallazgos en las últimas 24 horas.</p>`}
    <p style="color:var(--mu);font-size:12.5px;margin-top:12px">Los gráficos de las últimas 24 h están a la izquierda.</p>`;
   const iz = $("#supIzq"); iz.classList.add("on"); iz.scrollTop = 0; supIzqPos();
-  iz.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><h3 style="margin:0;font:600 15px var(--titulo)">Datos de las últimas 24 h · ${esc(e.nombre)}</h3><span style="flex:1"></span><button id="supIzqX" class="detX" style="float:none">✕ Ver mapa</button></div><div class="supbox" id="supDat" data-c="${e.codigo}"></div>`;
+  iz.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><h3 style="margin:0;font:600 15px var(--titulo)">Datos de las últimas 24 h · ${esc(e.nombre)}</h3><span style="flex:1"></span><button id="supIzqX" class="detX" style="float:none">✕ Volver al mapa</button></div><div class="supbox" id="supDat" data-c="${e.codigo}"></div>`;
   supDatos(e, H);
 }
 // gráficos y tablas: js/supgraf.js (SG). En «Estaciones» cada hallazgo abre el gráfico de 24 h de su variable.
@@ -654,7 +656,7 @@ function cambiarModo(m){
   $("#gear").classList.toggle("on", mb.dataset.g === "gestion");
   if (mb.hidden){ const g = mb.dataset.g; document.querySelectorAll(".grupos button").forEach(x => x.classList.toggle("on", x.dataset.g === g)); document.querySelectorAll(".modos button").forEach(x => x.hidden = x.dataset.g !== g); }
   if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
-  modo = m; $("#det").style.display = "none"; $("#supIzq").classList.remove("on"); ppBarra(); if (m !== "pp"){ $("#minu").classList.remove("solo"); if (window.HUECOS) HUECOS.solo(false); }
+  modo = m; $("#det").style.display = "none"; $("#supIzq").classList.remove("on"); supIzqPos(); ppBarra(); if (m !== "pp"){ $("#minu").classList.remove("solo"); if (window.HUECOS) HUECOS.solo(false); }
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
   const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", rec: "ext", ser: "ser", serh: "ser", inf: "inf", est: "est", plu: "plu", reg: "reg", equ: "equ", vex: "vex", mis: "mis", comp: "comp", sup_pp: "sup", sup_prc: "sup", sup_est: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup", sup_esp: "sup", sup_bol: "sup"}[m];
   document.querySelector("main").hidden = h;
@@ -997,14 +999,15 @@ cargar(); setInterval(cargar, 5 * 60 * 1000);
 /* detalle a pantalla completa del panel derecho: oculta la lista y agrega «Cerrar» */
 (() => { const d = document.getElementById("det"); if (!d) return;
   new MutationObserver(() => { if (d.style.display === "block" && !d.querySelector(":scope > .detX")){ const b = document.createElement("button"); b.className = "detX"; b.textContent = "✕ Cerrar"; d.prepend(b); d.scrollTop = 0; } }).observe(d, {childList: true, attributes: true, attributeFilter: ["style"]});
-  d.addEventListener("click", ev => { if (!ev.target.closest(".detX")) return; ev.stopPropagation(); d.style.display = "none"; document.getElementById("supIzq").classList.remove("on"); try { sel = null; } catch (e) {} document.querySelectorAll(".it.sel,.it.on").forEach(x => x.classList.remove("sel", "on")); });
+  d.addEventListener("click", ev => { if (!ev.target.closest(".detX")) return; ev.stopPropagation(); d.style.display = "none"; document.getElementById("supIzq").classList.remove("on"); supIzqPos(); try { sel = null; } catch (e) {} document.querySelectorAll(".it.sel,.it.on").forEach(x => x.classList.remove("sel", "on")); });
 })();
 </script>
 <script>
 /* panel de gráficos del Súper automático: se pone exactamente encima del mapa (sea cual sea el lado en que esté) */
-function supIzqPos(){ const iz = document.getElementById("supIzq"), m = document.getElementById("mapa"), mn = document.querySelector("main"); if (!iz || !m || !mn) return;
-  const a = m.getBoundingClientRect(), b = mn.getBoundingClientRect(); Object.assign(iz.style, {left: (a.left - b.left) + "px", top: (a.top - b.top) + "px", width: a.width + "px", height: a.height + "px"}); }
+function supIzqPos(){ const iz = document.getElementById("supIzq"), mn = document.querySelector("main"); if (!iz || !mn) return;
+  mn.classList.toggle("supSwap", iz.classList.contains("on"));       // gráficos a la izquierda, lista (y detalle) a la derecha
+  setTimeout(() => { try { mapa.invalidateSize(); } catch (e) {} }, 50); }
 window.addEventListener("resize", supIzqPos);
-document.addEventListener("click", ev => { if (ev.target.closest("#supIzqX")){ document.getElementById("supIzq").classList.remove("on"); setTimeout(() => { try { mapa.invalidateSize(); } catch (e) {} }, 50); } });</script>
+document.addEventListener("click", ev => { if (ev.target.closest("#supIzqX")){ document.getElementById("supIzq").classList.remove("on"); supIzqPos(); setTimeout(() => { try { mapa.invalidateSize(); } catch (e) {} }, 50); } });</script>
 </body>
 </html>
