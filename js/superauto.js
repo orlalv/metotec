@@ -128,7 +128,7 @@ function pintar(){
   calza.sort((a, b) => b.hora.localeCompare(a.hora) || (a.e.nombre || "").localeCompare(b.e.nombre || ""));
   const cnt = {}; todas.forEach(f => cnt[f.regla] = (cnt[f.regla] || 0) + 1);
   const est = new Set(todas.map(f => f.e.codigo));
-  const fila = f => `<tr class="supal" data-c="${f.e.codigo}" data-h="${esc(f.hora)}" data-tp="${f.tipo}" style="cursor:pointer" title="Ver gráfico y tabla"><td class="nom"><b>${esc(f.e.nombre)}</b><br><small>${f.e.codigo}</small><br>${enlinea(f.e.codigo)}</td><td style="white-space:nowrap">${hora(f)}</td>
+  const fila = f => `<tr class="supal" data-c="${f.e.codigo}" data-r="${f.regla}" data-h="${esc(f.hora)}" data-tp="${f.tipo}" style="cursor:pointer" title="Ver gráfico y tabla"><td class="nom"><b>${esc(f.e.nombre)}</b><br><small>${f.e.codigo}</small><br>${enlinea(f.e.codigo)}</td><td style="white-space:nowrap">${hora(f)}</td>
         <td style="color:${f.regla === "ZR05ok" ? "var(--ok)" : NIVC[f.nivel] || "inherit"};font-weight:600">${f.regla === "ZR05ok" ? "✓ RRR6 calza" : REGLAS.html(f.regla, esc)}</td><td class="n">${esc(f.ingresado || "—")}</td><td class="n" style="color:var(--oro)">${esc(f.deberia || "")}</td>
         <td>${esc(f.msg)}${f.st === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${f.regla === "ZR05ok" ? "" : MARCA.botones(f.e.codigo, f)}</td></tr>`;
   const cab = `<tr><th>Estación</th><th>Obs. UTC</th><th>Alerta</th><th>Ingresado</th><th>Debería ir</th><th>Detalle</th><th></th></tr>`;
@@ -151,7 +151,11 @@ async function mapaEsp(el, tit, e, V2, h, hora){
   const mp = L.map(el, {attributionControl: false}); MAPE = mp;
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 13}).addTo(mp);
   const et = (n, val, col) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-50%);white-space:nowrap;background:#0d1117e6;border:1.5px solid ${val == null ? "#8b949e" : col};border-radius:7px;padding:1px 6px;font:600 11px system-ui;color:#e6edf3;text-align:center">${esc(n)}<br><b style="font-size:13px;color:${val == null ? "#8b949e" : col}">${val == null ? "s/d" : (Math.round(val * 10) / 10) + " " + un}</b></div>`});
-  const valor = async c => { try { const a = v === "rr1m" ? t0 - 3 * 3600e3 : t0 - 15 * 60e3, b = t0 + (v === "rr1m" ? 0 : 15 * 60e3), F = await SG.minuto(c, a, b + 60e3);
+  const ext = h.regla === "ZE05" || h.regla === "ZE08" ? (h.regla === "ZE08" ? "amp" : /mínima/.test(h.msg || "") ? "min" : "max") : null;
+  if (ext) tit.innerHTML = `<b>${ext === "min" ? "Ts mínima" : ext === "max" ? "Ts máxima" : "Amplitud de Ts"}</b> de las 24 h hasta las ${esc(hora.slice(11, 16))} UTC del ${esc(hora.slice(8, 10) + "/" + hora.slice(5, 7))}`;
+  const valor = async c => { if (ext) try { const F = (await SG.minuto(c, t0 - 24 * 3600e3, t0 + 60e3)).filter(o => o.T != null); if (F.length < 600) return null;
+      const mn = Math.min(...F.map(o => o.T)), mx = Math.max(...F.map(o => o.T)); return ext === "min" ? mn : ext === "max" ? mx : mx - mn; } catch (z) { return null; }
+    try { const a = v === "rr1m" ? t0 - 3 * 3600e3 : t0 - 15 * 60e3, b = t0 + (v === "rr1m" ? 0 : 15 * 60e3), F = await SG.minuto(c, a, b + 60e3);
     if (v === "rr1m"){ const x = F.filter(o => o.rr1m != null); return x.length >= 120 ? x.reduce((s, o) => s + o.rr1m, 0) : null; }
     const x = F.filter(o => o[v] != null).sort((p, q) => Math.abs(p.t - t0) - Math.abs(q.t - t0)); return x.length ? x[0][v] : null; } catch (z) { return null; } };
   const pts = [[e.lat, e.lon]], m0 = L.marker([e.lat, e.lon], {icon: et(e.nombre, null, "#f85149"), zIndexOffset: 1000}).addTo(mp);
@@ -208,13 +212,13 @@ document.addEventListener("click", ev => {
     tab.querySelectorAll("tr.supx").forEach(r => r.remove()); todas.forEach(r => r.style.display = r === al ? "" : "none"); document.querySelectorAll(".supDatosSec").forEach(d => d.style.display = "none"); al.scrollIntoView({block: "start"});
     const F = filas(), x = F.find(y => y.e.codigo === al.dataset.c); if (!x) return;
     const tr = document.createElement("tr"); tr.className = "supx";
-    if (modo === "sup_esp" || modo === "obs_esp"){      // control espacial: gráficos ya comparados con las vecinas y mapa con sus valores a la derecha
+    if (modo === "sup_esp" || modo === "obs_esp" || ESP.has(al.dataset.r)){      // control espacial (o alerta espacial en cualquier pestaña): gráficos ya comparados con las vecinas y mapa con sus valores a la derecha
       tr.innerHTML = `<td colspan="7"><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start"><div class="supbox" data-c="${al.dataset.c}" style="flex:1 1 560px;min-width:0"></div>
         <div style="flex:0 1 420px;min-width:300px"><div class="espMapT" style="font-size:12.5px;margin-bottom:4px"></div><div class="espMap" style="height:420px;border:1px solid var(--bd);border-radius:8px"></div>
         <small style="color:var(--mu)">Rojo = la estación · azul = vecinas DMC (valor a la hora de la alerta) · gris = sin dato</small></div></div></td>`; al.after(tr);
       const box = tr.querySelector(".supbox"), V2 = window.supVec ? window.supVec(al.dataset.c) : [];
       box.dataset.vec = V2.slice(0, 4).map(v => v.codigo).join(",");
-      const h = x.H.find(z => z.hora === al.dataset.h && ESP.has(z.regla)) || {};
+      const h = x.H.find(z => z.hora === al.dataset.h && z.regla === al.dataset.r) || x.H.find(z => z.hora === al.dataset.h && ESP.has(z.regla)) || {};
       SG.alerta(box, {...x.e, hallazgos: x.H}, x.H, (VAR_R[h.regla] || [al.dataset.tp])[0], al.dataset.h);
       mapaEsp(tr.querySelector(".espMap"), tr.querySelector(".espMapT"), x.e, V2, h, al.dataset.h); return; }
     tr.innerHTML = `<td colspan="5"><div class="supbox" data-c="${al.dataset.c}"></div></td>`; al.after(tr);
