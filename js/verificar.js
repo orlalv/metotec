@@ -141,7 +141,7 @@ let MV = null;
 function mapaVecinas(h){      // mapa bajo la imagen de la derecha: estación y vecinas (DMC y externas) con los mm de la hora elegida
   const el = document.getElementById("vMV"), cat = U().catalogoSync(), e0 = cat && cat.get(ST.cod); if (!el || !window.L || !e0) return;
   if (MV){ MV.remove(); MV = null; }
-  MV = L.map(el, {attributionControl: false}); L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {maxZoom: 13}).addTo(MV);
+  MV = L.map(el, {attributionControl: false}); L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 13}).addTo(MV);
   L.circle([+e0.lat, +e0.lon], {radius: RADIO_KM * 1000, color: "#f85149", weight: 1, dashArray: "6 6", fill: false, interactive: false}).addTo(MV);
   const et = (n, x, col, dash) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-50%);white-space:nowrap;background:#0d1117e6;border:1.5px ${dash ? "dashed" : "solid"} ${x == null ? "#8b949e" : col};border-radius:7px;padding:1px 6px;font:600 11px system-ui;color:#e6edf3;text-align:center">${esc(n)}<br><b style="font-size:13px;color:${x == null ? "#8b949e" : x >= 0.2 ? col : "#e6edf3"}">${x == null ? "s/d" : n1(x) + " mm"}</b></div>`});
   const pts = [[+e0.lat, +e0.lon]];
