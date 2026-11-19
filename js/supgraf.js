@@ -58,6 +58,7 @@ function ticks(lo, hi, n = 5){                 // marcas "redondas" del eje y
 // línea suavizada: media móvil centrada cuando hay muchos minutos y curva cuadrática por los puntos medios
 function suave(P, v, x, y){
   if (!P.length) return "";
+  if (/^rr/.test(v)) return "M" + P.map(r => `${x(r.t).toFixed(1)},${y(r[v]).toFixed(1)}`).join("L");      // la lluvia no se suaviza: son pulsos del pluviómetro
   const m = P.length > 240 ? Math.round(P.length / 160) : 1, h = m >> 1;
   const Q = m > 1 ? P.map((r, i) => { let s = 0, n = 0; for (let j = Math.max(0, i - h); j <= Math.min(P.length - 1, i + h); j++){ s += P[j][v]; n++; } return [x(r.t), y(s / n)]; }) : P.map(r => [x(r.t), y(r[v])]);
   let d = `M${Q[0][0].toFixed(1)},${Q[0][1].toFixed(1)}`;
@@ -105,6 +106,8 @@ function descargar(box){
 }
 function ampliar(box){
   const m = document.createElement("div"); m.className = "sgmodal"; m.innerHTML = box.outerHTML; m.querySelector(".sgtip").hidden = true;
+  const x = document.createElement("button"); x.textContent = "✕ Cerrar"; x.title = "Cerrar (Esc)"; x.style.cssText = "color:var(--oro);border-color:var(--oro)"; m.querySelector(".sgb").appendChild(x);
+  x.addEventListener("click", () => m.remove());
   m.addEventListener("click", ev => { if (ev.target === m) m.remove(); }); document.body.appendChild(m);
   document.addEventListener("keydown", function f(e){ if (e.key === "Escape"){ m.remove(); document.removeEventListener("keydown", f); } });
 }
