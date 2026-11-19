@@ -23,6 +23,20 @@ def kv_put(clave, texto):
     return str(r.status_code)
 
 
+def kv_get(clave):
+    acc, tok, ns = os.environ.get("CLOUDFLARE_ACCOUNT_ID"), os.environ.get("CLOUDFLARE_API_TOKEN"), os.environ.get("KV_ID")
+    if not (acc and tok and ns):
+        return None
+    try:
+        r = requests.get(f"https://api.cloudflare.com/client/v4/accounts/{acc}/storage/kv/namespaces/{ns}/values/{clave}", headers={"Authorization": f"Bearer {tok}"}, timeout=90)
+        return r.json() if r.status_code == 200 else None
+    except Exception:
+        return None
+
+
+GUARDAR_DIAS = {"PP": 8}      # INIA solo entrega ~48 h: se acumula con lo guardado antes (lluvia 8 días; el resto 3)
+
+
 def num(v):
     try:
         return round(float(v), 1)
@@ -81,6 +95,14 @@ def main():
                     horas.add(t)
             if serie:
                 datos[ident] = serie
+        # acumular con lo que ya había (INIA solo trae las últimas ~48 h)
+        prev = kv_get(f"qc/externas/{var}") or {}
+        if prev.get("campos") == campos:
+            corte = (datetime.now(timezone.utc) - timedelta(days=GUARDAR_DIAS.get(var, 3))).strftime("%Y-%m-%dT%H")
+            for ident, serie in (prev.get("datos") or {}).items():
+                viejo = {t: x for t, x in serie.items() if t >= corte}
+                if viejo:
+                    viejo.update(datos.get(ident, {})); datos[ident] = viejo; horas.update(viejo)
         hs = sorted(horas)
         txt = json.dumps({"generado": ahora, "var": var, "campos": campos, "horas": [hs[0], hs[-1]] if hs else None, "n": len(datos), "datos": datos}, ensure_ascii=False, separators=(",", ":"))
         res[var] = (len(datos), hs[-1] if hs else None, len(txt) // 1024, kv_put(f"qc/externas/{var}", txt))
