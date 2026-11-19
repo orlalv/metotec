@@ -643,11 +643,13 @@ def _espaciales_extra(raiz, A, E, V, fin):
 # ------------------------------------------------------------------ Six Sigma
 # Diferencia de cada estación contra la mediana de sus vecinas, en σ de SU PROPIA diferencia habitual (media y σ móviles ~30 días, guardadas en datos/sigma/estado.json).
 SIX_VARS = {"T": ("Ts", "°C", True, 0.3), "Td": ("Td", "°C", False, 0.5), "HR": ("HR", "%", False, 3.0), "P_mar": ("QFF", "hPa", False, 0.3), "ff10": ("Viento medio", "kt", False, 1.5)}
-SIX_MIN_N, SIX_VENT, SIX_SOSP, SIX_ERR = 72, 720, 4.0, 6.0      # 3 días de horas para empezar · ventana ~30 días · 4σ sospechoso · 6σ erróneo
+SIX_MIN_N, SIX_VENT, SIX_SOSP, SIX_ERR = 72, 720, 3.5, 6.0      # 3 días de horas para empezar · ventana ~30 días · 3,5σ sospechoso · 6σ erróneo
 SIX_TIPO = {"T": "tem", "Td": "tem", "HR": "tem", "P_mar": "pre", "ff10": "vie"}
 
 
-def _six_sigma(raiz, A, E, V, fin, leer=None):
+def _six_sigma(raiz, A, E, V, fin, leer=None, malos=None):
+    """malos: {(codigo, variable)} ya marcados como erróneos por otras reglas: esas horas no entran a la estadística (un error persistente no se vuelve «lo habitual»)."""
+    malos = malos or set()
     import json
     from pathlib import Path
     out = {}
@@ -669,6 +671,8 @@ def _six_sigma(raiz, A, E, V, fin, leer=None):
     hora_fin = fin.floor("h")
     H = H[(H["momento"] > ult) & (H["momento"] <= hora_fin)]
     alt = {c: (None if pd.isna(z) else float(z)) for c, z in E.set_index("codigo")["alt"].items()}
+    for cod, v in malos:          # lo aprendido mientras el sensor ya estaba malo se descarta: se vuelve a aprender cuando se corrija
+        st.pop(f"{cod}|{v}", None)
     zs = {}
     for t, G in H.groupby("momento"):
         G = G.set_index("codigo")
@@ -689,7 +693,7 @@ def _six_sigma(raiz, A, E, V, fin, leer=None):
                 z = (d - m) / sd if n >= SIX_MIN_N else None
                 if z is not None:
                     zs.setdefault(k, []).append((t, z, d, m, sd))
-                if z is None or abs(z) < SIX_SOSP:          # lo raro no entra a la estadística (no la infla)
+                if (z is None or abs(z) < SIX_SOSP) and (cod, v) not in malos:          # lo raro y lo ya marcado como error no entran a la estadística
                     a = 1 / min(n + 1, SIX_VENT); dm = d - m
                     st[k] = [n + 1, round(m + a * dm, 4), round((1 - a) * (var + a * dm * dm), 5)]
     for k, L in zs.items():
@@ -816,7 +820,11 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
     try:      # dirección del viento, hora desfasada y deriva lenta contra vecinas (todas las estaciones)
         X_ = _espaciales_extra(raiz, A, E, V, fin)
         try:
-            for c, L in _six_sigma(raiz, A, E, V, fin, leer=lambda h: leer_archivo(raiz, fin, horas=h)).items():
+            VAR_REGLA = {"ZC01": "T", "ZC02": "Td", "ZC03": "HR", "ZC04": "P_mar", "ZC05": "ff10", "ZM01": "T", "ZM02": "Td", "ZM03": "HR", "ZM04": "P_mar", "ZM05": "ff10",
+                         "ZT09": "T", "ZP03": "P_mar", "ZP05": "P_mar", "ZT06": "T", "ZT07": "Td", "ZT08": "HR", "ZP02": "P_mar", "ZV02": "ff10"}
+            malos = {(f["codigo"], VAR_REGLA[h["regla"]]) for f in est for h in f["hallazgos"] if h["regla"] in VAR_REGLA and h["nivel"] >= 2}
+            malos |= {(c, VAR_REGLA[h["regla"]]) for c, L in cmp_al.items() for h in L if h.get("regla") in VAR_REGLA and h.get("nivel", 0) >= 2}
+            for c, L in _six_sigma(raiz, A, E, V, fin, leer=lambda h: leer_archivo(raiz, fin, horas=h), malos=malos).items():
                 X_.setdefault(c, []).extend(L)
         except Exception:
             import traceback

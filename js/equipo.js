@@ -123,11 +123,12 @@ function pagEqu(){
      ${p ? "" : `<p class="nota" style="color:var(--sos)">Elija su nombre arriba para marcar sus estaciones.</p>`}
      <div class="htools"><input id="eqQ" placeholder="Buscar estación…" value="${esc(S.dataset.q || "")}"> <select id="eqZ"><option value="">Todas las regiones</option>${Object.entries(ZNOM).map(([k, v]) => `<option value="${k}"${z === k ? " selected" : ""}>${v}</option>`).join("")}</select>
       ${p ? `<button class="mk" id="eqTodas">Marcar las visibles</button><button class="mk" id="eqNinguna">Desmarcar las visibles</button>` : ""}</div>
-     <table class="xtab"><tr><th></th><th>Estación</th><th>Tipo</th><th>Zona</th><th>Responsable</th></tr>
+     <table class="xtab"><tr><th>${p ? `<input type="checkbox" id="eqAll" title="Seleccionar o quitar todas las visibles"${L.length && L.every(e => (p.estaciones || []).includes(e.codigo)) ? " checked" : ""}>` : ""}</th><th>Estación</th><th>Tipo</th><th>Zona</th><th>Responsable</th></tr>
      ${L.map(e => { const d = dueños(e.codigo); return `<tr><td>${p ? `<input type="checkbox" data-est="${e.codigo}"${(p.estaciones || []).includes(e.codigo) ? " checked" : ""}>` : ""}</td><td><b>${esc(e.nombre)}</b> <small>${e.codigo}</small></td><td><small>${e.tipo}</small></td><td><small>${ZNOM[zona(e.lat)] || "—"}</small></td>
        <td>${d.length ? esc(d.join(", ")) : `<span style="color:var(--sos);font-weight:700">sin responsable</span>`}</td></tr>`; }).join("")}</table></div></div>`;
 }
 
+document.addEventListener("change", ev => { if (ev.target.id !== "eqAll") return; const b = document.getElementById(ev.target.checked ? "eqTodas" : "eqNinguna"); if (b) b.click(); });   // seleccionar todas
 function reglaTxt(r){
   const lugar = r.donde === "cods" ? (r.cods || []).join(", ") : DONDE[r.donde] || r.donde;
   return `${r.fuente === "obs" ? "Observación" : "EMA"} · ${esc(lugar)} · ${r.op === "sin" ? "sin dato" : `${esc((VARS[r.fuente] || {})[r.var] || r.var)} ${esc(OPS[r.op])} ${esc(r.valor)}`}`;
