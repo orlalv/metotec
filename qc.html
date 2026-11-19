@@ -993,7 +993,7 @@ cargar(); setInterval(cargar, 5 * 60 * 1000);
 /* detalle a pantalla completa del panel derecho: oculta la lista y agrega «Cerrar» */
 (() => { const d = document.getElementById("det"); if (!d) return;
   new MutationObserver(() => { if (d.style.display === "block" && !d.querySelector(":scope > .detX")){ const b = document.createElement("button"); b.className = "detX"; b.textContent = "✕ Cerrar"; d.prepend(b); d.scrollTop = 0; } }).observe(d, {childList: true, attributes: true, attributeFilter: ["style"]});
-  d.addEventListener("click", ev => { if (!ev.target.closest(":scope > .detX")) return; d.style.display = "none"; try { sel = null; } catch (e) {} document.querySelectorAll(".it.sel,.it.on").forEach(x => x.classList.remove("sel", "on")); });
+  d.addEventListener("click", ev => { if (!ev.target.closest(".detX")) return; ev.stopPropagation(); d.style.display = "none"; try { sel = null; } catch (e) {} document.querySelectorAll(".it.sel,.it.on").forEach(x => x.classList.remove("sel", "on")); });
 })();
 </script>
 </body>
