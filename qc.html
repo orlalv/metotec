@@ -85,6 +85,7 @@ tr.sgsel td{background:color-mix(in srgb,var(--oro) 22%,transparent)!important;b
 .sgnota{color:var(--mu);font-size:12px;margin:6px 0 0}
 .hrcalc{margin-top:14px;border-top:1px solid var(--bd);padding-top:10px}.hrcalc h4{margin:0 0 4px;font:600 14px var(--titulo)}.hrin{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:8px 0}.hrin label{display:flex;flex-direction:column;font-size:12px;color:var(--mu);gap:3px}.hrin input{width:80px;background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:4px 6px;font:600 13px var(--mono)}.hrbt{background:none;border:1px solid var(--oro);color:var(--oro);border-radius:7px;padding:5px 12px;font:600 13px inherit;cursor:pointer}.hrres{font:13px var(--mono)}.hrseq table tr.on td{background:color-mix(in srgb,var(--oro) 18%,transparent)}
 #det{border-top:3px solid var(--oro);background:var(--panel);padding:14px;max-height:46%;overflow:auto;display:none}
+#lista:has(+ #det[style*="block"]){display:none}#det[style*="block"]{max-height:none;flex:1;border-top:0}.detX{float:right;background:none;border:1px solid var(--oro);color:var(--oro);border-radius:7px;padding:3px 10px;font:600 12.5px inherit;cursor:pointer;margin-left:8px}
 #det h2{margin:0 0 2px;font-size:18px}#det .sub{color:var(--mu);font-size:13px;margin-bottom:10px}
 table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
 th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--bd)}th{color:var(--mu);font-weight:600}
@@ -987,6 +988,13 @@ if (/^\/modelo/.test(location.pathname) || new URLSearchParams(location.search).
 }
 EQ.alCambiar = () => R && pintar(); EQ.init(() => R, clave);
 cargar(); setInterval(cargar, 5 * 60 * 1000);
+</script>
+<script>
+/* detalle a pantalla completa del panel derecho: oculta la lista y agrega «Cerrar» */
+(() => { const d = document.getElementById("det"); if (!d) return;
+  new MutationObserver(() => { if (d.style.display === "block" && !d.querySelector(":scope > .detX")){ const b = document.createElement("button"); b.className = "detX"; b.textContent = "✕ Cerrar"; d.prepend(b); d.scrollTop = 0; } }).observe(d, {childList: true, attributes: true, attributeFilter: ["style"]});
+  d.addEventListener("click", ev => { if (!ev.target.closest(":scope > .detX")) return; d.style.display = "none"; try { sel = null; } catch (e) {} document.querySelectorAll(".it.sel,.it.on").forEach(x => x.classList.remove("sel", "on")); });
+})();
 </script>
 </body>
 </html>
