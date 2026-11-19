@@ -94,6 +94,7 @@ function tabla(cas, hora, msg, regla){
 }
 const f2 = t => t ? `${t.slice(8, 10)}/${t.slice(5, 7)} ${t.slice(11, 16)}` : "";
 function cambios(e, hora){
+  return "";        // sección «Cambios detectados en SACLIM» retirada (pedido del usuario)
   const clave = hora.slice(0, 16).replace("T", " "), L = (e && e.cambios || []).slice(-40).reverse();
   if (!L.length) return `<p class="sgnota">Cambios en SACLIM: ninguno detectado desde que se empezó a registrar (el sistema compara cada pasada con la anterior).</p>`;
   return `<h4 style="margin:10px 0 4px">Cambios detectados en SACLIM</h4><table class="sgtab"><tr><th>Detectado (UTC)</th><th>Observación</th><th>Casilla</th><th>Antes</th><th>Ahora</th></tr>${L.map(x =>
