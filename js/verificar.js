@@ -128,7 +128,7 @@ function pintarMin(out){
   const tot2 = D.hv.map(a => a.reduce((s, z) => s + (z || 0), 0));
   out.innerHTML = `<p style="margin:4px 0">${resumen}</p>
     <h4 style="margin:10px 0 2px">Lluvia por hora · ${esc(ST.dia)} (UTC) <small style="color:var(--mu);font-weight:400">· clic en una hora para cambiar las imágenes</small></h4>${leyenda(D)}<div class="vbar"><button class="vAmp" style="float:right;background:none;border:1px solid var(--bd);color:var(--mu);border-radius:6px;padding:1px 8px;cursor:pointer;font-size:12px">⤢ Ampliar</button>${hs}</div>
-    <h4 style="margin:10px 0 2px">Lluvia por hora en líneas <small style="color:var(--mu);font-weight:400">· clic en un gráfico para ampliarlo</small></h4>${svgLineas([["#f85149", D.hs || [], D.e0.nombre]].concat(D.vec.map((v, i) => [v.color, D.hv[i], v.nombre])).concat((D.ve || []).map(x => [x.color, x.h, x.nombre, true])), 24, h, i => p2(i))}
+    <h4 style="margin:10px 0 2px">Lluvia por hora en líneas <small style="color:var(--mu);font-weight:400">· pase el mouse para ver los valores</small></h4><div class="vbar"><button class="vAmp" style="float:right;background:none;border:1px solid var(--bd);color:var(--mu);border-radius:6px;padding:1px 8px;cursor:pointer;font-size:12px">⤢ Ampliar</button>${svgLineas([["#f85149", D.hs || [], D.e0.nombre]].concat(D.vec.map((v, i) => [v.color, D.hv[i], v.nombre])).concat((D.ve || []).map(x => [x.color, x.h, x.nombre, true])), 24, h, i => p2(i))}</div>
     <h4 style="margin:12px 0 2px">Minuto a minuto · ${p2(h)}:00–${p2(h)}:59 UTC</h4>${minG}
     <details open style="margin-top:10px"><summary style="cursor:pointer"><b>Tabla de precipitación por hora (mm)</b></summary><div style="overflow-x:auto"><table class="tb" style="margin-top:4px"><tr><th>Hora UTC</th><th>Hora local</th><th>${esc(D.e0.nombre)}</th>${D.vec.concat(D.ve || []).map(x => `<th style="color:${x.color};text-align:right">${esc(x.nombre)}<br><small>${Math.round(x.km)} km</small></th>`).join("")}<th style="text-align:right">Media vecinas</th></tr>${filas}
       <tr style="font-weight:700"><td colspan="2">Total del día</td><td style="text-align:right">${n1(tot)}</td>${tot2.map(z => `<td style="text-align:right">${n1(z)}</td>`).join("")}<td></td></tr></table></div>
@@ -149,24 +149,27 @@ function mapaVecinas(h){      // mapa bajo la imagen de la derecha: estación y 
   L.marker([+e0.lat, +e0.lon], {icon: et(e0.nombre, D.hs ? D.hs[h] : null, "#f85149"), zIndexOffset: 1000}).addTo(MV);
   if (pts.length > 1) MV.fitBounds(pts, {padding: [60, 40], maxZoom: 10}); else MV.setView(pts[0], 9);
 }
-function svgLineas(series, n, sel, etiq){      // series: [[color, [n], nombre, punteada]]; líneas suavizadas con transparencia
-  const W = 26, H = 150, base = 128, x0 = 34;
-  const todos = series.flatMap(r => r[1]).filter(v => v != null && isFinite(v)), mx = Math.max(1, ...todos) * 1.1, y = v => base - (v / mx) * (base - 10), X = i => x0 + i * W + W / 2;
+function svgLineas(series, n, sel, etiq){      // misma geometría que svgBarras; series: [[color, [n], nombre, punteada]]; al pasar el mouse muestra los valores
+  const W = 30, H = 130, base = 108, x0 = 34, w = 44 + n * W;
+  const todos = series.flatMap(r => r[1]).filter(v => v != null && isFinite(v)), mx = Math.max(1, ...todos) * 1.12, y = v => base - (v / mx) * (base - 8), X = i => x0 + i * W + (W - 2) / 2;
   const curva = a => { let d = "", q = null; a.forEach((v, i) => { if (v == null){ q = null; return; } const p = [X(i), y(v)];
     d += q ? `C${(q[0] + W / 2).toFixed(1)},${q[1].toFixed(1)} ${(p[0] - W / 2).toFixed(1)},${p[1].toFixed(1)} ${p[0].toFixed(1)},${p[1].toFixed(1)}` : `M${p[0].toFixed(1)},${p[1].toFixed(1)}`; q = p; }); return d; };
-  const ejes = [0, .5, 1].map(f => mx / 1.1 * f).map(t => `<text x="${x0 - 4}" y="${y(t) + 3}" text-anchor="end" font-size="9" fill="#8b949e">${n1(t)}</text><line x1="${x0}" x2="${x0 + n * W}" y1="${y(t)}" y2="${y(t)}" stroke="#ffffff14"/>`).join("");
+  const tope = mx / 1.12, paso = [.1, .2, .5, 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000].find(p => tope / p <= 5) || 1000;
+  let rej = ""; for (let v = 0; v <= tope * 1.05; v += paso){ const yy = y(v); rej += `<line x1="30" y1="${yy}" x2="${w}" y2="${yy}" stroke="#30363d" stroke-dasharray="${v ? "3 4" : "0"}"/><text x="26" y="${yy + 3}" text-anchor="end" font-size="9" fill="#8b949e">${n1(v)}</text>`; }
   const xs = Array.from({length: n}, (_, i) => `<text x="${X(i)}" y="${base + 13}" text-anchor="middle" font-size="9.5" fill="${i === sel ? "#58a6ff" : "#8b949e"}">${esc(etiq(i))}</text>`).join("");
-  return `<svg class="vzoom" viewBox="0 0 ${x0 + n * W + 8} ${H}" style="width:100%;max-width:${x0 + n * W + 8}px;cursor:zoom-in" role="img" aria-label="mm por hora en líneas">${ejes}${xs}
-    ${sel != null ? `<rect x="${X(sel) - W / 2}" y="4" width="${W}" height="${base - 4}" fill="#58a6ff1f"/>` : ""}
-    ${series.slice().reverse().map(([c, a, nm, dash]) => `<path d="${curva(a)}" fill="none" stroke="${c}" stroke-opacity=".75" stroke-width="${c === "#f85149" ? 2.6 : 1.8}"${dash ? ' stroke-dasharray="5 3"' : ""}><title>${esc(nm)}</title></path>`).join("")}</svg>`;
+  // columna invisible por hora: al pasar el mouse muestra todos los valores de esa hora
+  const cols = Array.from({length: n}, (_, i) => `<rect x="${x0 + i * W}" y="2" width="${W - 2}" height="${base - 2}" fill="${i === sel ? "#58a6ff26" : "transparent"}"><title>${esc(etiq(i))}:00 UTC${series.map(([c, a, nm]) => `\n${nm}: ${a[i] == null ? "s/d" : n1(a[i]) + " mm"}`).join("")}</title></rect>`).join("");
+  const pts = series.map(([c, a, nm]) => a.map((v, i) => v == null ? "" : `<circle cx="${X(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${v > 0 ? 3 : 1.6}" fill="${c}" fill-opacity=".85"><title>${esc(nm)} · ${esc(etiq(i))}:00 UTC · ${n1(v)} mm</title></circle>`).join("")).join("");
+  return `<div style="overflow-x:auto"><svg class="vzoom" viewBox="0 0 ${w} ${H + 4}" style="width:${w}px;max-width:100%;min-width:${Math.min(w, 520)}px;height:auto" role="img" aria-label="mm por hora en líneas">${rej}${cols}${xs}
+    ${series.slice().reverse().map(([c, a, nm, dash]) => `<path d="${curva(a)}" fill="none" stroke="${c}" stroke-opacity=".75" stroke-width="${c === "#f85149" ? 2.6 : 1.8}"${dash ? ' stroke-dasharray="5 3"' : ""} style="pointer-events:none"/>`).join("")}${pts}</svg></div>`;
 }
 /* ampliar un gráfico en ventana (clic sobre él) y cerrar con ✕, clic fuera o Esc */
 document.addEventListener("click", ev => {
-  const amp = ev.target.closest(".vAmp"), g = amp ? amp.parentElement.querySelector("svg") : ev.target.closest(".ppx svg.vzoom"); if (!g || document.getElementById("vZoom")) return;
+  const amp = ev.target.closest(".vAmp"), g = amp ? amp.parentElement.querySelector("svg") : null; if (!g || document.getElementById("vZoom")) return;
   const m = document.createElement("div"); m.id = "vZoom";
   m.style.cssText = "position:fixed;inset:0;background:#000b;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px";
-  m.innerHTML = `<div style="background:var(--panel,#161b22);border:1px solid var(--bd,#30363d);border-radius:10px;padding:12px;width:min(1400px,96vw);max-height:92vh;overflow:auto"><div style="text-align:right"><button id="vZX" style="background:none;border:1px solid var(--oro,#C9A54C);color:var(--oro,#C9A54C);border-radius:7px;padding:3px 10px;cursor:pointer">✕ Cerrar</button></div></div>`;
-  const c = g.cloneNode(true); c.style.width = "100%"; c.style.maxWidth = "none"; c.style.height = "auto"; c.style.cursor = "default"; m.firstChild.appendChild(c);
+  m.innerHTML = `<div style="background:var(--panel,#161b22);border:1px solid var(--bd,#30363d);border-radius:10px;padding:12px;width:98vw;max-height:95vh;overflow:auto"><div style="text-align:right"><button id="vZX" style="background:none;border:1px solid var(--oro,#C9A54C);color:var(--oro,#C9A54C);border-radius:7px;padding:3px 10px;cursor:pointer">✕ Cerrar</button></div></div>`;
+  const c = g.cloneNode(true); c.style.width = "100%"; c.style.maxWidth = "none"; c.style.minWidth = "0"; c.style.height = "auto"; c.style.maxHeight = "82vh"; c.style.cursor = "default"; m.firstChild.appendChild(c);
   const cerrar = () => { m.remove(); document.removeEventListener("keydown", k); }, k = e => { if (e.key === "Escape") cerrar(); };
   m.addEventListener("click", e => { if (e.target === m || e.target.id === "vZX") cerrar(); }); document.addEventListener("keydown", k); document.body.appendChild(m);
 });
