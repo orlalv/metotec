@@ -134,7 +134,6 @@ function pintar(){
   const cab = `<tr><th>Estación</th><th>Obs. UTC</th><th>Alerta</th><th>Ingresado</th><th>Debería ir</th><th>Detalle</th><th></th></tr>`;
   $("#zOut").innerHTML = `
     ${todas.length ? `<div class="bcard" style="padding:0"><table class="xtab">${cab}${todas.map(fila).join("")}</table></div>` : `<p style="color:var(--ok)">Sin alertas de ${nom}${q ? " con ese filtro" : ""}.</p>`}
-    ${tipo === "pp" && calza.length ? `<h3 style="margin:16px 0 6px;font:600 15px var(--titulo)">RRR6 que calza con el pluviómetro (con lluvia)</h3><div class="bcard" style="padding:0;max-height:420px;overflow:auto"><table class="xtab">${cab}${calza.map(fila).join("")}</table></div>` : ""}
     ${tipo === "pp" || !DATOS[tipo] ? "" : `<h3 style="margin:16px 0 6px;font:600 15px var(--titulo)">Datos de las estaciones sin observador · ${esc(nom)}</h3>
     <div class="bcard" style="padding:0;max-height:520px;overflow:auto"><table class="xtab"><tr><th>Estación</th><th>Último dato UTC</th>${DATOS[tipo].map(c => `<th>${esc(c[1])}${c[2] ? ` <small>(${c[2]})</small>` : ""}</th>`).join("")}<th>Alertas</th></tr>
       ${filasDatos(F, tipo)}</table></div>`}
@@ -194,8 +193,7 @@ async function pintarAgua(F){
   const con = L.filter(x => (x.g("rr") || 0) > 0), mx = con.reduce((a, x) => !a || x.g("rr") > a.g("rr") ? x : a, null);
   const celda = v => `<td class="n" style="${(v || 0) > 0 ? "color:var(--oro);font-weight:700" : ""}">${f(v)}</td>`;
   $("#aOut").innerHTML = !D ? `<p style="color:var(--sos)">No hay resumen de agua caída para el ${esc(dia)} (el archivo parte el 8/11/2026 y se completa con cada pasada del control).</p>` :
-    `<div class="hres">${kpi(L.filter(x => x.v).length, "estaciones con datos", "var(--tx)")}${kpi(con.length, "con agua caída", "var(--oro)")}${kpi(mx ? mx.g("rr") + " mm" : "—", mx ? "máxima: " + mx.e.nombre : "máxima del día", "var(--tx)")}</div>
-    <div class="bcard" style="padding:0;max-height:680px;overflow:auto"><table class="xtab"><thead><tr><th>Estación</th><th>00–06 <small>(mm)</small></th><th>06–12 <small>(mm)</small></th><th>12–18 <small>(mm)</small></th><th>18–24 <small>(mm)</small></th><th>Total del día <small>(mm)</small></th><th>Máx. en 1 min <small>(mm)</small></th><th>Minutos con dato</th></tr></thead>
+    `<div class="bcard" style="padding:0;max-height:680px;overflow:auto"><table class="xtab"><thead><tr><th>Estación</th><th>00–06 <small>(mm)</small></th><th>06–12 <small>(mm)</small></th><th>12–18 <small>(mm)</small></th><th>18–24 <small>(mm)</small></th><th>Total del día <small>(mm)</small></th><th>Máx. en 1 min <small>(mm)</small></th><th>Minutos con dato</th></tr></thead>
     <tbody>${L.map(x => `<tr data-ir="${x.e.codigo}" data-tp="pp" style="cursor:pointer"><td class="nom"><b>${esc(x.e.nombre)}</b><br><small>${x.e.codigo}</small></td>${["rr_b0", "rr_b1", "rr_b2", "rr_b3"].map(k => celda(x.g(k))).join("")}<td class="n" style="${(x.g("rr") || 0) > 0 ? "color:var(--oro);font-weight:700" : ""}"><b>${f(x.g("rr"))}</b></td>${celda(x.g("rrmax"))}<td class="n">${f(x.g("n"))}</td></tr>`).join("")}</tbody></table></div>
     <p class="nota" style="color:var(--mu);font-size:12px;margin:4px 0">Estaciones automáticas sin observador, de norte a sur. «—» es sin pluviómetro o con menos de 10 h de datos. Haga clic en una estación para ver sus gráficos.</p>`;
 }
