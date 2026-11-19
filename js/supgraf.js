@@ -59,7 +59,7 @@ function ticks(lo, hi, n = 5){                 // marcas "redondas" del eje y
 function suave(P, v, x, y){
   if (!P.length) return "";
   if (/^rr/.test(v)) return "M" + P.map(r => `${x(r.t).toFixed(1)},${y(r[v]).toFixed(1)}`).join("L");      // la lluvia no se suaviza: son pulsos del pluviómetro
-  const m = P.length > 240 ? Math.round(P.length / 160) : 1, h = m >> 1;
+  const m = 1, h = 0;        // sin media móvil: el suavizado solo redondea la línea, no esconde los picos
   const Q = m > 1 ? P.map((r, i) => { let s = 0, n = 0; for (let j = Math.max(0, i - h); j <= Math.min(P.length - 1, i + h); j++){ s += P[j][v]; n++; } return [x(r.t), y(s / n)]; }) : P.map(r => [x(r.t), y(r[v])]);
   let d = `M${Q[0][0].toFixed(1)},${Q[0][1].toFixed(1)}`;
   for (let i = 1; i < Q.length; i++){ const a = Q[i - 1], b = Q[i]; d += `Q${a[0].toFixed(1)},${a[1].toFixed(1)} ${((a[0] + b[0]) / 2).toFixed(1)},${((a[1] + b[1]) / 2).toFixed(1)}`; }
@@ -82,11 +82,11 @@ function linea(F, vs, o = {}){
     if (o.barras) return P.map(r => `<rect x="${(x(r.t) - bw / 2).toFixed(1)}" y="${y(r[v]).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, y0 - y(r[v])).toFixed(1)}" fill="${c}" opacity=".85"/>`).join("");
     if (!P.length) return "";
     const pts = P.map(r => `${x(r.t).toFixed(1)},${y(r[v]).toFixed(1)}`), area = vs.length === 1 ? `<polygon points="${x(P[0].t).toFixed(1)},${y0.toFixed(1)} ${pts.join(" ")} ${x(P[P.length - 1].t).toFixed(1)},${y0.toFixed(1)}" fill="${c}" opacity=".13"/>` : "";
-    return area + `<path fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" d="${suave(P, v, x, y)}"/>`; }).join("");
+    return area + `<path fill="none" stroke="${c}" stroke-width="1.2" stroke-linejoin="round" d="${suave(P, v, x, y)}"/>`; }).join("");
   const ext = o.barras ? "" : (() => { const v = vs[0], P = F.filter(r => r[v] != null); if (!P.length) return ""; const mn = P.reduce((a, r) => r[v] < a[v] ? r : a), mx = P.reduce((a, r) => r[v] > a[v] ? r : a);
     const m = (r, up) => `<circle cx="${x(r.t).toFixed(1)}" cy="${y(r[v]).toFixed(1)}" r="3" fill="${V[v][2]}" stroke="var(--panel)" stroke-width="1"/><text x="${Math.min(Math.max(x(r.t), mi + 14), W - md - 14).toFixed(1)}" y="${(y(r[v]) + (up ? -7 : 14)).toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${V[v][2]}">${r[v].toFixed(dec > 0 ? 1 : 0)}</text>`;
     return (mx === mn ? "" : m(mx, true) + m(mn, false)); })();
-  const dibO = otros.map(q => { const P = q.F.filter(r => r[vs[0]] != null && r.t >= t0 && r.t <= t1); return P.length ? `<path fill="none" stroke="${q.color}" stroke-width="1.6" stroke-opacity=".8" stroke-linejoin="round" d="${suave(P, vs[0], x, y)}"/>` : ""; }).join("");
+  const dibO = otros.map(q => { const P = q.F.filter(r => r[vs[0]] != null && r.t >= t0 && r.t <= t1); return P.length ? `<path fill="none" stroke="${q.color}" stroke-width="1" stroke-opacity=".85" stroke-linejoin="round" d="${suave(P, vs[0], x, y)}"/>` : ""; }).join("");
   const mk = (o.marcas || []).filter(t => t >= t0 && t <= t1).map(t => `<line x1="${x(t).toFixed(1)}" x2="${x(t).toFixed(1)}" y1="${mt}" y2="${Ht - mb}" stroke="#e5534b" stroke-width="1.4" stroke-dasharray="4 3"/>`).join("") + (o.sel && o.sel >= t0 && o.sel <= t1 ? `<line x1="${x(o.sel).toFixed(1)}" x2="${x(o.sel).toFixed(1)}" y1="${mt}" y2="${Ht - mb}" stroke="var(--oro)" stroke-width="2.4"/>` : "");
   const id = "c" + (++CHN); CH.set(id, {otros, F, vs, W, mi, md, t0, t1, mt, Ht, mb, y, x, lo, hi, dia: o.dia});
   if (CH.size > 80) CH.delete(CH.keys().next().value);
@@ -131,6 +131,15 @@ document.addEventListener("mousemove", ev => {
   tip.style.left = (left + 14 + tip.offsetWidth > bw.width ? left - tip.offsetWidth - 14 : left + 14) + "px"; tip.style.top = "38px";
 });
 const fecha = (t, dia) => { const s = new Date(t).toISOString(); return dia ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : `${s.slice(8, 10)}/${s.slice(5, 7)} ${s.slice(11, 16)}`; };
+// tabla de comparación: la variable principal de la estación contra cada vecina elegida, la mediana de ellas y la diferencia
+function tablaCmp(F, v, otros, sel){
+  if (!otros.length) return `<p style="font-size:12px;color:var(--mu)">Elija estaciones cercanas arriba para compararlas en la tabla.</p>`;
+  const med = a => { const b = a.filter(z => z != null).sort((p, q) => p - q); if (!b.length) return null; const k = b.length >> 1; return b.length % 2 ? b[k] : (b[k - 1] + b[k]) / 2; };
+  const filas = F.map(o => { const vs = otros.map(q => { const k = cercano(q.F, o.t); return k && k[v] != null ? k[v] : null; }), m = med(vs), d = o[v] != null && m != null ? o[v] - m : null;
+    return `<tr${sel && o.t === sel ? ' style="background:color-mix(in srgb,var(--oro) 18%,transparent)"' : ""}><td style="white-space:nowrap">${fecha(o.t)}</td><td class="n"><b>${f2(o[v])}</b></td>${vs.map(z => `<td class="n">${f2(z)}</td>`).join("")}<td class="n">${f2(m)}</td>
+      <td class="n" style="${d != null && Math.abs(d) >= (V[v][1] === "hPa" ? 2 : V[v][1] === "%" ? 15 : 3) ? "color:var(--err);font-weight:700" : ""}">${d == null ? "—" : (d > 0 ? "+" : "") + f2(Math.round(d * 10) / 10)}</td></tr>`; }).join("");
+  return `<div style="max-height:300px;overflow:auto"><table class="xtab"><tr><th>UTC</th><th>${esc(V[v][0])} estación <small>(${V[v][1]})</small></th>${otros.map(q => `<th style="color:${q.color}">${esc(q.nom)}</th>`).join("")}<th>Mediana vecinas</th><th>Diferencia</th></tr>${filas}</table></div>`;
+}
 const tabla = (F, cols, sel, dia) => `<div style="max-height:260px;overflow:auto"><table class="xtab"><tr><th>${dia ? "Día" : "UTC"}</th>${cols.map(v => `<th>${esc(V[v][0])}${V[v][1] ? ` <small>(${V[v][1]})</small>` : ""}</th>`).join("")}</tr>${F.map(o => `<tr${sel && o.t === sel ? ' style="background:color-mix(in srgb,var(--oro) 18%,transparent)"' : ""}><td style="white-space:nowrap">${fecha(o.t, dia)}</td>${cols.map(v => `<td class="n">${f2(o[v])}</td>`).join("")}</tr>`).join("")}</table></div>`;
 
 // estaciones cercanas (con o sin observador) para comparar en los mismos gráficos
@@ -157,7 +166,7 @@ async function alerta(box, e, H, grp, hora){
   const filas = ms ? F.filter(o => Math.abs(o.t - ms) <= 30 * 60e3) : F.filter(o => new Date(o.t).getUTCMinutes() % 30 === 0).reverse();
   c.style.color = "";
   c.innerHTML = grid(GR[g][1].map(vs => linea(F, vs, {marcas, sel: ms, otros}))) +
-    `<div style="font-size:12px;color:var(--mu);margin:4px 0">${ms ? `Minuto a minuto, ±30 min de la alerta ${esc(fecha(ms))} UTC · <a href="#" data-sg2h="">volver a cada 30 min</a>` : "Cada 30 min (haga clic en una alerta para ver minuto a minuto)"}</div>` + tabla(filas, cols, ms);
+    `<div style="font-size:12px;color:var(--mu);margin:4px 0">${ms ? `Minuto a minuto, ±30 min de la alerta ${esc(fecha(ms))} UTC · <a href="#" data-sg2h="">volver a cada 30 min</a>` : "Cada 30 min (haga clic en una alerta para ver minuto a minuto)"}</div>` + tablaCmp(filas, GR[g][1][0][0], otros, ms);
 }
 
 // ---------------------------------------------------------------- pestaña «Estación»: Hora, Día, Semana, Mes, Año
