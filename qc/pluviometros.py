@@ -251,7 +251,7 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
                 t = (T or {}).get(horas[i2], {}).get(c)
                 orden = np.argsort(D[j, vec]) if len(vec) else []
                 vecs = [[nom.get(cods[vec[k]], cods[vec[k]]), round(float(D[j, vec[k]])), (None if not np.isfinite(X[i2, k]) else round(float(X[i2, k]), 1))] for k in orden][:10]
-                vecs += [[f'{EXT["cat"][i].get("inst", "")} {EXT["cat"][i].get("nombre", i)} (ext.)'.strip(), round(dke[k]), (None if not np.isfinite(XV[i2, k]) else round(float(XV[i2, k]), 1))] for k, i in enumerate(ids)]
+                vecs += [[f'{EXT["cat"][i].get("inst", "")} {EXT["cat"][i].get("nombre", i)} (ext.)'.strip(), round(dke[k]), (None if not np.isfinite(XV[i2, k]) else round(float(XV[i2, k]), 1)), EXT["cat"][i]["lat"], EXT["cat"][i]["lon"]] for k, i in enumerate(ids)]
                 sx = (t[5:] + [None] * 5)[:5] if t else [None] * 5
                 det.append(dict(vecs=vecs, mod3=[round(float(mm_mod[i2 - 1]), 1) if i2 > 0 else None, round(float(mm_mod[i2]), 1), round(float(mm_mod[i2 + 1]), 1) if i2 + 1 < len(horas) else None],
                                 nub10=sx[0], nub30=sx[1], frio30=sx[2], rr10=sx[3], imagenes=sx[4] if t else None, hora=f"{horas[i2]:%m-%d %H:%M}", est=None if np.isnan(mi[i2]) else round(float(mi[i2]), 1), vec=round(float(mm_vec[i2]), 1),

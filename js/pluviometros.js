@@ -123,7 +123,8 @@ async function catalogo(){
 }
 const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/";
 const CAPAS = {imerg: ["Lluvia NASA IMERG", "IMERG_Precipitation_Rate", "GoogleMapsCompatible_Level6", 6, "png", .85], ir: ["GOES-19 infrarrojo", "GOES-East_ABI_Band13_Clean_Infrared", "GoogleMapsCompatible_Level6", 6, "png", .75, [["GoogleMapsCompatible_Level7", 7], ["GoogleMapsCompatible_Level8", 8]]],
-  goes: ["GOES-19 color real", "GOES-East_ABI_GeoColor", "GoogleMapsCompatible_Level7", 7, "jpeg", .9]};
+  goes: ["GOES-19 color real", "GOES-East_ABI_GeoColor", "GoogleMapsCompatible_Level7", 7, "jpeg", .9],
+  est: ["Estaciones y valores", null]};                  // sin imagen: solo la estación y sus vecinas con los mm de la hora
 let capaSel = "imerg";
 function instante(h){                                   // "11-17 18:00" (UTC) -> ms; el año sale de la fecha de generación del análisis
   const g = String(D.generado || ""), y = +g.slice(0, 4) || new Date().getUTCFullYear(); let t = Date.parse(`${y}-${h.slice(0, 5)}T${h.slice(6, 11)}:00Z`);
@@ -155,7 +156,8 @@ async function abrirMapa(id, i){
     let alt = -1;                                        // -1 = nivel de teselas principal; luego los alternativos (si la capa de NASA usa otro nivel, las teselas dan error)
     const mk = () => { const [nivel, z] = alt < 0 ? [C[2], C[3]] : C[6][alt];
       return L.tileLayer(`${GIBS}${C[1]}/default/${iso}/${nivel}/{z}/{y}/{x}.${C[4]}`, {pane: "sat", maxNativeZoom: z, maxZoom: 12, opacity: C[5], attribution: "NASA GIBS"}).addTo(mapa); };
-    if (C && t <= Date.now()) capa = mk();
+    if (C && C[1] && t <= Date.now()) capa = mk();
+    const soloEst = capaSel === "est";
     let ok = 0, mal = 0; const diag = () => { const el = $("#pDiag"); if (el) el.innerHTML = `Diagnóstico v1.6 · estación ${e0 ? "ubicada (" + e0.lat.toFixed(3) + ", " + e0.lon.toFixed(3) + ")" : "<b style='color:#f85149'>sin coordenadas en el catálogo</b>"} · vecinas ubicadas ${nv}/${(dd.vecs || []).length} · capa ${C ? C[0] : "ninguna"}: ${ok} teselas cargadas, ${mal ? `<b style="color:#f85149">${mal} con error</b>` : "0 con error"}`; };
     let nv = 0;
     const vigilar = ly => { ly.on("tileload", () => { ok++; diag(); }); ly.on("tileerror", () => { mal++; diag();
@@ -168,8 +170,11 @@ async function abrirMapa(id, i){
       L.polyline([[e0.lat - 0.12, e0.lon], [e0.lat + 0.12, e0.lon]], {color: "#f85149", weight: 1, interactive: false}).addTo(grupo);
       L.polyline([[e0.lat, e0.lon - 0.12], [e0.lat, e0.lon + 0.12]], {color: "#f85149", weight: 1, interactive: false}).addTo(grupo);
       L.circleMarker([e0.lat, e0.lon], {radius: 8, color: "#fff", weight: 2, fillColor: "#f85149", fillOpacity: 1}).bindTooltip(`${est.nombre} · ${dd.est == null ? "s/d" : n1(dd.est) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); }
-    (dd.vecs || []).forEach(([n, km, mm]) => { const e = cat.nom.get(n); if (!e) return; nv++; pts.push([e.lat, e.lon]);
-      L.circleMarker([e.lat, e.lon], {radius: 7, color: "#fff", weight: 2, fillColor: "#58a6ff", fillOpacity: 1}).bindTooltip(`${n} (${km} km) · ${mm == null ? "s/d" : n1(mm) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); });
+    (dd.vecs || []).forEach(([n, km, mm, la, lo]) => { const e = cat.nom.get(n) || (la != null ? {lat: la, lon: lo} : null); if (!e) return; nv++; pts.push([e.lat, e.lon]);
+      const ext = la != null, col = mm == null ? "#8b949e" : mm >= 0.2 ? "#58a6ff" : "#e6edf3";
+      if (soloEst) L.marker([e.lat, e.lon], {icon: L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-50%);white-space:nowrap;background:#0d1117e6;border:1.5px ${ext ? "dashed" : "solid"} ${col};border-radius:7px;padding:1px 6px;font:600 11px system-ui;color:#e6edf3;text-align:center">${esc(n)} · ${km} km<br><b style="font-size:13px;color:${col}">${mm == null ? "s/d" : n1(mm) + " mm"}</b></div>`})}).addTo(grupo);
+      else L.circleMarker([e.lat, e.lon], {radius: 7, color: "#fff", weight: 2, fillColor: ext ? "#e3b341" : "#58a6ff", fillOpacity: 1}).bindTooltip(`${n} (${km} km) · ${mm == null ? "s/d" : n1(mm) + " mm"}`, {permanent: true, direction: "right"}).addTo(grupo); });
+    if (soloEst && pts.length > 1) mapa.fitBounds(pts, {padding: [70, 70], maxZoom: 10});
     if (ult == null){ if (pts.length) (e0 ? mapa.setView([e0.lat, e0.lon], 8) : mapa.fitBounds(pts, {padding: [60, 60], maxZoom: 9})); else mapa.setView([-33.4, -70.7], 5); }
     diag(); ult = idx; $("#pMaA").disabled = idx === 0; $("#pMaS").disabled = idx === det.length - 1;
   };
