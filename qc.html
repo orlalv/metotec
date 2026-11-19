@@ -631,7 +631,9 @@ function supBarra(){
   const E = ((R && R.super) || {}).estaciones || [], n = k => E.filter(e => (e.hallazgos || []).some(x => MARCA.estado(e.codigo, {...x, gen: R.super.generado}) !== "oculta" && (k === "todas" || SUPER.tipoCtl(x.regla) === k))).length;
   el.innerHTML = [["todas", "Todas"], ...SUPER.CTL.map(c => [c[0], c[1]])].map(([k, t]) => `<button data-sc="${k}" class="${gsup === k ? "on" : ""}" title="${esc((SUPER.CTL.find(c => c[0] === k) || [, , "Todas las alertas"])[2])}">${t}<b>${n(k) || ""}</b></button>`).join("");
 }
-document.addEventListener("click", ev => { const b = ev.target.closest("#ppSub button[data-sc]"); if (b){ gsup = b.dataset.sc; try { localStorage.setItem("qcSupCtl", gsup); } catch (e) {} supBarra(); R && pintar(); } });
+document.addEventListener("click", ev => { const b = ev.target.closest("#ppSub button[data-sc]"); if (b){ gsup = b.dataset.sc; try { localStorage.setItem("qcSupCtl", gsup); } catch (e) {}
+  sel = null; $("#det").style.display = "none"; $("#supIzq").classList.remove("on"); if (typeof supIzqPos === "function") supIzqPos();   // al cambiar de subpestaña se cierran el detalle y los gráficos
+  supBarra(); R && pintar(); } });
 function obsBarra(){
   const el = $("#ppSub"); if (!el || modo !== "obs") return; el.hidden = false; $("#salto2").hidden = false; el.style.visibility = "visible";
   el.innerHTML = [["todas", "Todas"], ["sistema", "Reglas del sistema"], ["codificacion", "Codificación"], ["evolucion", "Evolución"], ["sensor", "Frente al sensor"], ["satelite", "Frente al satélite"]].map(([k, t]) => { const n = ((R && R.observaciones || {}).estaciones || []).filter(e => hObs(e).some(x => x.nivel > 0 && (k === "todas" || x.tipo === k))).length; return `<button data-ob="${k}" class="${gobs === k ? "on" : ""}">${t}<b>${n || ""}</b></button>`; }).join("");
