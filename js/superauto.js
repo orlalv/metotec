@@ -6,7 +6,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
 const NIVC = ["var(--ok)", "var(--sos)", "var(--err)"];
 const ESP = new Set(["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZE05", "ZE08"]);     // controles espaciales (vecinas DMC y externas)
-const TABS = {sup_esp: ["esp", "control espacial"], obs_esp: ["esp", "control espacial (estaciones con observador)"], sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
+const TABS = {obs_esp: ["esp", "control espacial (estaciones con observador)"], sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
 const COLS = [["pp", "Precipitación", "sup_prc"], ["ext", "Extremas", "sup_ext"], ["pre", "Presiones", "sup_pre"], ["tem", "Temperaturas", "sup_tem"], ["vie", "Viento", "sup_vie"]];
 const NOTA = {
   pp: "Agua caída del pluviómetro: lluvia con aire seco, más de 2 mm en un minuto, el mismo valor repetido 10 minutos (pluviómetro pegado) el acumulado de 6 h contra la suma de los minutos y, contra el satélite GOES, lluvia con cielo despejado o pluviómetro en 0 bajo nube fría.",
@@ -137,7 +137,7 @@ function pintar(){
     ${tipo === "pp" || !DATOS[tipo] ? "" : `<div class="supDatosSec"><h3 style="margin:16px 0 6px;font:600 15px var(--titulo)">Datos de las estaciones sin observador · ${esc(nom)}</h3>
     <div class="bcard" style="padding:0;max-height:520px;overflow:auto"><table class="xtab"><tr><th>Estación</th><th>Último dato UTC</th>${DATOS[tipo].map(c => `<th>${esc(c[1])}${c[2] ? ` <small>(${c[2]})</small>` : ""}</th>`).join("")}<th>Alertas</th></tr>
       ${filasDatos(F, tipo)}</table></div></div>`}
-    <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Haga clic en una fila para ver su gráfico y su tabla. ${NOTA[tipo]} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
+    <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Haga clic en una fila para ver su gráfico y su tabla. ${modo === "obs_esp" ? "Sensor de las estaciones con observador contra todas las estaciones cercanas (DMC con y sin observador, INIA y otras externas, con menor peso): Ts, Td, HR y QFF (diferencia sostenida), viento medio, calma prolongada y lluvia sí/no. Lo que digita el observador se compara con su sensor en «Frente al sensor»." : NOTA[tipo]} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
 }
 // regla espacial → [grupo de gráficos, variable del minutario, nombre, unidad]
 const VAR_R = {ZC01: ["tem", "T", "Ts", "°C"], ZC02: ["tem", "Td", "Td", "°C"], ZC03: ["tem", "HR", "HR", "%"], ZC04: ["pre", "P_mar", "QFF", "hPa"], ZC05: ["vie", "ff10", "Viento", "kt"], ZC07: ["vie", "ff10", "Viento", "kt"],

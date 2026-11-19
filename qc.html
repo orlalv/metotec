@@ -262,7 +262,7 @@ main[hidden]{display:none}
 <script src="js/verificar.js?v=202611190045"></script>
 <script src="js/minutarios.js?v=202611181740"></script>
 <script src="js/supgraf.js?v=202611190300"></script>
-<script src="js/superauto.js?v=202611190340"></script>
+<script src="js/superauto.js?v=202611190350"></script>
 <script src="js/extremas.js?v=202611181830"></script>
 <script src="js/boletin.js?v=202611171230"></script>
 <script src="js/series.js?v=202611101600"></script>
@@ -326,9 +326,10 @@ const SUPC = [["pp", "Agua caída"], ["ext", "Extremas"], ["pre", "Presión"], [
 function supFiltradas(){
   const S = R.super || {}, q = $("#buscar").value.trim().toLowerCase();
   const L = (S.estaciones || []).map(e => { const h = (e.hallazgos || []).map(x => ({...x, gen: S.generado})).filter(x => MARCA.estado(e.codigo, x) !== "oculta");
-    const h2 = gsup === "todas" || !window.SUPER ? h : h.filter(x => SUPER.tipoCtl(x.regla) === gsup);
+    const gs = modo === "sup_esp" ? "esp" : gsup;           // la pestaña «Control espacial» es la vista Estaciones filtrada a ese tipo
+    const h2 = gs === "todas" || !window.SUPER ? h : h.filter(x => SUPER.tipoCtl(x.regla) === gs);
     return {...e, hallazgos: h2, nivel: e.nivel === 3 ? 3 : Math.max(0, ...h2.map(x => x.nivel))}; });
-  return L.filter(e => e.lat != null && (gsup === "todas" || e.hallazgos.length) && enZona(e) && ver[e.nivel] && supPersona(e.codigo) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
+  return L.filter(e => e.lat != null && ((modo === "sup_esp" ? "esp" : gsup) === "todas" || e.hallazgos.length) && enZona(e) && ver[e.nivel] && supPersona(e.codigo) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
 // las estaciones del Super automático no tienen observador: casi nunca están en «mis estaciones». Si la persona no tiene ninguna
 // de ellas, el filtro de persona no se aplica (solo el de red); así la pestaña no queda vacía
@@ -380,7 +381,7 @@ function supDatos(e, H){
   SG.alerta(box, e, H, g, "");
 }
 document.addEventListener("click", ev => {
-  const tr = ev.target.closest(".mk") ? null : ev.target.closest("#det table tr[data-hh]"); if (!tr || modo !== "sup") return;
+  const tr = ev.target.closest(".mk") ? null : ev.target.closest("#det table tr[data-hh]"); if (!tr || (modo !== "sup" && modo !== "sup_esp")) return;
   const box = $("#supDat"), e = box && supFiltradas().find(x => x.codigo === box.dataset.c); if (!box || !e) return;
   document.querySelectorAll("#det tr[data-hh]").forEach(x => x.classList.toggle("sgsel", x === tr));
   SG.alerta(box, e, e.hallazgos, tr.dataset.tp, tr.dataset.hh);
@@ -506,7 +507,7 @@ function pintar(){
   if (modo === "equ" || modo === "mis" || modo === "comp") return EQ.pagina(modo);
   if (modo === "pp"){ if (R && window.EXT) ppContar("alertas", EXT.contar(R, "pp")); if (ppSub !== "alertas") return; }
   if (modo === "ext" || modo === "pp" || modo === "tem" || modo === "rec") return EXT.init(() => R, modo);
-  if (modo === "sup") return pintarSup();
+  if (modo === "sup" || modo === "sup_esp") return pintarSup();
   if (SUPER.modos.has(modo)) return SUPER.init(() => R, modo);
   if (modo === "inf") return pintarInf();
   if (modo === "per" || modo === "ser" || modo === "serh") return;
@@ -604,7 +605,7 @@ async function cerrarInformados(){
   }
 }
 document.addEventListener("click", ev => {
-  const it = ev.target.closest(".it"); if (it) (modo === "obs" ? detalleObs : modo === "sup" ? detalleSup : modo === "mod" ? detalleMod : detalle)(it.dataset.c);
+  const it = ev.target.closest(".it"); if (it) (modo === "obs" ? detalleObs : modo === "sup" || modo === "sup_esp" ? detalleSup : modo === "mod" ? detalleMod : detalle)(it.dataset.c);
   const mb = ev.target.closest(".modos button"); if (mb) return cambiarModo(mb.dataset.m);
   const sb = ev.target.closest("#sub button"); if (sb){ sub = sb.dataset.s; sel = null; $("#det").style.display = "none"; guardarVista(); return pintar(); }
   const ch = ev.target.closest(".chip"); if (ch){ const n = +ch.dataset.n; ver[n] = !ver[n]; pintar(); }
@@ -618,7 +619,7 @@ function aplicarPestanas(){
   if (on && on.classList.contains("nove")){ const b = document.querySelector('.modos button:not(.nove):not([data-g="gestion"])'); b && cambiarModo(b.dataset.m); }
 }
 window.aplicarPestanas = aplicarPestanas;
-const MAPA_MODOS = new Set(["ema", "obs", "mod", "sup"]);
+const MAPA_MODOS = new Set(["ema", "obs", "mod", "sup", "sup_esp"]);
 /* Precipitación con subopciones: Alertas (las de siempre) · Series · Relleno de series · Precipitación binaria · Sensores */
 const PP_SUBS = [["alertas", "Alertas", "ext"], ["series", "Series", "ppx"], ["relleno", "Relleno de series", "minu"], ["binaria", "Precipitación binaria", "plu"], ["sensores", "Sensores", "ppx"], ["verificar", "Verificar", "ppx"]];
 let ppSub = (() => { try { return localStorage.getItem("qcPpSub") || "alertas"; } catch (e) { return "alertas"; } })();
@@ -674,7 +675,7 @@ function cambiarModo(m){
   if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
   modo = m; $("#det").style.display = "none"; $("#supIzq").classList.remove("on"); if (typeof supIzqPos === "function") supIzqPos(); ppBarra(); if (m !== "pp"){ $("#minu").classList.remove("solo"); if (window.HUECOS) HUECOS.solo(false); }
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", rec: "ext", ser: "ser", serh: "ser", inf: "inf", est: "est", plu: "plu", reg: "reg", equ: "equ", vex: "vex", mis: "mis", comp: "comp", sup_pp: "sup", sup_prc: "sup", sup_est: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup", sup_esp: "sup", sup_bol: "sup", obs_esp: "sup"}[m];
+  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", rec: "ext", ser: "ser", serh: "ser", inf: "inf", est: "est", plu: "plu", reg: "reg", equ: "equ", vex: "vex", mis: "mis", comp: "comp", sup_pp: "sup", sup_prc: "sup", sup_est: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup", sup_bol: "sup", obs_esp: "sup"}[m];
   document.querySelector("main").hidden = h;
   ["hist", "minu", "bol", "ext", "ser", "inf", "est", "plu", "reg", "equ", "vex", "mis", "comp", "sup", "ppx"].forEach(i => $("#" + i).hidden = i !== sec);
   $("#chips").style.display = h ? "none" : "";
