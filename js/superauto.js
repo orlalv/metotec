@@ -118,34 +118,25 @@ function pintar(){
     <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Haga clic en una fila para ver su gráfico y su tabla. ${NOTA[tipo]} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
 }
 // Boletín automático: mismo formato del Boletín diario (mínima y máxima con su hora y precipitación), de las estaciones sin observador, armado con los minutos
-let diaBol = null;
-async function pintarBol(F){
-  const S = getR().super || {}, gen = (S.generado || new Date().toISOString()).slice(0, 10);
-  if (!diaBol){ const d = new Date(gen + "T12:00Z"); d.setUTCDate(d.getUTCDate() - 1); diaBol = d.toISOString().slice(0, 10); }
-  const dia = diaBol, c = $("#zOut");
-  c.innerHTML = `<div class="htools"><button id="bAnt">◀</button><input type="date" id="bDia" value="${dia}"><button id="bSig">▶</button><span class="tag">Día UTC (00–24 h) · calculado con los datos por minuto</span></div><div id="bOut"><p style="color:var(--mu)">Cargando…</p></div>`;
-  const M = await SG.diarioMes(dia.slice(0, 7).replace("-", "/")); if (diaBol !== dia || modo !== "sup_bol") return;
-  const D = M && M.dias && M.dias[dia], cm = (M || {}).campos || [], ix = k => cm.indexOf(k), f = v => v == null ? "—" : String(v);
-  const L = [...F].sort((a, b) => (b.e.lat ?? -99) - (a.e.lat ?? -99)).map(({e, H}) => { const v = D && D[e.codigo]; return {e, H, g: k => v && ix(k) >= 0 ? v[ix(k)] : null}; });
-  const fuera = v => v != null && (v < -35 || v > 45);
-  const marca = (x, k) => { const v = x.g(k); if (v == null) return ""; if (fuera(v)) return "color:var(--err);font-weight:700";
-    const r = x.H.find(h => (h.regla === "ZE04" || h.regla === "ZE05" || h.regla === "ZE07") && h.msg.includes(k === "tmin" ? "mínima" : "máxima")); return r ? `color:${NIVC[r.nivel]};font-weight:700` : ""; };
-  const tit = (x, k) => { const v = x.g(k); if (fuera(v)) return "Fuera de rango físico: picos del sensor"; const r = x.H.find(h => (h.regla === "ZE04" || h.regla === "ZE05" || h.regla === "ZE07") && h.msg.includes(k === "tmin" ? "mínima" : "máxima")); return r ? r.msg : ""; };
-  const loc = (hm) => { if (!hm) return "—"; const t = new Date(`${dia}T${hm}:00Z`); return t.toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit"}); };
-  const n = L.filter(x => x.g("n")).length, nMal = L.filter(x => fuera(x.g("tmin")) || fuera(x.g("tmax")) || x.H.some(h => ["ZE04", "ZE05", "ZE07"].includes(h.regla))).length;
-  $("#bOut").innerHTML = !D ? `<p style="color:var(--sos)">No hay resumen para el ${esc(dia)}.</p>` :
-    `<div class="hres">${kpi(n, "estaciones con datos", "var(--tx)")}${kpi(nMal, "con extremas dudosas", nMal ? "var(--err)" : "var(--ok)")}</div>
+function pintarBol(F){
+  const f = v => v == null ? "—" : String(v), fuera = v => v != null && (v < -35 || v > 45);
+  const L = [...F].sort((a, b) => (b.e.lat ?? -99) - (a.e.lat ?? -99)).map(({e, H}) => ({e, H, b: e.bol || {}}));
+  const dia = (L.find(x => x.b.dia) || {}).b?.dia;
+  const mot = (x, k) => { if (fuera(x.b[k])) return "Fuera de rango físico: picos del sensor"; const r = x.H.find(h => ["ZE04", "ZE05", "ZE07", "ZE08"].includes(h.regla) && h.msg.includes(k === "tmin" ? "mínima" : "máxima")); return r ? r.msg : ""; };
+  const est = (x, k) => { const m = mot(x, k); return m ? (fuera(x.b[k]) ? "color:var(--err);font-weight:700" : `color:${NIVC[(x.H.find(h => h.msg === m) || {}).nivel] || "var(--err)"};font-weight:700`) : ""; };
+  const nMal = L.filter(x => mot(x, "tmin") || mot(x, "tmax")).length, n = L.filter(x => x.b.n).length;
+  $("#zOut").innerHTML = !dia ? `<p style="color:var(--sos)">El boletín automático se arma en la próxima pasada del control.</p>` :
+    `<div class="htools"><span class="tag">Día ${esc(dia.split("-").reverse().join("/"))} (hora local, 00–24 h) · calculado con los datos por minuto</span></div>
+    <div class="hres">${kpi(n, "estaciones con datos", "var(--tx)")}${kpi(nMal, "con extremas dudosas", nMal ? "var(--err)" : "var(--ok)")}</div>
     <div class="bcard" style="padding:0;max-height:700px;overflow:auto"><table class="xtab"><thead>
       <tr><th rowspan="2">Estación</th><th colspan="2" style="text-align:center">Temperatura mínima (°C)</th><th colspan="2" style="text-align:center">Temperatura máxima (°C)</th><th rowspan="2">Precipitación 24 h (mm)</th><th rowspan="2">Minutos con dato</th></tr>
-      <tr><th>Valor</th><th>Hora local</th><th>Valor</th><th>Hora local</th></tr></thead>
-    <tbody>${L.map(x => `<tr data-ir="${x.e.codigo}" data-tp="ext" style="cursor:pointer"><td class="nom"><b>${esc(x.e.nombre)}</b><br><small>${x.e.codigo}</small></td>
-      <td class="n" style="${marca(x, "tmin")}" title="${esc(tit(x, "tmin"))}">${f(x.g("tmin"))}</td><td class="n">${loc(x.g("tmin_h"))}</td>
-      <td class="n" style="${marca(x, "tmax")}" title="${esc(tit(x, "tmax"))}">${f(x.g("tmax"))}</td><td class="n">${loc(x.g("tmax_h"))}</td>
-      <td class="n" style="${(x.g("rr") || 0) > 0 ? "color:var(--oro);font-weight:700" : ""}">${f(x.g("rr"))}</td><td class="n">${f(x.g("n"))}</td></tr>`).join("")}</tbody></table></div>
-    <p class="nota" style="color:var(--mu);font-size:12px;margin:4px 0">Estaciones automáticas sin observador (no incluye las DMC con observador), de norte a sur. En rojo, extremas fuera de rango físico o marcadas por el control (pase el mouse para ver el motivo). La hora de la mínima y la máxima aparece cuando el resumen del día se recalcula con el formato nuevo.</p>`;
+      <tr><th>Valor</th><th>Hora</th><th>Valor</th><th>Hora</th></tr></thead>
+    <tbody>${L.map(x => `<tr><td class="nom"><b>${esc(x.e.nombre)}</b><br><small>${x.e.codigo}</small></td>
+      <td class="n" style="${est(x, "tmin")}" title="${esc(mot(x, "tmin"))}">${f(x.b.tmin)}</td><td class="n">${f(x.b.tmin_h)}</td>
+      <td class="n" style="${est(x, "tmax")}" title="${esc(mot(x, "tmax"))}">${f(x.b.tmax)}</td><td class="n">${f(x.b.tmax_h)}</td>
+      <td class="n" style="${(x.b.rr || 0) > 0 ? "color:var(--oro);font-weight:700" : ""}">${f(x.b.rr)}</td><td class="n" style="${x.b.n != null && x.b.n < 1200 ? "color:var(--sos)" : ""}">${f(x.b.n)}</td></tr>`).join("")}</tbody></table></div>
+    <p class="nota" style="color:var(--mu);font-size:12px;margin:4px 0">Estaciones automáticas sin observador (no incluye las DMC con observador), de norte a sur. Día local de ayer (00 a 24 h, UTC−3); horas locales. En rojo o amarillo, extremas fuera de rango o marcadas por el control (pase el mouse para ver el motivo). Minutos con dato en amarillo: menos de 20 h, día incompleto.</p>`;
 }
-document.addEventListener("click", ev => { const b = ev.target.closest("#bAnt, #bSig"); if (!b || !diaBol) return; const d = new Date(diaBol + "T12:00Z"); d.setUTCDate(d.getUTCDate() + (b.id === "bAnt" ? -1 : 1)); diaBol = d.toISOString().slice(0, 10); pintar(); });
-document.addEventListener("change", ev => { if (ev.target.id === "bDia" && ev.target.value){ diaBol = ev.target.value; pintar(); } });
 // Agua caída: como el Boletín diario pero de las estaciones automáticas sin observador; toda el agua caída tal cual, por día y por bloque de 6 h
 let diaAgua = null;
 async function pintarAgua(F){

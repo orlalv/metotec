@@ -525,6 +525,26 @@ def _extremas_red(est, V):
         f["nivel"] = max([h["nivel"] for h in f["hallazgos"]], default=f["nivel"])
 
 
+def _boletin(A, est, fin):
+    if A is None or not len(A):
+        return
+    loc = (fin - pd.Timedelta(hours=3)).normalize() - pd.Timedelta(days=1)      # ayer, hora local
+    a, b = loc + pd.Timedelta(hours=3), loc + pd.Timedelta(hours=27)             # en UTC
+    W = A[(A["momento"] > a) & (A["momento"] <= b)]
+    por = {c: g for c, g in W.groupby("codigo")}
+    r = lambda x: None if x is None or pd.isna(x) else round(float(x), 1)
+    hl = lambda t: f"{t - pd.Timedelta(hours=3):%H:%M}"
+    for f in est:
+        g = por.get(f["codigo"])
+        if g is None:
+            continue
+        t = g.dropna(subset=["T"]) if "T" in g else g.iloc[0:0]
+        rr = g["rr1m"].sum() if "rr1m" in g and g["rr1m"].notna().sum() >= 600 else None
+        f["bol"] = dict(dia=f"{loc:%Y-%m-%d}", n=int(len(t)),
+                        tmin=r(t["T"].min()) if len(t) else None, tmin_h=hl(t.loc[t["T"].idxmin(), "momento"]) if len(t) else None,
+                        tmax=r(t["T"].max()) if len(t) else None, tmax_h=hl(t.loc[t["T"].idxmax(), "momento"]) if len(t) else None, rr=r(rr))
+
+
 def _repetidas(raiz, est, ahora):
     """ZE07: la misma mínima o máxima diaria (de los minutos) 3 días seguidos o más: valor fijo o sensor trabado."""
     import json
@@ -592,6 +612,11 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
         else:
             fila["nivel"] = 3
         est.append(fila)
+    try:   # boletín automático: día local de ayer (Chile continental, UTC−3), armado con los minutos
+        _boletin(leer_archivo(raiz, fin, horas=54), est, fin)
+    except Exception:
+        import traceback
+        errores.append(f"boletin: {traceback.format_exc(limit=3)}")
     try:
         _repetidas(raiz, est, fin)
     except Exception:
