@@ -177,7 +177,7 @@ def tablas_satelite(resumen, horas):
 
 def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
     """R, N: mm y minutos con dato (hora × código). E: estaciones (codigo, nombre, lat, lon). M: modelo (hora × código, mm).
-    S: satélite, evidencia de lluvia (hora × código, bool). C: satélite, cielo despejado (hora × código, bool). T: resumen satelital archivado ({hora: {código: [lluvia, fría, despejado, tope, rayos, nub10, nub30, frío30, rr10, imágenes]}}) solo para el detalle. I: IMERG (hora × código, mm). EXT: vecinas externas (INIA…), solo comparación: {pp: lluvia horaria hora × id, cat: {id: {lat, lon}}}; pesan EXT_PESO y se usan siempre las EXT_TOPE más cercanas con datos (sin límite de radio). Devuelve la lista de estaciones con su diagnóstico."""
+    S: satélite, evidencia de lluvia (hora × código, bool). C: satélite, cielo despejado (hora × código, bool). T: resumen satelital archivado ({hora: {código: [lluvia, fría, despejado, tope, rayos, nub10, nub30, frío30, rr10, imágenes]}}) solo para el detalle. I: IMERG (hora × código, mm). EXT: vecinas externas (INIA…), solo comparación: {pp: lluvia horaria hora × id, cat: {id: {lat, lon}}}; pesan EXT_PESO y se muestran siempre las EXT_TOPE más cercanas con datos; cuentan como evidencia solo las de ≤ RADIO_KM. Devuelve la lista de estaciones con su diagnóstico."""
     E = E.copy()
     E["codigo"] = E["codigo"].astype(str)
     E = E[E["codigo"].isin(R.columns)].dropna(subset=["lat", "lon"]).reset_index(drop=True)
@@ -200,7 +200,8 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
             kmx = lambda i: _km1(E["lat"].values[j], E["lon"].values[j], EXT["cat"][i]["lat"], EXT["cat"][i]["lon"])
             ids = sorted([i for i, c in EXT["cat"].items() if i in EXT["pp"].columns and c.get("lat") is not None and EXT["pp"][i].notna().any()], key=kmx)[:EXT_TOPE]
             dke = [kmx(i) for i in ids]
-            XE = EXT["pp"][ids].reindex(horas).values.astype(float) if ids else XE
+            XV = EXT["pp"][ids].reindex(horas).values.astype(float) if ids else XE      # se muestran siempre
+            XE = XV[:, [k for k, d in enumerate(dke) if d <= RADIO_KM]] if ids else XE  # cuentan como evidencia solo a ≤ RADIO_KM
         XA = np.hstack([X, XE])                                        # DMC y externas; las externas pesan menos
         w = np.concatenate([np.ones(X.shape[1]), np.full(XE.shape[1], EXT_PESO)])
         fin_ = np.isfinite(XA)
@@ -250,7 +251,7 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
                 t = (T or {}).get(horas[i2], {}).get(c)
                 orden = np.argsort(D[j, vec]) if len(vec) else []
                 vecs = [[nom.get(cods[vec[k]], cods[vec[k]]), round(float(D[j, vec[k]])), (None if not np.isfinite(X[i2, k]) else round(float(X[i2, k]), 1))] for k in orden][:10]
-                vecs += [[f'{EXT["cat"][i].get("inst", "")} {EXT["cat"][i].get("nombre", i)} (ext.)'.strip(), round(dke[k]), (None if not np.isfinite(XE[i2, k]) else round(float(XE[i2, k]), 1))] for k, i in enumerate(ids)]
+                vecs += [[f'{EXT["cat"][i].get("inst", "")} {EXT["cat"][i].get("nombre", i)} (ext.)'.strip(), round(dke[k]), (None if not np.isfinite(XV[i2, k]) else round(float(XV[i2, k]), 1))] for k, i in enumerate(ids)]
                 sx = (t[5:] + [None] * 5)[:5] if t else [None] * 5
                 det.append(dict(vecs=vecs, mod3=[round(float(mm_mod[i2 - 1]), 1) if i2 > 0 else None, round(float(mm_mod[i2]), 1), round(float(mm_mod[i2 + 1]), 1) if i2 + 1 < len(horas) else None],
                                 nub10=sx[0], nub30=sx[1], frio30=sx[2], rr10=sx[3], imagenes=sx[4] if t else None, hora=f"{horas[i2]:%m-%d %H:%M}", est=None if np.isnan(mi[i2]) else round(float(mi[i2]), 1), vec=round(float(mm_vec[i2]), 1),

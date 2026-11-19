@@ -229,7 +229,9 @@ def coherencia(H, E):
 
 # ------------------------------------------------------------------ 5. estaciones vecinas
 VEC = {  # var: (piso de dispersión, diferencia mínima sospechosa, diferencia mínima errónea, corrige por altura)
-    "T": (1.5, 4, 8, True), "Td": (2.0, 5, 10, True), "P_mar": (1.0, 3, 6, False)}
+    "T": (1.5, 4, 8, True), "Td": (2.0, 5, 10, True), "P_mar": (1.0, 3, 6, False),
+    "HR": (6.0, 25, 40, False), "ff10": (3.0, 15, 25, False)}   # humedad y viento: solo diferencias grandes
+CALMA_H, CALMA_VEC = 6, 5      # viento: calma (0 kt) ≥ 6 h seguidas mientras la mediana de las vecinas tiene ≥ 5 kt en esas horas
 
 
 def vecinas_de(E, radio=120, dz=500, clusters=None):
@@ -260,9 +262,14 @@ def vecinas(H, E, V, X=None):
     out = []
     alt = E.set_index("codigo")["alt"].to_dict()
     nomE = E.set_index("codigo")["nombre"].to_dict() if "nombre" in E else {}
-    ult = H.sort_values("momento").groupby("codigo").tail(1).set_index("codigo")
-    hora = ult["momento"].max()
-    ult = ult[ult["momento"] == hora]
+    if not len(H):
+        return out
+    # hora de comparación: la más reciente que ya reportó al menos la mitad de la red (la última hora suele estar a medio llegar
+    # y con ella casi ninguna estación tenía 3 vecinas con dato a la misma hora: la prueba no corría)
+    n = H.groupby("momento")["codigo"].nunique().sort_index()
+    llenas = n[n >= 0.5 * n.max()]
+    hora = llenas.index.max() if len(llenas) else n.index.max()
+    ult = H[H["momento"] == hora].drop_duplicates("codigo", keep="last").set_index("codigo")
     for cod, r in ult.iterrows():
         vs = [c for c in V.get(cod, []) if c in ult.index]
         for v, (piso, s1, s2, corr) in VEC.items():
@@ -296,6 +303,21 @@ def vecinas(H, E, V, X=None):
                 out.append(alerta(cod, "vecinas", v, 2 if (z > 7 and d > s2) else 1, hora, r[v], med,
                                   f"distinta a sus {nd} vecinas (z = {z:.1f})" + (f"; la referencia incluye {ne} estaciones externas de menor peso" if ne else "")))
                 out[-1]["detalle"] = ["Vecinas usadas (valor" + (" llevado a la altura de la estación" if corr else "") + f"; mediana {round(float(med), 1)}):"] + eti
+    # calma prolongada: la estación marca 0 kt muchas horas seguidas y sus vecinas sí tienen viento (anemómetro trabado o sin señal)
+    if "ff10" in H:
+        F = H.pivot_table(index="momento", columns="codigo", values="ff10", aggfunc="last").sort_index().loc[:hora].tail(CALMA_H)
+        if len(F) >= CALMA_H:
+            for cod in ult.index:
+                if cod not in F or F[cod].isna().any() or (F[cod] > 0).any():
+                    continue
+                vs = [c for c in V.get(cod, []) if c in F]
+                if len(vs) < 3:
+                    continue
+                med = F[vs].median(axis=1)
+                if med.notna().all() and (med >= CALMA_VEC).all():
+                    out.append(alerta(cod, "vecinas", "ff10", 1, hora, 0, float(med.mean()),
+                                      f"calma (0 kt) durante {CALMA_H} h seguidas mientras sus vecinas marcan en promedio {med.mean():.0f} kt: revisar anemómetro"))
+                    out[-1]["detalle"] = [f"{t:%d/%m %H:%M} · mediana vecinas {m:.0f} kt" for t, m in med.items()]
     return out
 
 
