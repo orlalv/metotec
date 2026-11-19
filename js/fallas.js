@@ -87,9 +87,9 @@ async function grafico(cont, ep, R){
   let k = 0, ref = "", vs = String(ep.var).split("+"), v = vs[0];
   cont.innerHTML = `<div class="sgtop"><button class="sgbtn" data-z="-1" title="Acercar">−</button><button class="sgbtn" data-z="1" title="Alejar">+</button>
     ${vs.length > 1 ? `<label>Variable <select class="fvar" style="background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:2px 6px">${vs.map(x => `<option value="${esc(x)}">${esc(NOMV[x] || x)}</option>`).join("")}</select></label>` : ""}
-    <label>Referencia <select class="fref" style="background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:2px 6px"><option value="">ninguna</option>${vec.map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join("")}</select></label>
+    <label>Referencia <select class="fref" style="background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:2px 6px"><option value="">${vec.length ? "ninguna" : "sin vecinas cercanas"}</option>${vec.map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join("")}</select></label>
     <span class="sgval"></span></div><div class="fg"></div>
-    <div class="sgley"><span><i style="background:#5AA9E6"></i>${esc(ep.nombre)}</span><span><i style="background:var(--err)"></i>tramo con falla</span><span class="lref" hidden><i style="background:#C9A54C"></i>referencia</span><span class="lvar"></span></div>`;
+    <div class="sgley"><span><i style="background:#5AA9E6"></i>${esc(ep.nombre)}</span><span><i style="background:var(--err)"></i>tramo con falla</span><span class="lref" hidden><i style="background:#C9A54C"></i>vecina</span><span class="lctl" hidden><i style="background:#3fb950"></i><span class="tctl"></span></span><span class="lvar"></span></div>`;
   const dib = async () => {
     const [a, b] = ventana(ep, k), G = cont.querySelector(".fg");
     G.innerHTML = `<p style="color:var(--mu)">Cargando ${dur((b - a) / 60e3)} de minutario…</p>`;
@@ -98,15 +98,25 @@ async function grafico(cont, ep, R){
     try { S = await serie(ep.codigo, v, a, b); if (ref) Rf = await serie(ref, v, a, b); }
     catch (er){ G.innerHTML = `<p style="color:var(--err)">No se pudo cargar el minutario (${esc(er.message)}).</p>`; return; }
     cont.querySelector(".lref").hidden = !ref;
+    if (S.length > 30){ const m = Math.max(3, Math.round(S.length / 120)), h2 = m >> 1;   // suavizado: media móvil centrada
+      S = S.map((p, i) => { let t = 0, n = 0; for (let j = Math.max(0, i - h2); j <= Math.min(S.length - 1, i + h2); j++){ if (Math.abs(S[j][0] - p[0]) <= h2 * 60e3 * 2){ t += S[j][1]; n++; } } return [p[0], t / n]; }); }
+    // valor con que lo comparó el control (vecinas, modelo, rango…), de la alerta de esa variable
+    const al = (ep.alertas || []).filter(x => String(x.var).split("+").includes(v) && x.ref != null).slice(-1)[0];
+    const ctl = al ? +al.ref : null;
+    cont.querySelector(".lctl").hidden = ctl == null;
+    if (al) cont.querySelector(".tctl").textContent = `con qué se comparó: ${ctl} ${UNI[v] || ""} (${al.prueba === "modelo" ? "Open-Meteo" : al.prueba === "wrf" ? "WRF-DMC" : al.prueba})`;
     if (!S.length){ G.innerHTML = `<p style="color:var(--mu)">Sin datos minutarios en ese período.</p>`; return; }
-    const ys = S.concat(Rf).map(p => p[1]); let lo = Math.min(...ys), hi = Math.max(...ys); if (hi - lo < 1){ lo -= .5; hi += .5; }
+    const ys = S.concat(Rf).map(p => p[1]).concat(ctl == null ? [] : [ctl]); let lo = Math.min(...ys), hi = Math.max(...ys); if (hi - lo < 1){ lo -= .5; hi += .5; }
     const W = 760, H = 260, x0 = 46, y0 = 10, w = W - x0 - 10, h = H - y0 - 30, X = t => x0 + w * (t - a) / (b - a), Y = y => y0 + h * (1 - (y - lo) / (hi - lo));
     const fin = ep.sigue ? b : ep.ultima + 60e3;
-    const lin = (P, f) => { let d = "", ant = null; P.forEach(p => { if (f && !f(p)){ ant = null; return; } d += (ant && p[0] - ant < 30 * 60e3 ? "L" : "M") + X(p[0]).toFixed(1) + "," + Y(p[1]).toFixed(1); ant = p[0]; }); return d; };
+    const lin = (P, f) => { let d = "", ant = null, q = null; P.forEach(p => { if (f && !f(p)){ ant = null; return; } const x = X(p[0]), y = Y(p[1]);
+      if (ant && p[0] - ant < 30 * 60e3){ const mx = (q[0] + x) / 2; d += `Q${q[0].toFixed(1)},${q[1].toFixed(1)} ${mx.toFixed(1)},${((q[1] + y) / 2).toFixed(1)}`; } else d += `M${x.toFixed(1)},${y.toFixed(1)}`;
+      q = [x, y]; ant = p[0]; }); return d; };
     const ticks = [0, .5, 1].map(f => lo + (hi - lo) * f).map(t => `<text x="${x0 - 5}" y="${Y(t) + 4}" text-anchor="end" fill="#9fb0cc" font-size="11">${t.toFixed(1)}</text><line x1="${x0}" x2="${W - 10}" y1="${Y(t)}" y2="${Y(t)}" stroke="#ffffff14"/>`).join("");
     const xt = [0, .25, .5, .75, 1].map(f => a + (b - a) * f).map(t => `<text x="${X(t)}" y="${H - 10}" text-anchor="middle" fill="#9fb0cc" font-size="11">${utc(t).slice(8, 10)}/${utc(t).slice(5, 7)} ${utc(t).slice(11, 16)}</text>`).join("");
     G.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block"><rect x="${X(Math.max(a, ep.inicio))}" y="${y0}" width="${Math.max(2, X(Math.min(b, fin)) - X(Math.max(a, ep.inicio)))}" height="${h}" fill="#E0525222"/>${ticks}${xt}
       ${Rf.length ? `<path d="${lin(Rf)}" fill="none" stroke="#C9A54C" stroke-width="1.5" stroke-dasharray="5 4"/>` : ""}
+      ${ctl != null ? `<line x1="${x0}" x2="${W - 10}" y1="${Y(ctl)}" y2="${Y(ctl)}" stroke="#3fb950" stroke-width="1.6" stroke-dasharray="7 4"/><text x="${W - 12}" y="${Y(ctl) - 4}" text-anchor="end" fill="#3fb950" font-size="11">${ctl}</text>` : ""}
       <path d="${lin(S)}" fill="none" stroke="#5AA9E6" stroke-width="1.6"/><path d="${lin(S, p => p[0] >= ep.inicio && p[0] <= fin)}" fill="none" stroke="#E05252" stroke-width="2.2"/></svg>`;
     cont.querySelector(".sgval").textContent = `${utc(a)} a ${utc(b)} UTC · ${S.length} minutos`;
   };
