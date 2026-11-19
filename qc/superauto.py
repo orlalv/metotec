@@ -439,6 +439,36 @@ def diario(raiz, ahora=None, subir=None):
     return sorted(tocados)
 
 
+LIM_T = (-35.0, 45.0)        # rango físico para las extremas de 24 h armadas con los minutos
+TOL_EXT_V = (6.0, 10.0)      # °C: extrema de 24 h contra la mediana de las vecinas (corregida por altura)
+
+
+def _extremas_red(est, V):
+    """ZE04: mínima o máxima de 24 h (de los minutos) fuera de rango físico → la extrema del día queda inválida (picos del sensor).
+    ZE05: mínima o máxima de 24 h muy distinta de la de sus vecinas (≥ 3, corregida por altura)."""
+    R = {f["codigo"]: f for f in est if f.get("res")}
+    for f in R.values():
+        r, cod, z = f["res"], f["codigo"], f.get("alt") or 0
+        for k, nom in (("Tmin24", "mínima"), ("Tmax24", "máxima")):
+            v = r.get(k)
+            if v is None:
+                continue
+            if v < LIM_T[0] or v > LIM_T[1]:
+                f["hallazgos"].append(_h(None, "ZE04", 2, "ext", f["ultima"], f"La temperatura {nom} de las últimas 24 h, armada con los minutos, es {v:.1f} °C: fuera de rango físico. "
+                                         f"Son picos del sensor; la extrema del día queda inválida hasta corregir esos minutos.", ingresado=f"T {nom} 24 h {v:.1f} °C", deberia=f"entre {LIM_T[0]:.0f} y {LIM_T[1]:.0f} °C"))
+                continue
+            ref = [R[c]["res"][k] + 0.0065 * ((R[c].get("alt") or 0) - z) for c in (V or {}).get(cod, []) if c in R and R[c]["res"].get(k) is not None
+                   and LIM_T[0] <= R[c]["res"][k] <= LIM_T[1]]
+            if len(ref) < 3:
+                continue
+            med = float(np.median(ref)); d = v - med
+            if abs(d) > TOL_EXT_V[0]:
+                f["hallazgos"].append(_h(None, "ZE05", 2 if abs(d) > TOL_EXT_V[1] else 1, "ext", f["ultima"],
+                                         f"La temperatura {nom} de 24 h ({v:.1f} °C) es {abs(d):.1f} °C {'más alta' if d > 0 else 'más baja'} que la mediana de sus {len(ref)} vecinas ({med:.1f} °C, llevada a la altura de la estación).",
+                                         ingresado=f"T {nom} 24 h {v:.1f} °C", deberia=f"≈ {med:.1f} °C (vecinas)"))
+        f["nivel"] = max([h["nivel"] for h in f["hallazgos"]], default=f["nivel"])
+
+
 def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(), X=None):
     """E: estaciones (DataFrame); cods_obs: códigos con observador (se excluyen). Devuelve el dict para el KV."""
     fin = pd.Timestamp.utcnow().tz_localize(None)
@@ -480,4 +510,9 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
         else:
             fila["nivel"] = 3
         est.append(fila)
+    try:
+        _extremas_red(est, V)
+    except Exception:
+        import traceback
+        errores.append(f"extremas_red: {traceback.format_exc(limit=3)}")
     return dict(generado=pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), horas=horas, estaciones=est, errores=errores[:10])
