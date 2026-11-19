@@ -615,8 +615,8 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
     por = {c: g for c, g in A.groupby("codigo")} if len(A) else {}
     cmp_al, errores = {}, []
     try:   # comparación con vecinas (DMC y externas) y modelo, sobre el valor horario
-        sin = A[~A["codigo"].isin(cods_obs)] if len(A) else A
-        for h in comparar(P.horario(sin[sin["momento"] > fin - pd.Timedelta(hours=8)]) if len(sin) else sin, E, V or {}, M, aisladas, X=X, errores=errores):
+        # todas las estaciones (con y sin observador) entran como vecinas; los hallazgos de las con observador van aparte (control espacial de Observaciones)
+        for h in comparar(P.horario(A[A["momento"] > fin - pd.Timedelta(hours=8)]) if len(A) else A, E, V or {}, M, aisladas, X=X, errores=errores):
             cmp_al.setdefault(h.pop("_cod"), []).append(h)
     except Exception:      # no se oculta: queda en el resultado (errores) y en el registro de la pasada
         import traceback
@@ -667,4 +667,11 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
     except Exception:
         import traceback
         errores.append(f"extremas_red: {traceback.format_exc(limit=3)}")
-    return dict(generado=pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), horas=horas, estaciones=est, errores=errores[:10])
+    obs_esp = []      # control espacial de las estaciones con observador (su sensor contra todas las cercanas: DMC, INIA…)
+    for cod in sorted(cods_obs):
+        m = meta.get(cod); H_ = [h for h in cmp_al.get(cod, []) if h["regla"] in ESPACIAL]
+        if m is None:
+            continue
+        obs_esp.append(dict(codigo=cod, nombre=m["nombre"], oaci=m["oaci"], lat=m["lat"], lon=m["lon"], alt=None if pd.isna(m["alt"]) else m["alt"],
+                            ultima=_f(por[cod]["momento"].max()) if cod in por else None, nivel=max([h["nivel"] for h in H_], default=0), hallazgos=H_))
+    return dict(generado=pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%S"), horas=horas, estaciones=est, obs_esp=obs_esp, errores=errores[:10])

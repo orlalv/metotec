@@ -6,7 +6,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
 const NIVC = ["var(--ok)", "var(--sos)", "var(--err)"];
 const ESP = new Set(["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZE05", "ZE08"]);     // controles espaciales (vecinas DMC y externas)
-const TABS = {sup_esp: ["esp", "control espacial"], sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
+const TABS = {sup_esp: ["esp", "control espacial"], obs_esp: ["esp", "control espacial (estaciones con observador)"], sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
 const COLS = [["pp", "Precipitación", "sup_prc"], ["ext", "Extremas", "sup_ext"], ["pre", "Presiones", "sup_pre"], ["tem", "Temperaturas", "sup_tem"], ["vie", "Viento", "sup_vie"]];
 const NOTA = {
   pp: "Agua caída del pluviómetro: lluvia con aire seco, más de 2 mm en un minuto, el mismo valor repetido 10 minutos (pluviómetro pegado) el acumulado de 6 h contra la suma de los minutos y, contra el satélite GOES, lluvia con cielo despejado o pluviómetro en 0 bajo nube fría.",
@@ -61,7 +61,7 @@ function init(fR, m){
 function filas(){
   const R = getR(), S = (R && R.super) || {};
   const out = [];
-  (S.estaciones || []).forEach(e => {
+  (modo === "obs_esp" ? S.obs_esp || [] : S.estaciones || []).forEach(e => {
     const H = [];
     (e.hallazgos || []).forEach(h => { const x = {...h, gen: S.generado}; if (MARCA.estado(e.codigo, x) !== "oculta") H.push({...x, st: MARCA.estado(e.codigo, x)}); });
     out.push({e, H});
@@ -99,7 +99,7 @@ function filasDatos(F, tipo){
 function pintar(){
   if (!$("#sup") || !$("#sup").dataset.ok) return;
   const R = getR(), S = (R && R.super) || {}, g = S.generado ? new Date(S.generado + "Z") : null;
-  $("#zHora").textContent = g ? `Estaciones sin observador · revisadas a las ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})} · últimas 24 h` : "Todavía no hay revisión del Super automático";
+  $("#zHora").textContent = g ? `${modo === "obs_esp" ? "Estaciones con observador (su sensor) contra todas las cercanas: DMC, INIA y otras" : "Estaciones sin observador"} · revisadas a las ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})} · últimas 24 h` : "Todavía no hay revisión del Super automático";
   const F = filas();
   if (modo === "sup"){
     const nEst = F.length, con = F.filter(x => x.H.length).length, sin = F.filter(x => x.e.nivel === 3).length;
@@ -208,7 +208,7 @@ document.addEventListener("click", ev => {
     tab.querySelectorAll("tr.supx").forEach(r => r.remove()); todas.forEach(r => r.style.display = r === al ? "" : "none"); document.querySelectorAll(".supDatosSec").forEach(d => d.style.display = "none"); al.scrollIntoView({block: "start"});
     const F = filas(), x = F.find(y => y.e.codigo === al.dataset.c); if (!x) return;
     const tr = document.createElement("tr"); tr.className = "supx";
-    if (modo === "sup_esp"){      // control espacial: gráficos ya comparados con las vecinas y mapa con sus valores a la derecha
+    if (modo === "sup_esp" || modo === "obs_esp"){      // control espacial: gráficos ya comparados con las vecinas y mapa con sus valores a la derecha
       tr.innerHTML = `<td colspan="7"><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start"><div class="supbox" data-c="${al.dataset.c}" style="flex:1 1 560px;min-width:0"></div>
         <div style="flex:0 1 420px;min-width:300px"><div class="espMapT" style="font-size:12.5px;margin-bottom:4px"></div><div class="espMap" style="height:420px;border:1px solid var(--bd);border-radius:8px"></div>
         <small style="color:var(--mu)">Rojo = la estación · azul = vecinas DMC (valor a la hora de la alerta) · gris = sin dato</small></div></div></td>`; al.after(tr);
