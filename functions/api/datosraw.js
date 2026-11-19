@@ -1,7 +1,7 @@
 // GET /api/datosraw?p=diario/2026/11.json : archivo de la rama «datos» por el mismo dominio
 // (algunas redes, como la de la DGAC, bloquean raw.githubusercontent.com).
 const RAW = "https://raw.githubusercontent.com/orlalv/metotec/datos/";
-const OK = /^(diario|ema|sensorial|boletin|hallazgos|series|saclim|productos|pluviometros|goes)\/[\w\/.\-]+$|^[\w.\-]+\.json$/;
+const OK = /^(diario|ema|sensorial|boletin|hallazgos|series|saclim|productos|pluviometros|goes|ext)\/[\w\/.\-]+$|^[\w.\-]+\.json$/;
 
 export async function onRequestGet({ request }){
   const p = new URL(request.url).searchParams.get("p") || "";

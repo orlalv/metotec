@@ -38,7 +38,7 @@ async function cargar(){
   const pos = e => ({lat: +e.lat, lon: +e.lon}), p0 = pos(e0);
   const cand = [...cat.values()].filter(e => e.codigo !== e0.codigo && isFinite(e.lat) && isFinite(e.lon)).map(e => ({e, km: km(p0, pos(e))})).sort((a, b) => a.km - b.km);
   const ts = Array.from({length: 24}, (_, h) => ms(ST.dia, h));
-  const [txt, X] = await Promise.all([U().varias(ts, 6), window.EXTV ? window.EXTV.datos().catch(() => null) : null]); if (tok !== TOK) return;
+  const [txt, X] = await Promise.all([U().varias(ts, 6), window.EXTV ? window.EXTV.datos().then(d => window.EXTV.dia(d, ST.dia)).catch(() => null) : null]); if (tok !== TOK) return;
   const hay = txt.some(t => typeof t === "string" && t.length > 50), falla = txt.some(t => t === undefined);
   if (hay){ D = leerMinutos(txt, e0, cand, X); }
   else if (falla && !txt.some(t => t === null)){ out.innerHTML = `<p style="color:#e5534b">No pude leer los archivos de ese día (${esc(U().dg())}). Pruebe de nuevo.</p>`; actualizarMapas(); return; }

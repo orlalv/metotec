@@ -31,12 +31,24 @@ async function datos(forzar){
   CACHE = {t: Date.now(), d};
   return d;
 }
+// lluvia archivada de un día (datos/ext/pp/AAAA/MM/DD.json): completa lo que el KV ya no trae (INIA solo entrega ~48 h)
+const DIAS_ARCH = new Set();
+async function dia(d, fecha){
+  if (!d || !fecha) return d;
+  for (const f of [fecha, new Date(Date.parse(fecha + "T00:00Z") + 864e5).toISOString().slice(0, 10)]){      // el día y el siguiente (su hora 00 cierra el día)
+    if (DIAS_ARCH.has(f)) continue;
+    try { const r = await fetch(`/api/datosraw?p=ext/pp/${f.slice(0, 4)}/${f.slice(5, 7)}/${f.slice(8, 10)}.json`); if (!r.ok) continue; const A = await r.json(); DIAS_ARCH.add(f);
+      for (const [id, s] of Object.entries(A)){ if (!d.cat.has(id)) continue; let m = d.pp.get(id); if (!m){ m = new Map(); d.pp.set(id, m); }
+        for (const [hh, v] of Object.entries(s)){ const t = Date.parse(`${f}T${hh}:00:00Z`); if (isFinite(t) && v != null && !m.has(t)) m.set(t, v); } } } catch (e) {}
+  }
+  return d;
+}
 function vecinas(d, lat, lon, radio, tope = TOPE){
   if (!d) return [];
   const p = {lat, lon};
   return [...d.cat.values()].map(e => [e.id, km(p, e)]).filter(x => x[1] <= radio).sort((a, b) => a[1] - b[1]).slice(0, tope);
 }
-window.EXTV = {PESO, TOPE, datos, vecinas, refrescar: () => { CACHE = null; }};
+window.EXTV = {dia, PESO, TOPE, datos, vecinas, refrescar: () => { CACHE = null; }};
 
 /* ---------------- Gestión: activar / desactivar cada estación externa ---------------- */
 let ST = {cat: [], off: new Set(), des: {}, inst: "", q: "", solo: "", cargando: false, error: ""};
