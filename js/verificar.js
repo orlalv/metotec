@@ -61,7 +61,7 @@ function leerMinutos(txt, e0, cand, X){
   // externas como columnas y barras propias (solo valor horario): nombre, distancia y color tenue
   const COLX = ["#e3b341", "#a5d6ff", "#7ee787", "#f778ba"];
   const ve = ext.map(([id, k], i) => { const c = X.cat.get(id) || {}, m = X.pp.get(id);
-    return {nombre: `${c.inst ? c.inst + " " : ""}${c.nombre || id} (ext.)`, km: k, color: COLX[i % COLX.length], ext: true,
+    return {nombre: `${c.inst ? c.inst + " " : ""}${c.nombre || id} (ext.)`, km: k, lat: +c.lat, lon: +c.lon, color: COLX[i % COLX.length], ext: true,
       h: Array.from({length: 24}, (_, j) => { const v = m && m.get(ms(ST.dia, j) + 3600e3); return v == null ? null : v; })}; }).filter(x => x.h.some(v => v != null));
   return {modo: "min", mia, vec, hs: mia ? horas(mia) : null, hv: vec.map(v => horas(v.min)), hx, X, ve, sinPluvio: !mia};
 }
@@ -107,7 +107,7 @@ function pintarMin(out){
   const medH = (a, ex) => { const x = a.filter(z => z != null), e = (ex || []).map(o => o.v); const w = x.length + PX * e.length; return w ? (x.reduce((s, z) => s + z, 0) + PX * e.reduce((s, z) => s + z, 0)) / w : null; };
   const idsX = new Set(D.hx.flat().map(o => o.id)), inst = {}, nExt = idsX.size; idsX.forEach(id => { const c = D.X.cat.get(id); if (c) inst[c.inst] = (inst[c.inst] || 0) + 1; });
   const notaX = nExt ? ` La media de vecinas incluye ${nExt} estaciones externas de menor peso (${Object.entries(inst).map(([k, n]) => `${esc(k)} ${n}`).join(", ")}).` : "";
-  const resumen = `Hora ${p2(h)}:00 UTC (${loc(ms(ST.dia, h))} local): estación <b>${sel == null ? "sin dato" : n1(sel) + " mm"}</b> · vecinas ${D.vec.length ? mh.map((x, i) => `<span style="color:${D.vec[i].color}">${x == null ? "s/d" : n1(x)}</span>`).join(" / ") + " mm" : "sin vecinas con dato a ≤ " + RADIO_KM + " km"} · total del día en la estación <b>${n1(tot)} mm</b>.`;
+  const resumen = `Hora ${p2(h)}:00 UTC (${loc(ms(ST.dia, h))} local): estación <b>${sel == null ? "sin dato" : n1(sel) + " mm"}</b> · vecinas ${D.vec.length || (D.ve || []).length ? D.vec.map((v, i) => [v.color, mh[i]]).concat((D.ve || []).map(x => [x.color, x.h[h]])).map(([c, x]) => `<span style="color:${c}">${x == null ? "s/d" : n1(x)}</span>`).join(" / ") + " mm" : "sin vecinas con dato a ≤ " + RADIO_KM + " km"} · total del día en la estación <b>${n1(tot)} mm</b>.`;
   const hs = svgBarras(D.hs, D.vec.map((vv, i) => [vv.color, D.hv[i]]).concat((D.ve || []).map(x => [x.color, x.h])), h, i => i, (i, c) => c ? p2(i) : `${p2(i)}:00 UTC (${loc(ms(ST.dia, i))} local)`, "mm por hora");
   // minuto a minuto de la hora elegida
   const mm = Array.from({length: 60}, (_, i) => v[h * 60 + i]), veM = D.vec.map(x => Array.from({length: 60}, (_, i) => x.min[h * 60 + i]));
@@ -127,11 +127,28 @@ function pintarMin(out){
       ${D.hv.concat((D.ve || []).map(x => x.h)).map(a => `<td style="text-align:right">${a[i] == null ? "s/d" : n1(a[i])}</td>`).join("")}<td style="text-align:right">${mv == null ? "—" : n1(mv)}</td></tr>`; }).join("");
   const tot2 = D.hv.map(a => a.reduce((s, z) => s + (z || 0), 0));
   out.innerHTML = `<p style="margin:4px 0">${resumen}</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start"><div style="flex:1 1 620px;min-width:0">
     <h4 style="margin:10px 0 2px">Lluvia por hora · ${esc(ST.dia)} (UTC) <small style="color:var(--mu);font-weight:400">· clic en una hora para cambiar las imágenes</small></h4>${leyenda(D)}${hs}
-    <h4 style="margin:12px 0 2px">Minuto a minuto · ${p2(h)}:00–${p2(h)}:59 UTC</h4>${minG}
+    <h4 style="margin:12px 0 2px">Minuto a minuto · ${p2(h)}:00–${p2(h)}:59 UTC</h4>${minG}</div>
+    <div style="flex:1 1 380px;min-width:280px"><h4 style="margin:10px 0 4px">Vecinas a las ${p2(h)}:00 UTC · mm en la hora</h4><div id="vMV" style="height:330px;border:1px solid var(--bd);border-radius:8px"></div>
+    <small style="color:var(--mu)">Rojo = la estación · azul/colores = vecinas DMC · borde punteado = externas (INIA…) · gris = sin dato · círculo = 60 km</small></div></div>
     <details open style="margin-top:10px"><summary style="cursor:pointer"><b>Tabla de precipitación por hora (mm)</b></summary><div style="overflow-x:auto"><table class="tb" style="margin-top:4px"><tr><th>Hora UTC</th><th>Hora local</th><th>${esc(D.e0.nombre)}</th>${D.vec.concat(D.ve || []).map(x => `<th style="color:${x.color};text-align:right">${esc(x.nombre)}<br><small>${Math.round(x.km)} km</small></th>`).join("")}<th style="text-align:right">Media vecinas</th></tr>${filas}
       <tr style="font-weight:700"><td colspan="2">Total del día</td><td style="text-align:right">${n1(tot)}</td>${tot2.map(z => `<td style="text-align:right">${n1(z)}</td>`).join("")}<td></td></tr></table></div>
       <small style="color:var(--mu)">Fila rosada = la estación marcó menos de 0,2 mm mientras las vecinas marcaron 1 mm o más en promedio. s/d = menos de ${MIN_FILAS_H} datos en la hora.${notaX}</small></details>`;
+  mapaVecinas(h);
+}
+let MV = null;
+function mapaVecinas(h){      // mapa bajo la imagen de la derecha: estación y vecinas (DMC y externas) con los mm de la hora elegida
+  const el = document.getElementById("vMV"), cat = U().catalogoSync(), e0 = cat && cat.get(ST.cod); if (!el || !window.L || !e0) return;
+  if (MV){ MV.remove(); MV = null; }
+  MV = L.map(el, {attributionControl: false}); L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {maxZoom: 13}).addTo(MV);
+  L.circle([+e0.lat, +e0.lon], {radius: RADIO_KM * 1000, color: "#f85149", weight: 1, dashArray: "6 6", fill: false, interactive: false}).addTo(MV);
+  const et = (n, x, col, dash) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-50%);white-space:nowrap;background:#0d1117e6;border:1.5px ${dash ? "dashed" : "solid"} ${x == null ? "#8b949e" : col};border-radius:7px;padding:1px 6px;font:600 11px system-ui;color:#e6edf3;text-align:center">${esc(n)}<br><b style="font-size:13px;color:${x == null ? "#8b949e" : x >= 0.2 ? col : "#e6edf3"}">${x == null ? "s/d" : n1(x) + " mm"}</b></div>`});
+  const pts = [[+e0.lat, +e0.lon]];
+  D.vec.forEach((v, i) => { pts.push([v.lat, v.lon]); L.marker([v.lat, v.lon], {icon: et(`${v.nombre} · ${Math.round(v.km)} km`, D.hv[i][h], v.color)}).addTo(MV); });
+  (D.ve || []).forEach(v => { if (!isFinite(v.lat)) return; pts.push([v.lat, v.lon]); L.marker([v.lat, v.lon], {icon: et(`${v.nombre} · ${Math.round(v.km)} km`, v.h[h], v.color, true)}).addTo(MV); });
+  L.marker([+e0.lat, +e0.lon], {icon: et(e0.nombre, D.hs ? D.hs[h] : null, "#f85149"), zIndexOffset: 1000}).addTo(MV);
+  if (pts.length > 1) MV.fitBounds(pts, {padding: [60, 40], maxZoom: 10}); else MV.setView(pts[0], 9);
 }
 function pintarDia(out){
   const f = D.fechas, sel = f.indexOf(ST.dia), val = d => { const r = D.mia.get(d); return r ? r[2] ?? r[1] : null; };
