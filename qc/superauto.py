@@ -108,7 +108,8 @@ def _estacion(g, m):
         out.append(_h(None, "ZT10", 1, "tem", fin, f"Ts varió solo {T24.max() - T24.min():.1f} °C en 24 h ({T24.min():.1f} a {T24.max():.1f}): poco probable, revisar el sensor"))
 
     # ---------------- extremas de 12 h (mañana 12 UTC: mínima de la noche · tarde 00 UTC: máxima del día) contra los minutos de esas 12 h
-    for var, mn, hh, nom in (("Tn12", True, 12, "mínima de la mañana"), ("Tx12", False, 0, "máxima de la tarde"), ("Tn12", True, 0, "mínima de la tarde"), ("Tx12", False, 12, "máxima de la mañana")):
+    # ZE06 desactivada: el período real de Tn12/Tx12 de las EMA no es «las 12 h previas» a las 00 y 12 UTC (daba falsas alarmas en masa, 19/11/2026)
+    for var, mn, hh, nom in ():
         if var not in g:
             continue
         R = g[(g["momento"].dt.hour == hh) & (g["momento"].dt.minute == 0)].dropna(subset=[var])
@@ -548,14 +549,14 @@ def _satelite(raiz, A, est, fin):
                                      ingresado=f"{sum(mio[h] for h in desp):.1f} mm", deberia="0 mm (cielo despejado)"))
         racha, mejor = [], []
         for h in horas:
-            if mio[h] == 0 and (arch[h][c][0] or arch[h][c][1]):
+            if mio[h] == 0 and arch[h][c][0] and arch[h][c][1]:      # lluvia estimada Y nube fría (la nube fría sola daba falsas alarmas en el norte)
                 racha.append(h)
                 if len(racha) > len(mejor):
                     mejor = list(racha)
             else:
                 racha = []
-        if len(mejor) >= 3:
-            f["hallazgos"].append(_h(None, "ZS02", 1, "pp", mejor[-1], f"El pluviómetro marcó 0 mm durante {len(mejor)} h seguidas ({mejor[0]:%H}–{mejor[-1]:%H} UTC) con lluvia estimada o nube fría sobre la estación según GOES: posible pluviómetro obstruido",
+        if len(mejor) >= 4:
+            f["hallazgos"].append(_h(None, "ZS02", 1, "pp", mejor[-1], f"El pluviómetro marcó 0 mm durante {len(mejor)} h seguidas ({mejor[0]:%H}–{mejor[-1]:%H} UTC) con lluvia estimada y nube fría sobre la estación según GOES: posible pluviómetro obstruido",
                                      ingresado="0 mm", deberia="lluvia (satélite)"))
         f["nivel"] = max([h["nivel"] for h in f["hallazgos"]], default=f["nivel"])
 
