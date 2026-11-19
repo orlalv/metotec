@@ -1,0 +1,25 @@
+name: Sondeo temporal alertas vecinas
+on: workflow_dispatch
+jobs:
+  s:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - run: |
+          python3 - <<'P'
+          import os, json, collections, urllib.request
+          u = f"https://api.cloudflare.com/client/v4/accounts/{os.environ['CLOUDFLARE_ACCOUNT_ID']}/storage/kv/namespaces/0d6aa4b37a834b5983ac9c7f638e2dbb/values/qc/ultimo"
+          D = json.load(urllib.request.urlopen(urllib.request.Request(u, headers={"Authorization": "Bearer " + os.environ["CLOUDFLARE_API_TOKEN"]})))
+          print("generado", D.get("generado"), "claves", list(D.keys())[:15])
+          E = D.get("estaciones", [])
+          c = collections.Counter(a["prueba"] for e in E for a in e.get("alertas", []))
+          print("por prueba", dict(c))
+          print("estaciones", len(E), "con vecinas>=3", sum(1 for e in E if len(e.get("vecinas") or [])>=3), "aisladas", sum(1 for e in E if e.get("aislada")))
+          for e in E:
+              for a in e.get("alertas", []):
+                  if a["prueba"] == "vecinas": print("VEC", e["nombre"], a["var"], a["valor"], a["ref"], a["msg"][:80])
+          j = [e for e in E if e["codigo"]=="400013"]
+          if j: print("JKB", j[0].get("vecinas"), j[0].get("aislada"), [(a["prueba"],a["var"],a["valor"]) for a in j[0]["alertas"]])
+          P
