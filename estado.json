@@ -1,29 +1,33 @@
 {
  "version": "0.1",
- "inicio": "2026-11-19T12:15:44+00:00",
+ "inicio": "2026-11-19T12:46:08+00:00",
  "errores": [],
- "estaciones": 110,
- "con_datos": 126,
- "registros": 4965,
- "desde": "2026-11-19 11:16:00",
- "hasta": "2026-11-19 12:10:00",
+ "estaciones": 135,
+ "con_datos": 122,
+ "registros": 4924,
+ "desde": "2026-11-19 11:46:00",
+ "hasta": "2026-11-19 12:40:00",
  "horas_archivadas": 2,
  "modelo": 6480,
- "wrf": "corridas nuevas",
- "nuevas": [
-  "2026111900_ecmwf"
+ "wrf": "sin corridas nuevas",
+ "corridas": [
+  "2026111800_ecmwf",
+  "2026111800_gfs",
+  "2026111812_ecmwf",
+  "2026111812_gfs",
+  "2026111900_ecmwf",
+  "2026111900_gfs"
  ],
- "fallas": 25,
  "wrf_ref": 658,
  "satelite": {
   "imagenes": 71,
-  "ultima": "2026-11-19T12:00Z"
+  "ultima": "2026-11-19T12:30Z"
  },
  "externas": {
   "estaciones": 322,
   "con_vecinas": 116,
   "desactivadas": 0,
-  "generado": "2026-11-19T12:15:27Z",
+  "generado": "2026-11-19T12:45:50Z",
   "pp_archivadas": 6847,
   "desviadas": 4,
   "kv_desvio": "200"
@@ -36,12 +40,12 @@
  "consenso_quitados": 0,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1660,
+ "ob_filas": 1777,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 492,
   "fallas": 0,
-  "hallazgos": 378,
+  "hallazgos": 376,
   "kv": "200",
   "completitud": "200"
  },
@@ -51,7 +55,7 @@
  ],
  "super": {
   "estaciones": 102,
-  "hallazgos": 72,
+  "hallazgos": 73,
   "kv": "200"
  },
  "historial": {
@@ -76,22 +80,22 @@
  "reputacion": {
   "resumen": {
    "cuarentena": 3,
-   "en_revision": 23,
-   "operativa": 109,
-   "verde": 93,
-   "amarillo": 17,
-   "rojo": 25,
+   "en_revision": 24,
+   "operativa": 108,
+   "verde": 94,
+   "amarillo": 15,
+   "rojo": 26,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 28,
+ "alertas": 22,
  "resumen": {
-  "bien": 110,
-  "sospechoso": 10,
+  "bien": 111,
+  "sospechoso": 9,
   "erróneo": 10,
   "sin datos": 5
  },
- "fin": "2026-11-19T12:25:59+00:00"
+ "fin": "2026-11-19T12:52:32+00:00"
 }
