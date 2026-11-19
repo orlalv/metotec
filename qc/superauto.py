@@ -486,7 +486,7 @@ AMPL_MIN = 0.5               # °C: amplitud mínima creíble de Ts en 24 h
 FF_MAX, RAFAGA_X = 70, 4     # kt: viento medio poco probable; racha más de 4 veces el medio
 CALMA_H, CALMA_V = 6, 5      # calma ≥ 6 h seguidas con las vecinas en ≥ 5 kt
 TOL_AMPL_V = 8.0             # °C: amplitud del día contra la mediana de las vecinas
-ESPACIAL = {"ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZE05", "ZE08"}
+ESPACIAL = {"ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZC08", "ZC09", "ZC10", "ZE05", "ZE08"}
 LIM_T = (-35.0, 45.0)        # rango físico para las extremas de 24 h armadas con los minutos
 TOL_EXT_V = (6.0, 10.0)      # °C: extrema de 24 h contra la mediana de las vecinas (corregida por altura)
 
@@ -559,6 +559,85 @@ def _satelite(raiz, A, est, fin):
             f["hallazgos"].append(_h(None, "ZS02", 1, "pp", mejor[-1], f"El pluviómetro marcó 0 mm durante {len(mejor)} h seguidas ({mejor[0]:%H}–{mejor[-1]:%H} UTC) con lluvia estimada y nube fría sobre la estación según GOES: posible pluviómetro obstruido",
                                      ingresado="0 mm", deberia="lluvia (satélite)"))
         f["nivel"] = max([h["nivel"] for h in f["hallazgos"]], default=f["nivel"])
+
+
+DD_MIN_FF, DD_TOL = 5, 90          # ZC08: dirección contra vecinas con viento ≥ 5 kt; diferencia > 90° sostenida
+DERIVA_DIAS, DERIVA_FIN = 6, 2.0    # ZC10: diferencia contra vecinas que crece día a día; el último día ≥ 2 °C / 2 hPa
+
+
+def _dif_ang(a, b):
+    return abs((a - b + 180) % 360 - 180)
+
+
+def _media_ang(v):
+    v = np.radians(np.asarray(v, float)); return float(np.degrees(np.arctan2(np.sin(v).mean(), np.cos(v).mean())) % 360)
+
+
+def _espaciales_extra(raiz, A, E, V, fin):
+    """ZC08 dirección del viento contra vecinas, ZC09 hora desfasada contra vecinas, ZC10 deriva lenta contra vecinas.
+    Devuelve {codigo: [hallazgos]} para todas las estaciones (con y sin observador)."""
+    out = {}
+    if A is None or not len(A):
+        return out
+    H = P.horario(A[A["momento"] > fin - pd.Timedelta(hours=26)])
+    piv = {v: H.pivot_table(index="momento", columns="codigo", values=v, aggfunc="last").sort_index() for v in ("T", "P_mar", "ff10", "dd10") if v in H}
+    alt = {c: (None if pd.isna(z) else float(z)) for c, z in E.set_index("codigo")["alt"].items()}
+    for cod in H["codigo"].unique():
+        vs = [c for c in (V or {}).get(cod, []) if c in H["codigo"].values]
+        if len(vs) < 3:
+            continue
+        # ZC08 · dirección: últimas 4 h, 3 con diferencia > 90° (con viento ≥ 5 kt en la estación y en las vecinas)
+        if "dd10" in piv and cod in piv["dd10"]:
+            dif = []
+            for t in piv["dd10"].index[-4:]:
+                d0, f0 = piv["dd10"].at[t, cod], piv["ff10"].at[t, cod] if cod in piv["ff10"] else np.nan
+                ref = [piv["dd10"].at[t, c] for c in vs if c in piv["dd10"] and c in piv["ff10"] and piv["ff10"].at[t, c] >= DD_MIN_FF and not pd.isna(piv["dd10"].at[t, c])]
+                if pd.isna(d0) or pd.isna(f0) or f0 < DD_MIN_FF or len(ref) < 3:
+                    continue
+                m = _media_ang(ref); dif.append((t, d0, m, _dif_ang(d0, m)))
+            mal = [x for x in dif if x[3] > DD_TOL]
+            if len(dif) >= 3 and len(mal) >= 3:
+                t, d0, m, d = mal[-1]
+                out.setdefault(cod, []).append(_hc(cod, "ZC08", 1, "vie", t, f"Dirección del viento {d0:.0f}° contra {m:.0f}° de sus vecinas (diferencia {d:.0f}°) en {len(mal)} de las últimas {len(dif)} horas con viento: veleta trabada, mal orientada o invertida.",
+                                                   ingresado=f"{d0:.0f}°", deberia=f"≈ {m:.0f}° (vecinas)"))
+        # ZC09 · hora desfasada: la curva de Ts calza mejor con las vecinas corrida 1 a 3 h
+        if "T" in piv and cod in piv["T"]:
+            T = piv["T"]; ref = T[[c for c in vs if c in T]].median(axis=1); mio = T[cod]
+            ok = mio.notna() & ref.notna()
+            if ok.sum() >= 20 and mio[ok].std() > 1.5:
+                cor = {L: mio.shift(L).corr(ref) for L in range(-3, 4)}
+                L = max(cor, key=lambda k: -9 if pd.isna(cor[k]) else cor[k])
+                if L != 0 and cor[L] > 0.9 and (pd.isna(cor[0]) or cor[L] - cor[0] > 0.1):
+                    out.setdefault(cod, []).append(_hc(cod, "ZC09", 1, "tem", T.index[-1], f"La curva de Ts de las últimas 24 h calza con la de sus vecinas solo si se corre {abs(L)} h {'hacia atrás' if L > 0 else 'hacia adelante'} "
+                                                       f"(correlación {cor[L]:.2f} contra {cor[0]:.2f} sin correr): posible hora mal configurada en la estación.", ingresado="hora de la estación", deberia=f"corrida {L:+d} h"))
+    # ZC10 · deriva lenta con el resumen diario (tmed y pmar), últimos DERIVA_DIAS días
+    import json
+    from pathlib import Path
+    dias = [(fin.normalize() - pd.Timedelta(days=k)) for k in range(DERIVA_DIAS, 0, -1)]
+    D = {}
+    for d in dias:
+        f = Path(raiz) / "diario" / d.strftime("%Y") / d.strftime("%m.json")
+        if f.exists():
+            M = json.loads(f.read_text(encoding="utf-8")); ix = {k: i for i, k in enumerate(M.get("campos", []))}
+            D[d] = {c: v for c, v in M["dias"].get(f"{d:%Y-%m-%d}", {}).items() if (v[ix["n"]] or 0) >= 1200} if "n" in ix else {}
+            D[d] = (ix, D[d])
+    if len(D) == DERIVA_DIAS:
+        for cod in {c for d in D.values() for c in d[1]}:
+            vs = (V or {}).get(cod, [])
+            for k, nom, un, corr in (("tmed", "Ts media", "°C", True), ("pmar", "QFF medio", "hPa", False)):
+                serie = []
+                for d in dias:
+                    ix, X = D[d]; mio = X.get(cod)
+                    ref = [X[c][ix[k]] + (0.0065 * ((alt.get(c) or 0) - (alt.get(cod) or 0)) if corr else 0) for c in vs if c in X and X[c][ix[k]] is not None]
+                    if mio is None or mio[ix[k]] is None or len(ref) < 3:
+                        break
+                    serie.append(mio[ix[k]] - float(np.median(ref)))
+                if len(serie) == DERIVA_DIAS:
+                    a = np.abs(serie)
+                    if a[-1] >= DERIVA_FIN and a[0] < a[-1] / 3 and all(a[i + 1] >= a[i] - 0.3 for i in range(len(a) - 1)) and np.sign(serie[-1]) == np.sign(serie[-2]):
+                        out.setdefault(cod, []).append(_hc(cod, "ZC10", 1, "tem" if k == "tmed" else "pre", fin, f"Deriva lenta: la diferencia de {nom} contra sus vecinas creció día a día en {DERIVA_DIAS} días "
+                                                           f"({', '.join(f'{x:+.1f}' for x in serie)} {un}): posible descalibración del sensor.", ingresado=f"{serie[-1]:+.1f} {un} hoy", deberia=f"≈ {serie[0]:+.1f} {un} (hace {DERIVA_DIAS} días)"))
+    return out
 
 
 def _boletin(A, est, fin):
@@ -668,6 +747,17 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
     except Exception:
         import traceback
         errores.append(f"extremas_red: {traceback.format_exc(limit=3)}")
+    try:      # dirección del viento, hora desfasada y deriva lenta contra vecinas (todas las estaciones)
+        X_ = _espaciales_extra(raiz, A, E, V, fin)
+        for f in est:
+            for h in X_.pop(f["codigo"], []):
+                h.pop("_cod", None); f["hallazgos"].append(h); f["nivel"] = max(f["nivel"], h["nivel"])
+        for c, L in X_.items():
+            for h in L:
+                h.pop("_cod", None); cmp_al.setdefault(c, []).append(h)
+    except Exception:
+        import traceback
+        errores.append(f"espaciales_extra: {traceback.format_exc(limit=3)}")
     obs_esp = []      # control espacial de las estaciones con observador (su sensor contra todas las cercanas: DMC, INIA…)
     for cod in sorted(cods_obs):
         m = meta.get(cod); H_ = [h for h in cmp_al.get(cod, []) if h["regla"] in ESPACIAL]

@@ -5,12 +5,12 @@
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
 const NIVC = ["var(--ok)", "var(--sos)", "var(--err)"];
-const ESP = new Set(["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZE05", "ZE08"]);     // controles espaciales (vecinas DMC y externas)
+const ESP = new Set(["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZC08", "ZC09", "ZC10", "ZE05", "ZE08"]);     // controles espaciales (vecinas DMC y externas)
 const TABS = {sup_esp: ["esp", "control espacial"], obs_esp: ["esp", "control espacial (estaciones con observador)"], sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
 const COLS = [["pp", "Precipitación", "sup_prc"], ["ext", "Extremas", "sup_ext"], ["pre", "Presiones", "sup_pre"], ["tem", "Temperaturas", "sup_tem"], ["vie", "Viento", "sup_vie"]];
 const NOTA = {
   pp: "Agua caída del pluviómetro: lluvia con aire seco, más de 2 mm en un minuto, el mismo valor repetido 10 minutos (pluviómetro pegado) el acumulado de 6 h contra la suma de los minutos y, contra el satélite GOES, lluvia con cielo despejado o pluviómetro en 0 durante 4 h o más con lluvia estimada y nube fría.",
-  esp: "Comparación con todas las estaciones cercanas (DMC e INIA y otras externas, con menor peso): Ts, Td, HR y QFF (diferencia sostenida), viento medio y calma prolongada, lluvia sí/no, y mínima, máxima y amplitud del día. Solo estaciones automáticas sin observador.",
+  esp: "Comparación con todas las estaciones cercanas (DMC e INIA y otras externas, con menor peso): Ts, Td, HR y QFF (diferencia sostenida), viento medio, dirección y calma prolongada, lluvia sí/no, hora desfasada, deriva lenta de varios días, y mínima, máxima y amplitud del día. Solo estaciones automáticas sin observador.",
   ext: "Extremas: Tn12/Tx12 contra la temperatura por minuto de las últimas 24 h, mínima y máxima de 24 h fuera de rango físico (picos del sensor), contra las vecinas (> 6 °C sospechoso, > 10 °C erróneo), amplitud del día contra las vecinas, el mismo valor 3 días seguidos y Tn12 mayor que Tx12.",
   pre: "QFF contra la mediana de las vecinas y contra el modelo (diferencia sostenida en 2 de las últimas 3 horas), QFE pegado 3 h, QFE lejos de lo esperado por altura, saltos groseros, cambio sobre 10 hPa en 3 h y QFF contra el QFE reducido.",
   tem: "Ts, Td y HR contra la mediana de las vecinas (≥ 3, corregida por altura) y contra el modelo, con diferencia sostenida en 2 de las últimas 3 horas; Td mayor que Ts, HR que no calza con Ts y Td, valores pegados (3 h; HR 8 h), saltos groseros Ts fuera de lo habitual para la zona y Ts que casi no varía en 24 h (poco probable).",
@@ -29,7 +29,7 @@ const CTL = [["fis", "Límites físicos", "¿El valor es posible?", ["ZT09", "ZP
   ["sal", "Temporal: saltos", "¿Cambió de golpe?", ["ZT01", "ZT02", "ZT03", "ZP01", "ZP04", "ZV01", "ZR02"]],
   ["peg", "Temporal: pegados o sin variación", "¿El sensor se quedó fijo?", ["ZT06", "ZT07", "ZT08", "ZT10", "ZP02", "ZV02", "ZV03", "ZR03", "ZR04", "ZE07"]],
   ["exm", "Extremas contra minutos", "¿La Tn12/Tx12 calza con lo medido?", ["ZE01", "ZE06"]],
-  ["esp", "Control espacial", "¿Calza con las estaciones cercanas (DMC e INIA)?", ["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZE05", "ZE08"]],
+  ["esp", "Control espacial", "¿Calza con las estaciones cercanas (DMC e INIA)?", ["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZC08", "ZC09", "ZC10", "ZE05", "ZE08"]],
   ["mod", "Contra modelo", "¿Calza con lo que da el modelo?", ["ZM01", "ZM02", "ZM03", "ZM04", "ZM05"]],
   ["sat", "Contra satélite", "¿Calza con lo que se ve desde el GOES?", ["ZS01", "ZS02"]]];
 const tipoCtl = r => (CTL.find(c => c[3].includes(r)) || [null])[0];
@@ -141,7 +141,7 @@ function pintar(){
 }
 // regla espacial → [grupo de gráficos, variable del minutario, nombre, unidad]
 const VAR_R = {ZC01: ["tem", "T", "Ts", "°C"], ZC02: ["tem", "Td", "Td", "°C"], ZC03: ["tem", "HR", "HR", "%"], ZC04: ["pre", "P_mar", "QFF", "hPa"], ZC05: ["vie", "ff10", "Viento", "kt"], ZC07: ["vie", "ff10", "Viento", "kt"],
-  ZC06: ["pp", "rr1m", "Lluvia 3 h", "mm"], ZE05: ["ext", "T", "Ts", "°C"], ZE08: ["ext", "T", "Ts", "°C"]};
+  ZC06: ["pp", "rr1m", "Lluvia 3 h", "mm"], ZC08: ["vie", "dd10", "Dirección del viento", "°"], ZC09: ["tem", "T", "Ts", "°C"], ZC10: ["tem", "T", "Ts", "°C"], ZE05: ["ext", "T", "Ts", "°C"], ZE08: ["ext", "T", "Ts", "°C"]};
 let MAPE = null;
 async function mapaEsp(el, tit, e, V2, h, hora){
   if (!window.L || e.lat == null) return;
