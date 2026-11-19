@@ -647,7 +647,7 @@ SIX_MIN_N, SIX_VENT, SIX_SOSP, SIX_ERR = 72, 720, 4.0, 6.0      # 3 días de hor
 SIX_TIPO = {"T": "tem", "Td": "tem", "HR": "tem", "P_mar": "pre", "ff10": "vie"}
 
 
-def _six_sigma(raiz, A, E, V, fin):
+def _six_sigma(raiz, A, E, V, fin, leer=None):
     import json
     from pathlib import Path
     out = {}
@@ -656,8 +656,14 @@ def _six_sigma(raiz, A, E, V, fin):
         S = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
     except Exception:
         S = {}
-    st, ult = S.get("st", {}), pd.Timestamp(S["ultima"]) if S.get("ultima") else fin - pd.Timedelta(hours=6)
-    H = P.horario(A[A["momento"] > max(ult, fin - pd.Timedelta(hours=6)) - pd.Timedelta(hours=1)])
+    st, ult = S.get("st", {}), pd.Timestamp(S["ultima"]) if S.get("ultima") else None
+    if ult is None and leer is not None:        # primera vez: arranca con los ~4 días que haya en el archivo para no esperar 3 días
+        try:
+            A = leer(96); ult = fin - pd.Timedelta(hours=96)
+        except Exception:
+            pass
+    ult = ult if ult is not None and ult > fin - pd.Timedelta(hours=100) else fin - pd.Timedelta(hours=6)
+    H = P.horario(A[A["momento"] > ult - pd.Timedelta(hours=1)])
     if H.empty:
         return out
     hora_fin = fin.floor("h")
@@ -810,7 +816,7 @@ def correr(raiz, E, cods_obs, leer_archivo, horas=26, V=None, M=None, aisladas=(
     try:      # dirección del viento, hora desfasada y deriva lenta contra vecinas (todas las estaciones)
         X_ = _espaciales_extra(raiz, A, E, V, fin)
         try:
-            for c, L in _six_sigma(raiz, A, E, V, fin).items():
+            for c, L in _six_sigma(raiz, A, E, V, fin, leer=lambda h: leer_archivo(raiz, fin, horas=h)).items():
                 X_.setdefault(c, []).extend(L)
         except Exception:
             import traceback
