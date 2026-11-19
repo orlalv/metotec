@@ -81,15 +81,34 @@ function ventana(ep, k){
   const c = (a + b) / 2, w = (b - a) * Math.pow(1.6, k);
   return [Math.round(c - w / 2), Math.min(Date.now(), Math.round(c + w / 2))];
 }
+// mapa bajo el gráfico: la estación y sus vecinas con el valor de cada una al inicio de la falla
+async function mapaVec(cont, e, ep, vec, gv){
+  const M = cont.querySelector(".fmap"); if (!window.L || e.lat == null){ M.remove(); return; }
+  const v = gv(), t0 = ep.inicio, mp = L.map(M, {attributionControl: false});
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 13}).addTo(mp);
+  const et = (n, val, col) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-100%);white-space:nowrap;background:#0d1117dd;border:1px solid ${col};color:#fff;border-radius:6px;padding:1px 6px;font:600 11.5px system-ui;text-align:center">${esc(n)}<br><b style="color:${col}">${val}</b></div>`});
+  const valEn = async c => { try { const P = await serie(c, v, t0 - 10 * 60e3, t0 + 10 * 60e3); if (!P.length) return null; P.sort((a, b) => Math.abs(a[0] - t0) - Math.abs(b[0] - t0)); return P[0][1]; } catch (er){ return null; } };
+  const fm = y => y == null ? "sin dato" : `${Math.round(y * 10) / 10} ${UNI[v] || ""}`;
+  const pts = [[e.lat, e.lon]], m0 = L.marker([e.lat, e.lon], {icon: et(ep.nombre, "…", "#f85149")}).addTo(mp);
+  valEn(ep.codigo).then(y => m0.setIcon(et(ep.nombre, fm(y), "#f85149")));
+  vec.filter(z => z[3].lat != null).forEach(([c, n, d, x]) => { pts.push([x.lat, x.lon]);
+    const mk = L.marker([x.lat, x.lon], {icon: et(`${n} · ${d} km`, "…", "#58a6ff")}).addTo(mp);
+    valEn(c).then(y => mk.setIcon(et(`${n} · ${d} km`, fm(y), "#58a6ff"))); });
+  if (pts.length > 1) mp.fitBounds(pts, {padding: [50, 50], maxZoom: 10}); else mp.setView(pts[0], 9);
+  cont.querySelector(".fmapt").textContent = `${NOMV[v] || v} al inicio de la falla (${utc(t0)} UTC) · rojo = la estación, azul = vecinas que usa el control${vec.length ? "" : " (no tiene vecinas cercanas)"}`;
+}
 async function grafico(cont, ep, R){
   const e = (R.estaciones || []).find(x => x.codigo === ep.codigo) || {};
-  const vec = (e.vecinas || []).map(c => [c, ((R.estaciones || []).find(x => x.codigo === c) || {}).nombre || c]);
+  const km = (a, b) => { const r = Math.PI / 180, q = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2; return 12742 * Math.asin(Math.sqrt(q)); };
+  const vec = (e.vecinas || []).map(c => { const x = (R.estaciones || []).find(y => y.codigo === c) || {}; return [c, x.nombre || c, x.lat != null && e.lat != null ? Math.round(km(e, x)) : null, x]; });
   let k = 0, ref = "", vs = String(ep.var).split("+"), v = vs[0];
   cont.innerHTML = `<div class="sgtop"><button class="sgbtn" data-z="-1" title="Acercar">−</button><button class="sgbtn" data-z="1" title="Alejar">+</button>
     ${vs.length > 1 ? `<label>Variable <select class="fvar" style="background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:2px 6px">${vs.map(x => `<option value="${esc(x)}">${esc(NOMV[x] || x)}</option>`).join("")}</select></label>` : ""}
-    <label>Referencia <select class="fref" style="background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:2px 6px"><option value="">${vec.length ? "ninguna" : "sin vecinas cercanas"}</option>${vec.map(([c, n]) => `<option value="${esc(c)}">${esc(n)}</option>`).join("")}</select></label>
+    <label>Referencia <select class="fref" style="background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:2px 6px"><option value="">${vec.length ? "ninguna" : "sin vecinas cercanas"}</option>${vec.map(([c, n, d]) => `<option value="${esc(c)}">${esc(n)}${d != null ? ` · ${d} km` : ""}</option>`).join("")}</select></label>
     <span class="sgval"></span></div><div class="fg"></div>
-    <div class="sgley"><span><i style="background:#5AA9E6"></i>${esc(ep.nombre)}</span><span><i style="background:var(--err)"></i>tramo con falla</span><span class="lref" hidden><i style="background:#C9A54C"></i>vecina</span><span class="lctl" hidden><i style="background:#3fb950"></i><span class="tctl"></span></span><span class="lvar"></span></div>`;
+    <div class="sgley"><span><i style="background:#5AA9E6"></i>${esc(ep.nombre)}</span><span><i style="background:var(--err)"></i>tramo con falla</span><span class="lref" hidden><i style="background:#C9A54C"></i>vecina</span><span class="lctl" hidden><i style="background:#3fb950"></i><span class="tctl"></span></span><span class="lvar"></span></div>
+    <div class="fmap" style="height:300px;margin-top:8px;border:1px solid var(--bd);border-radius:8px"></div><div class="fmapt" style="font-size:12px;color:var(--mu);margin-top:3px"></div>`;
+  mapaVec(cont, e, ep, vec, () => v);
   const dib = async () => {
     const [a, b] = ventana(ep, k), G = cont.querySelector(".fg");
     G.innerHTML = `<p style="color:var(--mu)">Cargando ${dur((b - a) / 60e3)} de minutario…</p>`;
