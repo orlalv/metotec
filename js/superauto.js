@@ -219,5 +219,5 @@ document.addEventListener("click", ev => {
     tr.innerHTML = `<td colspan="5"><div class="supbox" data-c="${al.dataset.c}"></div></td>`; al.after(tr);
     SG.alerta(tr.querySelector(".supbox"), {...x.e, hallazgos: x.H}, x.H, al.dataset.tp, al.dataset.h); return; }
   const r = ev.target.closest("tr[data-ir]"); if (r && !ev.target.closest("a")){ window.supIr(r.dataset.ir, r.dataset.tp); return; } const a = ev.target.closest("a[data-sup]"); if (!a) return; ev.preventDefault(); q = ""; window.cambiarModo(a.dataset.sup); });
-window.SUPER = {init, pintar, indice: indiceCtl, modos: new Set(["sup", "sup_pp", "sup_est", "sup_bol", ...Object.keys(TABS)])};
+window.SUPER = {init, pintar, indice: indiceCtl, CTL, tipoCtl, modos: new Set(["sup", "sup_pp", "sup_est", "sup_bol", ...Object.keys(TABS)])};
 })();

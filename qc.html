@@ -215,7 +215,7 @@ main[hidden]{display:none}
  <div class="svcw"><button id="svc" title="Estado de los servicios"><i></i><span>Servicios</span></button><div id="svcP" hidden></div></div>
  <div class="salto"></div>
  <div class="bloques"><div class="grupos"><button data-g="real" class="on">Tiempo real</button><button data-g="super">Super automático</button><button data-g="prod">Productos</button><button data-g="hist">Históricos</button></div>
- <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="rec" data-g="real">Récord histórico</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="comp" data-g="real">Completitud obs.</button><button data-m="est" data-g="real">Estado de estaciones</button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="vex" data-g="gestion" hidden>Vecinas externas</button><button data-m="sup" data-g="super" hidden>Estaciones</button><button data-m="sup_esp" data-g="super" hidden>Control espacial</button><button data-m="sup_pp" data-g="super" hidden>Agua caída</button><button data-m="sup_prc" data-g="super" hidden>Precipitación</button><button data-m="sup_ext" data-g="super" hidden>Extremas</button><button data-m="sup_pre" data-g="super" hidden>Presiones</button><button data-m="sup_tem" data-g="super" hidden>Temperaturas</button><button data-m="sup_vie" data-g="super" hidden>Viento</button><button data-m="sup_bol" data-g="super" hidden>Boletín automático</button><button data-m="sup_est" data-g="super" hidden>Estación</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
+ <div class="modos"><button data-m="ema" data-g="real" class="on">Estaciones automáticas</button><button data-m="obs" data-g="real">Observaciones</button><button data-m="pp" data-g="real">Precipitación</button><button data-m="tem" data-g="real">Temperaturas</button><button data-m="ext" data-g="real">Extremas</button><button data-m="rec" data-g="real">Récord histórico</button><button data-m="bol" data-g="real">Boletín diario</button><button data-m="mod" data-g="real">Contraste con modelos</button><button data-m="minu" data-g="real">Datos minutarios</button><button data-m="mis" data-g="gestion" hidden>Mis alertas<b id="misN" class="cnt"></b></button><button data-m="est" data-g="real">Estado de estaciones</button><button data-m="equ" data-g="gestion" hidden>Equipo</button><button data-m="vex" data-g="gestion" hidden>Vecinas externas</button><button data-m="sup" data-g="super" hidden>Estaciones</button><button data-m="sup_esp" data-g="super" hidden>Control espacial</button><button data-m="sup_pp" data-g="super" hidden>Agua caída</button><button data-m="sup_prc" data-g="super" hidden>Precipitación</button><button data-m="sup_ext" data-g="super" hidden>Extremas</button><button data-m="sup_pre" data-g="super" hidden>Presiones</button><button data-m="sup_tem" data-g="super" hidden>Temperaturas</button><button data-m="sup_vie" data-g="super" hidden>Viento</button><button data-m="sup_bol" data-g="super" hidden>Boletín automático</button><button data-m="sup_est" data-g="super" hidden>Estación</button><button data-m="comp" data-g="prod" hidden>Completitud</button><button data-m="inf" data-g="prod" hidden>Informe de la red</button><button data-m="hist" data-g="hist" hidden>Historial</button><button data-m="ser" data-g="hist" hidden>Series de temperatura</button><button data-m="serh" data-g="hist" hidden>Series horarias</button><button data-m="reg" data-g="hist" hidden>Reglas</button></div></div>
  <div class="salto" id="salto2" hidden></div><div id="ppSub" class="ppsub" hidden></div>
  <div class="chips" id="chips"></div>
 </header>
@@ -262,7 +262,7 @@ main[hidden]{display:none}
 <script src="js/verificar.js?v=202611190045"></script>
 <script src="js/minutarios.js?v=202611181740"></script>
 <script src="js/supgraf.js?v=202611190130"></script>
-<script src="js/superauto.js?v=202611190215"></script>
+<script src="js/superauto.js?v=202611190230"></script>
 <script src="js/extremas.js?v=202611181830"></script>
 <script src="js/boletin.js?v=202611171230"></script>
 <script src="js/series.js?v=202611101600"></script>
@@ -326,8 +326,9 @@ const SUPC = [["pp", "Agua caída"], ["ext", "Extremas"], ["pre", "Presión"], [
 function supFiltradas(){
   const S = R.super || {}, q = $("#buscar").value.trim().toLowerCase();
   const L = (S.estaciones || []).map(e => { const h = (e.hallazgos || []).map(x => ({...x, gen: S.generado})).filter(x => MARCA.estado(e.codigo, x) !== "oculta");
-    return {...e, hallazgos: h, nivel: e.nivel === 3 ? 3 : Math.max(0, ...h.map(x => x.nivel))}; });
-  return L.filter(e => e.lat != null && enZona(e) && ver[e.nivel] && supPersona(e.codigo) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
+    const h2 = gsup === "todas" || !window.SUPER ? h : h.filter(x => SUPER.tipoCtl(x.regla) === gsup);
+    return {...e, hallazgos: h2, nivel: e.nivel === 3 ? 3 : Math.max(0, ...h2.map(x => x.nivel))}; });
+  return L.filter(e => e.lat != null && (gsup === "todas" || e.hallazgos.length) && enZona(e) && ver[e.nivel] && supPersona(e.codigo) && (!q || (e.nombre || "").toLowerCase().includes(q) || e.codigo.includes(q) || (e.oaci || "").toLowerCase() === q));
 }
 // las estaciones del Super automático no tienen observador: casi nunca están en «mis estaciones». Si la persona no tiene ninguna
 // de ellas, el filtro de persona no se aplica (solo el de red); así la pestaña no queda vacía
@@ -340,12 +341,13 @@ function pintarSup(){
   T.forEach(e => res[e.nivel === 3 ? 3 : Math.max(0, ...e.hallazgos.map(x => x.nivel))]++);
   $("#chips").innerHTML = [0, 1, 2, 3].map(n => `<span class="chip ${ver[n] ? "" : "off"}" data-n="${n}"><i style="background:${COL[n]}"></i>${["Sin hallazgos", "Sospechosas", "Con errores", "Sin datos"][n]} ${res[n]}</span>`).join("");
   $("#fuentes").textContent = "Fuente: estaciones automáticas sin observador (DMC) · minutario archivado · umbrales más estrictos que la pasada normal";
+  supBarra();
   const V = supFiltradas();
   Object.values(marcas).forEach(m => m.remove()); marcas = {};
   V.forEach(e => { const m = L.circleMarker([e.lat, e.lon], {radius: 7, color: "#fff", weight: 1, fillColor: HEX[e.nivel], fillOpacity: .95}).addTo(mapa);
     m.bindTooltip(`${esc(e.nombre)} · ${e.hallazgos.length} hallazgos`); m.on("click", () => detalleSup(e.codigo)); marcas[e.codigo] = m; });
   const cnt = e => SUPC.map(([k, n]) => [n, e.hallazgos.filter(h => h.tipo === k).length]).filter(x => x[1]);
-  $("#lista").innerHTML = (window.SUPER && SUPER.indice ? `<details class="supIdx" style="margin:6px 8px 10px" ${window.supIdxAb ? "open" : ""}><summary style="cursor:pointer;font-weight:600">Índice por tipo de control</summary>${SUPER.indice(V.map(e => ({e, H: e.hallazgos})))}</details>` : "") + [...V].sort((a, b) => (b.nivel === 3 ? -1 : b.nivel) - (a.nivel === 3 ? -1 : a.nivel) || b.hallazgos.length - a.hallazgos.length || (a.nombre || "").localeCompare(b.nombre || "")).map(e => `<div class="it ${sel === e.codigo ? "sel" : ""}" data-c="${e.codigo}"><span class="p" style="background:${COL[e.nivel]}"></span>
+  $("#lista").innerHTML = [...V].sort((a, b) => (b.nivel === 3 ? -1 : b.nivel) - (a.nivel === 3 ? -1 : a.nivel) || b.hallazgos.length - a.hallazgos.length || (a.nombre || "").localeCompare(b.nombre || "")).map(e => `<div class="it ${sel === e.codigo ? "sel" : ""}" data-c="${e.codigo}"><span class="p" style="background:${COL[e.nivel]}"></span>
     <div><b>${esc(e.nombre)}</b><small>${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · último dato ${e.ultima ? e.ultima.slice(11, 16) + " UTC" : "—"}</small>
     ${e.hallazgos.length ? `<div class="al">${cnt(e).map(([n, k]) => `<span>${n} ${k}</span>`).join("")}</div>` : ""}</div><div class="v">${e.nivel === 3 ? "—" : e.hallazgos.length}</div></div>`).join("") || `<p style="padding:14px;color:var(--mu)">Sin estaciones con ese filtro.</p>`;
   if (sel) detalleSup(sel, false);
@@ -622,6 +624,14 @@ const PP_SUBS = [["alertas", "Alertas", "ext"], ["series", "Series", "ppx"], ["r
 let ppSub = (() => { try { return localStorage.getItem("qcPpSub") || "alertas"; } catch (e) { return "alertas"; } })();
 const ppN = {};                                                      // contadores por subopción (las que se conocen)
 window.ppContar = (k, n) => { ppN[k] = n; ppBarra(); };
+// Súper automático · Estaciones: subpestañas por tipo de control (como Observaciones)
+let gsup = (() => { try { return localStorage.getItem("qcSupCtl") || "todas"; } catch (e) { return "todas"; } })();
+function supBarra(){
+  const el = $("#ppSub"); if (!el || modo !== "sup" || !window.SUPER) return; el.hidden = false; $("#salto2").hidden = false; el.style.visibility = "visible";
+  const E = ((R && R.super) || {}).estaciones || [], n = k => E.filter(e => (e.hallazgos || []).some(x => MARCA.estado(e.codigo, {...x, gen: R.super.generado}) !== "oculta" && (k === "todas" || SUPER.tipoCtl(x.regla) === k))).length;
+  el.innerHTML = [["todas", "Todas"], ...SUPER.CTL.map(c => [c[0], c[1]])].map(([k, t]) => `<button data-sc="${k}" class="${gsup === k ? "on" : ""}" title="${esc((SUPER.CTL.find(c => c[0] === k) || [, , "Todas las alertas"])[2])}">${t}<b>${n(k) || ""}</b></button>`).join("");
+}
+document.addEventListener("click", ev => { const b = ev.target.closest("#ppSub button[data-sc]"); if (b){ gsup = b.dataset.sc; try { localStorage.setItem("qcSupCtl", gsup); } catch (e) {} supBarra(); R && pintar(); } });
 function obsBarra(){
   const el = $("#ppSub"); if (!el || modo !== "obs") return; el.hidden = false; $("#salto2").hidden = false; el.style.visibility = "visible";
   el.innerHTML = [["todas", "Todas"], ["sistema", "Reglas del sistema"], ["codificacion", "Codificación"], ["evolucion", "Evolución"], ["sensor", "Frente al sensor"], ["satelite", "Frente al satélite"]].map(([k, t]) => { const n = ((R && R.observaciones || {}).estaciones || []).filter(e => hObs(e).some(x => x.nivel > 0 && (k === "todas" || x.tipo === k))).length; return `<button data-ob="${k}" class="${gobs === k ? "on" : ""}">${t}<b>${n || ""}</b></button>`; }).join("");
@@ -663,7 +673,7 @@ function cambiarModo(m){
   ["hist", "minu", "bol", "ext", "ser", "inf", "est", "plu", "reg", "equ", "vex", "mis", "comp", "sup", "ppx"].forEach(i => $("#" + i).hidden = i !== sec);
   $("#chips").style.display = h ? "none" : "";
   $("#mvar").hidden = $("#mref").hidden = m !== "mod"; leyenda(m === "mod");
-  $("#sub").hidden = $("#grupo").hidden = $("#vars").hidden = m !== "ema"; $("#gobs").hidden = true; obsBarra();
+  $("#sub").hidden = $("#grupo").hidden = $("#vars").hidden = m !== "ema"; $("#gobs").hidden = true; obsBarra(); supBarra();
   guardarVista();
   try { history.replaceState(null, "", "#" + m); } catch (e) {}      // la pestaña también queda en la dirección: F5 vuelve a la misma
   if (h){
