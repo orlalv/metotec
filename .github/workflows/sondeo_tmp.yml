@@ -1,0 +1,48 @@
+name: Sondeo temporal pagina
+on: workflow_dispatch
+jobs:
+  s:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: {ref: datos, path: datosb, sparse-checkout: "estaciones.json\ndiario\nproductos", sparse-checkout-cone-mode: false}
+      - run: |
+          python3 - <<'P'
+          import os, json, urllib.request
+          def kv(k):
+              u = f"https://api.cloudflare.com/client/v4/accounts/{os.environ['CLOUDFLARE_ACCOUNT_ID']}/storage/kv/namespaces/0d6aa4b37a834b5983ac9c7f638e2dbb/values/{k}"
+              try: return json.loads(urllib.request.urlopen(urllib.request.Request(u, headers={"Authorization": "Bearer " + os.environ["CLOUDFLARE_API_TOKEN"]})).read())
+              except Exception: return None
+          r = kv("qc/ultimo"); r["observaciones"] = kv("qc/sensorial"); r["super"] = kv("qc/super"); r["marcas"] = {}; r["informados"] = kv("qc/informados") or {}
+          json.dump(r, open("/tmp/qc.json", "w"))
+          json.dump(kv("qc/pluviometros") or {}, open("/tmp/plu.json", "w"))
+          print("SUPER obs_esp", len(r["super"].get("obs_esp", [])), "errores", r["super"].get("errores"))
+          print("SUPER bol", sum(1 for e in r["super"]["estaciones"] if e.get("bol")))
+          import collections; print("SUPER reglas", collections.Counter(h["regla"] for e in r["super"]["estaciones"] for h in e["hallazgos"]).most_common())
+          print("EMA pruebas", collections.Counter(a["prueba"] for e in r["estaciones"] for a in e["alertas"]).most_common())
+          P
+          npm i playwright@1.47.2 >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1
+          (python3 -m http.server 8765 >/dev/null 2>&1 &); sleep 1
+          cat > /tmp/t.js <<'J'
+          const {chromium}=require(process.cwd()+'/node_modules/playwright');const fs=require('fs');(async()=>{const b=await chromium.launch();const p=await b.newPage({viewport:{width:1600,height:900}});
+          await p.addInitScript(()=>{try{localStorage.setItem('qcClave','x')}catch(e){}});
+          await p.route('**/api/qc',r=>r.fulfill({body:fs.readFileSync('/tmp/qc.json'),contentType:'application/json'}));
+          await p.route('**/api/productos*',r=>r.fulfill({body:fs.readFileSync('/tmp/plu.json'),contentType:'application/json'}));
+          await p.route('**/api/datosraw*',r=>{const u=new URL(r.request().url());const f='datosb/'+u.searchParams.get('p');return fs.existsSync(f)?r.fulfill({body:fs.readFileSync(f),contentType:'application/json'}):r.fulfill({status:404,body:''});});
+          await p.route('**/api/minutarios*',r=>r.fulfill({body:'{"cab":"codigo,momento,T","filas":[]}',contentType:'application/json'}));
+          let errs=[];p.on('pageerror',e=>errs.push(e.message+' @ '+(e.stack||'').split('\n')[1]));
+          await p.goto('http://localhost:8765/qc.html');await p.waitForTimeout(4000);
+          const modos=["ema","obs","obs_esp","pp","tem","ext","rec","bol","mod","est","sup","sup_esp","sup_pp","sup_prc","sup_ext","sup_pre","sup_tem","sup_vie","sup_bol","sup_est","comp","inf","reg"];
+          for(const m of modos){errs=[];await p.evaluate(m=>cambiarModo(m),m);await p.waitForTimeout(1500);
+            const txt=await p.evaluate(()=>{const v=[...document.querySelectorAll('main:not([hidden]) #lista, section:not([hidden]), div[id]:not([hidden])')].filter(x=>x.offsetParent).map(x=>x.innerText).join(' ');return v.replace(/\s+/g,' ').slice(0,160)});
+            // abrir primera alerta/estación
+            const it=await p.$('.it'); if(it && ["ema","obs","sup"].includes(m)){await it.click().catch(()=>{});await p.waitForTimeout(800);}
+            const al=await p.$('tr.supal'); if(al){await al.click().catch(()=>{});await p.waitForTimeout(800);const vis=await p.$$eval('tr.supal',x=>x.filter(y=>y.style.display!=='none').length);const sec=await p.$$eval('.supDatosSec',x=>x.filter(y=>y.style.display!=='none').length);console.log('  abrir alerta: visibles',vis,'datosSec',sec);}
+            console.log('MODO',m,errs.length?'ERR '+errs.join(' || '):'ok','|',txt);}
+          await b.close();})();
+          J
+          node /tmp/t.js
