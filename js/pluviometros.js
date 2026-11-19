@@ -201,9 +201,17 @@ function pintar(){
     <details style="margin-top:12px;color:var(--mu);font-size:12.5px"><summary style="cursor:pointer">Cómo se decide · periodo y fuentes</summary><p>Periodo analizado: ${esc(D.desde || "—")} → ${esc(D.hasta || "—")} UTC (${D.dias ?? "—"} días, hasta donde hay datos minutarios). Actualizado ${esc(D.generado || "—")} UTC. Evidencias: ${fuentes}.<br>
     Una hora es sospechosa si la estación marcó menos de 0,2 mm (o no tuvo dato) y coinciden al menos 2 evidencias de lluvia, una de ellas las estaciones vecinas con dato. Si las vecinas están secas, no se sospecha. Es una sospecha para revisar en terreno, no una corrección.</p></details>`;
   const o = $("#pOut"); o.querySelector("#pOrd").onchange = ev => { orden = ev.target.value; try { localStorage.setItem("qcPluOrd", orden); } catch (e) {} pintar(); };
-  o.querySelector("#pAbrir").onclick = () => { L.forEach(e => abiertos.add(e.codigo)); pintar(); };
+  o.querySelector("#pAbrir").onclick = () => { abiertos.clear(); pintar(); };
   o.querySelector("#pCerrar").onclick = () => { abiertos.clear(); pintar(); };
-  o.querySelectorAll("details[data-cod]").forEach(d => d.addEventListener("toggle", () => { d.open ? abiertos.add(d.dataset.cod) : abiertos.delete(d.dataset.cod); }));
+  // al abrir una estación se ocultan las demás (se ve solo su detalle); al cerrarla vuelve la lista completa
+  const ds = [...o.querySelectorAll("details[data-cod]")];
+  const enfocar = () => { const a = ds.find(x => x.open); ds.forEach(x => { x.style.display = a && x !== a ? "none" : ""; }); if (a) a.scrollIntoView({block: "nearest"}); };
+  ds.forEach(d => d.addEventListener("toggle", () => {
+    if (d.open){ abiertos.clear(); abiertos.add(d.dataset.cod); ds.forEach(x => { if (x !== d && x.open) x.open = false; }); }
+    else abiertos.delete(d.dataset.cod);
+    enfocar();
+  }));
+  enfocar();
 }
 async function contar(fclave){                  // solo el número de estaciones dudosas, para el contador de la subopción (sin pintar nada)
   clave = fclave || clave;
