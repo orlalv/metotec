@@ -55,6 +55,15 @@ function ticks(lo, hi, n = 5){                 // marcas "redondas" del eje y
   for (let v = Math.ceil(lo / paso) * paso; v <= hi + 1e-9; v += paso) T.push(Math.round(v / paso) * paso);
   return {T, paso};
 }
+// línea suavizada: media móvil centrada cuando hay muchos minutos y curva cuadrática por los puntos medios
+function suave(P, v, x, y){
+  if (!P.length) return "";
+  const m = P.length > 240 ? Math.round(P.length / 160) : 1, h = m >> 1;
+  const Q = m > 1 ? P.map((r, i) => { let s = 0, n = 0; for (let j = Math.max(0, i - h); j <= Math.min(P.length - 1, i + h); j++){ s += P[j][v]; n++; } return [x(r.t), y(s / n)]; }) : P.map(r => [x(r.t), y(r[v])]);
+  let d = `M${Q[0][0].toFixed(1)},${Q[0][1].toFixed(1)}`;
+  for (let i = 1; i < Q.length; i++){ const a = Q[i - 1], b = Q[i]; d += `Q${a[0].toFixed(1)},${a[1].toFixed(1)} ${((a[0] + b[0]) / 2).toFixed(1)},${((a[1] + b[1]) / 2).toFixed(1)}`; }
+  return d + `L${Q[Q.length - 1][0].toFixed(1)},${Q[Q.length - 1][1].toFixed(1)}`;
+}
 function linea(F, vs, o = {}){
   const W = 640, Ht = 240, mi = 54, md = 16, mt = 14, mb = 28; if (!F.length) return "";
   const t0 = F[0].t, t1 = F[F.length - 1].t, x = t => mi + (t - t0) / ((t1 - t0) || 1) * (W - mi - md);
@@ -72,11 +81,11 @@ function linea(F, vs, o = {}){
     if (o.barras) return P.map(r => `<rect x="${(x(r.t) - bw / 2).toFixed(1)}" y="${y(r[v]).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0, y0 - y(r[v])).toFixed(1)}" fill="${c}" opacity=".85"/>`).join("");
     if (!P.length) return "";
     const pts = P.map(r => `${x(r.t).toFixed(1)},${y(r[v]).toFixed(1)}`), area = vs.length === 1 ? `<polygon points="${x(P[0].t).toFixed(1)},${y0.toFixed(1)} ${pts.join(" ")} ${x(P[P.length - 1].t).toFixed(1)},${y0.toFixed(1)}" fill="${c}" opacity=".13"/>` : "";
-    return area + `<polyline fill="none" stroke="${c}" stroke-width="1.8" stroke-linejoin="round" points="${pts.join(" ")}"/>`; }).join("");
+    return area + `<path fill="none" stroke="${c}" stroke-width="2" stroke-linejoin="round" d="${suave(P, v, x, y)}"/>`; }).join("");
   const ext = o.barras ? "" : (() => { const v = vs[0], P = F.filter(r => r[v] != null); if (!P.length) return ""; const mn = P.reduce((a, r) => r[v] < a[v] ? r : a), mx = P.reduce((a, r) => r[v] > a[v] ? r : a);
     const m = (r, up) => `<circle cx="${x(r.t).toFixed(1)}" cy="${y(r[v]).toFixed(1)}" r="3" fill="${V[v][2]}" stroke="var(--panel)" stroke-width="1"/><text x="${Math.min(Math.max(x(r.t), mi + 14), W - md - 14).toFixed(1)}" y="${(y(r[v]) + (up ? -7 : 14)).toFixed(1)}" text-anchor="middle" font-size="10.5" font-weight="700" fill="${V[v][2]}">${r[v].toFixed(dec > 0 ? 1 : 0)}</text>`;
     return (mx === mn ? "" : m(mx, true) + m(mn, false)); })();
-  const dibO = otros.map(q => { const P = q.F.filter(r => r[vs[0]] != null && r.t >= t0 && r.t <= t1); return P.length ? `<polyline fill="none" stroke="${q.color}" stroke-width="1.5" stroke-dasharray="5 3" stroke-linejoin="round" points="${P.map(r => `${x(r.t).toFixed(1)},${y(r[vs[0]]).toFixed(1)}`).join(" ")}"/>` : ""; }).join("");
+  const dibO = otros.map(q => { const P = q.F.filter(r => r[vs[0]] != null && r.t >= t0 && r.t <= t1); return P.length ? `<path fill="none" stroke="${q.color}" stroke-width="1.6" stroke-opacity=".8" stroke-linejoin="round" d="${suave(P, vs[0], x, y)}"/>` : ""; }).join("");
   const mk = (o.marcas || []).filter(t => t >= t0 && t <= t1).map(t => `<line x1="${x(t).toFixed(1)}" x2="${x(t).toFixed(1)}" y1="${mt}" y2="${Ht - mb}" stroke="#e5534b" stroke-width="1.4" stroke-dasharray="4 3"/>`).join("") + (o.sel && o.sel >= t0 && o.sel <= t1 ? `<line x1="${x(o.sel).toFixed(1)}" x2="${x(o.sel).toFixed(1)}" y1="${mt}" y2="${Ht - mb}" stroke="var(--oro)" stroke-width="2.4"/>` : "");
   const id = "c" + (++CHN); CH.set(id, {otros, F, vs, W, mi, md, t0, t1, mt, Ht, mb, y, x, lo, hi, dia: o.dia});
   if (CH.size > 80) CH.delete(CH.keys().next().value);
@@ -191,5 +200,5 @@ document.addEventListener("click", ev => {
   if (a){ ev.preventDefault(); return alerta(box, e, e.hallazgos, box.dataset.g, ""); }
   alerta(box, e, e.hallazgos, bg.dataset.sg2, box.dataset.h);
 });
-window.SG = {alerta, estacion, GR, PER, diarioMes: async m => { if (!CD.has(m)) CD.set(m, fetch(`${RAW}diario/${m}.json`, {cache: "no-store"}).then(r => r.ok ? r.json() : null).catch(() => null)); const v = await CD.get(m); if (!v) CD.delete(m); return v; }};
+window.SG = {minuto, alerta, estacion, GR, PER, diarioMes: async m => { if (!CD.has(m)) CD.set(m, fetch(`${RAW}diario/${m}.json`, {cache: "no-store"}).then(r => r.ok ? r.json() : null).catch(() => null)); const v = await CD.get(m); if (!v) CD.delete(m); return v; }};
 })();

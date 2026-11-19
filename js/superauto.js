@@ -117,6 +117,28 @@ function pintar(){
       ${filasDatos(F, tipo)}</table></div>`}
     <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Haga clic en una fila para ver su gráfico y su tabla. ${NOTA[tipo]} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
 }
+// regla espacial → [grupo de gráficos, variable del minutario, nombre, unidad]
+const VAR_R = {ZC01: ["tem", "T", "Ts", "°C"], ZC02: ["tem", "Td", "Td", "°C"], ZC03: ["tem", "HR", "HR", "%"], ZC04: ["pre", "P_mar", "QFF", "hPa"], ZC05: ["vie", "ff10", "Viento", "kt"], ZC07: ["vie", "ff10", "Viento", "kt"],
+  ZC06: ["pp", "rr1m", "Lluvia 3 h", "mm"], ZE05: ["ext", "T", "Ts", "°C"], ZE08: ["ext", "T", "Ts", "°C"]};
+let MAPE = null;
+async function mapaEsp(el, tit, e, V2, h, hora){
+  if (!window.L || e.lat == null) return;
+  if (MAPE){ try { MAPE.remove(); } catch (x) {} MAPE = null; }
+  const R = getR(), E = (R && R.estaciones) || [], [, v, nom, un] = VAR_R[h.regla] || ["tem", "T", "Ts", "°C"], t0 = Date.parse(hora + ":00Z");
+  tit.innerHTML = `<b>${esc(nom)}</b> a las ${esc(hora.slice(11, 16))} UTC del ${esc(hora.slice(8, 10) + "/" + hora.slice(5, 7))}${v === "rr1m" ? " (suma de las 3 h previas)" : ""}`;
+  const mp = L.map(el, {attributionControl: false}); MAPE = mp;
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 13}).addTo(mp);
+  const et = (n, val, col) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-50%);white-space:nowrap;background:#0d1117e6;border:1.5px solid ${val == null ? "#8b949e" : col};border-radius:7px;padding:1px 6px;font:600 11px system-ui;color:#e6edf3;text-align:center">${esc(n)}<br><b style="font-size:13px;color:${val == null ? "#8b949e" : col}">${val == null ? "s/d" : (Math.round(val * 10) / 10) + " " + un}</b></div>`});
+  const valor = async c => { try { const a = v === "rr1m" ? t0 - 3 * 3600e3 : t0 - 15 * 60e3, b = t0 + (v === "rr1m" ? 0 : 15 * 60e3), F = await SG.minuto(c, a, b + 60e3);
+    if (v === "rr1m"){ const x = F.filter(o => o.rr1m != null); return x.length >= 120 ? x.reduce((s, o) => s + o.rr1m, 0) : null; }
+    const x = F.filter(o => o[v] != null).sort((p, q) => Math.abs(p.t - t0) - Math.abs(q.t - t0)); return x.length ? x[0][v] : null; } catch (z) { return null; } };
+  const pts = [[e.lat, e.lon]], m0 = L.marker([e.lat, e.lon], {icon: et(e.nombre, null, "#f85149"), zIndexOffset: 1000}).addTo(mp);
+  valor(e.codigo).then(y => m0.setIcon(et(e.nombre, y, "#f85149")));
+  const km = (a, b) => { const r = Math.PI / 180, q = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2; return Math.round(12742 * Math.asin(Math.sqrt(q))); };
+  V2.forEach(w => { const x = E.find(z => z.codigo === w.codigo); if (!x || x.lat == null) return; pts.push([x.lat, x.lon]); const n = `${w.nombre} · ${km(e, x)} km`;
+    const mk = L.marker([x.lat, x.lon], {icon: et(n, null, "#58a6ff")}).addTo(mp); valor(w.codigo).then(y => mk.setIcon(et(n, y, "#58a6ff"))); });
+  if (pts.length > 1) mp.fitBounds(pts, {padding: [50, 50], maxZoom: 10}); else mp.setView(pts[0], 9);
+}
 // Boletín automático: mismo formato del Boletín diario (mínima y máxima con su hora y precipitación), de las estaciones sin observador, armado con los minutos
 function pintarBol(F){
   const f = v => v == null ? "—" : String(v), fuera = v => v != null && (v < -35 || v > 45);
@@ -161,7 +183,17 @@ document.addEventListener("click", ev => {
   const al = ev.target.closest("tr.supal"); if (al && !ev.target.closest(".mk, a")){
     const sig = al.nextElementSibling; if (sig && sig.classList.contains("supx")){ sig.remove(); return; }
     const F = filas(), x = F.find(y => y.e.codigo === al.dataset.c); if (!x) return;
-    const tr = document.createElement("tr"); tr.className = "supx"; tr.innerHTML = `<td colspan="5"><div class="supbox" data-c="${al.dataset.c}"></div></td>`; al.after(tr);
+    const tr = document.createElement("tr"); tr.className = "supx";
+    if (modo === "sup_esp"){      // control espacial: gráficos ya comparados con las vecinas y mapa con sus valores a la derecha
+      tr.innerHTML = `<td colspan="7"><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start"><div class="supbox" data-c="${al.dataset.c}" style="flex:1 1 560px;min-width:0"></div>
+        <div style="flex:0 1 420px;min-width:300px"><div class="espMapT" style="font-size:12.5px;margin-bottom:4px"></div><div class="espMap" style="height:420px;border:1px solid var(--bd);border-radius:8px"></div>
+        <small style="color:var(--mu)">Rojo = la estación · azul = vecinas DMC (valor a la hora de la alerta) · gris = sin dato</small></div></div></td>`; al.after(tr);
+      const box = tr.querySelector(".supbox"), V2 = window.supVec ? window.supVec(al.dataset.c) : [];
+      box.dataset.vec = V2.slice(0, 4).map(v => v.codigo).join(",");
+      const h = x.H.find(z => z.hora === al.dataset.h && ESP.has(z.regla)) || {};
+      SG.alerta(box, {...x.e, hallazgos: x.H}, x.H, (VAR_R[h.regla] || [al.dataset.tp])[0], al.dataset.h);
+      mapaEsp(tr.querySelector(".espMap"), tr.querySelector(".espMapT"), x.e, V2, h, al.dataset.h); return; }
+    tr.innerHTML = `<td colspan="5"><div class="supbox" data-c="${al.dataset.c}"></div></td>`; al.after(tr);
     SG.alerta(tr.querySelector(".supbox"), {...x.e, hallazgos: x.H}, x.H, al.dataset.tp, al.dataset.h); return; }
   const r = ev.target.closest("tr[data-ir]"); if (r && !ev.target.closest("a")){ window.supIr(r.dataset.ir, r.dataset.tp); return; } const a = ev.target.closest("a[data-sup]"); if (!a) return; ev.preventDefault(); q = ""; window.cambiarModo(a.dataset.sup); });
 window.SUPER = {init, pintar, modos: new Set(["sup", "sup_pp", "sup_est", "sup_bol", ...Object.keys(TABS)])};
