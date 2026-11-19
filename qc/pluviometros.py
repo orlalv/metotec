@@ -25,6 +25,7 @@ import pandas as pd
 
 VERSION = 6                      # sube cuando cambia la forma del producto: qc/correr.py lo regenera aunque no hayan pasado 6 h
 RADIO_KM = 60
+RADIO_VER = 120          # vecinas DMC que se muestran en el detalle y el mapa (solo referencia visual)
 MM_VECINA = 1.0
 FRAC_VECINAS = 0.6
 MM_MODELO = 1.0                  # un modelo o IMERG con lloviznas de décimas no distingue de «0» a un pluviómetro de balancín
@@ -194,6 +195,7 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
         tot_d = np.isfinite(X).sum(1)                                  # solo DMC: lo que se muestra en el detalle
         llu_d = np.nansum(np.where(np.isfinite(X), X >= MM_VECINA, False), 1)
         XE = np.empty((len(horas), 0))
+        disp = [k for k in np.argsort(D[j])[:8] if D[j, k] <= RADIO_VER]
         ids, dke = [], []
         if EXT and EXT.get("pp") is not None and len(EXT["pp"].columns):
             # siempre las EXT_TOPE externas más cercanas con datos, sin límite de radio
@@ -249,8 +251,8 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
             det = []
             for i2 in seg[-24:]:
                 t = (T or {}).get(horas[i2], {}).get(c)
-                orden = np.argsort(D[j, vec]) if len(vec) else []
-                vecs = [[nom.get(cods[vec[k]], cods[vec[k]]), round(float(D[j, vec[k]])), (None if not np.isfinite(X[i2, k]) else round(float(X[i2, k]), 1))] for k in orden][:10]
+                # para mostrar: las DMC más cercanas hasta RADIO_VER km (las de más de RADIO_KM no cuentan como evidencia)
+                vecs = [[nom.get(cods[k], cods[k]), round(float(D[j, k])), (None if not np.isfinite(V.iat[i2, k]) else round(float(V.iat[i2, k]), 1))] for k in disp]
                 vecs += [[f'{EXT["cat"][i].get("inst", "")} {EXT["cat"][i].get("nombre", i)} (ext.)'.strip(), round(dke[k]), (None if not np.isfinite(XV[i2, k]) else round(float(XV[i2, k]), 1)), EXT["cat"][i]["lat"], EXT["cat"][i]["lon"]] for k, i in enumerate(ids)]
                 sx = (t[5:] + [None] * 5)[:5] if t else [None] * 5
                 det.append(dict(vecs=vecs, mod3=[round(float(mm_mod[i2 - 1]), 1) if i2 > 0 else None, round(float(mm_mod[i2]), 1), round(float(mm_mod[i2 + 1]), 1) if i2 + 1 < len(horas) else None],
