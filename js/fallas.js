@@ -60,16 +60,17 @@ function texto(ep){
 }
 
 // ---------- gráfico ----------
+const CACHE_M = new Map();   // trozos de minutario ya pedidos (código + rango)
 async function serie(cod, col, desde, hasta){
-  const h = x => new Date(x).toISOString().slice(0, 13), out = [];
-  for (let a = desde; a < hasta; a += 48 * 3600e3){
-    const b = Math.min(hasta, a + 47 * 3600e3);
-    const r = await fetch(`/api/minutarios?cod=${encodeURIComponent(cod)}&desde=${h(a)}&hasta=${h(b)}`); const D = await r.json();
-    if (!D.cab) continue;
+  const h = x => new Date(x).toISOString().slice(0, 13), out = [], T = [];
+  for (let a = desde; a < hasta; a += 48 * 3600e3) T.push([a, Math.min(hasta, a + 47 * 3600e3)]);
+  const R = await Promise.all(T.map(([a, b]) => { const k = `${cod}|${h(a)}|${h(b)}`;      // los trozos se piden en paralelo
+    if (!CACHE_M.has(k)) CACHE_M.set(k, fetch(`/api/minutarios?cod=${encodeURIComponent(cod)}&desde=${h(a)}&hasta=${h(b)}`).then(r => r.json()).catch(er => { CACHE_M.delete(k); throw er; }));
+    return CACHE_M.get(k); }));
+  R.forEach(D => { if (!D.cab) return;
     const cab = D.cab.split(","), im = cab.indexOf("momento"), ic = cab.indexOf(col);
-    if (ic < 0) continue;
-    D.filas.forEach(l => { const c = l.split(","), t = ms(c[im]), y = parseFloat(c[ic]); if (!isNaN(t) && !isNaN(y) && t >= desde && t <= hasta) out.push([t, y]); });
-  }
+    if (ic < 0) return;
+    D.filas.forEach(l => { const c = l.split(","), t = ms(c[im]), y = parseFloat(c[ic]); if (!isNaN(t) && !isNaN(y) && t >= desde && t <= hasta) out.push([t, y]); }); });
   return out.sort((a, b) => a[0] - b[0]);
 }
 function ventana(ep, k){
