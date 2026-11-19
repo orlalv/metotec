@@ -56,10 +56,10 @@ function leerMinutos(txt, e0, cand, X){
   const vec = cand.filter(c => c.km <= RADIO_KM && por.has(c.e.codigo)).slice(0, MAX_VEC).map((c, i) => ({cod: c.e.codigo, nombre: c.e.nombre, km: c.km, lat: +c.e.lat, lon: +c.e.lon, color: COL[i % COL.length], min: por.get(c.e.codigo)}));
   const horas = a => Array.from({length: 24}, (_, h) => { let s = 0, n = 0; for (let m = h * 60; m < h * 60 + 60; m++) if (a[m] === a[m]){ s += a[m]; n++; } return n >= MIN_FILAS_H ? s : null; });
   // vecinas externas (INIA…): solo entran a la media y al aviso de la tabla, con menor peso; no se dibujan ni se listan como estaciones
-  const ext = X ? window.EXTV.vecinas(X, +e0.lat, +e0.lon, RADIO_KM) : [];
+  const ext = X ? window.EXTV.vecinas(X, +e0.lat, +e0.lon, RADIO_KM, 99) : [];      // todas las externas a ≤ 60 km
   const hx = Array.from({length: 24}, (_, i) => ext.map(([id]) => { const m = X.pp.get(id); const v = m && m.get(ms(ST.dia, i) + 3600e3); return v == null ? null : {id, v}; }).filter(Boolean));
   // externas como columnas y barras propias (solo valor horario): nombre, distancia y color tenue
-  const COLX = ["#e3b341", "#a5d6ff", "#7ee787", "#f778ba"];
+  const COLX = ["#e3b341", "#a5d6ff", "#7ee787", "#f778ba", "#ffa657", "#d2a8ff", "#56d4dd", "#ff9bce"];
   const ve = ext.map(([id, k], i) => { const c = X.cat.get(id) || {}, m = X.pp.get(id);
     return {nombre: `${c.inst ? c.inst + " " : ""}${c.nombre || id} (ext.)`, km: k, lat: +c.lat, lon: +c.lon, color: COLX[i % COLX.length], ext: true,
       h: Array.from({length: 24}, (_, j) => { const v = m && m.get(ms(ST.dia, j) + 3600e3); return v == null ? null : v; })}; }).filter(x => x.h.some(v => v != null));
@@ -127,11 +127,8 @@ function pintarMin(out){
       ${D.hv.concat((D.ve || []).map(x => x.h)).map(a => `<td style="text-align:right">${a[i] == null ? "s/d" : n1(a[i])}</td>`).join("")}<td style="text-align:right">${mv == null ? "—" : n1(mv)}</td></tr>`; }).join("");
   const tot2 = D.hv.map(a => a.reduce((s, z) => s + (z || 0), 0));
   out.innerHTML = `<p style="margin:4px 0">${resumen}</p>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start"><div style="flex:1 1 620px;min-width:0">
     <h4 style="margin:10px 0 2px">Lluvia por hora · ${esc(ST.dia)} (UTC) <small style="color:var(--mu);font-weight:400">· clic en una hora para cambiar las imágenes</small></h4>${leyenda(D)}${hs}
-    <h4 style="margin:12px 0 2px">Minuto a minuto · ${p2(h)}:00–${p2(h)}:59 UTC</h4>${minG}</div>
-    <div style="flex:1 1 380px;min-width:280px"><h4 style="margin:10px 0 4px">Vecinas a las ${p2(h)}:00 UTC · mm en la hora</h4><div id="vMV" style="height:330px;border:1px solid var(--bd);border-radius:8px"></div>
-    <small style="color:var(--mu)">Rojo = la estación · azul/colores = vecinas DMC · borde punteado = externas (INIA…) · gris = sin dato · círculo = 60 km</small></div></div>
+    <h4 style="margin:12px 0 2px">Minuto a minuto · ${p2(h)}:00–${p2(h)}:59 UTC</h4>${minG}
     <details open style="margin-top:10px"><summary style="cursor:pointer"><b>Tabla de precipitación por hora (mm)</b></summary><div style="overflow-x:auto"><table class="tb" style="margin-top:4px"><tr><th>Hora UTC</th><th>Hora local</th><th>${esc(D.e0.nombre)}</th>${D.vec.concat(D.ve || []).map(x => `<th style="color:${x.color};text-align:right">${esc(x.nombre)}<br><small>${Math.round(x.km)} km</small></th>`).join("")}<th style="text-align:right">Media vecinas</th></tr>${filas}
       <tr style="font-weight:700"><td colspan="2">Total del día</td><td style="text-align:right">${n1(tot)}</td>${tot2.map(z => `<td style="text-align:right">${n1(z)}</td>`).join("")}<td></td></tr></table></div>
       <small style="color:var(--mu)">Fila rosada = la estación marcó menos de 0,2 mm mientras las vecinas marcaron 1 mm o más en promedio. s/d = menos de ${MIN_FILAS_H} datos en la hora.${notaX}</small></details>`;
@@ -141,6 +138,7 @@ let MV = null;
 function mapaVecinas(h){      // mapa bajo la imagen de la derecha: estación y vecinas (DMC y externas) con los mm de la hora elegida
   const el = document.getElementById("vMV"), cat = U().catalogoSync(), e0 = cat && cat.get(ST.cod); if (!el || !window.L || !e0) return;
   if (MV){ MV.remove(); MV = null; }
+  const tt = document.getElementById("vDV"); if (tt) tt.textContent = `mm a las ${p2(h)}:00 UTC · rojo estación · punteado = externas · gris = sin dato · círculo 60 km`;
   MV = L.map(el, {attributionControl: false}); L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 13}).addTo(MV);
   L.circle([+e0.lat, +e0.lon], {radius: RADIO_KM * 1000, color: "#f85149", weight: 1, dashArray: "6 6", fill: false, interactive: false}).addTo(MV);
   const et = (n, x, col, dash) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-50%);white-space:nowrap;background:#0d1117e6;border:1.5px ${dash ? "dashed" : "solid"} ${x == null ? "#8b949e" : col};border-radius:7px;padding:1px 6px;font:600 11px system-ui;color:#e6edf3;text-align:center">${esc(n)}<br><b style="font-size:13px;color:${x == null ? "#8b949e" : x >= 0.2 ? col : "#e6edf3"}">${x == null ? "s/d" : n1(x) + " mm"}</b></div>`});
@@ -229,7 +227,7 @@ function pagina(el){
       <label>Día (UTC) <input type="date" id="vDia" value="${esc(ST.dia)}" max="${hoyUTC()}"></label>
       <label>Hora UTC <select id="vHora">${Array.from({length: 24}, (_, h) => `<option value="${h}"${h === ST.hora ? " selected" : ""}>${p2(h)}:00</option>`).join("")}</select></label>
       <button id="vAnt">‹ hora</button><button id="vSig">hora ›</button><button id="vAyer" title="Ayer (UTC)">Ayer</button><button id="vAct">↻ Cargar</button><b id="vHoraT" style="margin-left:6px"></b></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;margin:6px 0">${CAPAS.map((C, i) => `<div><div style="font-size:12.5px;margin-bottom:2px"><b>${C.t}</b> <span id="vD${i}" style="color:var(--mu);font-size:11.5px"></span><span id="vG${i}" style="font-size:11.5px"></span></div><div id="vM${i}" style="height:330px;border-radius:8px"></div></div>`).join("")}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;margin:6px 0">${CAPAS.map((C, i) => `<div><div style="font-size:12.5px;margin-bottom:2px"><b>${C.t}</b> <span id="vD${i}" style="color:var(--mu);font-size:11.5px"></span><span id="vG${i}" style="font-size:11.5px"></span></div><div id="vM${i}" style="height:330px;border-radius:8px"></div></div>`).join("")}<div><div style="font-size:12.5px;margin-bottom:2px"><b>Estaciones y valores</b> <span id="vDV" style="color:var(--mu);font-size:11.5px"></span></div><div id="vMV" style="height:330px;border-radius:8px"></div></div></div>
     <div style="font-size:11.5px;color:var(--mu);margin-bottom:6px">Rojo = estación (anillo y cruz) · círculo punteado = ${RADIO_KM} km · puntos de color = vecinas. Los 3 mapas se mueven juntos. IMERG llega con ~5 h de retraso y existe desde el año 2000. GOES (infrarrojo y color) en NASA GIBS solo guarda los últimos ~90 días: en fechas anteriores esos dos mapas muestran la imagen diaria de MODIS/VIIRS (una pasada por día, no la hora elegida).</div>
     <div id="vOut"></div></div>`;
   crearMapas();

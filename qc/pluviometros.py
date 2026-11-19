@@ -178,7 +178,7 @@ def tablas_satelite(resumen, horas):
 
 def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
     """R, N: mm y minutos con dato (hora × código). E: estaciones (codigo, nombre, lat, lon). M: modelo (hora × código, mm).
-    S: satélite, evidencia de lluvia (hora × código, bool). C: satélite, cielo despejado (hora × código, bool). T: resumen satelital archivado ({hora: {código: [lluvia, fría, despejado, tope, rayos, nub10, nub30, frío30, rr10, imágenes]}}) solo para el detalle. I: IMERG (hora × código, mm). EXT: vecinas externas (INIA…), solo comparación: {pp: lluvia horaria hora × id, cat: {id: {lat, lon}}}; pesan EXT_PESO y se muestran siempre las EXT_TOPE más cercanas con datos; cuentan como evidencia solo las de ≤ RADIO_KM. Devuelve la lista de estaciones con su diagnóstico."""
+    S: satélite, evidencia de lluvia (hora × código, bool). C: satélite, cielo despejado (hora × código, bool). T: resumen satelital archivado ({hora: {código: [lluvia, fría, despejado, tope, rayos, nub10, nub30, frío30, rr10, imágenes]}}) solo para el detalle. I: IMERG (hora × código, mm). EXT: vecinas externas (INIA…), solo comparación: {pp: lluvia horaria hora × id, cat: {id: {lat, lon}}}; pesan EXT_PESO y se muestran todas las de ≤ RADIO_KM (y al menos las EXT_TOPE más cercanas); cuentan como evidencia solo las de ≤ RADIO_KM. Devuelve la lista de estaciones con su diagnóstico."""
     E = E.copy()
     E["codigo"] = E["codigo"].astype(str)
     E = E[E["codigo"].isin(R.columns)].dropna(subset=["lat", "lon"]).reset_index(drop=True)
@@ -200,7 +200,8 @@ def analizar(R, N, E, M=None, S=None, I=None, C=None, T=None, EXT=None):
         if EXT and EXT.get("pp") is not None and len(EXT["pp"].columns):
             # siempre las EXT_TOPE externas más cercanas con datos, sin límite de radio
             kmx = lambda i: _km1(E["lat"].values[j], E["lon"].values[j], EXT["cat"][i]["lat"], EXT["cat"][i]["lon"])
-            ids = sorted([i for i, c in EXT["cat"].items() if i in EXT["pp"].columns and c.get("lat") is not None and EXT["pp"][i].notna().any()], key=kmx)[:EXT_TOPE]
+            ids = sorted([i for i, c in EXT["cat"].items() if i in EXT["pp"].columns and c.get("lat") is not None and EXT["pp"][i].notna().any()], key=kmx)
+            ids = [i for k, i in enumerate(ids) if k < EXT_TOPE or kmx(i) <= RADIO_KM]       # todas las de ≤ 60 km, y al menos las 3 más cercanas
             dke = [kmx(i) for i in ids]
             XV = EXT["pp"][ids].reindex(horas).values.astype(float) if ids else XE      # se muestran siempre
             XE = XV[:, [k for k, d in enumerate(dke) if d <= RADIO_KM]] if ids else XE  # cuentan como evidencia solo a ≤ RADIO_KM
