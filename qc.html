@@ -262,7 +262,7 @@ main[hidden]{display:none}
 <script src="js/verificar.js?v=202611190045"></script>
 <script src="js/minutarios.js?v=202611181740"></script>
 <script src="js/supgraf.js?v=202611190300"></script>
-<script src="js/superauto.js?v=202611190350"></script>
+<script src="js/superauto.js?v=202611190400"></script>
 <script src="js/extremas.js?v=202611181830"></script>
 <script src="js/boletin.js?v=202611171230"></script>
 <script src="js/series.js?v=202611101600"></script>
@@ -507,7 +507,7 @@ function pintar(){
   if (modo === "equ" || modo === "mis" || modo === "comp") return EQ.pagina(modo);
   if (modo === "pp"){ if (R && window.EXT) ppContar("alertas", EXT.contar(R, "pp")); if (ppSub !== "alertas") return; }
   if (modo === "ext" || modo === "pp" || modo === "tem" || modo === "rec") return EXT.init(() => R, modo);
-  if (modo === "sup" || modo === "sup_esp") return pintarSup();
+  if (modo === "sup") return pintarSup();
   if (SUPER.modos.has(modo)) return SUPER.init(() => R, modo);
   if (modo === "inf") return pintarInf();
   if (modo === "per" || modo === "ser" || modo === "serh") return;
@@ -619,7 +619,7 @@ function aplicarPestanas(){
   if (on && on.classList.contains("nove")){ const b = document.querySelector('.modos button:not(.nove):not([data-g="gestion"])'); b && cambiarModo(b.dataset.m); }
 }
 window.aplicarPestanas = aplicarPestanas;
-const MAPA_MODOS = new Set(["ema", "obs", "mod", "sup", "sup_esp"]);
+const MAPA_MODOS = new Set(["ema", "obs", "mod", "sup"]);
 /* Precipitación con subopciones: Alertas (las de siempre) · Series · Relleno de series · Precipitación binaria · Sensores */
 const PP_SUBS = [["alertas", "Alertas", "ext"], ["series", "Series", "ppx"], ["relleno", "Relleno de series", "minu"], ["binaria", "Precipitación binaria", "plu"], ["sensores", "Sensores", "ppx"], ["verificar", "Verificar", "ppx"]];
 let ppSub = (() => { try { return localStorage.getItem("qcPpSub") || "alertas"; } catch (e) { return "alertas"; } })();
@@ -675,7 +675,7 @@ function cambiarModo(m){
   if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
   modo = m; $("#det").style.display = "none"; $("#supIzq").classList.remove("on"); if (typeof supIzqPos === "function") supIzqPos(); ppBarra(); if (m !== "pp"){ $("#minu").classList.remove("solo"); if (window.HUECOS) HUECOS.solo(false); }
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
-  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", rec: "ext", ser: "ser", serh: "ser", inf: "inf", est: "est", plu: "plu", reg: "reg", equ: "equ", vex: "vex", mis: "mis", comp: "comp", sup_pp: "sup", sup_prc: "sup", sup_est: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup", sup_bol: "sup", obs_esp: "sup"}[m];
+  const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", rec: "ext", ser: "ser", serh: "ser", inf: "inf", est: "est", plu: "plu", reg: "reg", equ: "equ", vex: "vex", mis: "mis", comp: "comp", sup_pp: "sup", sup_prc: "sup", sup_est: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup", sup_esp: "sup", sup_bol: "sup", obs_esp: "sup"}[m];
   document.querySelector("main").hidden = h;
   ["hist", "minu", "bol", "ext", "ser", "inf", "est", "plu", "reg", "equ", "vex", "mis", "comp", "sup", "ppx"].forEach(i => $("#" + i).hidden = i !== sec);
   $("#chips").style.display = h ? "none" : "";

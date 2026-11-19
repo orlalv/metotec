@@ -6,7 +6,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);
 const NIVC = ["var(--ok)", "var(--sos)", "var(--err)"];
 const ESP = new Set(["ZC01", "ZC02", "ZC03", "ZC04", "ZC05", "ZC06", "ZC07", "ZE05", "ZE08"]);     // controles espaciales (vecinas DMC y externas)
-const TABS = {obs_esp: ["esp", "control espacial (estaciones con observador)"], sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
+const TABS = {sup_esp: ["esp", "control espacial"], obs_esp: ["esp", "control espacial (estaciones con observador)"], sup_prc: ["pp", "precipitación"], sup_ext: ["ext", "extremas"], sup_pre: ["pre", "presiones"], sup_tem: ["tem", "temperaturas (Ts, Td, HR)"], sup_vie: ["vie", "viento"]};
 const COLS = [["pp", "Precipitación", "sup_prc"], ["ext", "Extremas", "sup_ext"], ["pre", "Presiones", "sup_pre"], ["tem", "Temperaturas", "sup_tem"], ["vie", "Viento", "sup_vie"]];
 const NOTA = {
   pp: "Agua caída del pluviómetro: lluvia con aire seco, más de 2 mm en un minuto, el mismo valor repetido 10 minutos (pluviómetro pegado) el acumulado de 6 h contra la suma de los minutos y, contra el satélite GOES, lluvia con cielo despejado o pluviómetro en 0 bajo nube fría.",
