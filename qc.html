@@ -361,7 +361,7 @@ function detalleSup(c, mover = true){
    <div class="hres" style="margin:8px 0"><div><b>${e.ultima ? e.ultima.slice(11, 16) : "—"}</b><span>último dato UTC${e.ultima ? " · " + e.ultima.slice(8, 10) + "/" + e.ultima.slice(5, 7) : ""}</span></div><div><b style="color:${at != null && at > 60 ? "var(--err)" : at != null && at > 20 ? "var(--sos)" : "var(--ok)"}">${esc(estado)}</b><span>estado del dato (respecto de la revisión)</span></div><div><b>${H.length}</b><span>hallazgos</span></div></div>
    ${H.length ? `<table><tr><th>Dato UTC</th><th>Variable</th><th>Regla</th><th>Detalle</th><th></th></tr>${H.map(h => `<tr data-hh="${esc(h.hora)}" data-tp="${esc(h.tipo)}" style="cursor:pointer" title="Ver el dato minuto a minuto"><td style="white-space:nowrap">${h.hora.slice(8, 10)}/${h.hora.slice(5, 7)} ${h.hora.slice(11, 16)}</td><td>${esc((SUPC.find(x => x[0] === h.tipo) || [0, h.tipo])[1])}</td><td style="color:${HEX[h.nivel]}">${REGLAS.html(h.regla, esc)}</td><td>${esc(h.msg)}${MARCA.estado(e.codigo, h) === "sigue" ? MARCA.aviso : ""}</td><td style="white-space:nowrap">${MARCA.botones(e.codigo, h)}</td></tr>`).join("")}</table>` : `<p style="color:var(--mu)">Sin hallazgos en las últimas 24 horas.</p>`}
    <p style="color:var(--mu);font-size:12.5px;margin-top:12px">Los gráficos de las últimas 24 h están a la izquierda.</p>`;
-  const iz = $("#supIzq"); iz.classList.add("on"); iz.scrollTop = 0; supIzqPos();
+  const iz = $("#supIzq"); iz.classList.add("on"); iz.scrollTop = 0; if (typeof supIzqPos === "function") supIzqPos();
   iz.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><h3 style="margin:0;font:600 15px var(--titulo)">Datos de las últimas 24 h · ${esc(e.nombre)}</h3><span style="flex:1"></span><button id="supIzqX" class="detX" style="float:none">✕ Volver al mapa</button></div><div class="supbox" id="supDat" data-c="${e.codigo}"></div>`;
   supDatos(e, H);
 }
@@ -656,7 +656,7 @@ function cambiarModo(m){
   $("#gear").classList.toggle("on", mb.dataset.g === "gestion");
   if (mb.hidden){ const g = mb.dataset.g; document.querySelectorAll(".grupos button").forEach(x => x.classList.toggle("on", x.dataset.g === g)); document.querySelectorAll(".modos button").forEach(x => x.hidden = x.dataset.g !== g); }
   if (modo !== m){ sel = null; const gp = $("#sgPanel"); if (gp) gp.hidden = true; try { mapa.closePopup(); } catch (e) {} }     // al cambiar de pestaña se cierran el gráfico y lo abierto en el mapa
-  modo = m; $("#det").style.display = "none"; $("#supIzq").classList.remove("on"); supIzqPos(); ppBarra(); if (m !== "pp"){ $("#minu").classList.remove("solo"); if (window.HUECOS) HUECOS.solo(false); }
+  modo = m; $("#det").style.display = "none"; $("#supIzq").classList.remove("on"); if (typeof supIzqPos === "function") supIzqPos(); ppBarra(); if (m !== "pp"){ $("#minu").classList.remove("solo"); if (window.HUECOS) HUECOS.solo(false); }
   document.querySelectorAll(".modos button").forEach(x => x.classList.toggle("on", x === mb));
   const h = !MAPA_MODOS.has(m), sec = {hist: "hist", minu: "minu", bol: "bol", pp: "ext", tem: "ext", ext: "ext", rec: "ext", ser: "ser", serh: "ser", inf: "inf", est: "est", plu: "plu", reg: "reg", equ: "equ", vex: "vex", mis: "mis", comp: "comp", sup_pp: "sup", sup_prc: "sup", sup_est: "sup", sup_ext: "sup", sup_pre: "sup", sup_tem: "sup", sup_vie: "sup", sup_esp: "sup", sup_bol: "sup"}[m];
   document.querySelector("main").hidden = h;
@@ -999,7 +999,7 @@ cargar(); setInterval(cargar, 5 * 60 * 1000);
 /* detalle a pantalla completa del panel derecho: oculta la lista y agrega «Cerrar» */
 (() => { const d = document.getElementById("det"); if (!d) return;
   new MutationObserver(() => { if (d.style.display === "block" && !d.querySelector(":scope > .detX")){ const b = document.createElement("button"); b.className = "detX"; b.textContent = "✕ Cerrar"; d.prepend(b); d.scrollTop = 0; } }).observe(d, {childList: true, attributes: true, attributeFilter: ["style"]});
-  d.addEventListener("click", ev => { if (!ev.target.closest(".detX")) return; ev.stopPropagation(); d.style.display = "none"; document.getElementById("supIzq").classList.remove("on"); supIzqPos(); try { sel = null; } catch (e) {} document.querySelectorAll(".it.sel,.it.on").forEach(x => x.classList.remove("sel", "on")); });
+  d.addEventListener("click", ev => { if (!ev.target.closest(".detX")) return; ev.stopPropagation(); d.style.display = "none"; document.getElementById("supIzq").classList.remove("on"); if (typeof supIzqPos === "function") supIzqPos(); try { sel = null; } catch (e) {} document.querySelectorAll(".it.sel,.it.on").forEach(x => x.classList.remove("sel", "on")); });
 })();
 </script>
 <script>
@@ -1008,6 +1008,6 @@ function supIzqPos(){ const iz = document.getElementById("supIzq"), mn = documen
   mn.classList.toggle("supSwap", iz.classList.contains("on"));       // gráficos a la izquierda, lista (y detalle) a la derecha
   setTimeout(() => { try { mapa.invalidateSize(); } catch (e) {} }, 50); }
 window.addEventListener("resize", supIzqPos);
-document.addEventListener("click", ev => { if (ev.target.closest("#supIzqX")){ document.getElementById("supIzq").classList.remove("on"); supIzqPos(); setTimeout(() => { try { mapa.invalidateSize(); } catch (e) {} }, 50); } });</script>
+document.addEventListener("click", ev => { if (ev.target.closest("#supIzqX")){ document.getElementById("supIzq").classList.remove("on"); if (typeof supIzqPos === "function") supIzqPos(); setTimeout(() => { try { mapa.invalidateSize(); } catch (e) {} }, 50); } });</script>
 </body>
 </html>
