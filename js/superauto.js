@@ -134,9 +134,9 @@ function pintar(){
   const cab = `<tr><th>Estación</th><th>Obs. UTC</th><th>Alerta</th><th>Ingresado</th><th>Debería ir</th><th>Detalle</th><th></th></tr>`;
   $("#zOut").innerHTML = `
     ${todas.length ? `<div class="bcard" style="padding:0"><table class="xtab">${cab}${todas.map(fila).join("")}</table></div>` : `<p style="color:var(--ok)">Sin alertas de ${nom}${q ? " con ese filtro" : ""}.</p>`}
-    ${tipo === "pp" || !DATOS[tipo] ? "" : `<h3 style="margin:16px 0 6px;font:600 15px var(--titulo)">Datos de las estaciones sin observador · ${esc(nom)}</h3>
+    ${tipo === "pp" || !DATOS[tipo] ? "" : `<div class="supDatosSec"><h3 style="margin:16px 0 6px;font:600 15px var(--titulo)">Datos de las estaciones sin observador · ${esc(nom)}</h3>
     <div class="bcard" style="padding:0;max-height:520px;overflow:auto"><table class="xtab"><tr><th>Estación</th><th>Último dato UTC</th>${DATOS[tipo].map(c => `<th>${esc(c[1])}${c[2] ? ` <small>(${c[2]})</small>` : ""}</th>`).join("")}<th>Alertas</th></tr>
-      ${filasDatos(F, tipo)}</table></div>`}
+      ${filasDatos(F, tipo)}</table></div></div>`}
     <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Haga clic en una fila para ver su gráfico y su tabla. ${NOTA[tipo]} «Resuelto» quita la alerta y la manda al Historial; no vuelve mientras el dato sea el mismo.</p>`;
 }
 // regla espacial → [grupo de gráficos, variable del minutario, nombre, unidad]
@@ -203,9 +203,9 @@ document.addEventListener("click", ev => {
   const es = ev.target.closest("tr[data-es]"); if (es){ selEst = es.dataset.es; const F = filas(); document.querySelectorAll("tr[data-es]").forEach(x => x.style.background = x === es ? "color-mix(in srgb,var(--oro) 18%,transparent)" : ""); const e = (F.find(x => x.e.codigo === selEst) || {}).e; e && abrirEst(e); return; }
   const al = ev.target.closest("tr.supal"); if (al && !ev.target.closest(".mk, a")){
     const tab = al.closest("table"), todas = [...tab.querySelectorAll("tr.supal")];
-    const sig = al.nextElementSibling; if (sig && sig.classList.contains("supx")){ sig.remove(); todas.forEach(r => r.style.display = ""); al.scrollIntoView({block: "nearest"}); return; }
+    const sig = al.nextElementSibling; if (sig && sig.classList.contains("supx")){ sig.remove(); todas.forEach(r => r.style.display = ""); document.querySelectorAll(".supDatosSec").forEach(d => d.style.display = ""); al.scrollIntoView({block: "nearest"}); return; }
     // una alerta a la vez: al abrirla se ocultan las demás; al cerrarla vuelven todas
-    tab.querySelectorAll("tr.supx").forEach(r => r.remove()); todas.forEach(r => r.style.display = r === al ? "" : "none"); al.scrollIntoView({block: "start"});
+    tab.querySelectorAll("tr.supx").forEach(r => r.remove()); todas.forEach(r => r.style.display = r === al ? "" : "none"); document.querySelectorAll(".supDatosSec").forEach(d => d.style.display = "none"); al.scrollIntoView({block: "start"});
     const F = filas(), x = F.find(y => y.e.codigo === al.dataset.c); if (!x) return;
     const tr = document.createElement("tr"); tr.className = "supx";
     if (modo === "sup_esp"){      // control espacial: gráficos ya comparados con las vecinas y mapa con sus valores a la derecha
