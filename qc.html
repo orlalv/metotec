@@ -262,7 +262,7 @@ main[hidden]{display:none}
 <script src="js/verificar.js?v=202611190045"></script>
 <script src="js/minutarios.js?v=202611181740"></script>
 <script src="js/supgraf.js?v=202611190130"></script>
-<script src="js/superauto.js?v=202611190200"></script>
+<script src="js/superauto.js?v=202611190215"></script>
 <script src="js/extremas.js?v=202611181830"></script>
 <script src="js/boletin.js?v=202611171230"></script>
 <script src="js/series.js?v=202611101600"></script>
@@ -345,7 +345,7 @@ function pintarSup(){
   V.forEach(e => { const m = L.circleMarker([e.lat, e.lon], {radius: 7, color: "#fff", weight: 1, fillColor: HEX[e.nivel], fillOpacity: .95}).addTo(mapa);
     m.bindTooltip(`${esc(e.nombre)} · ${e.hallazgos.length} hallazgos`); m.on("click", () => detalleSup(e.codigo)); marcas[e.codigo] = m; });
   const cnt = e => SUPC.map(([k, n]) => [n, e.hallazgos.filter(h => h.tipo === k).length]).filter(x => x[1]);
-  $("#lista").innerHTML = [...V].sort((a, b) => (b.nivel === 3 ? -1 : b.nivel) - (a.nivel === 3 ? -1 : a.nivel) || b.hallazgos.length - a.hallazgos.length || (a.nombre || "").localeCompare(b.nombre || "")).map(e => `<div class="it ${sel === e.codigo ? "sel" : ""}" data-c="${e.codigo}"><span class="p" style="background:${COL[e.nivel]}"></span>
+  $("#lista").innerHTML = (window.SUPER && SUPER.indice ? `<details class="supIdx" style="margin:6px 8px 10px" ${window.supIdxAb ? "open" : ""}><summary style="cursor:pointer;font-weight:600">Índice por tipo de control</summary>${SUPER.indice(V.map(e => ({e, H: e.hallazgos})))}</details>` : "") + [...V].sort((a, b) => (b.nivel === 3 ? -1 : b.nivel) - (a.nivel === 3 ? -1 : a.nivel) || b.hallazgos.length - a.hallazgos.length || (a.nombre || "").localeCompare(b.nombre || "")).map(e => `<div class="it ${sel === e.codigo ? "sel" : ""}" data-c="${e.codigo}"><span class="p" style="background:${COL[e.nivel]}"></span>
     <div><b>${esc(e.nombre)}</b><small>${e.codigo}${e.oaci ? " · " + esc(e.oaci) : ""} · último dato ${e.ultima ? e.ultima.slice(11, 16) + " UTC" : "—"}</small>
     ${e.hallazgos.length ? `<div class="al">${cnt(e).map(([n, k]) => `<span>${n} ${k}</span>`).join("")}</div>` : ""}</div><div class="v">${e.nivel === 3 ? "—" : e.hallazgos.length}</div></div>`).join("") || `<p style="padding:14px;color:var(--mu)">Sin estaciones con ese filtro.</p>`;
   if (sel) detalleSup(sel, false);
@@ -1009,5 +1009,6 @@ function supIzqPos(){ const iz = document.getElementById("supIzq"), mn = documen
   setTimeout(() => { try { mapa.invalidateSize(); } catch (e) {} }, 50); }
 window.addEventListener("resize", supIzqPos);
 document.addEventListener("click", ev => { if (ev.target.closest("#supIzqX")){ document.getElementById("supIzq").classList.remove("on"); if (typeof supIzqPos === "function") supIzqPos(); setTimeout(() => { try { mapa.invalidateSize(); } catch (e) {} }, 50); } });</script>
+<script>document.addEventListener("toggle", ev => { if (ev.target.classList && ev.target.classList.contains("supIdx")) window.supIdxAb = ev.target.open; }, true);</script>
 </body>
 </html>

@@ -44,7 +44,7 @@ function indiceCtl(F){
     <div class="bcard" style="padding:0"><table class="xtab"><tr><th>Tipo de control</th><th>Estaciones</th><th>Alertas</th><th>Erróneas</th><th>Reglas</th></tr>${filasI}</table></div>
     <p class="nota" style="color:var(--mu);font-size:12px;margin:4px 0">De arriba hacia abajo, de más seguro a más blando: los primeros casi siempre son errores reales; los últimos dependen de una referencia externa (vecinas, modelo o satélite) que también puede fallar. Haga clic en un tipo para ver sus alertas.</p>${det}`;
 }
-document.addEventListener("click", ev => { const t = ev.target.closest("tr[data-ctl]"); if (!t) return; ctlSel = ctlSel === t.dataset.ctl ? null : t.dataset.ctl; pintar(); });
+document.addEventListener("click", ev => { const t = ev.target.closest("tr[data-ctl]"); if (!t) return; ctlSel = ctlSel === t.dataset.ctl ? null : t.dataset.ctl; window.supIdxAb = true; pintar(); if (typeof window.pintar === "function") window.pintar(); });
 
 function init(fR, m){
   getR = fR || getR; if (m) modo = m;
@@ -219,5 +219,5 @@ document.addEventListener("click", ev => {
     tr.innerHTML = `<td colspan="5"><div class="supbox" data-c="${al.dataset.c}"></div></td>`; al.after(tr);
     SG.alerta(tr.querySelector(".supbox"), {...x.e, hallazgos: x.H}, x.H, al.dataset.tp, al.dataset.h); return; }
   const r = ev.target.closest("tr[data-ir]"); if (r && !ev.target.closest("a")){ window.supIr(r.dataset.ir, r.dataset.tp); return; } const a = ev.target.closest("a[data-sup]"); if (!a) return; ev.preventDefault(); q = ""; window.cambiarModo(a.dataset.sup); });
-window.SUPER = {init, pintar, modos: new Set(["sup", "sup_pp", "sup_est", "sup_bol", ...Object.keys(TABS)])};
+window.SUPER = {init, pintar, indice: indiceCtl, modos: new Set(["sup", "sup_pp", "sup_est", "sup_bol", ...Object.keys(TABS)])};
 })();
