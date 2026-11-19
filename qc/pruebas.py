@@ -126,7 +126,7 @@ def extremas(A):
     """Tn12/Tx12 que informa la estación: rango físico y coherencia con la temperatura por minuto de las últimas 24 h
     (la extrema sale de muestras de segundos y puede pasar en ~1 °C al valor por minuto, no más)."""
     out = []
-    if A is None or A.empty or "Tn12" not in A:
+    if A is None or A.empty or "T" not in A:
         return out
     fin = A["momento"].max()
     W = A[A["momento"] > fin - pd.Timedelta(hours=24)]
@@ -137,7 +137,22 @@ def extremas(A):
             T = T48.get_group(cod).dropna()
         except KeyError:
             continue
+        # extrema del día armada con los minutos: un pico fuera de rango físico la deja inválida (ej. Jardín Botánico −48,6 °C)
+        T24 = g["T"].dropna() if "T" in g else pd.Series(dtype=float)
+        for minimo in (True, False):
+            if T24.empty:
+                break
+            v = float(T24.min() if minimo else T24.max())
+            if v < LIM_EXT[0] or v > LIM_EXT[1]:
+                malos = T24[(T24 < LIM_EXT[0]) | (T24 > LIM_EXT[1])]
+                i = T24.idxmin() if minimo else T24.idxmax()
+                out.append(alerta(cod, "extremas", "Tn" if minimo else "Tx", 2, g.loc[i, "momento"], v, None,
+                                  f"{'Mínima' if minimo else 'Máxima'} de las últimas 24 h: {v:.1f} °C, fuera de rango físico ({len(malos)} minutos con picos del sensor); "
+                                  f"la extrema del día queda inválida hasta corregir esos minutos"))
+                out[-1]["detalle"] = [f"{g.loc[k, 'momento']:%d/%m %H:%M} UTC · {T24[k]:.1f} °C" for k in malos.index[:20]]
         for var, minimo in (("Tn12", True), ("Tx12", False)):
+            if var not in g:
+                continue
             x = g[var].dropna()
             if x.empty:
                 continue

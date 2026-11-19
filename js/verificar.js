@@ -127,7 +127,8 @@ function pintarMin(out){
       ${D.hv.concat((D.ve || []).map(x => x.h)).map(a => `<td style="text-align:right">${a[i] == null ? "s/d" : n1(a[i])}</td>`).join("")}<td style="text-align:right">${mv == null ? "—" : n1(mv)}</td></tr>`; }).join("");
   const tot2 = D.hv.map(a => a.reduce((s, z) => s + (z || 0), 0));
   out.innerHTML = `<p style="margin:4px 0">${resumen}</p>
-    <h4 style="margin:10px 0 2px">Lluvia por hora · ${esc(ST.dia)} (UTC) <small style="color:var(--mu);font-weight:400">· clic en una hora para cambiar las imágenes</small></h4>${leyenda(D)}${hs}
+    <h4 style="margin:10px 0 2px">Lluvia por hora · ${esc(ST.dia)} (UTC) <small style="color:var(--mu);font-weight:400">· clic en una hora para cambiar las imágenes</small></h4>${leyenda(D)}<div class="vbar"><button class="vAmp" style="float:right;background:none;border:1px solid var(--bd);color:var(--mu);border-radius:6px;padding:1px 8px;cursor:pointer;font-size:12px">⤢ Ampliar</button>${hs}</div>
+    <h4 style="margin:10px 0 2px">Lluvia por hora en líneas <small style="color:var(--mu);font-weight:400">· clic en un gráfico para ampliarlo</small></h4>${svgLineas([["#f85149", D.hs || [], D.e0.nombre]].concat(D.vec.map((v, i) => [v.color, D.hv[i], v.nombre])).concat((D.ve || []).map(x => [x.color, x.h, x.nombre, true])), 24, h, i => p2(i))}
     <h4 style="margin:12px 0 2px">Minuto a minuto · ${p2(h)}:00–${p2(h)}:59 UTC</h4>${minG}
     <details open style="margin-top:10px"><summary style="cursor:pointer"><b>Tabla de precipitación por hora (mm)</b></summary><div style="overflow-x:auto"><table class="tb" style="margin-top:4px"><tr><th>Hora UTC</th><th>Hora local</th><th>${esc(D.e0.nombre)}</th>${D.vec.concat(D.ve || []).map(x => `<th style="color:${x.color};text-align:right">${esc(x.nombre)}<br><small>${Math.round(x.km)} km</small></th>`).join("")}<th style="text-align:right">Media vecinas</th></tr>${filas}
       <tr style="font-weight:700"><td colspan="2">Total del día</td><td style="text-align:right">${n1(tot)}</td>${tot2.map(z => `<td style="text-align:right">${n1(z)}</td>`).join("")}<td></td></tr></table></div>
@@ -148,6 +149,27 @@ function mapaVecinas(h){      // mapa bajo la imagen de la derecha: estación y 
   L.marker([+e0.lat, +e0.lon], {icon: et(e0.nombre, D.hs ? D.hs[h] : null, "#f85149"), zIndexOffset: 1000}).addTo(MV);
   if (pts.length > 1) MV.fitBounds(pts, {padding: [60, 40], maxZoom: 10}); else MV.setView(pts[0], 9);
 }
+function svgLineas(series, n, sel, etiq){      // series: [[color, [n], nombre, punteada]]; líneas suavizadas con transparencia
+  const W = 26, H = 150, base = 128, x0 = 34;
+  const todos = series.flatMap(r => r[1]).filter(v => v != null && isFinite(v)), mx = Math.max(1, ...todos) * 1.1, y = v => base - (v / mx) * (base - 10), X = i => x0 + i * W + W / 2;
+  const curva = a => { let d = "", q = null; a.forEach((v, i) => { if (v == null){ q = null; return; } const p = [X(i), y(v)];
+    d += q ? `C${(q[0] + W / 2).toFixed(1)},${q[1].toFixed(1)} ${(p[0] - W / 2).toFixed(1)},${p[1].toFixed(1)} ${p[0].toFixed(1)},${p[1].toFixed(1)}` : `M${p[0].toFixed(1)},${p[1].toFixed(1)}`; q = p; }); return d; };
+  const ejes = [0, .5, 1].map(f => mx / 1.1 * f).map(t => `<text x="${x0 - 4}" y="${y(t) + 3}" text-anchor="end" font-size="9" fill="#8b949e">${n1(t)}</text><line x1="${x0}" x2="${x0 + n * W}" y1="${y(t)}" y2="${y(t)}" stroke="#ffffff14"/>`).join("");
+  const xs = Array.from({length: n}, (_, i) => `<text x="${X(i)}" y="${base + 13}" text-anchor="middle" font-size="9.5" fill="${i === sel ? "#58a6ff" : "#8b949e"}">${esc(etiq(i))}</text>`).join("");
+  return `<svg class="vzoom" viewBox="0 0 ${x0 + n * W + 8} ${H}" style="width:100%;max-width:${x0 + n * W + 8}px;cursor:zoom-in" role="img" aria-label="mm por hora en líneas">${ejes}${xs}
+    ${sel != null ? `<rect x="${X(sel) - W / 2}" y="4" width="${W}" height="${base - 4}" fill="#58a6ff1f"/>` : ""}
+    ${series.slice().reverse().map(([c, a, nm, dash]) => `<path d="${curva(a)}" fill="none" stroke="${c}" stroke-opacity=".75" stroke-width="${c === "#f85149" ? 2.6 : 1.8}"${dash ? ' stroke-dasharray="5 3"' : ""}><title>${esc(nm)}</title></path>`).join("")}</svg>`;
+}
+/* ampliar un gráfico en ventana (clic sobre él) y cerrar con ✕, clic fuera o Esc */
+document.addEventListener("click", ev => {
+  const amp = ev.target.closest(".vAmp"), g = amp ? amp.parentElement.querySelector("svg") : ev.target.closest(".ppx svg.vzoom"); if (!g || document.getElementById("vZoom")) return;
+  const m = document.createElement("div"); m.id = "vZoom";
+  m.style.cssText = "position:fixed;inset:0;background:#000b;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px";
+  m.innerHTML = `<div style="background:var(--panel,#161b22);border:1px solid var(--bd,#30363d);border-radius:10px;padding:12px;width:min(1400px,96vw);max-height:92vh;overflow:auto"><div style="text-align:right"><button id="vZX" style="background:none;border:1px solid var(--oro,#C9A54C);color:var(--oro,#C9A54C);border-radius:7px;padding:3px 10px;cursor:pointer">✕ Cerrar</button></div></div>`;
+  const c = g.cloneNode(true); c.style.width = "100%"; c.style.maxWidth = "none"; c.style.height = "auto"; c.style.cursor = "default"; m.firstChild.appendChild(c);
+  const cerrar = () => { m.remove(); document.removeEventListener("keydown", k); }, k = e => { if (e.key === "Escape") cerrar(); };
+  m.addEventListener("click", e => { if (e.target === m || e.target.id === "vZX") cerrar(); }); document.addEventListener("keydown", k); document.body.appendChild(m);
+});
 function pintarDia(out){
   const f = D.fechas, sel = f.indexOf(ST.dia), val = d => { const r = D.mia.get(d); return r ? r[2] ?? r[1] : null; };
   const vals = f.map(val), refs = D.vec.map(v => [v.color, f.map(d => { const r = v.dias.get(d); return r ? (r[2] ?? r[1]) : null; })]);
