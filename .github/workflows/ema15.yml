@@ -1,0 +1,44 @@
+name: Series EMA cada 15 min
+on:
+  workflow_dispatch:
+    inputs:
+      cods:
+        description: "Códigos separados por coma · sinsaclim (las sin datos SACLIM) · todas"
+        default: "sinsaclim"
+      desde:
+        default: "2011"
+      hasta:
+        default: "2026"
+      max:
+        description: "Estaciones pendientes por tanda (0 = todas las que alcancen)"
+        default: "20"
+permissions:
+  contents: write
+concurrency:
+  group: ema15
+  cancel-in-progress: false
+jobs:
+  ema15:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pandas numpy requests
+      - name: Rama de datos
+        run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - name: Descargar
+        env:
+          DMC_USUARIO: ${{ secrets.DMC_USUARIO }}
+          DMC_TOKEN: ${{ secrets.DMC_TOKEN }}
+        run: python qc/series_ema15.py --datos datos --cods "${{ inputs.cods || 'sinsaclim' }}" --desde "${{ inputs.desde || '2011' }}" --hasta "${{ inputs.hasta || '2026' }}" --max "${{ inputs.max || '20' }}" --minutos 270
+      - name: Guardar
+        if: always()
+        run: |
+          cd datos
+          git config user.name "qc-metotec"; git config user.email "contacto.metotec@gmail.com"
+          git add -A ema15
+          git commit -q -m "series EMA 15 min $(date -u +%F)" || exit 0
+          for i in 1 2 3; do git pull -q --rebase origin datos && git push -q origin datos && break; sleep 5; done
