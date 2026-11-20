@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-20T22:46:16+00:00",
+ "inicio": "2026-11-20T23:16:03+00:00",
  "errores": [],
  "estaciones": 138,
- "con_datos": 120,
- "registros": 4803,
- "desde": "2026-11-20 21:45:01",
- "hasta": "2026-11-20 22:40:00",
+ "con_datos": 123,
+ "registros": 4919,
+ "desde": "2026-11-20 22:16:00",
+ "hasta": "2026-11-20 23:10:00",
  "horas_archivadas": 2,
  "modelo": 6624,
  "wrf": "sin corridas nuevas",
@@ -21,15 +21,15 @@
  ],
  "wrf_ref": 660,
  "satelite": {
-  "imagenes": 67,
-  "ultima": "2026-11-20T22:30Z"
+  "imagenes": 66,
+  "ultima": "2026-11-20T23:00Z"
  },
  "externas": {
   "estaciones": 326,
   "con_vecinas": 115,
   "desactivadas": 0,
   "generado": "2026-11-20T21:45:53Z",
-  "pp_archivadas": 10729,
+  "pp_archivadas": 10517,
   "desviadas": 3,
   "kv_desvio": "429"
  },
@@ -38,13 +38,13 @@
   "filas": 33468,
   "activa": false
  },
- "consenso_quitados": 2,
+ "consenso_quitados": 4,
  "incendios_cerca": 0,
  "kv_incendios": "429",
- "ob_filas": 2988,
+ "ob_filas": 2997,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 544,
+  "observaciones": 541,
   "fallas": 0,
   "hallazgos": 414,
   "kv": "429",
@@ -56,7 +56,7 @@
  ],
  "super": {
   "estaciones": 105,
-  "hallazgos": 43,
+  "hallazgos": 47,
   "kv": "429"
  },
  "historial": {
@@ -71,6 +71,24 @@
   "extremas": "429",
   "lluvia_obs": "429"
  },
+ "pluviometros": {
+  "resumen": {
+   "sospecha_obstruccion": 1,
+   "revisar": 18,
+   "sin_dato_con_lluvia": 6,
+   "ok": 104
+  },
+  "fuentes": {
+   "vecinas": true,
+   "modelo": true,
+   "satelite": true,
+   "imerg": true,
+   "satelite_horas": 75,
+   "imerg_pasos_nuevos": 12,
+   "externas": 328
+  },
+  "kv": "429"
+ },
  "reputacion": {
   "resumen": {
    "cuarentena": 5,
@@ -84,12 +102,12 @@
   "kv": "429"
  },
  "kv": "429",
- "alertas": 16,
+ "alertas": 33,
  "resumen": {
-  "bien": 114,
-  "sospechoso": 7,
+  "bien": 102,
+  "sospechoso": 19,
   "erróneo": 7,
   "sin datos": 10
  },
- "fin": "2026-11-20T22:50:37+00:00"
+ "fin": "2026-11-20T23:25:38+00:00"
 }
