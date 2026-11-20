@@ -17,6 +17,7 @@ NOMBRES = {"950001": "C.M.A. Eduardo Frei Montalva, Antártica", "950002": "Artu
 
 URL = "https://climatologia.meteochile.gob.cl/application/datos/getDatosSaclim/{cod}_{a}_{v}_"
 VARS = ["Temperatura", "PuntoRocio", "Humedad", "PresionQFE", "PresionQFF", "Viento", "Agua6Horas", "TMaxima", "TMinima"]
+VARS_SERIES = ["Temperatura", "PuntoRocio", "PresionQFE", "PresionQFF", "Viento"]   # carga histórica para normal y σ (HR se deriva de Ts y Td)
 UA = {"User-Agent": "METOTEC control de calidad de series (DMC)"}
 NOM = {"Ts": "Ts", "Td": "Td", "HR": "HR", "QFE": "QFE", "QFF": "QFF", "ff": "viento", "RRR6": "RRR6"}
 UNI = {"Ts": "°C", "Td": "°C", "HR": "%", "QFE": "hPa", "QFF": "hPa", "ff": "kt", "RRR6": "mm"}
@@ -34,12 +35,17 @@ def descargar(cod, a, v, timeout=90):
     return z.read(z.namelist()[0]).decode("utf-8", errors="replace")
 
 
-def actualizar(raiz, cods, desde, hasta, vars_=VARS, pausa=0.25, solo_faltantes=False, log=print):
+def actualizar(raiz, cods, desde, hasta, vars_=VARS, pausa=0.25, solo_faltantes=False, log=print, limite=None, marca=False):
+    """limite: instante (time.time()) desde el cual no se empiezan estaciones nuevas.
+    marca: al terminar una estación escribe saclim/{cod}/.completo (para reanudar tandas)."""
     raiz = Path(raiz) / "saclim"
     ahora = datetime.now(timezone.utc).isoformat(timespec="seconds")
     n = fallas = 0
     cambios = []
     for cod in cods:
+        if limite and time.time() > limite:
+            log(f"tiempo agotado antes de {cod}; se reanuda en la próxima tanda"); break
+        fallas0 = fallas
         for a in range(desde, hasta + 1):
             for v in vars_:
                 f = raiz / str(cod) / str(a) / f"{v}.csv.gz"
@@ -60,7 +66,10 @@ def actualizar(raiz, cods, desde, hasta, vars_=VARS, pausa=0.25, solo_faltantes=
                         cambios += _diferencias(cod, v, viejo, txt, ahora)
                 f.write_bytes(gzip.compress(txt.encode("utf-8"), mtime=0))
                 time.sleep(pausa)
-        log(f"{cod}: listo")
+        if marca and fallas == fallas0:
+            (raiz / str(cod)).mkdir(parents=True, exist_ok=True)
+            (raiz / str(cod) / ".completo").write_text(f"{desde}-{hasta} {'+'.join(vars_)}\n")
+        log(f"{cod}: listo" + ("" if fallas == fallas0 else f" ({fallas - fallas0} fallas, se reintenta)"))
     if cambios:
         with open(raiz / "cambios.jsonl", "a", encoding="utf-8") as fh:
             for c in cambios:

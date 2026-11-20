@@ -12,9 +12,15 @@ on:
         default: "1995"
       hasta:
         default: "2026"
-  schedule:
-    - cron: "23 9 * * 2"      # lunes: año en curso y anterior
-    - cron: "47 10 4 * *"     # día 3 de cada mes: todos los años (correcciones antiguas)
+      vars:
+        description: "series (Ts, Td, QFE, QFF, viento) | todas"
+        default: series
+      max:
+        description: "Con cods=todas: estaciones pendientes por tanda"
+        default: "25"
+  # Cron automáticos quitados durante la carga histórica (20-11-2026); reponer al terminar:
+  #   - cron: "23 9 * * 2"      # lunes: año en curso y anterior
+  #   - cron: "47 10 4 * *"     # día 4 de cada mes: todos los años (correcciones antiguas)
 permissions:
   contents: write
 concurrency:
@@ -36,7 +42,7 @@ jobs:
         run: |
           M="${{ inputs.modo }}"
           if [ -z "$M" ]; then if [ "${{ github.event.schedule }}" = "23 9 * * 2" ]; then M=actual; else M=todo; fi; fi
-          python qc/correr_saclim.py --datos datos --modo "$M" --cods "${{ inputs.cods }}" --desde "${{ inputs.desde || '1995' }}" --hasta "${{ inputs.hasta || '2026' }}"
+          python qc/correr_saclim.py --datos datos --modo "$M" --cods "${{ inputs.cods }}" --desde "${{ inputs.desde || '1995' }}" --hasta "${{ inputs.hasta || '2026' }}" --vars "${{ inputs.vars || 'series' }}" --max "${{ inputs.max || '0' }}" --minutos 270
       - name: Guardar
         if: always()
         run: |
