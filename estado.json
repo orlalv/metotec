@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-20T10:45:52+00:00",
+ "inicio": "2026-11-20T11:15:54+00:00",
  "errores": [],
  "estaciones": 136,
- "con_datos": 119,
- "registros": 4786,
- "desde": "2026-11-20 09:46:00",
- "hasta": "2026-11-20 10:40:00",
+ "con_datos": 123,
+ "registros": 4861,
+ "desde": "2026-11-20 10:16:00",
+ "hasta": "2026-11-20 11:10:00",
  "horas_archivadas": 2,
  "modelo": 6528,
  "wrf": "sin corridas nuevas",
@@ -20,14 +20,14 @@
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 67,
-  "ultima": "2026-11-20T10:30Z"
+  "ultima": "2026-11-20T11:00Z"
  },
  "externas": {
   "estaciones": 323,
   "con_vecinas": 114,
   "desactivadas": 0,
-  "generado": "2026-11-20T10:45:36Z",
-  "pp_archivadas": 10915,
+  "generado": "2026-11-20T11:15:32Z",
+  "pp_archivadas": 10906,
   "desviadas": 3,
   "kv_desvio": "200"
  },
@@ -39,12 +39,12 @@
  "consenso_quitados": 0,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1494,
+ "ob_filas": 1505,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 453,
+  "observaciones": 467,
   "fallas": 0,
-  "hallazgos": 414,
+  "hallazgos": 413,
   "kv": "200",
   "completitud": "200"
  },
@@ -54,7 +54,7 @@
  ],
  "super": {
   "estaciones": 104,
-  "hallazgos": 72,
+  "hallazgos": 66,
   "kv": "200"
  },
  "historial": {
@@ -76,6 +76,24 @@
   "extremas": "200",
   "lluvia_obs": "200"
  },
+ "pluviometros": {
+  "resumen": {
+   "sospecha_obstruccion": 1,
+   "revisar": 18,
+   "sin_dato_con_lluvia": 6,
+   "ok": 103
+  },
+  "fuentes": {
+   "vecinas": true,
+   "modelo": true,
+   "satelite": true,
+   "imerg": true,
+   "satelite_horas": 63,
+   "imerg_pasos_nuevos": 12,
+   "externas": 325
+  },
+  "kv": "200"
+ },
  "reputacion": {
   "resumen": {
    "cuarentena": 4,
@@ -89,12 +107,12 @@
   "kv": "200"
  },
  "kv": "200",
- "alertas": 22,
+ "alertas": 32,
  "resumen": {
-  "bien": 107,
-  "sospechoso": 12,
+  "bien": 102,
+  "sospechoso": 17,
   "erróneo": 9,
   "sin datos": 8
  },
- "fin": "2026-11-20T10:50:08+00:00"
+ "fin": "2026-11-20T11:20:08+00:00"
 }
