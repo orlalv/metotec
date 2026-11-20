@@ -11,10 +11,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-20 07:30",
-"visto": "2026-11-20 07:46",
+"fin": "2026-11-20 08:00",
+"visto": "2026-11-20 08:21",
 "detalle": [
-"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -30,10 +30,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-20 07:30",
-"visto": "2026-11-20 07:46",
+"fin": "2026-11-20 08:00",
+"visto": "2026-11-20 08:21",
 "detalle": [
-"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -51,10 +51,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-20 02:39",
-"visto": "2026-11-20 07:46",
+"visto": "2026-11-20 08:21",
 "detalle": [
-"QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 550.5)",
-"QFE · rango: 8 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.2)",
+"QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 549.1)",
+"QFE · rango: 8 valores fuera de lo habitual para la zona centro [886, 966] (valor 502.9)",
 "QFE · salto: cambio de 428.9 en 1 min (valor 502.9)"
 ]
 },
@@ -72,10 +72,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-20 02:10",
-"visto": "2026-11-20 07:46",
+"visto": "2026-11-20 08:21",
 "detalle": [
-"QFF · rango: 7 valores fuera de rango físico [920, 1060] (valor 522.4)",
-"QFE · rango: 7 valores fuera de lo habitual para la zona centro [936, 1016] (valor 503.3)",
+"QFF · rango: 6 valores fuera de rango físico [920, 1060] (valor 522.2)",
+"QFE · rango: 6 valores fuera de lo habitual para la zona centro [936, 1016] (valor 503.1)",
 "QFE · salto: cambio de 480.2 en 1 min (valor 503.1)"
 ]
 },
@@ -92,11 +92,11 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-20 07:30",
-"visto": "2026-11-20 07:46",
+"fin": "2026-11-20 08:00",
+"visto": "2026-11-20 08:21",
 "detalle": [
-"QFF · rango: 383 valores fuera de rango físico [920, 1060] (valor 504.0)",
-"QFE · rango: 383 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.8)",
+"QFF · rango: 353 valores fuera de rango físico [920, 1060] (valor 503.9)",
+"QFE · rango: 353 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.7)",
 "QFE · pegado: sin cambio durante 3 h (valor 500.8)"
 ]
 },
@@ -111,10 +111,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-20 01:54",
-"visto": "2026-11-20 07:46",
+"fin": "2026-11-20 02:01",
+"visto": "2026-11-20 08:21",
 "detalle": [
-"radiación · rango: 63 valores fuera de rango físico [0, 1600] (valor 9304.9)"
+"radiación · rango: 37 valores fuera de rango físico [0, 1600] (valor 9369.72)"
 ]
 },
 "390029|barómetro": {
@@ -131,10 +131,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-20 02:57",
-"visto": "2026-11-20 07:46",
+"visto": "2026-11-20 08:21",
 "detalle": [
-"QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 517.3)",
-"QFE · rango: 5 valores fuera de lo habitual para la zona sur [946, 1026] (valor 503.3)",
+"QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 517.4)",
+"QFE · rango: 5 valores fuera de lo habitual para la zona sur [946, 1026] (valor 503.4)",
 "QFE · salto: cambio de 486.2 en 1 min (valor 503.4)"
 ]
 },
@@ -152,7 +152,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-20 03:22",
-"visto": "2026-11-20 07:46",
+"visto": "2026-11-20 08:21",
 "detalle": [
 "QFF · rango: 1 valores fuera de rango físico [920, 1060] (valor 508.8)",
 "QFE · rango: 1 valores fuera de lo habitual para la zona norte costero [969, 1049] (valor 506.8)",
@@ -170,10 +170,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-20 01:59",
-"visto": "2026-11-20 07:46",
+"fin": "2026-11-20 02:59",
+"visto": "2026-11-20 08:21",
 "detalle": [
-"radiación · rango: 391 valores fuera de rango físico [0, 1600] (valor -1.3)"
+"radiación · rango: 361 valores fuera de rango físico [0, 1600] (valor -1.1)"
 ]
 },
 "170001|termohigrómetro": {
@@ -188,7 +188,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-20 02:40",
-"visto": "2026-11-20 07:46",
+"visto": "2026-11-20 08:21",
 "detalle": [
 "HR · rango: 1 valores fuera de rango físico [1, 100] (valor 0.0)"
 ]
