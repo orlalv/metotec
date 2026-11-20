@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-20T23:16:03+00:00",
+ "inicio": "2026-11-20T23:45:52+00:00",
  "errores": [],
  "estaciones": 138,
- "con_datos": 123,
- "registros": 4919,
- "desde": "2026-11-20 22:16:00",
- "hasta": "2026-11-20 23:10:00",
+ "con_datos": 120,
+ "registros": 4772,
+ "desde": "2026-11-20 22:46:00",
+ "hasta": "2026-11-20 23:40:00",
  "horas_archivadas": 2,
  "modelo": 6624,
  "wrf": "sin corridas nuevas",
@@ -22,7 +22,7 @@
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 66,
-  "ultima": "2026-11-20T23:00Z"
+  "ultima": "2026-11-20T23:30Z"
  },
  "externas": {
   "estaciones": 326,
@@ -38,10 +38,10 @@
   "filas": 33468,
   "activa": false
  },
- "consenso_quitados": 4,
+ "consenso_quitados": 3,
  "incendios_cerca": 0,
  "kv_incendios": "429",
- "ob_filas": 2997,
+ "ob_filas": 3111,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 541,
@@ -64,30 +64,13 @@
   "2026-11-17": "429",
   "2026-11-18": "429",
   "2026-11-19": "429",
-  "2026-11-20": "429"
+  "2026-11-20": "429",
+  "2026-11-21": "429"
  },
  "boletin": "fuera de horario",
  "productos": {
   "extremas": "429",
   "lluvia_obs": "429"
- },
- "pluviometros": {
-  "resumen": {
-   "sospecha_obstruccion": 1,
-   "revisar": 18,
-   "sin_dato_con_lluvia": 6,
-   "ok": 104
-  },
-  "fuentes": {
-   "vecinas": true,
-   "modelo": true,
-   "satelite": true,
-   "imerg": true,
-   "satelite_horas": 75,
-   "imerg_pasos_nuevos": 12,
-   "externas": 328
-  },
-  "kv": "429"
  },
  "reputacion": {
   "resumen": {
@@ -102,12 +85,12 @@
   "kv": "429"
  },
  "kv": "429",
- "alertas": 33,
+ "alertas": 29,
  "resumen": {
-  "bien": 102,
-  "sospechoso": 19,
+  "bien": 103,
+  "sospechoso": 18,
   "erróneo": 7,
   "sin datos": 10
  },
- "fin": "2026-11-20T23:25:38+00:00"
+ "fin": "2026-11-20T23:51:25+00:00"
 }
