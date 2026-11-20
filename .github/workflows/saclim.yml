@@ -18,9 +18,9 @@ on:
       max:
         description: "Con cods=todas: estaciones pendientes por tanda"
         default: "25"
-  # Cron automáticos quitados durante la carga histórica (20-11-2026); reponer al terminar:
-  #   - cron: "23 9 * * 2"      # lunes: año en curso y anterior
-  #   - cron: "47 10 4 * *"     # día 4 de cada mes: todos los años (correcciones antiguas)
+  schedule:
+    - cron: "23 9 * * 2"      # semanal: año en curso y anterior
+    - cron: "47 10 4 * *"     # día 4 de cada mes: todos los años (correcciones antiguas)
 permissions:
   contents: write
 concurrency:
