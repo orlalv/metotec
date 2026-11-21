@@ -11,10 +11,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-21 16:30",
-"visto": "2026-11-21 16:46",
+"fin": "2026-11-21 17:00",
+"visto": "2026-11-21 17:18",
 "detalle": [
-"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -30,10 +30,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-21 16:30",
-"visto": "2026-11-21 16:46",
+"fin": "2026-11-21 17:00",
+"visto": "2026-11-21 17:18",
 "detalle": [
-"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -51,7 +51,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-21 13:32",
-"visto": "2026-11-21 16:46",
+"visto": "2026-11-21 17:18",
 "detalle": [
 "QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 549.7)",
 "QFE · rango: 5 valores fuera de lo habitual para la zona centro [886, 966] (valor 503.3)",
@@ -72,10 +72,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-21 13:44",
-"visto": "2026-11-21 16:46",
+"visto": "2026-11-21 17:18",
 "detalle": [
-"QFF · rango: 7 valores fuera de rango físico [920, 1060] (valor 521.8)",
-"QFE · rango: 7 valores fuera de lo habitual para la zona centro [936, 1016] (valor 502.6)",
+"QFF · rango: 6 valores fuera de rango físico [920, 1060] (valor 522.2)",
+"QFE · rango: 6 valores fuera de lo habitual para la zona centro [936, 1016] (valor 503.1)",
 "QFE · salto: cambio de 479.0 en 1 min (valor 503.7)"
 ]
 },
@@ -92,11 +92,11 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-21 10:59",
-"visto": "2026-11-21 16:46",
+"fin": "2026-11-21 11:59",
+"visto": "2026-11-21 17:18",
 "detalle": [
-"QFF · rango: 368 valores fuera de rango físico [920, 1060] (valor 503.9)",
-"QFE · rango: 368 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.7)"
+"QFF · rango: 339 valores fuera de rango físico [920, 1060] (valor 503.9)",
+"QFE · rango: 339 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.7)"
 ]
 },
 "370036|piranómetro (radiación)": {
@@ -110,10 +110,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-21 10:50",
-"visto": "2026-11-21 16:46",
+"fin": "2026-11-21 11:59",
+"visto": "2026-11-21 17:18",
 "detalle": [
-"radiación · rango: 216 valores fuera de rango físico [0, 1600] (valor 8952.52)"
+"radiación · rango: 219 valores fuera de rango físico [0, 1600] (valor 7403.52)"
 ]
 },
 "390029|barómetro": {
@@ -129,12 +129,12 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-21 15:25",
-"visto": "2026-11-21 16:46",
+"fin": "2026-11-21 16:39",
+"visto": "2026-11-21 17:18",
 "detalle": [
-"QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 516.7)",
-"QFE · rango: 5 valores fuera de lo habitual para la zona sur [946, 1026] (valor 502.7)",
-"QFE · salto: cambio de 485.6 en 1 min (valor 503.8)"
+"QFF · rango: 4 valores fuera de rango físico [920, 1060] (valor 516.9)",
+"QFE · rango: 4 valores fuera de lo habitual para la zona sur [946, 1026] (valor 502.9)",
+"QFE · salto: cambio de 485.6 en 1 min (valor 503.9)"
 ]
 },
 "200007|piranómetro (radiación)": {
@@ -149,9 +149,9 @@
 ],
 "nivel": 1,
 "fin": "2026-11-21 14:59",
-"visto": "2026-11-21 16:46",
+"visto": "2026-11-21 17:18",
 "detalle": [
-"radiación · rango: 113 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1462.12)"
+"radiación · rango: 128 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1462.12)"
 ]
 },
 "330077|piranómetro (radiación)": {
@@ -166,9 +166,9 @@
 ],
 "nivel": 1,
 "fin": "2026-11-21 15:55",
-"visto": "2026-11-21 16:46",
+"visto": "2026-11-21 17:18",
 "detalle": [
-"radiación · rango: 11 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1369.03)"
+"radiación · rango: 13 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1369.03)"
 ]
 },
 "250005|piranómetro (radiación)": {
@@ -183,9 +183,9 @@
 ],
 "nivel": 1,
 "fin": "2026-11-21 15:59",
-"visto": "2026-11-21 16:46",
+"visto": "2026-11-21 17:18",
 "detalle": [
-"radiación · rango: 13 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1477.6)"
+"radiación · rango: 17 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1477.6)"
 ]
 }
 }
