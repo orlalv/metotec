@@ -11,10 +11,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-21 14:30",
-"visto": "2026-11-21 14:49",
+"fin": "2026-11-21 15:00",
+"visto": "2026-11-21 15:18",
 "detalle": [
-"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -30,10 +30,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-21 14:15",
-"visto": "2026-11-21 14:49",
+"fin": "2026-11-21 15:00",
+"visto": "2026-11-21 15:18",
 "detalle": [
-"HR · rango: 376 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -51,10 +51,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-21 13:32",
-"visto": "2026-11-21 14:49",
+"visto": "2026-11-21 15:18",
 "detalle": [
-"QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 549.5)",
-"QFE · rango: 5 valores fuera de lo habitual para la zona centro [886, 966] (valor 503.1)",
+"QFF · rango: 4 valores fuera de rango físico [920, 1060] (valor 549.7)",
+"QFE · rango: 4 valores fuera de lo habitual para la zona centro [886, 966] (valor 503.1)",
 "QFE · salto: cambio de 427.3 en 1 min (valor 503.8)"
 ]
 },
@@ -72,10 +72,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-21 13:44",
-"visto": "2026-11-21 14:49",
+"visto": "2026-11-21 15:18",
 "detalle": [
-"QFF · rango: 9 valores fuera de rango físico [920, 1060] (valor 521.6)",
-"QFE · rango: 9 valores fuera de lo habitual para la zona centro [936, 1016] (valor 502.5)",
+"QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 521.8)",
+"QFE · rango: 8 valores fuera de lo habitual para la zona centro [936, 1016] (valor 502.6)",
 "QFE · salto: cambio de 479.0 en 1 min (valor 503.7)"
 ]
 },
@@ -92,11 +92,11 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-21 08:59",
-"visto": "2026-11-21 14:49",
+"fin": "2026-11-21 09:59",
+"visto": "2026-11-21 15:18",
 "detalle": [
-"QFF · rango: 383 valores fuera de rango físico [920, 1060] (valor 503.9)",
-"QFE · rango: 383 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.7)"
+"QFF · rango: 353 valores fuera de rango físico [920, 1060] (valor 503.9)",
+"QFE · rango: 353 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.7)"
 ]
 },
 "370036|piranómetro (radiación)": {
@@ -110,10 +110,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-21 08:59",
-"visto": "2026-11-21 14:49",
+"fin": "2026-11-21 09:31",
+"visto": "2026-11-21 15:18",
 "detalle": [
-"radiación · rango: 139 valores fuera de rango físico [0, 1600] (valor 7707.28)"
+"radiación · rango: 160 valores fuera de rango físico [0, 1600] (valor 6925.6)"
 ]
 },
 "390029|barómetro": {
@@ -130,28 +130,28 @@
 ],
 "nivel": 2,
 "fin": "2026-11-21 12:58",
-"visto": "2026-11-21 14:49",
+"visto": "2026-11-21 15:18",
 "detalle": [
-"QFF · rango: 7 valores fuera de rango físico [920, 1060] (valor 518.0)",
-"QFE · rango: 7 valores fuera de lo habitual para la zona sur [946, 1026] (valor 503.9)",
+"QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 516.6)",
+"QFE · rango: 5 valores fuera de lo habitual para la zona sur [946, 1026] (valor 502.6)",
 "QFE · salto: cambio de 484.9 en 1 min (valor 988.1)"
 ]
 },
-"550001|piranómetro (radiación)": {
-"codigo": "550001",
+"200007|piranómetro (radiación)": {
+"codigo": "200007",
 "sensor": "piranómetro (radiación)",
-"inicio": "2026-11-21 00:59",
+"inicio": "2026-11-21 14:59",
 "vars": [
 "Rad"
 ],
 "pruebas": [
 "rango"
 ],
-"nivel": 2,
-"fin": "2026-11-21 07:50",
-"visto": "2026-11-21 13:49",
+"nivel": 1,
+"fin": "2026-11-21 14:59",
+"visto": "2026-11-21 15:18",
 "detalle": [
-"radiación · rango: 51 valores fuera de rango físico [0, 1600] (valor -0.1)"
+"radiación · rango: 38 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1462.12)"
 ]
 }
 }
