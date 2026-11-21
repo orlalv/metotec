@@ -1,33 +1,30 @@
 {
  "version": "0.1",
- "inicio": "2026-11-21T11:46:24+00:00",
+ "inicio": "2026-11-21T12:16:01+00:00",
  "errores": [],
- "estaciones": 137,
- "con_datos": 119,
- "registros": 4743,
- "desde": "2026-11-21 10:46:00",
- "hasta": "2026-11-21 11:40:00",
+ "estaciones": 109,
+ "con_datos": 124,
+ "registros": 4814,
+ "desde": "2026-11-21 11:16:00",
+ "hasta": "2026-11-21 12:10:00",
  "horas_archivadas": 2,
  "modelo": 6576,
- "wrf": "sin corridas nuevas",
- "corridas": [
-  "2026112000_ecmwf",
-  "2026112000_gfs",
-  "2026112012_ecmwf",
-  "2026112012_gfs",
-  "2026112100_gfs"
+ "wrf": "corridas nuevas",
+ "nuevas": [
+  "2026112100_ecmwf"
  ],
+ "fallas": 28,
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 68,
-  "ultima": "2026-11-21T11:30Z"
+  "ultima": "2026-11-21T12:10Z"
  },
  "externas": {
   "estaciones": 325,
   "con_vecinas": 114,
   "desactivadas": 0,
-  "generado": "2026-11-21T11:46:05Z",
-  "pp_archivadas": 10820,
+  "generado": "2026-11-21T12:15:43Z",
+  "pp_archivadas": 10850,
   "desviadas": 3,
   "kv_desvio": "200"
  },
@@ -36,15 +33,15 @@
   "filas": 36589,
   "activa": true
  },
- "consenso_quitados": 0,
+ "consenso_quitados": 1,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1628,
+ "ob_filas": 1641,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 458,
+  "observaciones": 466,
   "fallas": 0,
-  "hallazgos": 448,
+  "hallazgos": 459,
   "kv": "200",
   "completitud": "200"
  },
@@ -68,8 +65,8 @@
  "boletin": {
   "dia": "2026-11-21",
   "estaciones": 26,
-  "hallazgos": 7,
-  "cambios": 0,
+  "hallazgos": 22,
+  "cambios": 10,
   "kv": "200"
  },
  "productos": {
@@ -81,20 +78,20 @@
    "cuarentena": 5,
    "en_revision": 28,
    "operativa": 104,
-   "verde": 87,
-   "amarillo": 20,
+   "verde": 86,
+   "amarillo": 21,
    "rojo": 30,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 24,
+ "alertas": 29,
  "resumen": {
-  "bien": 106,
-  "sospechoso": 14,
+  "bien": 104,
+  "sospechoso": 16,
   "erróneo": 8,
   "sin datos": 9
  },
- "fin": "2026-11-21T11:53:07+00:00"
+ "fin": "2026-11-21T12:26:18+00:00"
 }
