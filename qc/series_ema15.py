@@ -37,8 +37,8 @@ def filas(js):
 def descargar(cod, a, m, usuario, token, timeout=120):
     r = requests.get(URL.format(cod=cod, a=a, m=m), params={"usuario": usuario, "token": token}, timeout=timeout)
     r.raise_for_status()
-    if not r.text.strip():
-        return {}                 # respuesta vacía: el servicio no tiene datos de ese mes
+    if not r.text.strip() or r.text.strip().strip('"').lower().startswith("sin informaci"):
+        return {}                 # «Sin Información»: el servicio no tiene datos de ese mes
     try:
         return r.json()
     except ValueError:
@@ -97,8 +97,6 @@ def main():
                     continue
                 try:
                     F = filas(descargar(cod, an, m, usuario, token))
-                    if not F:                     # confirma con un segundo intento antes de darlo por vacío
-                        time.sleep(1.5); F = filas(descargar(cod, an, m, usuario, token))
                 except Exception as e:
                     fallas += 1; print(f"  falla {cod} {an}-{m:02d}: {e}", flush=True); time.sleep(2); continue
                 f.parent.mkdir(parents=True, exist_ok=True)
