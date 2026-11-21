@@ -17,6 +17,25 @@ VARS = ["Ts", "Td", "QFE", "QFF", "ff"]
 MAX_RELLENABLE = 10
 
 
+def serie_ema15(raiz, cod):
+    """Serie horaria (UTC, dato del minuto :00) desde ema15/{cod}/{año}/{mm}.csv.gz (EMA cada 15 min). Columnas como las de SACLIM."""
+    import gzip, io
+    d = Path(raiz) / "ema15" / str(cod)
+    P = []
+    for f in sorted(d.glob("*/*.csv.gz")):
+        try:
+            P.append(pd.read_csv(io.BytesIO(gzip.decompress(f.read_bytes())), sep=";"))
+        except Exception:
+            continue
+    if not P:
+        return pd.DataFrame(), pd.DataFrame(columns=["var", "valor", "hora"])
+    D = pd.concat(P)
+    D["momento"] = pd.to_datetime(D["momento"], errors="coerce")
+    D = D[D.momento.notna() & (D.momento.dt.minute == 0)].drop_duplicates("momento").set_index("momento").sort_index()
+    S = D.rename(columns={"T": "Ts", "P_est": "QFE", "P_mar": "QFF", "dd10": "dd", "ff10": "ff"})[["Ts", "Td", "HR", "QFE", "QFF", "dd", "ff"]]
+    return S, pd.DataFrame(columns=["var", "valor", "hora"])
+
+
 def rachas_vacias(x):
     """Rachas de horas sin dato en una serie horaria ya reindexada. Devuelve lista de (inicio, horas)."""
     na = x.isna()
@@ -54,16 +73,18 @@ def main():
     ap.add_argument("raiz")
     ap.add_argument("--desde", type=int, default=2011)
     ap.add_argument("--cods", nargs="*")
+    ap.add_argument("--fuente", default="saclim", choices=["saclim", "ema15"])
     a = ap.parse_args()
     raiz = Path(a.raiz)
-    sal = raiz / "saclim" / "informe_paso2"
+    sal = raiz / "saclim" / ("informe_paso2" if a.fuente == "saclim" else "informe_paso2_ema15")
     sal.mkdir(parents=True, exist_ok=True)
-    cods = a.cods or sorted(p.name for p in (raiz / "saclim").iterdir() if p.is_dir() and p.name[0].isdigit())
+    base = raiz / ("saclim" if a.fuente == "saclim" else "ema15")
+    cods = a.cods or sorted(p.name for p in base.iterdir() if p.is_dir() and p.name[0].isdigit())
     ahora = pd.Timestamp.utcnow().tz_localize(None).floor("h")
     filas = []
     for c in cods:
         t0 = time.time()
-        S, E = series_h.serie(raiz, c)
+        S, E = series_h.serie(raiz, c) if a.fuente == "saclim" else serie_ema15(raiz, c)
         if S.empty:
             filas.append(dict(codigo=c, sin_datos=True)); print(c, "sin datos"); continue
         S = S[S.index.year >= a.desde]
