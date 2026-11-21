@@ -39,7 +39,10 @@ def descargar(cod, a, m, usuario, token, timeout=120):
     r.raise_for_status()
     if not r.text.strip():
         return {}                 # respuesta vacía: el servicio no tiene datos de ese mes
-    return r.json()
+    try:
+        return r.json()
+    except ValueError:
+        raise ValueError(f"respuesta no JSON ({r.status_code}, {len(r.content)} bytes, {r.headers.get('content-type')}): {r.text[:160]!r}")
 
 
 def escribir(f, F):
