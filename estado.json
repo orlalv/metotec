@@ -1,14 +1,14 @@
 {
  "version": "0.1",
- "inicio": "2026-11-22T00:46:47+00:00",
+ "inicio": "2026-11-22T01:16:27+00:00",
  "errores": [],
- "estaciones": 137,
- "con_datos": 118,
- "registros": 4782,
- "desde": "2026-11-21 23:45:01",
- "hasta": "2026-11-22 00:38:00",
+ "estaciones": 136,
+ "con_datos": 122,
+ "registros": 4814,
+ "desde": "2026-11-22 00:16:00",
+ "hasta": "2026-11-22 01:10:00",
  "horas_archivadas": 2,
- "modelo": 6576,
+ "modelo": 6528,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026112100_ecmwf",
@@ -19,14 +19,14 @@
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 63,
-  "ultima": "2026-11-22T00:30Z"
+  "ultima": "2026-11-22T01:00Z"
  },
  "externas": {
   "estaciones": 323,
-  "con_vecinas": 114,
+  "con_vecinas": 113,
   "desactivadas": 0,
-  "generado": "2026-11-22T00:46:22Z",
-  "pp_archivadas": 10853,
+  "generado": "2026-11-22T01:16:08Z",
+  "pp_archivadas": 10614,
   "desviadas": 4,
   "kv_desvio": "200"
  },
@@ -35,15 +35,15 @@
   "filas": 36589,
   "activa": true
  },
- "consenso_quitados": 0,
+ "consenso_quitados": 1,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 3255,
+ "ob_filas": 3266,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 496,
+  "observaciones": 491,
   "fallas": 0,
-  "hallazgos": 415,
+  "hallazgos": 417,
   "kv": "200",
   "completitud": "200"
  },
@@ -52,8 +52,8 @@
   "2026-11-22"
  ],
  "super": {
-  "estaciones": 104,
-  "hallazgos": 55,
+  "estaciones": 103,
+  "hallazgos": 54,
   "kv": "200"
  },
  "historial": {
@@ -72,22 +72,22 @@
  "reputacion": {
   "resumen": {
    "cuarentena": 5,
-   "en_revision": 29,
+   "en_revision": 28,
    "operativa": 103,
    "verde": 85,
    "amarillo": 21,
-   "rojo": 31,
+   "rojo": 30,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 21,
+ "alertas": 25,
  "resumen": {
-  "bien": 108,
-  "sospechoso": 11,
+  "bien": 107,
+  "sospechoso": 12,
   "erróneo": 8,
-  "sin datos": 10
+  "sin datos": 9
  },
- "fin": "2026-11-22T00:53:53+00:00"
+ "fin": "2026-11-22T01:22:33+00:00"
 }
