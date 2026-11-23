@@ -167,8 +167,13 @@ def revisar_dia(dia, bol, raiz, ayer=None):
             w2 = g[(g["momento"] > fin - pd.Timedelta(hours=27)) & (g["momento"] <= fin + pd.Timedelta(hours=3))].dropna(subset=["T"]) if not minimo else w
             paso = (w["momento"].diff().median() / pd.Timedelta(minutes=1)) if len(w) > 1 else 0
             if val is not None and len(w) * paso >= 0.8 * 720:
-                i = w["T"].idxmin() if minimo else w["T"].idxmax()
-                ref, tref = float(w.loc[i, "T"]), w.loc[i, "momento"]
+                # Ventana de referencia. La máxima del boletín puede ser la del día local/UTC de ayer (w2) y no la del bloque PM (w):
+                # si el valor del boletín calza con la máxima de w2 y no con la de w, la referencia (valor, hora y empates) es w2.
+                wref, ini_r, fin_r = w, ini, fin
+                if not minimo and len(w2) and abs(val - float(w["T"].max())) > 0.05 and abs(val - float(w2["T"].max())) <= 0.05:
+                    wref, ini_r, fin_r = w2, fin - pd.Timedelta(hours=27), fin + pd.Timedelta(hours=3)
+                i = wref["T"].idxmin() if minimo else wref["T"].idxmax()
+                ref, tref = float(wref.loc[i, "T"]), wref.loc[i, "momento"]
                 otros = [float(w2["T"].min() if minimo else w2["T"].max())]
                 d = min(abs(val - ref), *[abs(val - x) for x in otros])
                 real = dict(valor=ref, hora=f"{loc(tref):%H:%M}", fuente="automática")
@@ -191,11 +196,11 @@ def revisar_dia(dia, bol, raiz, ayer=None):
                             if best is None or abs(x - val) < abs(best - val):
                                 best = x
                     # minutos en que la automática estuvo en su extremo (empates a 1 decimal): cualquiera de esas horas vale
-                    ext = w[(w["T"] - ref).abs() <= 0.05]["momento"]
+                    ext = wref[(wref["T"] - ref).abs() <= 0.05]["momento"]
                     horas_ok = [f"{loc(x):%H:%M}" for x in ext]
                     # con el resumen diario de la estación (2 decimales) se sabe cuál de los minutos empatados fue el extremo
                     of = [x for x in oficiales(ce) if x["tipo"] == ("min" if minimo else "max") and abs(x["valor"] - ref) <= 0.1
-                          and loc(ini) <= x["momento"] <= loc(fin)]
+                          and loc(ini_r) <= x["momento"] <= loc(fin_r)]
                     if of:
                         mo = of[0]["momento"]
                         ext = pd.Series([mo.tz_localize(Z).tz_convert("UTC").tz_localize(None)])
