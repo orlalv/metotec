@@ -218,6 +218,15 @@ function mapaVec(cod, vk, r){
   const nv = pts.map(p => `<g><line x1="${cx}" y1="${cy}" x2="${cx + p.dx * sc}" y2="${cy - p.dy * sc}" stroke="currentColor" opacity=".15"/><circle cx="${cx + p.dx * sc}" cy="${cy - p.dy * sc}" r="5" fill="#1c7ed6"/><text x="${cx + p.dx * sc + 8}" y="${cy - p.dy * sc + 4}" font-size="10" fill="currentColor"><tspan font-weight="700">${val(p.o)}</tspan> ${esc(p.o.nombre.slice(0, 16))} · ${p.o.alt != null ? Math.round(p.o.alt) + " m" : ""} · ${Math.round(p.o.d)} km</text></g>`).join("");
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;color:var(--tx)">${anillos}${nv}<circle cx="${cx}" cy="${cy}" r="7" fill="#d6336c"/><text x="${cx}" y="${cy + 20}" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">${f1(r.v)} ${pp ? "mm" : "°C"} · ${esc((e.nombre || cod).slice(0, 22))}</text></svg>`
     + (V.length ? "" : `<p style="color:var(--mu);font-size:12px">Sin vecinas con dato dentro de ${VEC_KM} km.</p>`); }
+/* externas cercanas (INIA, Servimet…) con la extrema horaria de las 24 h que terminan al cierre del día del dato; null = sin datos esos horarios */
+async function vecExt(r, vk){
+  try { if (!window.EXTV) return []; const e = EST.get(r.cod) || {}, d = await EXTV.datos(); if (!d || e.lat == null) return [];
+    const fin = S.per.dias[r.dia + 1], ini = fin - 24 * 3600e3, f = t => new Date(t).toISOString().slice(0, 10);
+    await EXTV.temperatura(d, [...new Set([f(ini), f(fin), f(fin - 1)])]);
+    return EXTV.vecinas(d, e.lat, e.lon, VEC_KM, 4).map(([id]) => { const c = d.cat.get(id) || {}, m = (d.ta && d.ta.get(id)) || new Map(), v = [];
+      for (let t = ini + 3600e3; t <= fin; t += 3600e3){ const x = m.get(t); if (x != null) v.push(x); }
+      return {codigo: id, nombre: `${id.split(":")[0]} ${c.nombre || id.split(":")[1] || ""}`.trim(), lat: c.lat, lon: c.lon, externa: true, val: v.length >= 18 ? (vk === "tmin" ? Math.min(...v) : Math.max(...v)) : null}; });
+  } catch (er) { return []; } }
 async function abrir(id){
   const it = S.fila.get(id); if (!it) return; const {vk, r} = it, pp = vk[0] === "p", [, tit, , u] = VK.find(x => x[0] === vk), M = modal(), tok = TOK;
   M.innerHTML = `<div style="max-width:1100px;margin:0 auto;background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:16px"><p style="color:var(--mu)">Leyendo ${DIAS_SERIE} días de ${esc(nom(r.cod))} y sus vecinas…<small data-prog></small></p></div>`;
@@ -241,7 +250,7 @@ async function abrir(id){
     <div style="display:flex;justify-content:space-between;gap:10px"><h3 style="margin:0;font-size:16px">${esc(nom(r.cod))} <small style="color:var(--mu)">${r.cod}</small> — ${tit}: <b>${f1(r.v)} ${u}</b> · ${esc(nombreDia(S.per.dias[r.dia], S.modo))} · ${pp ? hTxt(r.e - r.W + 1) + " → " + hTxt(r.e) : hTxt(r.m)} UTC</h3><button id="agX" style="font-size:16px">✕</button></div>
     <p style="margin:6px 0 10px;color:${COL[r.sem.n]}"><b>● ${NS[r.sem.n]}</b> <span style="color:var(--mu)">${esc(r.sem.mot.join(" · ") || "sin observaciones")} · datos ${Math.round(r.comp * 100)} %</span></p>
     <div>${graf}</div>
-    ${usaEsp ? `<div style="margin-top:12px"><div class="espMapT" style="font-size:12.5px;margin-bottom:4px"></div><div class="espMap" style="height:400px;border:1px solid var(--bd);border-radius:8px"></div><small style="color:var(--mu)">Control espacial: rojo = la estación · azul = vecinas DMC · gris = sin dato</small></div>` : (usaVer || usaFal) ? "" : `<div class="bcard" style="padding:8px;margin-top:12px"><div style="font-size:12px;color:var(--mu);margin-bottom:4px">Vecinas a la hora de la extrema (≤ ${VEC_KM} km)</div>${mapaVec(r.cod, vk, r)}</div>`}
+    ${usaEsp ? `<div style="margin-top:12px"><div class="espMapT" style="font-size:12.5px;margin-bottom:4px"></div><div class="espMap" style="height:400px;border:1px solid var(--bd);border-radius:8px"></div><small style="color:var(--mu)">Rojo = la estación · azul = vecinas DMC (extrema de las 24 h) · naranja = externas INIA y otras (extrema de las medias horarias; solo desde que se archivan) · gris = sin dato</small></div>` : (usaVer || usaFal) ? "" : `<div class="bcard" style="padding:8px;margin-top:12px"><div style="font-size:12px;color:var(--mu);margin-bottom:4px">Vecinas a la hora de la extrema (≤ ${VEC_KM} km)</div>${mapaVec(r.cod, vk, r)}</div>`}
     ${usaVer ? `<div id="agVer" style="margin-top:12px"></div>` : ""}
     <div style="margin-top:12px;border-top:1px solid var(--bd);padding-top:10px">${acc}<p id="agErr" style="color:var(--err);margin:6px 0 0"></p></div></div>`;
   $("#agX").addEventListener("click", () => { M.hidden = true; });
@@ -249,7 +258,8 @@ async function abrir(id){
     FALLAS.grafico($("#agFal"), {codigo: r.cod, nombre: e0.nombre || r.cod, var: "T", inicio: t0, ultima: t0 + 60e3, sigue: false, minutos: 1500, alertas: []}, RR0);
     if (usaEsp){ const fm = M.querySelector("#agFal .fmap"), ft = M.querySelector("#agFal .fmapt"); if (fm) fm.style.display = "none"; if (ft) ft.style.display = "none"; } }
   if (usaEsp){ const fin = new Date(S.per.dias[r.dia + 1]).toISOString().slice(0, 16);     // las 24 h que terminan al cierre de ese día
-    try { SUPER.mapaEsp(M.querySelector(".espMap"), M.querySelector(".espMapT"), eR, window.supVec(r.cod), {regla: "ZE05", msg: vk === "tmin" ? "Ts mínima" : "Ts máxima"}, fin); } catch (e) { M.querySelector(".espMapT").textContent = "No se pudo dibujar el mapa."; } }
+    const dmc = vecinas(r.cod).map(o => ({codigo: o.cod, nombre: o.nombre})), ext = await vecExt(r, vk);
+    try { SUPER.mapaEsp(M.querySelector(".espMap"), M.querySelector(".espMapT"), eR, [...dmc, ...ext], {regla: "ZE05", msg: vk === "tmin" ? "Ts mínima" : "Ts máxima"}, fin); } catch (e) { M.querySelector(".espMapT").textContent = "No se pudo dibujar el mapa."; } }
   if (usaVer){ let hm = 0, vm = -1; for (let k = Math.floor((r.e - r.W + 1) / 60); k <= Math.floor(r.e / 60); k++){ let q = 0; for (let m = k * 60; m < k * 60 + 60; m++){ const x = S.R.get(r.cod)[m]; if (isFinite(x) && x <= PP_MAXMIN) q += x; } if (q > vm){ vm = q; hm = k; } }     // la hora más lluviosa de la ventana
     const tm = new Date(S.B0 + hm * 3600e3); VERIF.fijar(r.cod, tm.toISOString().slice(0, 10), tm.getUTCHours()); VERIF.pagina($("#agVer")); }
   const enviar = async (cuerpo) => { const nm = (() => { try { let n = localStorage.getItem("agroNombre"); if (!n){ n = prompt("Tu nombre, para el registro:") || ""; localStorage.setItem("agroNombre", n); } return n; } catch (e) { return ""; } })();

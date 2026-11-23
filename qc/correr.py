@@ -397,7 +397,7 @@ def main():
         XEXT = EV.cargar(leer_kv, E, ahora=fin)
         if XEXT is not None:
             estado["externas"] = dict(estaciones=len(XEXT.cat), con_vecinas=sum(1 for L in XEXT.vec.values() if L), desactivadas=len(XEXT.off), generado=XEXT.generado,
-                                      pp_archivadas=EV.archivar_pp(a.datos, XEXT))
+                                      pp_archivadas=EV.archivar_pp(a.datos, XEXT), ta_archivadas=EV.archivar_ta(a.datos, XEXT))
             H26 = P.horario(leer_archivo(a.datos, fin, horas=26))
             dsv = EV.desvios(XEXT, H26, E, V) if len(H26) else {}
             estado["externas"]["desviadas"] = len(dsv)

@@ -162,8 +162,8 @@ async function mapaEsp(el, tit, e, V2, h, hora){
   const pts = [[e.lat, e.lon]], m0 = L.marker([e.lat, e.lon], {icon: et(e.nombre, null, "#f85149"), zIndexOffset: 1000}).addTo(mp);
   valor(e.codigo).then(y => m0.setIcon(et(e.nombre, y, "#f85149")));
   const km = (a, b) => { const r = Math.PI / 180, q = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2; return Math.round(12742 * Math.asin(Math.sqrt(q))); };
-  V2.forEach(w => { const x = E.find(z => z.codigo === w.codigo); if (!x || x.lat == null) return; pts.push([x.lat, x.lon]); const n = `${w.nombre} · ${km(e, x)} km`;
-    const mk = L.marker([x.lat, x.lon], {icon: et(n, null, "#58a6ff")}).addTo(mp); valor(w.codigo).then(y => mk.setIcon(et(n, y, "#58a6ff"))); });
+  V2.forEach(w => { const x = E.find(z => z.codigo === w.codigo) || (w.lat != null ? w : null); if (!x || x.lat == null) return; pts.push([x.lat, x.lon]); const n = `${w.nombre} · ${km(e, x)} km`, col = w.externa ? "#d29922" : "#58a6ff";   // externas (INIA…): naranja, con el valor que trae quien llama
+    const mk = L.marker([x.lat, x.lon], {icon: et(n, null, col)}).addTo(mp); (w.externa ? Promise.resolve(w.val) : valor(w.codigo)).then(y => mk.setIcon(et(n, y, col))); });
   if (pts.length > 1) mp.fitBounds(pts, {padding: [50, 50], maxZoom: 10}); else mp.setView(pts[0], 9);
 }
 // Boletín automático: mismo formato del Boletín diario (mínima y máxima con su hora y precipitación), de las estaciones sin observador, armado con los minutos

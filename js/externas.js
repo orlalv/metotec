@@ -48,7 +48,19 @@ function vecinas(d, lat, lon, radio, tope = TOPE){
   const p = {lat, lon};
   return [...d.cat.values()].map(e => [e.id, km(p, e)]).filter(x => x[1] <= radio).sort((a, b) => a[1] - b[1]).slice(0, tope);
 }
-window.EXTV = {dia, PESO, TOPE, datos, vecinas, refrescar: () => { CACHE = null; }};
+// temperatura horaria (media) de las externas: lo que trae el KV (~42 h) y lo archivado (datos/ext/ta/AAAA/MM/DD.json). d.ta: id → Map(ms de la hora en que termina → °C)
+async function temperatura(d, fechas){
+  if (!d) return d;
+  if (!d.ta){ d.ta = new Map(); const r = await api("TA");
+    if (r && r.datos) for (const [id, s] of Object.entries(r.datos)){ if (!d.cat.has(id)) continue; const m = new Map(); for (const [h, v] of Object.entries(s)){ const t = Date.parse(h + ":00:00Z"); if (isFinite(t) && v != null) m.set(t, v); } d.ta.set(id, m); } }
+  d.taDias = d.taDias || new Set();
+  for (const f of fechas || []){ if (d.taDias.has(f)) continue;
+    try { const r = await fetch(`/api/datosraw?p=ext/ta/${f.slice(0, 4)}/${f.slice(5, 7)}/${f.slice(8, 10)}.json`); if (!r.ok) continue; const A = await r.json(); d.taDias.add(f);
+      for (const [id, s] of Object.entries(A)){ if (!d.cat.has(id)) continue; let m = d.ta.get(id); if (!m){ m = new Map(); d.ta.set(id, m); }
+        for (const [hh, v] of Object.entries(s)){ const t = Date.parse(`${f}T${hh}:00:00Z`); if (isFinite(t) && v != null && !m.has(t)) m.set(t, v); } } } catch (e) {} }
+  return d;
+}
+window.EXTV = {dia, temperatura, PESO, TOPE, datos, vecinas, refrescar: () => { CACHE = null; }};
 
 /* ---------------- Gestión: activar / desactivar cada estación externa ---------------- */
 let ST = {cat: [], off: new Set(), des: {}, inst: "", q: "", solo: "", cargando: false, error: ""};

@@ -264,6 +264,32 @@ def archivar_pp(raiz, X):
     return n
 
 
+def archivar_ta(raiz, X):
+    """Acumula la temperatura horaria (media) de las externas vecinas en <raiz>/ext/ta/AAAA/MM/DD.json ({id: {HH: °C}}), solo las que se usan como vecinas.
+    Es lo que usa la pestaña Agro para mostrar las externas en el mapa de cercanas de semanas pasadas (el KV solo guarda ~42 h)."""
+    if X is None or "T" not in X.P:
+        return 0
+    F = X.P["T"]
+    usadas = {i for L in X.vec.values() for i in L}
+    n = 0
+    for dia, g in F.groupby(F.index.floor("D")):
+        f = Path(raiz) / "ext" / "ta" / f"{dia:%Y/%m/%d}.json"
+        try:
+            prev = json.loads(f.read_text(encoding="utf-8")) if f.exists() else {}
+        except Exception:
+            prev = {}
+        for i in g.columns:
+            if i not in usadas:
+                continue
+            s = g[i].dropna()
+            if len(s):
+                prev.setdefault(i, {}).update({f"{t:%H}": round(float(x), 1) for t, x in s.items()})
+                n += len(s)
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps(prev, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    return n
+
+
 def leer_pp(raiz, desde, hasta, X=None):
     """Lluvia horaria de las externas (hora × id): lo archivado más lo que trae X (que manda)."""
     cols = {}
