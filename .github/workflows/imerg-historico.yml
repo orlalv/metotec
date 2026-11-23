@@ -1,0 +1,40 @@
+name: IMERG histórico (validación)
+on:
+  workflow_dispatch:
+    inputs:
+      desde:
+        description: "Desde (AAAA-MM-DD)"
+        default: "2025-05-01"
+      hasta:
+        description: "Hasta (AAAA-MM-DD)"
+        default: "2025-10-31"
+      paso_horas:
+        description: "Un paso cada N horas"
+        default: "1"
+permissions:
+  contents: write
+concurrency:
+  group: imerg-historico
+  cancel-in-progress: false
+jobs:
+  imerg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q pandas numpy requests pillow
+      - name: Rama de datos
+        run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - name: Bajar IMERG histórico
+        run: python qc/imerg_historico.py datos "${{ inputs.desde }}" "${{ inputs.hasta }}" "${{ inputs.paso_horas }}" 300
+      - name: Guardar
+        if: always()
+        run: |
+          cd datos
+          git config user.name "qc-metotec"; git config user.email "contacto.metotec@gmail.com"
+          git add -A imerg
+          git commit -q -m "IMERG histórico ${{ inputs.desde }} a ${{ inputs.hasta }}" || exit 0
+          for i in 1 2 3; do git pull -q --rebase origin datos && git push -q origin datos && break; sleep 5; done
