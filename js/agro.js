@@ -15,10 +15,11 @@ function localAUtc(y, m, d, h = 0, mi = 0){ const g = Date.UTC(y, m - 1, d, h, m
 const locTxt = t => new Date(t).toLocaleString("es-CL", {timeZone: TZ, weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false});
 const fechaIso = p => `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
 function jueves(ms){ const p = partes(ms), d = new Date(Date.UTC(p.year, p.month - 1, p.day)); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 3) % 7)); return d; }   // jueves de esa semana (≤ hoy)
-function ultimoJueves(){ const ahora = Date.now(); let d = jueves(ahora);
-  for (let i = 0; i < 3; i++){ const fin = localAUtc(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate() + 7); if (fin <= ahora) break; d = new Date(d.getTime() - 7 * 86400e3); }
+function dia0(iso, k, modo){ const [y, m, d] = iso.split("-").map(Number); return modo === "utc" ? Date.UTC(y, m - 1, d + k) : localAUtc(y, m, d + k); }   // inicio (UTC) del día k del periodo
+function periodo(iso, modo){ return {t0: dia0(iso, 0, modo), t1: dia0(iso, 7, modo), dias: Array.from({length: 8}, (_, k) => dia0(iso, k, modo))}; }
+function ultimoJueves(modo){ const ahora = Date.now(); let d = jueves(ahora);
+  for (let i = 0; i < 3; i++){ if (periodo(d.toISOString().slice(0, 10), modo).t1 <= ahora) break; d = new Date(d.getTime() - 7 * 86400e3); }
   return d.toISOString().slice(0, 10); }
-function periodo(isoJueves){ const [y, m, d] = isoJueves.split("-").map(Number); const t0 = localAUtc(y, m, d), t1 = localAUtc(y, m, d + 7); return {t0, t1}; }   // [t0, t1): t1 = jueves siguiente 00:00 local
 
 /* ---------- lectura de los archivos horarios ---------- */
 const CACHE = new Map(); let DG = {ok: 0, nf: 0, err: 0, ult: ""};
@@ -91,26 +92,34 @@ function semaforo(cod, r, comp){      // verde / amarillo / rojo con motivo; las
   if (comp < 0.5){ n = 2; mot.push(`completitud ${Math.round(comp * 100)} %`); } else if (comp < 0.8){ n = Math.max(n, 1); mot.push(`completitud ${Math.round(comp * 100)} %`); }
   if (r.picos){ n = Math.max(n, 1); mot.push(`${r.picos} pico${r.picos > 1 ? "s" : ""} descartado${r.picos > 1 ? "s" : ""}`); }
   const dev = [];
-  vecinas(cod).forEach(o => { const x = cerca(S.T.get(o.cod), r.m); if (isFinite(x)){ const alt = (e.alt ?? 0) - (o.alt ?? e.alt ?? 0); dev.push(r.v - (x - GRAD * alt / 1000)); } });
+  (S.vecMemo ? S.vecMemo(cod) : vecinas(cod)).forEach(o => { const x = cerca(S.T.get(o.cod), r.m); if (isFinite(x)){ const alt = (e.alt ?? 0) - (o.alt ?? e.alt ?? 0); dev.push(r.v - (x - GRAD * alt / 1000)); } });
   let d = null;
   if (dev.length >= 2){ dev.sort((x, y) => x - y); d = dev.length % 2 ? dev[(dev.length - 1) / 2] : (dev[dev.length / 2 - 1] + dev[dev.length / 2]) / 2;
     if (Math.abs(d) > 8){ n = 2; mot.push(`${f1(d)} °C vs vecinas`); } else if (Math.abs(d) > 4){ n = Math.max(n, 1); mot.push(`${f1(d)} °C vs vecinas`); } }
   else mot.push("sin vecinas con dato");
   return {n, mot, d, nv: dev.length}; }
 
+const nombreDia = (t, modo) => new Date(t + (modo === "utc" ? 0 : 12 * 3600e3)).toLocaleDateString("es-CL", {timeZone: modo === "utc" ? "UTC" : TZ, weekday: "short", day: "2-digit", month: "2-digit"});
 function analizar(){
-  const {i0, NT, N} = S, filas = [];
+  const {NT, per} = S, D = per.dias, idx = k => Math.round((D[k] - S.B0) / 60e3), VEC = new Map();
+  const vec = c => { if (!VEC.has(c)) VEC.set(c, vecinas(c)); return VEC.get(c); }; S.vecMemo = vec;
+  const dias = Array.from({length: 7}, () => ({mx: [], mn: []})), sem = [];
   S.T.forEach((arr, cod) => {
-    const copia = arr.slice(), n = (() => { let c = 0; for (let m = i0; m < NT; m++) if (isFinite(arr[m])) c++; return c; })();
-    if (!n) return;
-    const comp = n / N, mx = extremo(copia, i0, NT - 1, 1), copia2 = arr.slice(), mn = extremo(copia2, i0, NT - 1, -1);
-    filas.push({cod, comp, mx, mn});
+    let nTot = 0, mxS = null, mnS = null; const c1 = arr.slice(), c2 = arr.slice();
+    for (let k = 0; k < 7; k++){
+      const a = idx(k), b = idx(k + 1) - 1; let n = 0; for (let m = a; m <= b; m++) if (isFinite(arr[m])) n++; nTot += n; if (!n) continue;
+      const comp = n / (b - a + 1), mx = extremo(c1, a, b, 1), mn = extremo(c2, a, b, -1);
+      if (mx){ const r = {cod, comp, dia: k, ...mx}; dias[k].mx.push(r); if (!mxS || r.v > mxS.v) mxS = r; }
+      if (mn){ const r = {cod, comp, dia: k, ...mn}; dias[k].mn.push(r); if (!mnS || r.v < mnS.v) mnS = r; }
+    }
+    if (nTot) sem.push({cod, comp: nTot / S.N, mx: mxS, mn: mnS});
   });
-  const arma = clave => filas.filter(f => f[clave]).map(f => ({cod: f.cod, comp: f.comp, ...f[clave], sem: semaforo(f.cod, f[clave], f.comp)}))
-    .sort((a, b) => clave === "mx" ? b.v - a.v : a.v - b.v);
-  const parte = L => { const val = L.filter(r => r.sem.n < 2), top = val.slice(0, 10), corte = top.length ? L.indexOf(top[top.length - 1]) : L.length;   // ranking validado: sin los «malo»; los descartados que estaban por delante se listan aparte
+  const parte = (L, signo) => { L.sort((a, b) => signo * (b.v - a.v)); L.forEach(r => { r.sem = semaforo(r.cod, r, r.comp); });
+    const val = L.filter(r => r.sem.n < 2), top = val.slice(0, 10), corte = top.length ? L.indexOf(top[top.length - 1]) : L.length;
     return {top, desc: L.slice(0, corte).filter(r => r.sem.n === 2).map(r => ({...r, crudo: L.indexOf(r) + 1}))}; };
-  S.tmax = parte(arma("mx")); S.tmin = parte(arma("mn")); S.nEst = filas.length; }
+  S.sem = {tmax: parte(sem.filter(f => f.mx).map(f => ({...f.mx, comp: f.comp})), 1), tmin: parte(sem.filter(f => f.mn).map(f => ({...f.mn, comp: f.comp})), -1)};   // top de tops: lo mejor de los 7 días de cada estación
+  S.dia = dias.map(d => ({tmax: parte(d.mx, 1), tmin: parte(d.mn, -1)}));
+  S.nEst = sem.length; }
 
 /* ---------- pantalla ---------- */
 const COL = ["#2f9e44", "#e8a317", "#d6336c"], NS = ["ok", "dudoso", "malo"];
@@ -118,18 +127,21 @@ function tabla(P, tit, clave){
   const e = c => EST.get(c) || {}, L = P.top;
   return `<h3 style="margin:18px 0 6px">${tit}</h3>${filas(L, clave, i => i + 1, e)}${P.desc.length ? `<h4 style="margin:14px 0 6px;font:600 13px var(--titulo);color:var(--err)">Descartados del ranking crudo (control «malo»): ${P.desc.length}</h4>${filas(P.desc, clave, (i, r) => "crudo " + r.crudo, e)}` : ""}`; }
 function filas(L, clave, num, e){
-  return `<div class="bcard" style="padding:0;overflow:auto"><table class="xtab"><tr><th>#</th><th>Estación</th><th>Alt. m</th><th>${clave === "tmax" ? "Tmáx" : "Tmín"} °C</th><th>Cuándo (local)</th><th>UTC</th><th>Completitud</th><th>Control</th></tr>
-  ${L.map((r, i) => { const t = S.B0 + r.m * 60e3; return `<tr data-ag="${r.cod}|${r.m}" style="cursor:pointer"><td>${num(i, r)}</td><td class="nom"><b>${esc(e(r.cod).nombre || r.cod)}</b><br><small>${r.cod}</small></td><td class="n">${e(r.cod).alt != null ? Math.round(e(r.cod).alt) : "—"}</td>
+  return `<div class="bcard" style="padding:0;overflow:auto"><table class="xtab"><tr><th>#</th><th>Día</th><th>Estación</th><th>Alt. m</th><th>${clave === "tmax" ? "Tmáx" : "Tmín"} °C</th><th>Hora local</th><th>Hora UTC</th><th>Completitud</th><th>Control</th></tr>
+  ${L.map((r, i) => { const t = S.B0 + r.m * 60e3; return `<tr data-ag="${r.cod}|${r.m}" style="cursor:pointer"><td>${num(i, r)}</td><td style="white-space:nowrap">${esc(nombreDia(S.per.dias[r.dia], S.modo))}</td><td class="nom"><b>${esc(e(r.cod).nombre || r.cod)}</b><br><small>${r.cod}</small></td><td class="n">${e(r.cod).alt != null ? Math.round(e(r.cod).alt) : "—"}</td>
     <td class="n"><b>${f1(r.v)}</b></td><td style="white-space:nowrap">${esc(locTxt(t))}</td><td class="n">${new Date(t).toISOString().slice(5, 16).replace("T", " ")}</td><td class="n">${Math.round(r.comp * 100)} %</td>
     <td style="color:${COL[r.sem.n]};font-weight:600">● ${NS[r.sem.n]}<br><small style="color:var(--mu);font-weight:400">${esc(r.sem.mot.join(" · ") || "sin observaciones")}</small></td></tr>`; }).join("")}</table></div>`; }
 
 function pintar(){
-  const o = $("#agOut"), P = S.per;
-  o.innerHTML = `<p class="nota" style="margin:0 0 6px">Periodo: <b>${esc(locTxt(P.t0))}</b> a <b>${esc(locTxt(P.t1 - 60e3))}</b> (hora de Chile) = ${new Date(P.t0).toISOString().slice(0, 16).replace("T", " ")} a ${new Date(P.t1 - 60e3).toISOString().slice(0, 16).replace("T", " ")} UTC · ${S.nEst} estaciones con datos · ${S.N} minutos esperados por estación${S.fallas ? ` · <b style="color:var(--err)">${S.fallas} horas no se pudieron leer</b>` : ""}${S.sinArch ? ` · ${S.sinArch} horas sin archivo` : ""}</p>
+  const o = $("#agOut"), P = S.per, v = S.vista, V = v === "sem" ? S.sem : S.dia[v];
+  const bt = (k, t) => `<button data-agv="${k}" class="${String(v) === String(k) ? "on" : ""}" style="margin-right:4px">${esc(t)}</button>`;
+  o.innerHTML = `<div class="htools" style="margin-bottom:8px;flex-wrap:wrap">${bt("sem", "Semana (top de tops)")}${Array.from({length: 7}, (_, k) => bt(k, nombreDia(P.dias[k], S.modo))).join("")}</div>
+    <p class="nota" style="margin:0 0 6px">Periodo (días en <b>${S.modo === "utc" ? "UTC" : "hora de Chile"}</b>): <b>${esc(locTxt(P.t0))}</b> a <b>${esc(locTxt(P.t1 - 60e3))}</b> (hora de Chile) = ${new Date(P.t0).toISOString().slice(0, 16).replace("T", " ")} a ${new Date(P.t1 - 60e3).toISOString().slice(0, 16).replace("T", " ")} UTC · ${S.nEst} estaciones con datos · ${S.N} minutos esperados por estación${S.fallas ? ` · <b style="color:var(--err)">${S.fallas} horas no se pudieron leer</b>` : ""}${S.sinArch ? ` · ${S.sinArch} horas sin archivo` : ""}</p>
     <p class="nota" style="margin:0 0 6px;font-size:12px">Control: <span style="color:${COL[0]}">● ok</span> <span style="color:${COL[1]}">● dudoso</span> <span style="color:${COL[2]}">● malo</span> — según completitud (&lt; 80 % / &lt; 50 %), picos descartados y diferencia con la mediana de las vecinas ≤ ${VEC_KM} km corregida por altitud (&gt; 4 °C / &gt; 8 °C). Umbrales provisorios. El ranking validado deja fuera los «malo» (se listan aparte, con su lugar en el ranking crudo). Los picos aislados (&gt; ${SPIKE} °C sobre sus vecinos de ±5 min) no entran al ranking.</p>
-    ${tabla(S.tmax, "Top 10 temperatura máxima", "tmax")}${tabla(S.tmin, "Top 10 temperatura mínima", "tmin")}
+    ${tabla(V.tmax, v === "sem" ? "Top 10 temperatura máxima de la semana (el mejor día de cada estación)" : "Top 10 temperatura máxima · " + nombreDia(P.dias[v], S.modo), "tmax")}${tabla(V.tmin, v === "sem" ? "Top 10 temperatura mínima de la semana (el mejor día de cada estación)" : "Top 10 temperatura mínima · " + nombreDia(P.dias[v], S.modo), "tmin")}
     <div id="agSerie"></div>
     <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Prueba: solo temperatura. Falta precipitación (24 h y 6 h), mapa, exportar y aplicar el registro de correcciones (hoy el ranking usa los minutarios tal como llegaron).</p>`;
+  o.querySelectorAll("[data-agv]").forEach(b => b.addEventListener("click", () => { S.vista = b.dataset.agv === "sem" ? "sem" : +b.dataset.agv; pintar(); }));
   o.querySelectorAll("tr[data-ag]").forEach(tr => tr.addEventListener("click", () => { const [c, m] = tr.dataset.ag.split("|"); serie(c, +m); }));
 }
 
@@ -164,11 +176,11 @@ function grafico(series, mExt){
 
 async function generar(){
   const tok = ++TOK, iso = $("#agJue").value, o = $("#agOut"); if (!iso) return;
-  const per = periodo(iso), now = Date.now();
+  const modo = $("#agModo").value, per = periodo(iso, modo), now = Date.now();
   if (per.t1 > now + 3600e3 && !confirm("Ese periodo aún no termina; el ranking será parcial. ¿Continuar?")) return;
   DG = {ok: 0, nf: 0, err: 0, ult: ""};
   const N = Math.round((per.t1 - per.t0) / 60e3), NT = DIAS_SERIE * 1440, B0 = per.t1 - NT * 60e3;
-  S = {per, N, NT, B0, i0: Math.round((per.t0 - B0) / 60e3), T: new Map(), extra: null, vec: null};
+  S = {per, modo, vista: "sem", N, NT, B0, i0: Math.round((per.t0 - B0) / 60e3), T: new Map(), extra: null, vec: null};
   o.innerHTML = `<p style="color:var(--mu)">Leyendo ${Math.round(N / 60)} horas de datos minutarios…<small id="agProg"></small></p>`;
   if (!EST.size){ for (const u of ["/api/minutarios?estaciones=1", "/api/datosraw?p=estaciones.json"]){ try { const j = await (await conTiempo(u, 10000)).json(); const L = Array.isArray(j) ? j : j.estaciones || []; if (L.length){ EST = new Map(L.map(e => [String(e.codigo), e])); break; } } catch (e) {} } }
   const ts = []; for (let t = per.t0; t < per.t1; t += 3600e3) ts.push(t);
@@ -182,8 +194,8 @@ async function generar(){
 function init(){
   const s = $("#agro"); if (!s.dataset.ok){
     s.dataset.ok = 1;
-    s.innerHTML = `<div class="htools" style="gap:10px;flex-wrap:wrap;align-items:center"><b>Agro</b><label style="font-size:13px">Periodo que parte el jueves <input type="date" id="agJue" value="${ultimoJueves()}"></label><button id="agGo">Generar</button><span class="tag" id="agTag"></span></div><div id="agOut" style="margin-top:10px"></div>`;
-    $("#agGo").addEventListener("click", generar);
+    s.innerHTML = `<div class="htools" style="gap:10px;flex-wrap:wrap;align-items:center"><b>Agro</b><label style="font-size:13px">Periodo que parte el jueves <input type="date" id="agJue" value="${ultimoJueves("utc")}"></label><label style="font-size:13px">Días en <select id="agModo"><option value="utc">UTC</option><option value="loc">hora de Chile</option></select></label><button id="agGo">Generar</button><span class="tag" id="agTag"></span></div><div id="agOut" style="margin-top:10px"></div>`;
+    $("#agGo").addEventListener("click", generar); $("#agModo").addEventListener("change", () => { $("#agJue").value = ultimoJueves($("#agModo").value); generar(); });
     $("#agJue").addEventListener("change", ev => { const d = new Date(ev.target.value + "T00:00:00Z"); $("#agTag").textContent = d.getUTCDay() === 4 ? "" : "Ojo: esa fecha no es jueves"; });
     generar();
   }
