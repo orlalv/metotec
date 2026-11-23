@@ -22,14 +22,18 @@ def main():
     (raiz / "modelo_pt").mkdir(parents=True, exist_ok=True)
     ok = mal = 0
     for c, (la, lo) in sorted(pos.items()):
-        for intento in range(4):
-            r = requests.get(URL, params={"latitude": round(la, 4), "longitude": round(lo, 4), "start_date": desde, "end_date": hasta,
-                                          "hourly": "precipitation", "timezone": "UTC"}, timeout=90)
-            if r.status_code == 429:
-                time.sleep(20 * (intento + 1)); continue
-            break
-        if r.status_code != 200:
-            print(c, "error", r.status_code, r.text[:100], flush=True); mal += 1; continue
+        r = None
+        for intento in range(5):
+            try:
+                r = requests.get(URL, params={"latitude": round(la, 4), "longitude": round(lo, 4), "start_date": desde, "end_date": hasta,
+                                              "hourly": "precipitation", "timezone": "UTC"}, timeout=60)
+                if r.status_code == 429:
+                    time.sleep(20 * (intento + 1)); continue
+                break
+            except requests.RequestException as e:
+                print(c, "intento", intento + 1, type(e).__name__, flush=True); time.sleep(10 * (intento + 1)); r = None
+        if r is None or r.status_code != 200:
+            print(c, "error", None if r is None else r.status_code, flush=True); mal += 1; continue
         h = r.json()["hourly"]; dias = {}
         for t, v in zip(h["time"], h["precipitation"]):
             if v is None:
