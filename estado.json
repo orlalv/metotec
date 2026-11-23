@@ -1,31 +1,34 @@
 {
  "version": "0.1",
- "inicio": "2026-11-23T19:16:05+00:00",
- "errores": [
-  "modelo_parcial: 3 lotes sin respuesta (lote 1: HTTP 503 {\"reason\":\"The service is overloaded\",\"error\":true})"
- ],
- "estaciones": 109,
- "con_datos": 122,
- "registros": 4711,
- "desde": "2026-11-23 18:16:00",
- "hasta": "2026-11-23 19:10:00",
+ "inicio": "2026-11-23T19:46:16+00:00",
+ "errores": [],
+ "estaciones": 135,
+ "con_datos": 121,
+ "registros": 4796,
+ "desde": "2026-11-23 18:46:00",
+ "hasta": "2026-11-23 19:40:00",
  "horas_archivadas": 2,
- "modelo": 2784,
- "wrf": "corridas nuevas",
- "nuevas": [
+ "modelo": 6480,
+ "wrf": "sin corridas nuevas",
+ "corridas": [
+  "2026112200_ecmwf",
+  "2026112200_gfs",
+  "2026112212_ecmwf",
+  "2026112212_gfs",
+  "2026112300_ecmwf",
+  "2026112300_gfs",
   "2026112312_gfs"
  ],
- "fallas": 24,
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 67,
-  "ultima": "2026-11-23T19:10Z"
+  "ultima": "2026-11-23T19:30Z"
  },
  "externas": {
   "estaciones": 326,
   "con_vecinas": 114,
   "desactivadas": 0,
-  "generado": "2026-11-23T19:15:46Z",
+  "generado": "2026-11-23T19:45:58Z",
   "pp_archivadas": 10777,
   "ta_archivadas": 10775,
   "desviadas": 6,
@@ -36,15 +39,15 @@
   "filas": 42747,
   "activa": true
  },
- "consenso_quitados": 0,
- "incendios_cerca": 2,
+ "consenso_quitados": 1,
+ "incendios_cerca": 1,
  "kv_incendios": "200",
- "ob_filas": 2512,
+ "ob_filas": 2630,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 544,
   "fallas": 0,
-  "hallazgos": 351,
+  "hallazgos": 352,
   "kv": "200",
   "completitud": "200"
  },
@@ -53,8 +56,8 @@
   "2026-11-23"
  ],
  "super": {
-  "estaciones": 100,
-  "hallazgos": 43,
+  "estaciones": 102,
+  "hallazgos": 51,
   "kv": "200"
  },
  "historial": {
@@ -73,23 +76,23 @@
  },
  "reputacion": {
   "resumen": {
-   "cuarentena": 4,
-   "en_revision": 22,
+   "cuarentena": 5,
+   "en_revision": 23,
    "operativa": 107,
    "verde": 89,
    "amarillo": 20,
-   "rojo": 24,
+   "rojo": 26,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 39,
+ "alertas": 38,
  "resumen": {
-  "bien": 97,
-  "sospechoso": 20,
-  "erróneo": 10,
-  "sin datos": 6
+  "bien": 95,
+  "sospechoso": 22,
+  "erróneo": 11,
+  "sin datos": 7
  },
- "fin": "2026-11-23T19:26:56+00:00"
+ "fin": "2026-11-23T19:50:47+00:00"
 }
