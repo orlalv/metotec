@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agro · METOTEC</title>
+<style>
+:root{--fondo:#0F1215;--panel:#171C21;--hover:#20272D;--bd:#2A3238;--tx:#ECEFF1;--mu:#8E99A2;--oro:#E8783A;--ok:#2f9e44;--err:#d6336c}
+*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:var(--tx);font:14px system-ui,sans-serif}main{max-width:1200px;margin:0 auto;padding:14px}
+button,select,input{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:5px 10px;font:inherit;cursor:pointer}button.on{background:var(--oro);color:#1A0D05;border-color:var(--oro)}
+.htools{display:flex}.tag{color:var(--mu)}.bcard{background:var(--panel);border:1px solid var(--bd);border-radius:10px}
+.xtab{border-collapse:collapse;width:100%}.xtab th{font-size:12px;color:var(--mu);text-align:left;padding:6px 8px;border-bottom:1px solid var(--bd)}.xtab td{padding:6px 8px;border-bottom:1px solid var(--bd);vertical-align:top}.xtab tr:hover td{background:var(--hover)}.xtab .n{text-align:right;white-space:nowrap}
+a{color:var(--oro)}small{font-size:11px}#login{max-width:320px;margin:15vh auto;text-align:center}#login input{width:100%;margin:10px 0}
+</style></head><body>
+<div id="login"><form id="fl"><b style="font-size:18px">Agro · METOTEC</b><p style="color:var(--mu)">Ingresa la clave.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err)"></p></form></div>
+<main id="app" hidden><section id="agro"></section></main>
+<script src="js/agro.js?v=202611231245"></script>
+<script>
+const $=s=>document.querySelector(s);
+async function entrar(c){try{const r=await fetch("/api/agro?p=x",{headers:{"x-clave":c}});if(r.status===401){$("#lerr").textContent="Clave incorrecta.";return}}catch(e){$("#lerr").textContent="Sin conexión.";return}
+ try{sessionStorage.setItem("qcClave",c)}catch(e){window._qc=c}$("#login").hidden=true;$("#app").hidden=false;AGRO.init()}
+$("#fl").addEventListener("submit",ev=>{ev.preventDefault();entrar($("#clave").value)});
+try{const c=sessionStorage.getItem("qcClave");if(c)entrar(c)}catch(e){}
+</script></body></html>
