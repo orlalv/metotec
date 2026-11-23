@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-23T10:46:15+00:00",
+ "inicio": "2026-11-23T11:15:58+00:00",
  "errores": [],
  "estaciones": 135,
- "con_datos": 120,
- "registros": 4803,
- "desde": "2026-11-23 09:46:00",
- "hasta": "2026-11-23 10:40:00",
+ "con_datos": 124,
+ "registros": 4875,
+ "desde": "2026-11-23 10:15:01",
+ "hasta": "2026-11-23 11:10:00",
  "horas_archivadas": 2,
  "modelo": 6480,
  "wrf": "sin corridas nuevas",
@@ -19,15 +19,15 @@
  ],
  "wrf_ref": 660,
  "satelite": {
-  "imagenes": 65,
-  "ultima": "2026-11-23T10:30Z"
+  "imagenes": 64,
+  "ultima": "2026-11-23T11:00Z"
  },
  "externas": {
   "estaciones": 323,
   "con_vecinas": 114,
   "desactivadas": 0,
-  "generado": "2026-11-23T10:45:55Z",
-  "pp_archivadas": 10869,
+  "generado": "2026-11-23T11:15:39Z",
+  "pp_archivadas": 10836,
   "desviadas": 6,
   "kv_desvio": "200"
  },
@@ -36,15 +36,15 @@
   "filas": 42747,
   "activa": true
  },
- "consenso_quitados": 0,
+ "consenso_quitados": 1,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1495,
+ "ob_filas": 1506,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 451,
+  "observaciones": 460,
   "fallas": 0,
-  "hallazgos": 354,
+  "hallazgos": 357,
   "kv": "200",
   "completitud": "200"
  },
@@ -69,33 +69,51 @@
  "boletin": {
   "dia": "2026-11-23",
   "estaciones": 26,
-  "hallazgos": 7,
-  "cambios": 1,
+  "hallazgos": 4,
+  "cambios": 4,
   "kv": "200"
  },
  "productos": {
   "extremas": "200",
   "lluvia_obs": "200"
  },
+ "pluviometros": {
+  "resumen": {
+   "sospecha_obstruccion": 3,
+   "revisar": 18,
+   "sin_dato_con_lluvia": 6,
+   "ok": 101
+  },
+  "fuentes": {
+   "vecinas": true,
+   "modelo": true,
+   "satelite": true,
+   "imerg": true,
+   "satelite_horas": 135,
+   "imerg_pasos_nuevos": 12,
+   "externas": 326
+  },
+  "kv": "200"
+ },
  "reputacion": {
   "resumen": {
    "cuarentena": 3,
    "en_revision": 27,
    "operativa": 105,
-   "verde": 87,
-   "amarillo": 21,
+   "verde": 86,
+   "amarillo": 22,
    "rojo": 27,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 20,
+ "alertas": 26,
  "resumen": {
-  "bien": 108,
-  "sospechoso": 9,
+  "bien": 106,
+  "sospechoso": 11,
   "erróneo": 10,
   "sin datos": 8
  },
- "fin": "2026-11-23T10:52:39+00:00"
+ "fin": "2026-11-23T11:21:11+00:00"
 }
