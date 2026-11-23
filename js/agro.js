@@ -52,15 +52,15 @@ async function varias(ts, par, avance){ const out = new Array(ts.length); let i 
 let S = null, EST = new Map(), TOK = 0;
 function volcar(S, tx, t){
   if (!tx) return;
-  const ls = tx.split("\n"), iT = ls[0].split(",").indexOf("T"); if (iT < 0) return;
+  const ls = tx.split("\n"), cab = ls[0].split(","), iT = cab.indexOf("T"), iR = cab.indexOf("rr1m"); if (iT < 0) return;
   const hh = new Date(t).getUTCHours(), base = Math.round((t - S.B0) / 60e3);
   for (let i = 1; i < ls.length; i++){
     const l = ls[i]; if (l.length < 20) continue;
-    const v = l.split(","), x = parseFloat(v[iT]); if (!isFinite(x)) continue;
+    const v = l.split(","), x = parseFloat(v[iT]), y = iR >= 0 ? parseFloat(v[iR]) : NaN; if (!isFinite(x) && !isFinite(y)) continue;
     let m = base + (+v[1].slice(14, 16)); if (+v[1].slice(11, 13) !== hh) m = Math.round((Date.parse(v[1].replace(" ", "T") + "Z") - S.B0) / 60e3);
     if (m < 0 || m >= S.NT) continue;
-    let a = S.T.get(v[0]); if (!a){ a = new Float32Array(S.NT).fill(NaN); S.T.set(v[0], a); }
-    a[m] = x;
+    if (isFinite(x)){ let a = S.T.get(v[0]); if (!a){ a = new Float32Array(S.NT).fill(NaN); S.T.set(v[0], a); } a[m] = x; }
+    if (isFinite(y)){ let b = S.R.get(v[0]); if (!b){ b = new Float32Array(S.NT).fill(NaN); S.R.set(v[0], b); } b[m] = y; }
   }
 }
 async function cargar(ts, avance){ const txt = await varias(ts, 6, avance); txt.forEach((tx, i) => volcar(S, tx, ts[i])); return txt.filter(x => x === undefined).length; }
@@ -121,6 +121,46 @@ function analizar(){
   S.dia = dias.map(d => ({tmax: parte(d.mx, 1), tmin: parte(d.mn, -1)}));
   S.nEst = sem.length; }
 
+/* ---------- precipitación: ventanas deslizantes de 6 h y 24 h sobre rr1m (mm por minuto) ---------- */
+const PP_MAXMIN = 5, PP_VENT = {6: 360, 24: 1440};      // mm en un solo minuto sobre esto = imposible, se descarta
+function ventanas(cod, W){                                // por cada minuto final e: suma y minutos con dato de la ventana [e-W+1, e], dentro del periodo
+  const a = S.R.get(cod), {i0, NT} = S, P = new Float64Array(NT + 1), C = new Uint32Array(NT + 1); let malos = 0;
+  for (let m = 0; m < NT; m++){ let x = a[m]; if (isFinite(x) && x > PP_MAXMIN){ x = NaN; if (m >= i0) malos++; }
+    P[m + 1] = P[m] + (isFinite(x) && x > 0 ? x : 0); C[m + 1] = C[m] + (isFinite(x) ? 1 : 0); }
+  return {P, C, malos}; }
+const sumaVent = (V, e, W) => ({mm: V.P[e + 1] - V.P[e + 1 - W], n: V.C[e + 1] - V.C[e + 1 - W]});
+function vecinasPP(cod){ const e = EST.get(cod); if (!e || e.lat == null) return [];
+  return [...EST.values()].filter(o => o.codigo !== cod && o.lat != null && S.R.has(o.codigo)).map(o => ({cod: o.codigo, nombre: o.nombre, alt: o.alt, d: km(e, o)})).filter(o => o.d <= VEC_KM).sort((x, y) => x.d - y.d).slice(0, VEC_N); }
+function semaforoPP(cod, r, H){          // r.e = minuto final, r.W = ventana en minutos
+  const mot = []; let n = 0;
+  if (r.comp < 0.5){ n = 2; mot.push(`datos ${Math.round(r.comp * 100)} % de la ventana`); } else if (r.comp < 0.9){ n = 1; mot.push(`datos ${Math.round(r.comp * 100)} % de la ventana`); }
+  if (r.malos){ n = Math.max(n, 1); mot.push(`${r.malos} minuto${r.malos > 1 ? "s" : ""} imposible${r.malos > 1 ? "s" : ""} descartado${r.malos > 1 ? "s" : ""}`); }
+  const vs = (S.vecPP.get(cod) || (S.vecPP.set(cod, vecinasPP(cod)), S.vecPP.get(cod))).map(o => { const V = (S.vwin.get(o.cod + "|" + r.W) || (S.vwin.set(o.cod + "|" + r.W, ventanas(o.cod, r.W)), S.vwin.get(o.cod + "|" + r.W))), q = sumaVent(V, r.e, r.W); return q.n >= r.W / 2 ? q.mm : null; }).filter(x => x != null).sort((x, y) => x - y);
+  let med = null;
+  if (vs.length >= 2){ med = vs.length % 2 ? vs[(vs.length - 1) / 2] : (vs[vs.length / 2 - 1] + vs[vs.length / 2]) / 2;
+    const umbr = H === 6 ? 15 : 25;
+    if (r.v >= umbr && med < 0.5){ n = 2; mot.push(`vecinas ≈ ${f1(med)} mm`); } else if (r.v >= umbr / 2 && med < r.v * 0.2){ n = Math.max(n, 1); mot.push(`vecinas ${f1(med)} mm`); } }
+  else mot.push("sin vecinas con pluviómetro");
+  return {n, mot, med, nv: vs.length}; }
+function analizarPP(){
+  const {NT, i0, per} = S, D = per.dias, idx = k => Math.round((D[k] - S.B0) / 60e3); S.vecPP = new Map(); S.vwin = new Map();
+  const out = {};
+  [6, 24].forEach(H => { const W = PP_VENT[H], dias = Array.from({length: 7}, () => []), sem = [];
+    S.R.forEach((a, cod) => {
+      let tot = 0; for (let m = i0; m < NT; m++) if (isFinite(a[m]) && a[m] > 0 && a[m] <= PP_MAXMIN) tot += a[m]; if (!tot) return;
+      const V = (S.vwin.get(cod + "|" + W) || (S.vwin.set(cod + "|" + W, ventanas(cod, W)), S.vwin.get(cod + "|" + W)));
+      const mejor = new Array(7).fill(null);
+      for (let k = 0; k < 7; k++){ const a0 = Math.max(idx(k), i0 + W - 1), b0 = idx(k + 1) - 1;
+        for (let e = a0; e <= b0; e++){ const q = sumaVent(V, e, W); if (q.n < W / 2 || q.mm <= 0) continue; if (!mejor[k] || q.mm > mejor[k].v) mejor[k] = {cod, v: Math.round(q.mm * 10) / 10, e, W, dia: k, comp: q.n / W, malos: V.malos}; } }
+      mejor.forEach(r => r && dias[r.dia].push(r));
+      const b = mejor.filter(Boolean).sort((x, y) => y.v - x.v)[0]; if (b) sem.push(b);
+    });
+    const parte = L => { L.sort((x, y) => y.v - x.v); L.forEach(r => { r.sem = semaforoPP(r.cod, r, H); });
+      const val = L.filter(r => r.sem.n < 2), top = val.slice(0, 10), corte = top.length ? L.indexOf(top[top.length - 1]) : L.length;
+      return {top, desc: L.slice(0, corte).filter(r => r.sem.n === 2).map(r => ({...r, crudo: L.indexOf(r) + 1}))}; };
+    out[H] = {sem: parte(sem), dia: dias.map(parte)}; });
+  S.pp = out; }
+
 /* ---------- pantalla ---------- */
 const COL = ["#2f9e44", "#e8a317", "#d6336c"], NS = ["ok", "dudoso", "malo"];
 function tabla(P, tit, clave){
@@ -132,18 +172,54 @@ function filas(L, clave, num, e){
     <td class="n"><b>${f1(r.v)}</b></td><td style="white-space:nowrap">${esc(locTxt(t))}</td><td class="n">${new Date(t).toISOString().slice(5, 16).replace("T", " ")}</td><td class="n">${Math.round(r.comp * 100)} %</td>
     <td style="color:${COL[r.sem.n]};font-weight:600">● ${NS[r.sem.n]}<br><small style="color:var(--mu);font-weight:400">${esc(r.sem.mot.join(" · ") || "sin observaciones")}</small></td></tr>`; }).join("")}</table></div>`; }
 
+const hTxt = e => new Date(S.B0 + e * 60e3).toISOString().slice(5, 16).replace("T", " ");
+function tablaPP(P, tit, H){
+  const e = c => EST.get(c) || {};
+  const fila = (r, num) => `<tr data-pp="${H}" data-ag="${r.cod}|${r.e}" style="cursor:pointer"><td>${num}</td><td style="white-space:nowrap">${esc(nombreDia(S.per.dias[r.dia], S.modo))}</td><td class="nom"><b>${esc(e(r.cod).nombre || r.cod)}</b><br><small>${r.cod}</small></td><td class="n">${e(r.cod).alt != null ? Math.round(e(r.cod).alt) : "—"}</td>
+    <td class="n"><b>${f1(r.v)}</b></td><td class="n" style="white-space:nowrap">${hTxt(r.e - r.W + 1)} → ${hTxt(r.e)} UTC</td><td class="n">${Math.round(r.comp * 100)} %</td>
+    <td style="color:${COL[r.sem.n]};font-weight:600">● ${NS[r.sem.n]}<br><small style="color:var(--mu);font-weight:400">${esc(r.sem.mot.join(" · ") || "sin observaciones")}</small></td></tr>`;
+  const cab = `<table class="xtab"><tr><th>#</th><th>Día</th><th>Estación</th><th>Alt. m</th><th>${H} h mm</th><th>Ventana (UTC)</th><th>Datos</th><th>Control</th></tr>`;
+  return `<h3 style="margin:18px 0 6px">${tit}</h3>${P.top.length ? `<div class="bcard" style="padding:0;overflow:auto">${cab}${P.top.map((r, i) => fila(r, i + 1)).join("")}</table></div>` : `<p style="color:var(--mu)">Sin precipitación en ese periodo.</p>`}`
+    + (P.desc.length ? `<h4 style="margin:14px 0 6px;font:600 13px var(--titulo);color:var(--err)">Descartados del ranking crudo (control «malo»): ${P.desc.length}</h4><div class="bcard" style="padding:0;overflow:auto">${cab}${P.desc.map(r => fila(r, "crudo " + r.crudo)).join("")}</table></div>` : ""); }
+
 function pintar(){
-  const o = $("#agOut"), P = S.per, v = S.vista, V = v === "sem" ? S.sem : S.dia[v];
-  const bt = (k, t) => `<button data-agv="${k}" class="${String(v) === String(k) ? "on" : ""}" style="margin-right:4px">${esc(t)}</button>`;
-  o.innerHTML = `<div class="htools" style="margin-bottom:8px;flex-wrap:wrap">${bt("sem", "Semana (top de tops)")}${Array.from({length: 7}, (_, k) => bt(k, nombreDia(P.dias[k], S.modo))).join("")}</div>
+  const o = $("#agOut"), P = S.per, v = S.vista, pp = S.vble === "pp", V = v === "sem" ? S.sem : S.dia[v];
+  const bt = (k, t) => `<button data-agv="${k}" class="${String(v) === String(k) ? "on" : ""}" style="margin-right:4px">${esc(t)}</button>`, bv = (k, t) => `<button data-agb="${k}" class="${S.vble === k ? "on" : ""}" style="margin-right:4px;font-weight:600">${t}</button>`;
+  const sub = k => v === "sem" ? " de la semana (el mejor día de cada estación)" : " · " + nombreDia(P.dias[v], S.modo);
+  o.innerHTML = `<div class="htools" style="margin-bottom:6px">${bv("tem", "Temperatura")}${bv("pp", "Precipitación")}</div><div class="htools" style="margin-bottom:8px;flex-wrap:wrap">${bt("sem", "Semana (top de tops)")}${Array.from({length: 7}, (_, k) => bt(k, nombreDia(P.dias[k], S.modo))).join("")}</div>
     <p class="nota" style="margin:0 0 6px">Periodo (días en <b>${S.modo === "utc" ? "UTC" : "hora de Chile"}</b>): <b>${esc(locTxt(P.t0))}</b> a <b>${esc(locTxt(P.t1 - 60e3))}</b> (hora de Chile) = ${new Date(P.t0).toISOString().slice(0, 16).replace("T", " ")} a ${new Date(P.t1 - 60e3).toISOString().slice(0, 16).replace("T", " ")} UTC · ${S.nEst} estaciones con datos · ${S.N} minutos esperados por estación${S.fallas ? ` · <b style="color:var(--err)">${S.fallas} horas no se pudieron leer</b>` : ""}${S.sinArch ? ` · ${S.sinArch} horas sin archivo` : ""}</p>
     <p class="nota" style="margin:0 0 6px;font-size:12px">Control: <span style="color:${COL[0]}">● ok</span> <span style="color:${COL[1]}">● dudoso</span> <span style="color:${COL[2]}">● malo</span> — según completitud (&lt; 80 % / &lt; 50 %), picos descartados y diferencia con la mediana de las vecinas ≤ ${VEC_KM} km corregida por altitud (&gt; 4 °C / &gt; 8 °C). Umbrales provisorios. El ranking validado deja fuera los «malo» (se listan aparte, con su lugar en el ranking crudo). Los picos aislados (&gt; ${SPIKE} °C sobre sus vecinos de ±5 min) no entran al ranking.</p>
-    ${tabla(V.tmax, v === "sem" ? "Top 10 temperatura máxima de la semana (el mejor día de cada estación)" : "Top 10 temperatura máxima · " + nombreDia(P.dias[v], S.modo), "tmax")}${tabla(V.tmin, v === "sem" ? "Top 10 temperatura mínima de la semana (el mejor día de cada estación)" : "Top 10 temperatura mínima · " + nombreDia(P.dias[v], S.modo), "tmin")}
+    ${pp ? tablaPP((v === "sem" ? S.pp[6].sem : S.pp[6].dia[v]), "Top 10 precipitación en 6 h" + sub(), 6) + tablaPP((v === "sem" ? S.pp[24].sem : S.pp[24].dia[v]), "Top 10 precipitación en 24 h" + sub(), 24)
+    : tabla(V.tmax, "Top 10 temperatura máxima" + sub(), "tmax") + tabla(V.tmin, "Top 10 temperatura mínima" + sub(), "tmin")}
     <div id="agSerie"></div>
-    <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Prueba: solo temperatura. Falta precipitación (24 h y 6 h), mapa, exportar y aplicar el registro de correcciones (hoy el ranking usa los minutarios tal como llegaron).</p>`;
+    <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">${pp ? `Precipitación: suma de agua caída por minuto en ventanas deslizantes de 6 h y 24 h (cualquier minuto de inicio); la ventana pertenece al día UTC en que termina y cabe entera dentro del periodo. Se exige al menos 50 % de los minutos con dato; un minuto con más de ${PP_MAXMIN} mm se descarta. Control: vecinas ≤ ${VEC_KM} km con pluviómetro, comparadas en la misma ventana (umbrales provisorios).` : "Temperatura."} Falta mapa, exportar y aplicar el registro de correcciones (hoy el ranking usa los minutarios tal como llegaron).</p>`;
   o.querySelectorAll("[data-agv]").forEach(b => b.addEventListener("click", () => { S.vista = b.dataset.agv === "sem" ? "sem" : +b.dataset.agv; pintar(); }));
-  o.querySelectorAll("tr[data-ag]").forEach(tr => tr.addEventListener("click", () => { const [c, m] = tr.dataset.ag.split("|"); serie(c, +m); }));
+  o.querySelectorAll("[data-agb]").forEach(b => b.addEventListener("click", () => { S.vble = b.dataset.agb; pintar(); }));
+  o.querySelectorAll("tr[data-ag]").forEach(tr => tr.addEventListener("click", () => { const [c, m] = tr.dataset.ag.split("|"); tr.dataset.pp ? seriePP(c, +m, +tr.dataset.pp) : serie(c, +m); }));
 }
+
+async function seriePP(cod, e, H){
+  const box = $("#agSerie"), W = PP_VENT[H]; box.innerHTML = `<p style="color:var(--mu)">Leyendo ${DIAS_SERIE} días de ${esc((EST.get(cod) || {}).nombre || cod)} y sus vecinas…<small data-prog></small></p>`; box.scrollIntoView({behavior: "smooth", block: "nearest"});
+  const tok = TOK;
+  if (!S.extra){ const ts = []; for (let t = S.B0; t < S.per.t0; t += 3600e3) ts.push(t);
+    S.extra = cargar(ts, (n, N) => { const p = box.querySelector("[data-prog]"); if (p) p.textContent = ` ${n}/${N} horas`; }); }
+  await S.extra; if (tok !== TOK) return;
+  const V = vecinasPP(cod), est = EST.get(cod) || {};
+  const horario = a => { const h = new Float32Array(S.NT / 60).fill(NaN); for (let k = 0; k < h.length; k++){ let t = 0, n = 0; for (let m = k * 60; m < k * 60 + 60; m++){ const x = a[m]; if (isFinite(x)){ n++; if (x <= PP_MAXMIN) t += x; } } if (n) h[k] = t; } return h; };
+  const series = [{nombre: est.nombre || cod, alt: est.alt, h: horario(S.R.get(cod)), principal: true}, ...V.map(o => ({nombre: o.nombre, alt: o.alt, d: o.d, h: horario(S.R.get(o.cod))}))];
+  box.innerHTML = `<h3 style="margin:18px 0 6px">${esc(est.nombre || cod)} (${cod}) — precipitación por hora, últimos ${DIAS_SERIE} días</h3>${graficoPP(series, e, W)}
+    <p class="nota" style="font-size:12px;color:var(--mu)">mm por hora UTC. Franja rosada: la ventana de ${H} h del ranking. Línea gruesa: la estación; finas: sus vecinas con pluviómetro (≤ ${VEC_KM} km). ${V.length ? "" : "<b>Sin vecinas con pluviómetro dentro del radio.</b>"}</p>`;
+}
+function graficoPP(series, e, W){
+  const Wd = 940, Ht = 280, L = 40, R = 8, Tp = 10, B = 28, n = S.NT / 60; let hi = 1; series.forEach(s => s.h.forEach(x => { if (isFinite(x) && x > hi) hi = x; })); hi = Math.ceil(hi);
+  const X = k => L + (Wd - L - R) * k / (n - 1), Y = v => Tp + (Ht - Tp - B) * (1 - v / hi), stp = hi > 40 ? 10 : hi > 15 ? 5 : hi > 6 ? 2 : 1, ejeY = [];
+  for (let v = 0; v <= hi; v += stp) ejeY.push(`<line x1="${L}" x2="${Wd - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="currentColor" opacity=".12"/><text x="${L - 4}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="currentColor" opacity=".7">${v}</text>`);
+  const ejeX = []; for (let t = Math.ceil(S.B0 / 86400e3) * 86400e3; t < S.per.t1; t += 86400e3){ const k = (t - S.B0) / 3600e3; ejeX.push(`<line x1="${X(k)}" x2="${X(k)}" y1="${Tp}" y2="${Ht - B}" stroke="currentColor" opacity=".12"/><text x="${X(k)}" y="${Ht - 10}" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7">${new Date(t).toISOString().slice(8, 10)}/${new Date(t).toISOString().slice(5, 7)}</text>`); }
+  const franja = `<rect x="${X((e - W + 1) / 60)}" y="${Tp}" width="${Math.max(2, X((e + 1) / 60) - X((e - W + 1) / 60))}" height="${Ht - Tp - B}" fill="#d6336c" opacity=".12"/>`;
+  const lin = series.map((s, k) => { let d = "", pen = false; s.h.forEach((x, j) => { if (isFinite(x)){ d += (pen ? "L" : "M") + X(j).toFixed(1) + " " + Y(x).toFixed(1); pen = true; } else pen = false; });
+    return `<path d="${d}" fill="none" stroke="${PAL[k % PAL.length]}" stroke-width="${s.principal ? 2 : 1}" opacity="${s.principal ? 1 : .8}"/>`; });
+  const ley = series.map((s, k) => `<span style="margin-right:14px;white-space:nowrap"><b style="color:${PAL[k % PAL.length]}">━</b> ${esc(s.nombre)}${s.alt != null ? ` · ${Math.round(s.alt)} m` : ""}${s.d != null ? ` · ${Math.round(s.d)} km` : ""}</span>`).join("");
+  return `<div class="bcard" style="padding:10px"><svg viewBox="0 0 ${Wd} ${Ht}" style="width:100%;height:auto;color:var(--tx,#222)">${franja}${ejeY.join("")}${ejeX.join("")}${lin.join("")}</svg><div style="font-size:12px;margin-top:6px">${ley}</div></div>`; }
 
 async function serie(cod, m){
   const box = $("#agSerie"); box.innerHTML = `<p style="color:var(--mu)">Leyendo ${DIAS_SERIE} días de ${esc((EST.get(cod) || {}).nombre || cod)} y sus vecinas…<small data-prog></small></p>`; box.scrollIntoView({behavior: "smooth", block: "nearest"});
@@ -180,7 +256,7 @@ async function generar(){
   if (per.t1 > now + 3600e3 && !confirm("Ese periodo aún no termina; el ranking será parcial. ¿Continuar?")) return;
   DG = {ok: 0, nf: 0, err: 0, ult: ""};
   const N = Math.round((per.t1 - per.t0) / 60e3), NT = DIAS_SERIE * 1440, B0 = per.t1 - NT * 60e3;
-  S = {per, modo, vista: "sem", N, NT, B0, i0: Math.round((per.t0 - B0) / 60e3), T: new Map(), extra: null, vec: null};
+  S = {per, modo, vista: "sem", vble: "tem", N, NT, B0, i0: Math.round((per.t0 - B0) / 60e3), T: new Map(), R: new Map(), extra: null, vec: null};
   o.innerHTML = `<p style="color:var(--mu)">Leyendo ${Math.round(N / 60)} horas de datos minutarios…<small id="agProg"></small></p>`;
   if (!EST.size){ for (const u of ["/api/minutarios?estaciones=1", "/api/datosraw?p=estaciones.json"]){ try { const j = await (await conTiempo(u, 10000)).json(); const L = Array.isArray(j) ? j : j.estaciones || []; if (L.length){ EST = new Map(L.map(e => [String(e.codigo), e])); break; } } catch (e) {} } }
   const ts = []; for (let t = per.t0; t < per.t1; t += 3600e3) ts.push(t);
@@ -188,7 +264,7 @@ async function generar(){
   if (tok !== TOK) return;
   S.sinArch = DG.nf;
   if (!S.T.size){ o.innerHTML = `<p style="color:var(--err)">No hay datos minutarios en ese periodo (el archivo de METOTEC parte el 8-11-2026).${DG.ult ? " Último error: " + esc(DG.ult) : ""}</p>`; return; }
-  analizar(); pintar();
+  analizar(); analizarPP(); pintar();
 }
 
 function init(){
@@ -200,5 +276,5 @@ function init(){
     generar();
   }
 }
-window.AGRO = {init, _t: {serie, localAUtc, periodo, ultimoJueves, extremo, esPico}};
+window.AGRO = {init, _t: {vble: v => { S.vble = v; pintar(); }, vista: v => { S.vista = v; pintar(); }, seriePP, serie, localAUtc, periodo, ultimoJueves, extremo, esPico}};
 })();
