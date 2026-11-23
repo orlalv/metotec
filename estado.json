@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-23T21:46:14+00:00",
+ "inicio": "2026-11-23T22:16:12+00:00",
  "errores": [],
  "estaciones": 132,
- "con_datos": 120,
- "registros": 4751,
- "desde": "2026-11-23 20:46:00",
- "hasta": "2026-11-23 21:40:00",
+ "con_datos": 121,
+ "registros": 4716,
+ "desde": "2026-11-23 21:16:00",
+ "hasta": "2026-11-23 22:10:00",
  "horas_archivadas": 2,
  "modelo": 6336,
  "wrf": "sin corridas nuevas",
@@ -21,16 +21,16 @@
  ],
  "wrf_ref": 660,
  "satelite": {
-  "imagenes": 66,
-  "ultima": "2026-11-23T21:20Z"
+  "imagenes": 65,
+  "ultima": "2026-11-23T22:00Z"
  },
  "externas": {
   "estaciones": 326,
   "con_vecinas": 114,
   "desactivadas": 0,
   "generado": "2026-11-23T20:15:56Z",
-  "pp_archivadas": 10597,
-  "ta_archivadas": 10593,
+  "pp_archivadas": 10387,
+  "ta_archivadas": 10383,
   "desviadas": 6,
   "kv_desvio": "429"
  },
@@ -39,15 +39,15 @@
   "filas": 42747,
   "activa": true
  },
- "consenso_quitados": 2,
- "incendios_cerca": 0,
+ "consenso_quitados": 4,
+ "incendios_cerca": 1,
  "kv_incendios": "429",
- "ob_filas": 2880,
+ "ob_filas": 2890,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 549,
   "fallas": 0,
-  "hallazgos": 348,
+  "hallazgos": 343,
   "kv": "429",
   "completitud": "429"
  },
@@ -57,13 +57,12 @@
  ],
  "super": {
   "estaciones": 99,
-  "hallazgos": 62,
+  "hallazgos": 64,
   "kv": "429"
  },
  "historial": {
   "2026-11-13": "429",
   "2026-11-18": "429",
-  "2026-11-19": "429",
   "2026-11-20": "429",
   "2026-11-21": "429",
   "2026-11-22": "429",
@@ -79,20 +78,20 @@
    "cuarentena": 3,
    "en_revision": 22,
    "operativa": 107,
-   "verde": 87,
-   "amarillo": 22,
+   "verde": 86,
+   "amarillo": 23,
    "rojo": 23,
    "listas_para_aprobar": 0
   },
   "kv": "429"
  },
  "kv": "429",
- "alertas": 33,
+ "alertas": 39,
  "resumen": {
-  "bien": 99,
-  "sospechoso": 17,
+  "bien": 98,
+  "sospechoso": 18,
   "erróneo": 11,
   "sin datos": 5
  },
- "fin": "2026-11-23T21:50:49+00:00"
+ "fin": "2026-11-23T22:20:51+00:00"
 }
