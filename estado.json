@@ -1,29 +1,33 @@
 {
  "version": "0.1",
- "inicio": "2026-11-23T12:16:13+00:00",
+ "inicio": "2026-11-23T12:46:26+00:00",
  "errores": [],
- "estaciones": 109,
- "con_datos": 125,
- "registros": 4865,
- "desde": "2026-11-23 11:16:00",
- "hasta": "2026-11-23 12:10:00",
+ "estaciones": 135,
+ "con_datos": 122,
+ "registros": 4949,
+ "desde": "2026-11-23 11:46:00",
+ "hasta": "2026-11-23 12:40:00",
  "horas_archivadas": 2,
  "modelo": 6480,
- "wrf": "corridas nuevas",
- "nuevas": [
-  "2026112300_ecmwf"
+ "wrf": "sin corridas nuevas",
+ "corridas": [
+  "2026112200_ecmwf",
+  "2026112200_gfs",
+  "2026112212_ecmwf",
+  "2026112212_gfs",
+  "2026112300_ecmwf",
+  "2026112300_gfs"
  ],
- "fallas": 26,
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 64,
-  "ultima": "2026-11-23T12:00Z"
+  "ultima": "2026-11-23T12:30Z"
  },
  "externas": {
   "estaciones": 323,
   "con_vecinas": 114,
   "desactivadas": 0,
-  "generado": "2026-11-23T12:15:54Z",
+  "generado": "2026-11-23T12:46:02Z",
   "pp_archivadas": 10873,
   "desviadas": 6,
   "kv_desvio": "200"
@@ -36,7 +40,7 @@
  "consenso_quitados": 0,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1634,
+ "ob_filas": 1750,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 494,
@@ -51,7 +55,7 @@
  ],
  "super": {
   "estaciones": 102,
-  "hallazgos": 46,
+  "hallazgos": 45,
   "kv": "200"
  },
  "historial": {
@@ -66,8 +70,8 @@
  "boletin": {
   "dia": "2026-11-23",
   "estaciones": 26,
-  "hallazgos": 17,
-  "cambios": 7,
+  "hallazgos": 18,
+  "cambios": 11,
   "kv": "200"
  },
  "productos": {
@@ -79,20 +83,20 @@
    "cuarentena": 3,
    "en_revision": 27,
    "operativa": 105,
-   "verde": 85,
-   "amarillo": 23,
+   "verde": 86,
+   "amarillo": 22,
    "rojo": 27,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 29,
+ "alertas": 23,
  "resumen": {
-  "bien": 104,
-  "sospechoso": 14,
+  "bien": 106,
+  "sospechoso": 12,
   "erróneo": 10,
   "sin datos": 7
  },
- "fin": "2026-11-23T12:24:27+00:00"
+ "fin": "2026-11-23T12:51:33+00:00"
 }
