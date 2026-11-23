@@ -1,0 +1,192 @@
+/* Pestaña «Agro» (prueba, etapa 1): top 10 de Tmax y Tmin de la red en el periodo jueves 00:00 – miércoles 23:59 (hora local de Chile),
+   solo con datos minutarios del archivo de METOTEC. Clic en una fila: serie de 10 días de la estación junto a sus vecinas.
+   Por ahora SIN precipitación, SIN mapa, SIN exportar y SIN aplicar el registro de correcciones. Informativa: no guarda nada. */
+(function(){
+const TZ = "America/Santiago", RAW = "https://raw.githubusercontent.com/orlalv/metotec/datos/ema/";
+const DIAS_SERIE = 10, SPIKE = 3, GRAD = 6.5, VEC_KM = 100, VEC_N = 4, RANGO = [-60, 60];   // °C, °C/km
+const $ = s => document.querySelector(s), esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const f1 = v => v == null || !isFinite(v) ? "—" : (Math.round(v * 10) / 10).toFixed(1);
+
+/* ---------- hora local de Chile <-> UTC ---------- */
+const FMT = new Intl.DateTimeFormat("en-CA", {timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit"});
+function partes(t){ const o = {}; FMT.formatToParts(new Date(t)).forEach(p => o[p.type] = +p.value); return o; }
+const desfase = t => { const p = partes(t); return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) - Math.floor(t / 60e3) * 60e3; };   // ms: hora local − UTC
+function localAUtc(y, m, d, h = 0, mi = 0){ const g = Date.UTC(y, m - 1, d, h, mi); return g - desfase(g - desfase(g)); }
+const locTxt = t => new Date(t).toLocaleString("es-CL", {timeZone: TZ, weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false});
+const fechaIso = p => `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+function jueves(ms){ const p = partes(ms), d = new Date(Date.UTC(p.year, p.month - 1, p.day)); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 3) % 7)); return d; }   // jueves de esa semana (≤ hoy)
+function ultimoJueves(){ const ahora = Date.now(); let d = jueves(ahora);
+  for (let i = 0; i < 3; i++){ const fin = localAUtc(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate() + 7); if (fin <= ahora) break; d = new Date(d.getTime() - 7 * 86400e3); }
+  return d.toISOString().slice(0, 10); }
+function periodo(isoJueves){ const [y, m, d] = isoJueves.split("-").map(Number); const t0 = localAUtc(y, m, d), t1 = localAUtc(y, m, d + 7); return {t0, t1}; }   // [t0, t1): t1 = jueves siguiente 00:00 local
+
+/* ---------- lectura de los archivos horarios ---------- */
+const CACHE = new Map(); let DG = {ok: 0, nf: 0, err: 0, ult: ""};
+const conTiempo = async (u, ms = 20000) => { const c = new AbortController(), t = setTimeout(() => c.abort(), ms); try { return await fetch(u, {signal: c.signal}); } finally { clearTimeout(t); } };
+async function hora(t){
+  const k = new Date(t).toISOString().slice(0, 13);
+  if (CACHE.has(k)) return CACHE.get(k);
+  const url = RAW + k.replace(/-/g, "/").replace("T", "/") + ".csv.gz";
+  const p = (async () => {
+    for (let i = 0; i < 3; i++){
+      try { let r = null;
+        try { r = await conTiempo("/api/emahora?h=" + k + (i ? "&r=" + i : "")); if (!r.ok && r.status !== 404) r = null; } catch (e) { r = null; }
+        if (!r) r = await conTiempo(url + (i ? "?r=" + i : ""), 12000);
+        if (r.status === 404){ DG.nf++; return null; }
+        if (r.ok){ const b = await r.arrayBuffer(); const tx = await new Response(new Blob([b]).stream().pipeThrough(new DecompressionStream("gzip"))).text(); DG.ok++; return tx; }
+        DG.ult = "HTTP " + r.status;
+      } catch (e) { DG.ult = e.name === "AbortError" ? "sin respuesta" : e.message; }
+      await new Promise(z => setTimeout(z, 700 * (i + 1)));
+    }
+    DG.err++; return undefined;
+  })();
+  CACHE.set(k, p); p.then(v => { if (v === undefined) CACHE.delete(k); });
+  return p;
+}
+async function varias(ts, par, avance){ const out = new Array(ts.length); let i = 0, n = 0;
+  await Promise.all(Array.from({length: par}, async () => { while (i < ts.length){ const j = i++; out[j] = await hora(ts[j]); avance && avance(++n, ts.length); } }));
+  return out; }
+
+/* Estado de la corrida: B0 = inicio de la serie (10 días antes de t1); T[cod] = Float32Array(NT) con NaN donde no hay dato */
+let S = null, EST = new Map(), TOK = 0;
+function volcar(S, tx, t){
+  if (!tx) return;
+  const ls = tx.split("\n"), iT = ls[0].split(",").indexOf("T"); if (iT < 0) return;
+  const hh = new Date(t).getUTCHours(), base = Math.round((t - S.B0) / 60e3);
+  for (let i = 1; i < ls.length; i++){
+    const l = ls[i]; if (l.length < 20) continue;
+    const v = l.split(","), x = parseFloat(v[iT]); if (!isFinite(x)) continue;
+    let m = base + (+v[1].slice(14, 16)); if (+v[1].slice(11, 13) !== hh) m = Math.round((Date.parse(v[1].replace(" ", "T") + "Z") - S.B0) / 60e3);
+    if (m < 0 || m >= S.NT) continue;
+    let a = S.T.get(v[0]); if (!a){ a = new Float32Array(S.NT).fill(NaN); S.T.set(v[0], a); }
+    a[m] = x;
+  }
+}
+async function cargar(ts, avance){ const txt = await varias(ts, 6, avance); txt.forEach((tx, i) => volcar(S, tx, ts[i])); return txt.filter(x => x === undefined).length; }
+
+/* ---------- análisis: extremos, completitud, vecinas ---------- */
+function esPico(a, m, lo, hi){          // se aparta más de SPIKE °C de la mediana de hasta 5 minutos válidos a cada lado
+  const v = []; for (let k = Math.max(lo, m - 5); k <= Math.min(hi, m + 5); k++) if (k !== m && isFinite(a[k])) v.push(a[k]);
+  if (v.length < 3) return false; v.sort((x, y) => x - y); const md = v.length % 2 ? v[(v.length - 1) / 2] : (v[v.length / 2 - 1] + v[v.length / 2]) / 2;
+  return Math.abs(a[m] - md) > SPIKE; }
+function extremo(a, lo, hi, signo){      // signo +1 = máximo, −1 = mínimo; salta picos aislados y valores fuera de rango
+  let picos = 0;
+  for (let it = 0; it < 30; it++){
+    let mejor = -1, bv = -Infinity;
+    for (let m = lo; m <= hi; m++){ const x = a[m]; if (!isFinite(x) || x < RANGO[0] || x > RANGO[1]) continue; if (x * signo > bv){ bv = x * signo; mejor = m; } }
+    if (mejor < 0) return null;
+    if (esPico(a, mejor, lo, hi)){ picos++; a[mejor] = NaN; continue; }
+    return {m: mejor, v: a[mejor], picos};
+  }
+  return null; }
+const km = (a, b) => { const R = 6371, r = Math.PI / 180, dl = (b.lat - a.lat) * r, dn = (b.lon - a.lon) * r; const h = Math.sin(dl / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dn / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+function vecinas(cod){
+  const e = EST.get(cod); if (!e || e.lat == null) return [];
+  return [...EST.values()].filter(o => o.codigo !== cod && o.lat != null && S.T.has(o.codigo)).map(o => ({cod: o.codigo, nombre: o.nombre, alt: o.alt, d: km(e, o)}))
+    .filter(o => o.d <= VEC_KM).sort((x, y) => x.d - y.d).slice(0, VEC_N); }
+function cerca(a, m){ for (let k = 0; k <= 5; k++) for (const s of k ? [-k, k] : [0]){ const x = a[m + s]; if (isFinite(x)) return x; } return NaN; }
+function semaforo(cod, r, comp){      // verde / amarillo / rojo con motivo; las vecinas se corrigen por altitud (6,5 °C/km)
+  const e = EST.get(cod) || {}, mot = [];
+  let n = 0;
+  if (comp < 0.5){ n = 2; mot.push(`completitud ${Math.round(comp * 100)} %`); } else if (comp < 0.8){ n = Math.max(n, 1); mot.push(`completitud ${Math.round(comp * 100)} %`); }
+  if (r.picos){ n = Math.max(n, 1); mot.push(`${r.picos} pico${r.picos > 1 ? "s" : ""} descartado${r.picos > 1 ? "s" : ""}`); }
+  const dev = [];
+  vecinas(cod).forEach(o => { const x = cerca(S.T.get(o.cod), r.m); if (isFinite(x)){ const alt = (e.alt ?? 0) - (o.alt ?? e.alt ?? 0); dev.push(r.v - (x - GRAD * alt / 1000)); } });
+  let d = null;
+  if (dev.length >= 2){ dev.sort((x, y) => x - y); d = dev.length % 2 ? dev[(dev.length - 1) / 2] : (dev[dev.length / 2 - 1] + dev[dev.length / 2]) / 2;
+    if (Math.abs(d) > 8){ n = 2; mot.push(`${f1(d)} °C vs vecinas`); } else if (Math.abs(d) > 4){ n = Math.max(n, 1); mot.push(`${f1(d)} °C vs vecinas`); } }
+  else mot.push("sin vecinas con dato");
+  return {n, mot, d, nv: dev.length}; }
+
+function analizar(){
+  const {i0, NT, N} = S, filas = [];
+  S.T.forEach((arr, cod) => {
+    const copia = arr.slice(), n = (() => { let c = 0; for (let m = i0; m < NT; m++) if (isFinite(arr[m])) c++; return c; })();
+    if (!n) return;
+    const comp = n / N, mx = extremo(copia, i0, NT - 1, 1), copia2 = arr.slice(), mn = extremo(copia2, i0, NT - 1, -1);
+    filas.push({cod, comp, mx, mn});
+  });
+  const arma = clave => filas.filter(f => f[clave]).map(f => ({cod: f.cod, comp: f.comp, ...f[clave], sem: semaforo(f.cod, f[clave], f.comp)}))
+    .sort((a, b) => clave === "mx" ? b.v - a.v : a.v - b.v);
+  const parte = L => { const val = L.filter(r => r.sem.n < 2), top = val.slice(0, 10), corte = top.length ? L.indexOf(top[top.length - 1]) : L.length;   // ranking validado: sin los «malo»; los descartados que estaban por delante se listan aparte
+    return {top, desc: L.slice(0, corte).filter(r => r.sem.n === 2).map(r => ({...r, crudo: L.indexOf(r) + 1}))}; };
+  S.tmax = parte(arma("mx")); S.tmin = parte(arma("mn")); S.nEst = filas.length; }
+
+/* ---------- pantalla ---------- */
+const COL = ["#2f9e44", "#e8a317", "#d6336c"], NS = ["ok", "dudoso", "malo"];
+function tabla(P, tit, clave){
+  const e = c => EST.get(c) || {}, L = P.top;
+  return `<h3 style="margin:18px 0 6px">${tit}</h3>${filas(L, clave, i => i + 1, e)}${P.desc.length ? `<h4 style="margin:14px 0 6px;font:600 13px var(--titulo);color:var(--err)">Descartados del ranking crudo (control «malo»): ${P.desc.length}</h4>${filas(P.desc, clave, (i, r) => "crudo " + r.crudo, e)}` : ""}`; }
+function filas(L, clave, num, e){
+  return `<div class="bcard" style="padding:0;overflow:auto"><table class="xtab"><tr><th>#</th><th>Estación</th><th>Alt. m</th><th>${clave === "tmax" ? "Tmáx" : "Tmín"} °C</th><th>Cuándo (local)</th><th>UTC</th><th>Completitud</th><th>Control</th></tr>
+  ${L.map((r, i) => { const t = S.B0 + r.m * 60e3; return `<tr data-ag="${r.cod}|${r.m}" style="cursor:pointer"><td>${num(i, r)}</td><td class="nom"><b>${esc(e(r.cod).nombre || r.cod)}</b><br><small>${r.cod}</small></td><td class="n">${e(r.cod).alt != null ? Math.round(e(r.cod).alt) : "—"}</td>
+    <td class="n"><b>${f1(r.v)}</b></td><td style="white-space:nowrap">${esc(locTxt(t))}</td><td class="n">${new Date(t).toISOString().slice(5, 16).replace("T", " ")}</td><td class="n">${Math.round(r.comp * 100)} %</td>
+    <td style="color:${COL[r.sem.n]};font-weight:600">● ${NS[r.sem.n]}<br><small style="color:var(--mu);font-weight:400">${esc(r.sem.mot.join(" · ") || "sin observaciones")}</small></td></tr>`; }).join("")}</table></div>`; }
+
+function pintar(){
+  const o = $("#agOut"), P = S.per;
+  o.innerHTML = `<p class="nota" style="margin:0 0 6px">Periodo: <b>${esc(locTxt(P.t0))}</b> a <b>${esc(locTxt(P.t1 - 60e3))}</b> (hora de Chile) = ${new Date(P.t0).toISOString().slice(0, 16).replace("T", " ")} a ${new Date(P.t1 - 60e3).toISOString().slice(0, 16).replace("T", " ")} UTC · ${S.nEst} estaciones con datos · ${S.N} minutos esperados por estación${S.fallas ? ` · <b style="color:var(--err)">${S.fallas} horas no se pudieron leer</b>` : ""}${S.sinArch ? ` · ${S.sinArch} horas sin archivo` : ""}</p>
+    <p class="nota" style="margin:0 0 6px;font-size:12px">Control: <span style="color:${COL[0]}">● ok</span> <span style="color:${COL[1]}">● dudoso</span> <span style="color:${COL[2]}">● malo</span> — según completitud (&lt; 80 % / &lt; 50 %), picos descartados y diferencia con la mediana de las vecinas ≤ ${VEC_KM} km corregida por altitud (&gt; 4 °C / &gt; 8 °C). Umbrales provisorios. El ranking validado deja fuera los «malo» (se listan aparte, con su lugar en el ranking crudo). Los picos aislados (&gt; ${SPIKE} °C sobre sus vecinos de ±5 min) no entran al ranking.</p>
+    ${tabla(S.tmax, "Top 10 temperatura máxima", "tmax")}${tabla(S.tmin, "Top 10 temperatura mínima", "tmin")}
+    <div id="agSerie"></div>
+    <p class="nota" style="color:var(--mu);font-size:12px;margin-top:10px">Prueba: solo temperatura. Falta precipitación (24 h y 6 h), mapa, exportar y aplicar el registro de correcciones (hoy el ranking usa los minutarios tal como llegaron).</p>`;
+  o.querySelectorAll("tr[data-ag]").forEach(tr => tr.addEventListener("click", () => { const [c, m] = tr.dataset.ag.split("|"); serie(c, +m); }));
+}
+
+async function serie(cod, m){
+  const box = $("#agSerie"); box.innerHTML = `<p style="color:var(--mu)">Leyendo ${DIAS_SERIE} días de ${esc((EST.get(cod) || {}).nombre || cod)} y sus vecinas…<small data-prog></small></p>`; box.scrollIntoView({behavior: "smooth", block: "nearest"});
+  const tok = TOK;
+  if (!S.extra){ const ts = []; for (let t = S.B0; t < S.per.t0; t += 3600e3) ts.push(t);
+    S.extra = cargar(ts, (n, N) => { const p = box.querySelector("[data-prog]"); if (p) p.textContent = ` ${n}/${N} horas`; }); }
+  await S.extra; if (tok !== TOK) return;
+  S.vec = S.vec || {}; const V = (S.vec[cod] = S.vec[cod] || vecinas(cod)), e = EST.get(cod) || {};
+  const series = [{cod, nombre: e.nombre || cod, alt: e.alt, a: S.T.get(cod), principal: true}, ...V.map(o => ({cod: o.cod, nombre: o.nombre, alt: o.alt, d: o.d, a: S.T.get(o.cod)}))];
+  box.innerHTML = `<h3 style="margin:18px 0 6px">${esc(e.nombre || cod)} (${cod}) — últimos ${DIAS_SERIE} días, minutario</h3>${grafico(series, m)}
+    <p class="nota" style="font-size:12px;color:var(--mu)">Línea gruesa: la estación; finas: sus vecinas (más cercanas ≤ ${VEC_KM} km), sin corregir por altitud. Línea vertical: hora de la extrema. ${V.length ? "" : "<b>Sin vecinas con dato dentro del radio.</b>"}</p>`;
+}
+const PAL = ["#111", "#1c7ed6", "#e8590c", "#2f9e44", "#9c36b5"];
+function grafico(series, mExt){
+  const W = 940, H = 300, L = 40, R = 8, Tp = 10, B = 28, NT = S.NT, paso = 3;
+  let lo = Infinity, hi = -Infinity; series.forEach(s => { for (let m = 0; m < NT; m += 1){ const x = s.a[m]; if (isFinite(x)){ if (x < lo) lo = x; if (x > hi) hi = x; } } });
+  if (!isFinite(lo)) return `<p style="color:var(--mu)">Sin datos en la ventana.</p>`;
+  lo = Math.floor(lo - 1); hi = Math.ceil(hi + 1);
+  const X = m => L + (W - L - R) * m / (NT - 1), Y = v => Tp + (H - Tp - B) * (1 - (v - lo) / (hi - lo));
+  const ejeY = []; const stp = (hi - lo) > 30 ? 10 : (hi - lo) > 15 ? 5 : 2; for (let v = Math.ceil(lo / stp) * stp; v <= hi; v += stp) ejeY.push(`<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="currentColor" opacity=".12"/><text x="${L - 4}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="currentColor" opacity=".7">${v}</text>`);
+  const ejeX = []; for (let t = Math.ceil(S.B0 / 86400e3) * 86400e3; t < S.per.t1; t += 86400e3){ const m = (t - S.B0) / 60e3; ejeX.push(`<line x1="${X(m)}" x2="${X(m)}" y1="${Tp}" y2="${H - B}" stroke="currentColor" opacity=".12"/><text x="${X(m)}" y="${H - 10}" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7">${new Date(t).toISOString().slice(8, 10)}/${new Date(t).toISOString().slice(5, 7)}</text>`); }
+  const lin = series.map((s, k) => { let d = "", pen = false;
+    for (let m = 0; m < NT; m += paso){ let x = s.a[m]; for (let j = 1; j < paso && !isFinite(x); j++) x = s.a[m + j];   // sin dato: se corta la línea
+      if (isFinite(x)){ d += (pen ? "L" : "M") + X(m).toFixed(1) + " " + Y(x).toFixed(1); pen = true; } else pen = false; }
+    return `<path d="${d}" fill="none" stroke="${PAL[k % PAL.length]}" stroke-width="${s.principal ? 2 : 1}" opacity="${s.principal ? 1 : .8}"/>`; });
+  const marca = `<line x1="${X(mExt)}" x2="${X(mExt)}" y1="${Tp}" y2="${H - B}" stroke="#d6336c" stroke-dasharray="4 3"/>`;
+  const leyenda = series.map((s, k) => `<span style="margin-right:14px;white-space:nowrap"><b style="color:${PAL[k % PAL.length]}">━</b> ${esc(s.nombre)}${s.alt != null ? ` · ${Math.round(s.alt)} m` : ""}${s.d != null ? ` · ${Math.round(s.d)} km` : ""}</span>`).join("");
+  return `<div class="bcard" style="padding:10px"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;color:var(--tx,#222)">${ejeY.join("")}${ejeX.join("")}${lin.join("")}${marca}</svg><div style="font-size:12px;margin-top:6px">${leyenda}</div></div>`;
+}
+
+async function generar(){
+  const tok = ++TOK, iso = $("#agJue").value, o = $("#agOut"); if (!iso) return;
+  const per = periodo(iso), now = Date.now();
+  if (per.t1 > now + 3600e3 && !confirm("Ese periodo aún no termina; el ranking será parcial. ¿Continuar?")) return;
+  DG = {ok: 0, nf: 0, err: 0, ult: ""};
+  const N = Math.round((per.t1 - per.t0) / 60e3), NT = DIAS_SERIE * 1440, B0 = per.t1 - NT * 60e3;
+  S = {per, N, NT, B0, i0: Math.round((per.t0 - B0) / 60e3), T: new Map(), extra: null, vec: null};
+  o.innerHTML = `<p style="color:var(--mu)">Leyendo ${Math.round(N / 60)} horas de datos minutarios…<small id="agProg"></small></p>`;
+  if (!EST.size){ for (const u of ["/api/minutarios?estaciones=1", "/api/datosraw?p=estaciones.json"]){ try { const j = await (await conTiempo(u, 10000)).json(); const L = Array.isArray(j) ? j : j.estaciones || []; if (L.length){ EST = new Map(L.map(e => [String(e.codigo), e])); break; } } catch (e) {} } }
+  const ts = []; for (let t = per.t0; t < per.t1; t += 3600e3) ts.push(t);
+  S.fallas = await cargar(ts, (n, T) => { const p = $("#agProg"); if (p && tok === TOK) p.textContent = ` ${n}/${T} horas · ${DG.nf} sin archivo`; });
+  if (tok !== TOK) return;
+  S.sinArch = DG.nf;
+  if (!S.T.size){ o.innerHTML = `<p style="color:var(--err)">No hay datos minutarios en ese periodo (el archivo de METOTEC parte el 8-11-2026).${DG.ult ? " Último error: " + esc(DG.ult) : ""}</p>`; return; }
+  analizar(); pintar();
+}
+
+function init(){
+  const s = $("#agro"); if (!s.dataset.ok){
+    s.dataset.ok = 1;
+    s.innerHTML = `<div class="htools" style="gap:10px;flex-wrap:wrap;align-items:center"><b>Agro</b><label style="font-size:13px">Periodo que parte el jueves <input type="date" id="agJue" value="${ultimoJueves()}"></label><button id="agGo">Generar</button><span class="tag" id="agTag"></span></div><div id="agOut" style="margin-top:10px"></div>`;
+    $("#agGo").addEventListener("click", generar);
+    $("#agJue").addEventListener("change", ev => { const d = new Date(ev.target.value + "T00:00:00Z"); $("#agTag").textContent = d.getUTCDay() === 4 ? "" : "Ojo: esa fecha no es jueves"; });
+    generar();
+  }
+}
+window.AGRO = {init, _t: {serie, localAUtc, periodo, ultimoJueves, extremo, esPico}};
+})();
