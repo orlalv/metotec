@@ -11,6 +11,9 @@ on:
       paso_horas:
         description: "Un paso cada N horas"
         default: "1"
+      codigos:
+        description: "Códigos de estación separados por coma (vacío: todas)"
+        default: ""
 permissions:
   contents: write
 concurrency:
@@ -29,7 +32,7 @@ jobs:
       - name: Rama de datos
         run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
       - name: Bajar IMERG histórico
-        run: python qc/imerg_historico.py datos "${{ inputs.desde }}" "${{ inputs.hasta }}" "${{ inputs.paso_horas }}" 300
+        run: python qc/imerg_historico.py datos "${{ inputs.desde }}" "${{ inputs.hasta }}" "${{ inputs.paso_horas }}" 300 "${{ inputs.codigos }}"
       - name: Guardar
         if: always()
         run: |

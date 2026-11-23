@@ -2,7 +2,7 @@
 
 Usa las mismas funciones de qc/imerg.py (NASA GIBS, capa IMERG_Precipitation_Rate_30min) y guarda en datos/imerg/AAAA/MM/DD.json,
 igual que la corrida normal, de modo que qc/imerg.py:tabla() los lee sin cambios.
-Uso:  python qc/imerg_historico.py <carpeta_datos> <desde AAAA-MM-DD> <hasta AAAA-MM-DD> [paso_horas=1] [presupuesto_min=300]
+Uso:  python qc/imerg_historico.py <carpeta_datos> <desde AAAA-MM-DD> <hasta AAAA-MM-DD> [paso_horas=1] [presupuesto_min=300] [códigos separados por coma]
 Con paso_horas=1 se baja un paso (:00) por hora, suficiente para decidir si llovió (sí/no) y estimar el acumulado diario.
 Retoma donde quedó: no vuelve a bajar los pasos ya guardados.
 """
@@ -30,8 +30,11 @@ def main():
     E = pd.DataFrame(json.load(open(raiz / "estaciones.json", encoding="utf-8")))
     E["codigo"] = E["codigo"].astype(str)
     E = E.dropna(subset=["lat", "lon"])
+    cods = [c for c in (sys.argv[6].split(",") if len(sys.argv) > 6 else []) if c]
+    if cods:
+        E = E[E["codigo"].isin(cods)]   # solo las estaciones de los casos y sus vecinas: menos mosaicos que bajar
     for c, (la, lo) in EXTRA.items():
-        if c not in set(E["codigo"]):
+        if (not cods or c in cods) and c not in set(E["codigo"]):
             E = pd.concat([E, pd.DataFrame([dict(codigo=c, lat=la, lon=lo)])], ignore_index=True)
     tengo = set(IM.pasos_guardados(raiz, desde, hasta))
     pasos = [t for t in pd.date_range(desde, hasta, freq=f"{paso}h") if t not in tengo]
