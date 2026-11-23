@@ -1,0 +1,40 @@
+name: Modelo en las estaciones (validación)
+on:
+  workflow_dispatch:
+    inputs:
+      desde:
+        description: "Desde (AAAA-MM-DD)"
+        default: "2025-05-01"
+      hasta:
+        description: "Hasta (AAAA-MM-DD)"
+        default: "2025-10-31"
+      codigos:
+        description: "Códigos de estación separados por coma (vacío: todas)"
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: modelo-puntos
+  cancel-in-progress: false
+jobs:
+  modelo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q requests
+      - name: Rama de datos
+        run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - name: Bajar el modelo en los puntos
+        run: python qc/modelo_puntos.py datos "${{ inputs.desde }}" "${{ inputs.hasta }}" "${{ inputs.codigos }}"
+      - name: Guardar
+        if: always()
+        run: |
+          cd datos
+          git config user.name "qc-metotec"; git config user.email "contacto.metotec@gmail.com"
+          git add -A modelo_pt
+          git commit -q -m "modelo en puntos ${{ inputs.desde }} a ${{ inputs.hasta }}" || exit 0
+          for i in 1 2 3; do git pull -q --rebase origin datos && git push -q origin datos && break; sleep 5; done
