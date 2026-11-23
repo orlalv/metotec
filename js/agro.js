@@ -224,8 +224,10 @@ async function abrir(id){
   if (!S.extra){ const ts = []; for (let t = S.B0; t < S.per.t0; t += 3600e3) ts.push(t);
     S.extra = cargar(ts, (n, N) => { const p = M.querySelector("[data-prog]"); if (p) p.textContent = ` ${n}/${N} horas`; }); }
   await S.extra; if (tok !== TOK) return;
+  const RR0 = typeof R !== "undefined" ? R : null, usaFal = !pp && !!(window.FALLAS && FALLAS.grafico && RR0 && (RR0.estaciones || []).some(x => x.codigo === r.cod));
   let graf;
-  if (pp){ const horario = a => { const h = new Float32Array(S.NT / 60).fill(NaN); for (let k = 0; k < h.length; k++){ let t = 0, n = 0; for (let m = k * 60; m < k * 60 + 60; m++){ const x = a[m]; if (isFinite(x)){ n++; if (x <= PP_MAXMIN) t += x; } } if (n) h[k] = t; } return h; };
+  if (usaFal) graf = `<div id="agFal"></div>`;
+  else if (pp){ const horario = a => { const h = new Float32Array(S.NT / 60).fill(NaN); for (let k = 0; k < h.length; k++){ let t = 0, n = 0; for (let m = k * 60; m < k * 60 + 60; m++){ const x = a[m]; if (isFinite(x)){ n++; if (x <= PP_MAXMIN) t += x; } } if (n) h[k] = t; } return h; };
     const V = vecinasPP(r.cod), e = EST.get(r.cod) || {};
     graf = graficoPP([{nombre: e.nombre || r.cod, alt: e.alt, h: horario(S.R.get(r.cod)), principal: true}, ...V.map(o => ({nombre: o.nombre, alt: o.alt, d: o.d, h: horario(S.R.get(o.cod))}))], r.e, r.W) + `<p class="nota" style="font-size:12px;color:var(--mu)">mm por hora UTC. Franja rosada: la ventana de ${tit.slice(-4)} del ranking.</p>`; }
   else { const V = vecinas(r.cod), e = EST.get(r.cod) || {};
@@ -238,10 +240,14 @@ async function abrir(id){
   M.innerHTML = `<div style="max-width:1100px;margin:0 auto;background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:16px">
     <div style="display:flex;justify-content:space-between;gap:10px"><h3 style="margin:0;font-size:16px">${esc(nom(r.cod))} <small style="color:var(--mu)">${r.cod}</small> — ${tit}: <b>${f1(r.v)} ${u}</b> · ${esc(nombreDia(S.per.dias[r.dia], S.modo))} · ${pp ? hTxt(r.e - r.W + 1) + " → " + hTxt(r.e) : hTxt(r.m)} UTC</h3><button id="agX" style="font-size:16px">✕</button></div>
     <p style="margin:6px 0 10px;color:${COL[r.sem.n]}"><b>● ${NS[r.sem.n]}</b> <span style="color:var(--mu)">${esc(r.sem.mot.join(" · ") || "sin observaciones")} · datos ${Math.round(r.comp * 100)} %</span></p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;align-items:start"><div>${graf}</div>${usaEsp ? `<div><div class="espMapT" style="font-size:12.5px;margin-bottom:4px"></div><div class="espMap" style="height:420px;border:1px solid var(--bd);border-radius:8px"></div><small style="color:var(--mu)">Control espacial: rojo = la estación · azul = vecinas DMC · gris = sin dato</small></div>` : usaVer ? "" : `<div class="bcard" style="padding:8px"><div style="font-size:12px;color:var(--mu);margin-bottom:4px">Vecinas a la hora de la extrema (≤ ${VEC_KM} km)</div>${mapaVec(r.cod, vk, r)}</div>`}</div>
+    <div>${graf}</div>
+    ${usaEsp ? `<div style="margin-top:12px"><div class="espMapT" style="font-size:12.5px;margin-bottom:4px"></div><div class="espMap" style="height:400px;border:1px solid var(--bd);border-radius:8px"></div><small style="color:var(--mu)">Control espacial: rojo = la estación · azul = vecinas DMC · gris = sin dato</small></div>` : (usaVer || usaFal) ? "" : `<div class="bcard" style="padding:8px;margin-top:12px"><div style="font-size:12px;color:var(--mu);margin-bottom:4px">Vecinas a la hora de la extrema (≤ ${VEC_KM} km)</div>${mapaVec(r.cod, vk, r)}</div>`}
     ${usaVer ? `<div id="agVer" style="margin-top:12px"></div>` : ""}
     <div style="margin-top:12px;border-top:1px solid var(--bd);padding-top:10px">${acc}<p id="agErr" style="color:var(--err);margin:6px 0 0"></p></div></div>`;
   $("#agX").addEventListener("click", () => { M.hidden = true; });
+  if (usaFal){ const t0 = S.B0 + r.m * 60e3, e0 = EST.get(r.cod) || {};
+    FALLAS.grafico($("#agFal"), {codigo: r.cod, nombre: e0.nombre || r.cod, var: "T", inicio: t0, ultima: t0 + 60e3, sigue: false, minutos: 1500, alertas: []}, RR0);
+    if (usaEsp){ const fm = M.querySelector("#agFal .fmap"), ft = M.querySelector("#agFal .fmapt"); if (fm) fm.style.display = "none"; if (ft) ft.style.display = "none"; } }
   if (usaEsp){ const fin = new Date(S.per.dias[r.dia + 1]).toISOString().slice(0, 16);     // las 24 h que terminan al cierre de ese día
     try { SUPER.mapaEsp(M.querySelector(".espMap"), M.querySelector(".espMapT"), eR, window.supVec(r.cod), {regla: "ZE05", msg: vk === "tmin" ? "Ts mínima" : "Ts máxima"}, fin); } catch (e) { M.querySelector(".espMapT").textContent = "No se pudo dibujar el mapa."; } }
   if (usaVer){ let hm = 0, vm = -1; for (let k = Math.floor((r.e - r.W + 1) / 60); k <= Math.floor(r.e / 60); k++){ let q = 0; for (let m = k * 60; m < k * 60 + 60; m++){ const x = S.R.get(r.cod)[m]; if (isFinite(x) && x <= PP_MAXMIN) q += x; } if (q > vm){ vm = q; hm = k; } }     // la hora más lluviosa de la ventana
