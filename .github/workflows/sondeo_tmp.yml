@@ -1,0 +1,35 @@
+name: Sondeo temporal revisiones2
+on: workflow_dispatch
+jobs:
+  s:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - run: |
+          python3 - <<'P'
+          import os, json, collections, urllib.request, urllib.parse
+          A, T = os.environ['CLOUDFLARE_ACCOUNT_ID'], os.environ['CLOUDFLARE_API_TOKEN']
+          B = f"https://api.cloudflare.com/client/v4/accounts/{A}/storage/kv/namespaces/0d6aa4b37a834b5983ac9c7f638e2dbb"
+          g = lambda u: json.load(urllib.request.urlopen(urllib.request.Request(u, headers={"Authorization": "Bearer " + T})))
+          ks = [k["name"] for k in g(B + "/keys?prefix=qc%2Frev%2F")["result"]]
+          CR = collections.defaultdict(collections.Counter); F = collections.Counter(); est = set(); dias = set()
+          for k in ks:
+              D = g(B + "/values/" + urllib.parse.quote(k, safe=""))
+              for key, m in D.items():
+                  p = key.split("|"); r = p[-1] if len(p) >= 4 else "?"
+                  CR[(p[0], r)][m.get("v")] += 1; est.add(p[1] if len(p) > 1 else "?"); dias.add(k[-10:])
+          print("R dias", sorted(dias)[0], sorted(dias)[-1], len(dias), "estaciones", len(est))
+          for (t, r), c in sorted(CR.items(), key=lambda x: -sum(x[1].values())): print("R", t, r, dict(c))
+          # historial: volumen de alertas
+          H = [k["name"] for k in g(B + "/keys?prefix=qc%2Fhist%2F")["result"]]
+          tot = collections.Counter()
+          for k in H[-7:]:
+              try:
+                  D = g(B + "/values/" + urllib.parse.quote(k, safe=""))
+                  L = D if isinstance(D, list) else D.get("eventos") or D.get("items") or list(D.values())
+                  tot[k[-10:]] = len(L)
+              except Exception as e: print("R herr", k, e)
+          print("R hist", dict(tot))
+          P
