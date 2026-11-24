@@ -1,34 +1,31 @@
 {
  "version": "0.1",
- "inicio": "2026-11-24T10:46:09+00:00",
+ "inicio": "2026-11-24T11:16:24+00:00",
  "errores": [],
- "estaciones": 137,
- "con_datos": 119,
- "registros": 4721,
- "desde": "2026-11-24 09:46:00",
- "hasta": "2026-11-24 10:40:00",
+ "estaciones": 109,
+ "con_datos": 124,
+ "registros": 4851,
+ "desde": "2026-11-24 10:16:00",
+ "hasta": "2026-11-24 11:10:00",
  "horas_archivadas": 2,
  "modelo": 6576,
- "wrf": "sin corridas nuevas",
- "corridas": [
-  "2026112300_ecmwf",
-  "2026112300_gfs",
-  "2026112312_ecmwf",
-  "2026112312_gfs",
-  "2026112400_gfs"
+ "wrf": "corridas nuevas",
+ "nuevas": [
+  "2026112400_ecmwf"
  ],
+ "fallas": 28,
  "wrf_ref": 660,
  "satelite": {
-  "imagenes": 32,
-  "ultima": "2026-11-24T09:50Z"
+  "imagenes": 29,
+  "ultima": "2026-11-24T11:00Z"
  },
  "externas": {
-  "estaciones": 324,
+  "estaciones": 323,
   "con_vecinas": 114,
   "desactivadas": 0,
-  "generado": "2026-11-24T10:45:47Z",
-  "pp_archivadas": 10757,
-  "ta_archivadas": 10754,
+  "generado": "2026-11-24T11:16:04Z",
+  "pp_archivadas": 10750,
+  "ta_archivadas": 10748,
   "desviadas": 6,
   "kv_desvio": "200"
  },
@@ -37,15 +34,15 @@
   "filas": 45766,
   "activa": true
  },
- "consenso_quitados": 0,
+ "consenso_quitados": 1,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1491,
+ "ob_filas": 1503,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 453,
+  "observaciones": 464,
   "fallas": 0,
-  "hallazgos": 350,
+  "hallazgos": 348,
   "kv": "200",
   "completitud": "200"
  },
@@ -55,7 +52,7 @@
  ],
  "super": {
   "estaciones": 104,
-  "hallazgos": 71,
+  "hallazgos": 67,
   "kv": "200"
  },
  "historial": {
@@ -70,13 +67,31 @@
  "boletin": {
   "dia": "2026-11-24",
   "estaciones": 26,
-  "hallazgos": 5,
-  "cambios": 0,
+  "hallazgos": 2,
+  "cambios": 4,
   "kv": "200"
  },
  "productos": {
   "extremas": "200",
   "lluvia_obs": "200"
+ },
+ "pluviometros": {
+  "resumen": {
+   "sospecha_obstruccion": 2,
+   "revisar": 19,
+   "sin_dato_con_lluvia": 6,
+   "ok": 101
+  },
+  "fuentes": {
+   "vecinas": true,
+   "modelo": true,
+   "satelite": true,
+   "imerg": true,
+   "satelite_horas": 149,
+   "imerg_pasos_nuevos": 12,
+   "externas": 327
+  },
+  "kv": "200"
  },
  "reputacion": {
   "resumen": {
@@ -91,12 +106,12 @@
   "kv": "200"
  },
  "kv": "200",
- "alertas": 25,
+ "alertas": 32,
  "resumen": {
-  "bien": 105,
-  "sospechoso": 12,
+  "bien": 104,
+  "sospechoso": 14,
   "erróneo": 10,
-  "sin datos": 10
+  "sin datos": 9
  },
- "fin": "2026-11-24T10:51:31+00:00"
+ "fin": "2026-11-24T11:25:08+00:00"
 }
