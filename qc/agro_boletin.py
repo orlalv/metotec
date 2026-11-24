@@ -37,9 +37,9 @@ PAUSA = 1.0                # segundos entre páginas (no saturar el sitio)
 
 RANGO_T = (-30.0, 45.0)    # rango físico para estas regiones (Coquimbo a Los Lagos, valle y costa; incluye cordillera media)
 RANGO_PP = (0.0, 300.0)    # mm/día
-PP_DUDOSO = 150.0          # mm/día: entra al ranking, pero marcado ⚠ y listado en Calidad
+PP_DUDOSO = 150.0          # mm/día: marcado ⚠ y listado en Calidad
 MEDIA_TOL = 0.25           # |media − (mín+máx)/2| > tol → la fila es incoherente (dudosa)
-ANOM_REG = 12.0            # °C: diferencia con la mediana de la región ese día → dudoso (no entra al ranking; queda en Calidad)
+ANOM_REG = 12.0            # °C: diferencia con la mediana de la región ese día → dudoso (marcado; se saca a mano)
 
 
 def txt(s):
@@ -173,15 +173,15 @@ def armar(jueves, dias, crudo, estado):
     # acumulado semanal (solo valores válidos) y días con dato
     acum, ndias = {}, {}
     for r in P:
-        if r["estado"] != "error":                                 # en lluvia, los dudosos (≥ 150 mm) sí cuentan, marcados
+        if True:                                                   # acumulado con todos los valores publicados
             acum[r["cod"]] = round(acum.get(r["cod"], 0) + r["valor"], 1); ndias[r["cod"]] = ndias.get(r["cod"], 0) + 1
     for r in P:
         r["acum"] = acum.get(r["cod"]); r["ndias"] = ndias.get(r["cod"], 0)
 
-    ok = lambda L: [r for r in L if r["estado"] == "ok"]          # errores y dudosos no entran al ranking (quedan en Calidad)
+    ok = lambda L: list(L)          # nada se excluye solo: errores y dudosos entran marcados (⚠) y se sacan a mano con «Sacar»
     tmax = sorted(ok([r for r in T if r["vk"] == "tmax"]), key=lambda r: -r["valor"])
     tmin = sorted(ok([r for r in T if r["vk"] == "tmin"]), key=lambda r: r["valor"])
-    ppd = sorted([r for r in P if r["estado"] != "error" and r["valor"] > 0], key=lambda r: (-r["valor"], -(r["acum"] or 0)))
+    ppd = sorted([r for r in P if r["valor"] > 0], key=lambda r: (-r["valor"], -(r["acum"] or 0)))
     pps = sorted([dict(cod=c, reg=est[c]["reg"], vk="pp24", valor=v, acum=v, ndias=ndias[c], dia=None, fecha=None, estado="ok", motivo="")
                   for c, v in acum.items() if v > 0], key=lambda r: -r["valor"])
     ranking = dict(tmax=tmax[:TOP_GUARDA], tmin=tmin[:TOP_GUARDA], pp=(ppd if PP_RANKING == "diario" else pps)[:TOP_GUARDA], pp_semanal=pps[:TOP_GUARDA])
@@ -197,7 +197,7 @@ def armar(jueves, dias, crudo, estado):
                 notas=dict(t="Mínima y máxima entre ~21:01 del día anterior y 21:00 del día (hora local), según el boletín.",
                            pp="Total diario entre ~8:00 del día y 8:00 del día siguiente (hora local), según el boletín.",
                            sp="«s/p» se interpreta como sin precipitación (0 mm).",
-                           qc="Los boletines no han pasado control de calidad; se excluyen mínima > máxima y valores fuera de rango físico. Tampoco entran, y quedan en Calidad como dudosos, los valores a más de 12 °C de la mediana regional del día y las filas con media incoherente."),
+                           qc="Los boletines no han pasado control de calidad. Nada se excluye automáticamente: los errores (mínima > máxima, fuera de rango físico) y dudosos (media incoherente, lejos de la mediana regional, 0,0 repetido) entran al ranking marcados y se sacan a mano."),
                 regiones=REGIONES, estaciones={c: e for c, e in est.items() if c in usados},
                 ranking=ranking, por_dia=por_dia, por_region=por_region, calidad=cal, cobertura=estado)
 

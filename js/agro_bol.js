@@ -42,7 +42,7 @@ function tabla(vk){
   const L = C.ranking[vk] || [], T = top(L, vk), pp = vk === "pp";
   return `<div class="bcard" style="padding:10px;margin-bottom:12px"><b>${VK[vk]}</b> <span class="tag">· ${vk === "tmin" ? "10 más bajas" : "10 más altas"}${pp ? " · valores diarios" : ""}</span>
   <table class="xtab"><tr><th>#</th><th>Estación</th><th>Código</th><th>Región</th><th>Propietario</th><th class="n">Valor</th><th>Día</th>${pp ? `<th class="n">Acum. semana</th>` : ""}<th></th></tr>
-  ${T.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(est(r).nombre)}${r.estado === "dudoso" ? ` <span title="${esc(r.motivo)}">⚠</span>` : ""}</td><td>${r.cod}</td><td>${esc(C.regiones[r.reg])}</td><td>${esc(est(r).prop)}</td>
+  ${T.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(est(r).nombre)}${r.estado !== "ok" ? ` <span title="${esc(r.motivo)}" style="color:${r.estado === "error" ? "var(--err)" : "var(--oro)"};cursor:help">⚠ ${r.estado}</span>` : ""}</td><td>${r.cod}</td><td>${esc(C.regiones[r.reg])}</td><td>${esc(est(r).prop)}</td>
     <td class="n"><b>${f1(r.valor)}</b></td><td>${diaTxt(r.fecha)}</td>${pp ? `<td class="n">${f1(r.acum)}${r.ndias < 7 ? ` <small class="tag">(${r.ndias} d)</small>` : ""}</td>` : ""}
     <td><button data-sac="${vk}|${L.indexOf(r)}" title="Quita solo este dato; sube el siguiente">Sacar</button></td></tr>`).join("") || `<tr><td colspan="9" class="tag">Sin datos</td></tr>`}</table></div>`;
 }
@@ -89,7 +89,7 @@ function pintar(){
   o.innerHTML = `<div class="htools" style="gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px">${b("gen", "General")}${b("dia", "Por día")}${b("reg", "Por región")}${b("cal", "Calidad · " + ncal)}
     <span style="flex:1"></span><select id="agSem">${["ult", ...SEMANAS].map(s => `<option value="${s}"${s === SEM ? " selected" : ""}>${s === "ult" ? "Última semana" : "Semana del " + s}</option>`).join("")}</select><button id="agCsv">Exportar (Excel)</button></div>
     <p class="tag" style="margin:0 0 10px">Jueves ${diaTxt(C.dias[0])} a miércoles ${diaTxt(C.dias[6])} · boletines regionales de Coquimbo a Los Lagos · generado ${esc(C.generado.slice(0, 16).replace("T", " "))} UTC.
-      Temperatura: 21:01–21:00 · precipitación: 8:00–8:00 (hora local), según la DMC. Sin control de calidad oficial: los registros incoherentes van a Calidad y no entran al ranking.</p>
+      Temperatura: 21:01–21:00 · precipitación: 8:00–8:00 (hora local), según la DMC. Sin control de calidad oficial: nada se excluye solo; los datos marcados ⚠ (error o dudoso, ver motivo en Calidad) se sacan a mano con «Sacar».</p>
     ${MSG ? `<p style="color:var(--err)">${esc(MSG)}</p>` : ""}${vista()}`;
   o.querySelectorAll("[data-v]").forEach(x => x.onclick = () => { VISTA = x.dataset.v; pintar(); });
   o.querySelectorAll("[data-sac]").forEach(x => x.onclick = () => { const [vk, i] = x.dataset.sac.split("|"); sacar(vk, C.ranking[vk][+i]); });
