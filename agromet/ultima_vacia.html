@@ -1,0 +1,435 @@
+**************************************************************************************************-->
+<!--************ FOOTER *************************************************************************************-->
+<!--*********************************************************************************************************-->
+
+<footer id="ts-footer">
+    <!--MAIN FOOTER CONTENT
+    =========================================================================================================-->
+    <section id="ts-footer-main">
+        <div class="container">
+            <div class="row">
+
+                <div class="col-md-6">
+                    <div class="mt-3 center">
+                        <img src="https://agrometeorologia.cl/assets/img/index-images/icon-map-providers.png" alt="">
+                        <h4 class="my-3 pb-3 font-weight-bold">497 Estaciones</h4>
+                        <p>
+                            Se han incorporado a la red de INIA<sup>183</sup> estaciones de CEAZA<sup>36</sup>, DMC<sup>130</sup> y otras instituciones<sup>148</sup>, permitiendo disponer
+                            de un mayor número de datos en las diferentes zonas de Chile.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mt-3 center">
+                        <img src="https://agrometeorologia.cl/assets/img/index-images/icon-headers.png" alt="">
+                        <h4 class="my-3 pb-3 font-weight-bold">Pronóstico</h4>
+                        <p>
+                            Mediante los datos generados por la Dirección Meteorológica de Chile es posible desplegar para cada estación un pronóstico de condiciones meteorológicas.
+                        </p>
+                    </div>
+                </div>
+
+
+            </div>
+            <!--end row-->
+        </div>
+        <!--end container-->
+    </section>
+    <!--end ts-footer-main-->
+
+
+    <!--SECONDARY FOOTER CONTENT
+    =============================================================================================================-->
+    <section id="ts-footer-secondary">
+        <div class="container">
+
+            <!--Copyright-->
+            <div class="ts-copyright">Red Agrometeorológica de INIA 2009 - 2023</div>
+
+            <!--Social Icons-->
+            <div class="ts-footer-nav">
+                <nav class="nav">
+                    <a href="https://www.instagram.com/iniachile/" target="_blank" class="nav-link">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+
+                    <a href="https://www.facebook.com/INIAChile" target="_blank" class="nav-link">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="https://twitter.com/iniachile" target="_blank" class="nav-link">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+
+                    <a href="https://www.youtube.com/channel/UCKX0hSprur3OK1XMez1BH-g" target="_blank" class="nav-link">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+
+                </nav>
+            </div>
+            <!--end ts-footer-nav-->
+
+        </div>
+        <!--end container-->
+    </section>
+    <!--end ts-footer-secondary-->
+
+</footer>
+        </div>
+
+
+
+		<script src="https://agrometeorologia.cl/assets/js/jquery-3.7.1.min.js"></script>
+        
+
+        <script>
+                            var geoComunas = $.ajax({url: "https://agrometeorologia.cl/assets/geojson/comunas_three_decimal.geojson?x=0",dataType: "json",error: function(xhr) {console.log(xhr.statusText)}});
+                var geoRegionesLimites = $.ajax({url: "https://agrometeorologia.cl/assets/geojson/regiones.min.geojson",dataType: "json",error: function(xhr) {console.log(xhr.statusText)}});
+                    </script>
+
+        		<script src="https://agrometeorologia.cl/assets/js/popper.min.js"></script>
+	    <script src="https://agrometeorologia.cl/assets/bootstrap/js/bootstrap.min.js"></script>
+	    <script src="https://agrometeorologia.cl/assets/js/owl.carousel.min.js"></script>
+	    <script src="https://agrometeorologia.cl/assets/js/dragscroll.js"></script>
+	    <script src="https://agrometeorologia.cl/assets/js/jquery.scrollbar.min.js"></script>
+	    <!---<script src="https://agrometeorologia.cl/assets/js/leaflet.js"></script>
+	    <script src="https://agrometeorologia.cl/assets/js/leaflet.markercluster.js"></script>
+	    <script src="https://unpkg.com/leaflet.featuregroup.subgroup@1.0.2/dist/leaflet.featuregroup.subgroup.js"></script>-->
+
+
+	    <script src="https://agrometeorologia.cl/assets/js/moment/moment.min.js"></script>
+	    <script src="https://agrometeorologia.cl/assets/js/moment/es.js"></script>
+
+	    <script src="https://agrometeorologia.cl/assets/js/Chart.min.js"></script>
+	    <script src="https://agrometeorologia.cl/assets/js/Chart.Plugin.Errorbars.min.js"></script>
+	    <script src="https://agrometeorologia.cl/assets/js/chosen.jquery.min.js"></script>
+
+	    <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+
+	    <script type="text/javascript" src="https://agrometeorologia.cl/assets/bootstrap/js/bootstrap-datepicker.min.js"></script>
+	    <script type="text/javascript" src="https://agrometeorologia.cl/assets/bootstrap/js/bootstrap-datepicker.es.min.js"></script>
+	    <script type="text/javascript" src="https://agrometeorologia.cl/assets/bootstrap/js/bootstrap-dropdown.js"></script>
+
+	    <script src="https://agrometeorologia.cl/assets/js/utils.js?a=14042020"></script>
+
+
+		    <script src="https://agrometeorologia.cl/assets/js/highcharts/highcharts.js"></script>
+    <script src="https://agrometeorologia.cl/assets/js/highcharts/highcharts-more.js"></script>
+    <script src="https://agrometeorologia.cl/assets/js/highcharts/modules/windbarb.js"></script>
+    <script src="https://agrometeorologia.cl/assets/js/highcharts/modules/exporting.js"></script>
+
+	<script src="https://agrometeorologia.cl/assets/js/map-leaflet.js?v=1004517152"></script>
+
+    <script src="https://agrometeorologia.cl/assets/js/custom.js?a=20261109-adapt1"></script>
+
+    <script type="text/javascript">
+        var labels = [];
+        var unidades = [];
+        var tiempos = [];
+        var data = [];
+        var total_fill;
+
+        var grafico = '';
+
+        var post = 'day' !== '' ? true : false ;
+
+
+        if ( grafico == 1 ){
+
+            
+                                                                                                                                                                                                                                                                                     var titulo =  'Precipitación Acumulada';
+
+                                                   titulo = titulo + ' ('+ 'mm' +')';
+                           unidades.push('mm')
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
+                                                            var label = 'Fray Jorge Quebrada';
+                        labels.push(label);
+                                                                                var label = 'Gabriela Mistral';
+                        labels.push(label);
+                                                                                var label = 'Guandacol';
+                        labels.push(label);
+                                                                                var label = 'Huentelauquén';
+                        labels.push(label);
+                                                                                var label = 'Huintil';
+                        labels.push(label);
+                                                                                var label = 'Illapel';
+                        labels.push(label);
+                                                                                var label = 'La Laguna - Elqui';
+                        labels.push(label);
+                                                                                var label = 'La Polvareda';
+                        labels.push(label);
+                                                                                var label = 'Laguna Hurtado';
+                        labels.push(label);
+                                                                                var label = 'Las Cardas';
+                        labels.push(label);
+                                                                                var label = 'Las Naranjas';
+                        labels.push(label);
+                                                                                var label = 'Lavaderos';
+                        labels.push(label);
+                                                                                var label = 'Liceo Padre José Herde';
+                        labels.push(label);
+                                                                                var label = 'Liceo Samuel Román Rojas';
+                        labels.push(label);
+                                                                                var label = 'Los Acacios';
+                        labels.push(label);
+                                                                                var label = 'Los Molles - Bocatoma';
+                        labels.push(label);
+                                                                                var label = 'Mincha Sur';
+                        labels.push(label);
+                                                                                var label = 'Monte Patria - Centro Cultural';
+                        labels.push(label);
+                                                                                var label = 'Pan de Azúcar';
+                        labels.push(label);
+                                                                                var label = 'Parque Los Pimientos';
+                        labels.push(label);
+                                    
+            
+
+            /*DATOS*/
+            
+            var ctx = document.getElementById('chart1').getContext('2d');
+
+            var color = Chart.helpers.color;
+            var timeFormat = 'YYYY-MM-DD HH:mm';
+
+            var config = {
+                type: 'bar',
+                data: {
+                    labels: tiempos,
+                    datasets: []
+                },
+                options: {
+                    responisve: true,
+                    legend:{
+                        display: true
+                    },
+                    title: {
+                        text: titulo,
+                        display: true,
+                    },
+                    tooltips: {
+                        mode: 'index',
+                        intersect: false,
+
+                        callbacks: {
+                            label: function(tooltipItems, data) {
+                                if (unidades.length > 1 ){
+                                    return data.datasets[tooltipItems.datasetIndex].label + ': ' + ( isNaN(tooltipItems.yLabel) ? 's/i' : tooltipItems.yLabel + ' ' + unidades[tooltipItems.datasetIndex] );
+                                }
+                                else{
+                                    return data.datasets[tooltipItems.datasetIndex].label + ': ' + ( isNaN(tooltipItems.yLabel) ? 's/i' : tooltipItems.yLabel + ' ' + unidades[0] );
+                                }
+                            }
+                        },
+                        footerFontStyle: 'normal'
+                    },
+                    scales: {
+                        xAxes: [{
+                            type: 'time',
+                            display: true,
+                            time: {
+                                parser: timeFormat,
+                                tooltipFormat: 'day' == 'hour'? 'DD-MM-YYYY HH:00' : 'day' == 'month'? 'MM-YYYY' : 'day' == 'year'? 'YYYY' : 'DD-MM-YYYY',
+                                displayFormats: {
+                                    'hour': 'HH'
+                                },
+                                unit: 'day'
+                            }
+
+                        }],
+                        yAxes: [{
+                            display: true,
+                            id: 'y-axis-se-elimina-con-pop'
+                        }]
+
+                    }
+                }
+            };
+
+            var chart1 = new Chart(ctx, config);
+
+            /* Agrego dinamicamente nuevo dataset */
+            var colorNames = Object.keys(window.chartColors);
+            config.options.scales.yAxes.pop();
+            for (var i = 0; i < data.length; i++) {
+
+                var colorName = colorNames[config.data.datasets.length % colorNames.length];
+                var newColor = window.chartColors[colorName];
+
+                if(unidades.length > 1){
+
+                    switch(unidades[i]){
+                        case '%':
+                            var axisName = 'y-axis-HR';
+                            break;
+
+                        case 'ºC':
+                            var axisName = 'y-axis-TA';
+                            break;
+
+                        case 'mm':
+                            var axisName = 'y-axis-PP';
+                            break;
+
+                        case 'mbar':
+                            var axisName = 'y-axis-PS';
+                            break;
+
+                        case 'Mj/m^2':
+                        case 'w/m^2':
+                            var axisName = 'y-axis-RD';
+                            break;
+
+                        case 'Km/h':
+                            var axisName = 'y-axis-VV';
+                            break;
+
+                        default:
+                            var axisName = 'y-axis-NONAME';
+                            break;
+                    }
+                    var u = unidades[i];
+                }
+                else{
+                    var axisName = 'y-axis-ALONE';
+                    var u = unidades[0];
+                }
+
+                var newDataset = {
+                    type: u == 'mm' ? 'bar' : 'line',
+                    fill: false,
+                    label: labels[i],
+                    borderColor: newColor,
+                    backgroundColor: color(newColor).alpha(0.5).rgbString(),
+                    data: data[i],
+                    yAxisID: axisName
+                };
+                config.data.datasets.push(newDataset);
+
+                var newyAxes = {
+                    display: true,
+                    id: axisName,
+                    position: 'left',
+                    scaleLabel: {
+                        display: true,
+                        labelString: u,
+                        padding: 0
+                    },
+                    ticks: {
+                        suggestedMin: 0,
+                        suggestedMax: 1
+                    },
+                    gridLines: {
+                        display: true,
+                    }
+                };
+
+                config.options.scales.yAxes.push(newyAxes);
+                window.chart1.update();
+
+            }
+        }
+
+        $(document).ready(function($) {
+
+            $("#box-consultar, #box-escala").show();
+
+            if(post){
+                $('html, body').animate({
+                    scrollTop: $("#ts-main").offset().top-90
+                }, 1000);
+            }
+
+        });
+    </script>
+
+
+        <script>
+            $(document).ready(function($) {
+
+                if(sessionStorage.getItem('city')){
+                    $("#localizarme, #localizarme_icon").hide();
+                    $("#geotext").html('<i class="fa fa-map-marker mr-1" style="color:#28a745"></i>&nbsp;' + sessionStorage.city);
+                }
+                else{
+                    $("#localizarme, #localizarme_icon").show();
+                }
+
+
+                $("#localizarme").on("click", function() {
+                    getLocation();
+
+                    //const x = document.getElementById("geotext");
+                    var x = $("#geotext");
+
+                    const errmen = [
+                        'Navegador sin geolocalización .',
+                        'Geolocalización rechazada.',
+                        'Geolocalización no disponible.',
+                        'Usuario tardó demasiado en elegir',
+                        'Error desconocido.'
+                    ]
+
+                    function getLocation() {
+                        $("#localizarme, #localizarme_icon").hide();
+                        $("#geotext").html('<i class="fa fa-map-marker mr-1"></i>&nbsp;localizando...');
+
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(showPosition, showError);
+                        } else {
+                            $("#geotext").html('<i class="fa fa-map-marker mr-1"></i>&nbsp;' + errmen[0]);
+                        }
+                    }
+
+                    function showPosition(position) {
+                        $.getJSON('https://nominatim.openstreetmap.org/search?format=json&q='+position.coords.latitude+','+position.coords.longitude+'&addressdetails=1', function(data) {
+
+                            sessionStorage.city = (data[0]['address']['city'])?data[0]['address']['city']:(data[0]['address']['suburb'])?data[0]['address']['suburb']:(data[0]['address']['town'])?data[0]['address']['town']:data[0]['address']['village'];
+
+                            $("#geotext").html('<i class="fa fa-map-marker mr-1" style="color:#28a745"></i>&nbsp;' + sessionStorage.city );
+
+                            sessionStorage.latitud = position.coords.latitude;
+                            sessionStorage.longitud = position.coords.longitude;
+
+                            localStorage.setItem("latitud", sessionStorage.latitud);
+                            localStorage.setItem("longitud", sessionStorage.longitud);
+                            localStorage.setItem("zoom", 10);
+
+                            $.ajax({
+                                   method:"post",
+                                   url:"/geo/",
+                                   data: {
+                                        'latitud':position.coords.latitude,
+                                        'longitud': position.coords.longitude,
+                                        'city': sessionStorage.city,
+                                        'state': data[0]['address']['state'],
+                                        'country': data[0]['address']['country']
+                                    },
+                                   dataType:"json",
+                                   success:function(response){
+                                        //console.log(response);
+
+                                   },
+                                   error: function (XMLHttpRequest, textStatus, errorThrown) {
+                                        console.log('error: '+ errorThrown);
+                                    }
+                            });
+
+                        });
+
+                    }
+
+                    function showError(error) {
+                        $("#geotext").text(errmen[error.code]);
+                        $("#geotext").text(error.message);
+
+                        //console.log(errmen[error.code])
+                    }
+
+                });
+            });
+        </script>
+
+	</body>
+
+</html>
