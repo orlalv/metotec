@@ -89,7 +89,9 @@ def main():
         f = raiz / var / f"{o.anio}.json.gz"
         D = json.loads(gzip.decompress(f.read_bytes())) if f.exists() else {}
         for g in range(0, len(ids), GRUPO):
-            G = [i for i in ids[g:g + GRUPO] if i not in D]          # reanudable: salta lo ya bajado
+            G = ids[g:g + GRUPO]
+            if all(D.get(i) for i in G) or all(i in D for i in G) and any(D.get(i) for i in G):   # reanudable: el grupo ya tiene datos
+                continue
             if not G:
                 continue
             R = {}
