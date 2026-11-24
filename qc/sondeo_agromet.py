@@ -1,23 +1,17 @@
-"""Sondeo temporal: cómo pide agrometeorologia.cl los datos históricos (rutas JSON en sus scripts) y productos mensuales de la DMC."""
-import pathlib, re, sys, time, requests
+"""Sondeo temporal 2: consulta en vista «tabla» (sin exportar) de agrometeorologia.cl para una estación y un mes."""
+import json, pathlib, re, sys, requests
 out = pathlib.Path(sys.argv[1]); out.mkdir(parents=True, exist_ok=True)
 H = {"User-Agent": "Mozilla/5.0 (metotec; contacto.metotec@gmail.com)"}
 B = "https://agrometeorologia.cl/"
-def g(u, nom):
-    try:
-        r = requests.get(u, headers=H, timeout=60); (out / nom).write_bytes(r.content); print(nom, r.status_code, len(r.content), u); return r.text
-    except Exception as e:
-        print(nom, "ERR", e); return ""
-home = g(B, "home.html")
-for p in ("PP", "TA", "evapotranspiracion", "descargas", "descarga", "historico", "datos", "consulta"):
-    g(B + p, f"pag_{p}.html"); time.sleep(1)
-js = set(re.findall(r'src="([^"]+\.js[^"]*)"', home))
-for i, s in enumerate(sorted(js)):
-    u = s if s.startswith("http") else B + s.lstrip("/")
-    t = g(u, f"js_{i}.js"); time.sleep(1)
-    for m in sorted(set(re.findall(r'["\'`]([^"\'`]*(?:json|api|ajax|php|descarg|hist|fecha|desde)[^"\'`]*)["\'`]', t)))[:80]:
-        print("   ", m[:160])
-for u, n in [("https://climatologia.meteochile.gob.cl/application/mensual/temperaturaMensual/320093/2025/11", "dmc_tmes_320093.html"),
-             ("https://climatologia.meteochile.gob.cl/application/mensual/aguaCaidaMensual/320093/2025/11", "dmc_ppmes_320093.html"),
-             ("https://climatologia.meteochile.gob.cl/application/informacion/estacionesEnGrupo/Agroclima", "dmc_grupo_agroclima.html")]:
-    g(u, n); time.sleep(1)
+s = requests.Session(); h = s.get(B, headers=H, timeout=60).text
+ops = re.findall(r'<option value="([^"]+)"[^>]*>([^<]*)</option>', h[h.find('id="estaciones"'):h.find('id="variables"')])
+print("estaciones en el formulario:", len(ops), ops[:8])
+(out / "estaciones_form.json").write_text(json.dumps(ops, ensure_ascii=False))
+cand = [v for v, n in ops if re.search(r"calle larga|san felipe|la platina", n, re.I)][:2] or [ops[0][0]]
+for intervalo, desde, hasta in [("day", "01-10-2025", "31-10-2025"), ("hour", "01-10-2025", "02-10-2025")]:
+    d = [("estaciones[]", c) for c in cand] + [("variables[]", v) for v in ("TA_MIN", "TA_MAX", "PP_SUM")] + [("intervalo", intervalo), ("desde", desde), ("hasta", hasta), ("vista[]", "tabla"), ("consultar", ""), ("website", "")]
+    r = s.post(B, data=d, headers=H, timeout=90)
+    t = r.text; (out / f"tabla_{intervalo}.html").write_text(t)
+    tab = re.findall(r"<tr[^>]*>(.*?)</tr>", t, re.S)
+    print(intervalo, r.status_code, len(t), "filas tr:", len(tab), [re.sub(r"<[^>]+>|\s+", " ", x).strip()[:150] for x in tab[:4]])
+    i = t.find("verificaci"); print("  verificación en respuesta:", i >= 0, re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", t[i:i+300])) if i >= 0 else "")
