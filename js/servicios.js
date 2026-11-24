@@ -7,7 +7,7 @@ const ms = t => { if (typeof t === "number") return t; if (!t) return NaN; let s
 const edad = t => { const m = ms(t); return isNaN(m) ? null : (Date.now() - m) / 60e3; };
 const dur = m => m == null ? "—" : m < 1 ? "menos de 1 min" : m < 90 ? Math.round(m) + " min" : m < 48 * 60 ? (m / 60).toFixed(1).replace(".0", "") + " h" : Math.round(m / 1440) + " días";
 const hora = t => isNaN(ms(t)) ? "—" : new Date(ms(t)).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", hour: "2-digit", hourCycle: "h23", minute: "2-digit", hour12: false});
-const LIM = {worker: [15, 30], dato: [30, 60], pasada: [50, 90], obs: [90, 180]};     // [atrasado, caído]
+const LIM = {worker: [15, 30], dato: [30, 60], pasada: [25, 60], obs: [90, 180]};     // [atrasado, caído]
 const nivelEdad = (m, [a, c]) => m == null ? 3 : m >= c ? 2 : m >= a ? 1 : 0;
 const NOMN = {0: "Al día", 1: "Atrasado", 2: "Sin respuesta", 3: "Sin información"};
 const COLN = {0: "var(--ok)", 1: "var(--sos)", 2: "var(--err)", 3: "var(--sin)"};
