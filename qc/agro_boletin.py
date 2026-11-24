@@ -226,6 +226,30 @@ LAT_REG = {"04": (-32.3, -29.0), "05": (-33.1, -32.0), "13": (-34.3, -32.9), "06
            "08": (-38.5, -36.4), "09": (-39.7, -37.5), "14": (-40.7, -39.2), "10": (-44.0, -40.1)}
 
 
+URL_FICHA = "https://climatologia.meteochile.gob.cl/application/informacion/fichaDeEstacion/{}"
+
+
+def fichas(cods, raiz):
+    """Latitud, longitud y altitud desde la «Ficha de la Estación» de la DMC (sirve para FDF, INIA y todas). Se guardan en datos/agro/fichas.json."""
+    f = Path(raiz) / "agro" / "fichas.json"
+    try:
+        F = json.loads(f.read_text(encoding="utf-8"))
+    except Exception:
+        F = {}
+    nuevos = 0
+    for c in cods:
+        if c in F:
+            continue
+        h = bajar(URL_FICHA.format(c), intentos=2); time.sleep(PAUSA)
+        t = txt(h or "")
+        la, lo, al = (re.search(p + r"\s*(-?\d+(?:\.\d+)?)", t) for p in ("Latitud", "Longitud", "Altitud"))
+        F[c] = dict(lat=float(la.group(1)), lon=float(lo.group(1)), alt=float(al.group(1)) if al else None) if la and lo and float(la.group(1)) < -10 else {}
+        nuevos += 1
+    if nuevos:
+        f.parent.mkdir(parents=True, exist_ok=True); f.write_text(json.dumps(F, ensure_ascii=False), encoding="utf-8")
+    return F
+
+
 def ubicar(est, raiz):
     """Agrega lat, lon, alt (y ext = id de la externa) a cada estación del compendio. Devuelve (n_dmc, n_ext, sin)."""
     dmc = {}
@@ -241,11 +265,14 @@ def ubicar(est, raiz):
     except Exception:
         pass
     toks = [(_tok(x.get("nombre")), x) for x in cat]
+    F = fichas([c for c in est if not (dmc.get(c) or {}).get("lat")], raiz)
     nd = ne = 0; sin = []
     for cod, e in est.items():
         d = dmc.get(cod)
         if d and d.get("lat") is not None:
             e.update(lat=d["lat"], lon=d["lon"], alt=d.get("alt")); nd += 1; continue
+        if (F.get(cod) or {}).get("lat") is not None:
+            e.update(F[cod]); nd += 1; continue
         t = _tok(e["nombre"]); la = LAT_REG.get(e["reg"], (-90, 0))
         mejor, bs = None, 0.0
         for tk, x in toks:       # todo el nombre externo debe estar en el del boletín, que a su vez calce al menos a la mitad, y en la latitud de su región
@@ -273,7 +300,7 @@ def main():
     dias, crudo, estado = descargar(jueves)
     C = armar(jueves, dias, crudo, estado)
     nd, ne, sin = ubicar(C["estaciones"], o.datos)
-    print(f"ubicadas: {nd} DMC por código, {ne} externas por nombre, {len(sin)} sin ubicar:", "; ".join(sin[:60]))
+    print(f"ubicadas: {nd} por código (catálogo o ficha DMC), {ne} externas por nombre, {len(sin)} sin ubicar:", "; ".join(sin[:60]))
     out = Path(o.datos) / "agro" / f"{jueves.isoformat()}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     txt_c = json.dumps(C, ensure_ascii=False, separators=(",", ":"))
