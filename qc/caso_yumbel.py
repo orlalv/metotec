@@ -304,17 +304,25 @@ def glm(la0, lo0):
             claves = re.findall(r"<Key>([^<]+)</Key>", r.text)
         except Exception as e:
             OUT["errores"].append(f"GLM {t}: {e}"); claves = []
-        def uno(k):
+        def bajar(k):
             try:
-                b = requests.get(f"https://noaa-goes19.s3.amazonaws.com/{k}", timeout=60).content
-                with Dataset("x", memory=b) as ds:
-                    la, lo = ds["flash_lat"][:], ds["flash_lon"][:]
-                    d = np.array([km(la0, lo0, float(a), float(o)) for a, o in zip(la, lo)]) if len(la) else np.array([])
-                    return int((d <= 10).sum()), int((d <= 30).sum()), int((d <= 100).sum())
+                return requests.get(f"https://noaa-goes19.s3.amazonaws.com/{k}", timeout=60).content
             except Exception:
                 return None
         with ThreadPoolExecutor(12) as ex:
-            R = [x for x in ex.map(uno, claves) if x]
+            B = list(ex.map(bajar, claves))
+        R = []
+        for b in B:                       # netCDF/HDF5 no es seguro con hilos: se lee de a uno
+            if not b:
+                continue
+            try:
+                f = os.path.join(tmp, "glm.nc"); open(f, "wb").write(b)
+                with Dataset(f) as ds:
+                    la, lo = np.asarray(ds["flash_lat"][:], float), np.asarray(ds["flash_lon"][:], float)
+                d = np.array([km(la0, lo0, a, o) for a, o in zip(la, lo)]) if len(la) else np.array([])
+                R.append((int((d <= 10).sum()), int((d <= 30).sum()), int((d <= 100).sum())))
+            except Exception:
+                pass
         cuenta[f"{t + timedelta(hours=1):%Y-%m-%dT%H:%MZ}"] = dict(archivos=len(claves), leidos=len(R), flashes_10km=sum(x[0] for x in R),
                                                                    flashes_30km=sum(x[1] for x in R), flashes_100km=sum(x[2] for x in R))
         t += timedelta(hours=1)
@@ -353,6 +361,7 @@ def main():
             import traceback
             OUT["errores"].append(f"{nom}: {traceback.format_exc(limit=3)}")
         print(f"{nom}: {time.time() - t:.0f} s", flush=True)
+        Path(a.salida).write_text(json.dumps(OUT, ensure_ascii=False, default=str), encoding="utf-8")       # se guarda tras cada parte
     Path(a.salida).write_text(json.dumps(OUT, ensure_ascii=False, default=str), encoding="utf-8")
 
 
