@@ -184,12 +184,19 @@ def armar(jueves, dias, crudo, estado):
     ppd = sorted([r for r in P if r["valor"] > 0], key=lambda r: (-r["valor"], -(r["acum"] or 0)))
     pps = sorted([dict(cod=c, reg=est[c]["reg"], vk="pp24", valor=v, acum=v, ndias=ndias[c], dia=None, fecha=None, estado="ok", motivo="")
                   for c, v in acum.items() if v > 0], key=lambda r: -r["valor"])
-    ranking = dict(tmax=tmax[:TOP_GUARDA], tmin=tmin[:TOP_GUARDA], pp=(ppd if PP_RANKING == "diario" else pps)[:TOP_GUARDA], pp_semanal=pps[:TOP_GUARDA])
+    def corta(L, n=TOP_GUARDA):      # hasta juntar n datos «ok» (los marcados van intercalados, para sacarlos a mano)
+        out, k = [], 0
+        for r in L:
+            out.append(r); k += r["estado"] == "ok"
+            if k >= n:
+                break
+        return out
+    ranking = dict(tmax=corta(tmax), tmin=corta(tmin), pp=corta(ppd if PP_RANKING == "diario" else pps), pp_semanal=corta(pps))
     por_dia = [dict(dia=k, fecha=d.isoformat(),
-                    tmax=[r for r in tmax if r["dia"] == k][:TOP_DIA], tmin=[r for r in tmin if r["dia"] == k][:TOP_DIA], pp=[r for r in ppd if r["dia"] == k][:TOP_DIA])
+                    tmax=corta([r for r in tmax if r["dia"] == k], TOP_DIA), tmin=corta([r for r in tmin if r["dia"] == k], TOP_DIA), pp=corta([r for r in ppd if r["dia"] == k], TOP_DIA))
                for k, d in enumerate(dias)]
     por_region = [dict(reg=g, nombre=REGIONES[g],
-                       tmax=[r for r in tmax if r["reg"] == g][:TOP_DIA], tmin=[r for r in tmin if r["reg"] == g][:TOP_DIA], pp=[r for r in ppd if r["reg"] == g][:TOP_DIA])
+                       tmax=corta([r for r in tmax if r["reg"] == g], TOP_DIA), tmin=corta([r for r in tmin if r["reg"] == g], TOP_DIA), pp=corta([r for r in ppd if r["reg"] == g], TOP_DIA))
                   for g in REGIONES]
     usados = {r["cod"] for L in (T, P, cal) for r in L}
     return dict(semana=jueves.isoformat(), dias=[d.isoformat() for d in dias], generado=datetime.now(timezone.utc).isoformat(timespec="seconds"),
