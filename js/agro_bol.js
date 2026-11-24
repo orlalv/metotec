@@ -81,8 +81,13 @@ async function catalogo(){
 function modalB(){ let M = $("#agBolM"); if (!M){ M = document.createElement("div"); M.id = "agBolM"; M.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;overflow:auto;padding:30px 12px"; document.body.appendChild(M); M.addEventListener("click", e => { if (e.target === M) M.hidden = true; }); } M.hidden = false; return M; }
 /* ---------- ventana: la estación y sus vecinas (misma provincia; si son menos de 3, la región) durante la semana ---------- */
 const IX = {tmax: 1, tmin: 0, pp: 2};
+const kmE = (a, b) => { const r = Math.PI / 180, q = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2; return 12742 * Math.asin(Math.sqrt(q)); };
 function vecinas(cod){
   const e = C.estaciones[cod] || {}, todos = Object.keys(C.serie).filter(c => c !== cod && C.estaciones[c]);
+  if (e.lat != null){      // con ubicación: las más cercanas (≤ 60 km, hasta 10)
+    const V = todos.filter(c => C.estaciones[c].lat != null).map(c => [c, kmE(e, C.estaciones[c])]).filter(x => x[1] <= 60).sort((a, b) => a[1] - b[1]).slice(0, 10);
+    if (V.length >= 2) return {V: V.map(x => x[0]), nivel: "≤ 60 km", dist: Object.fromEntries(V)};
+  }
   let V = todos.filter(c => C.estaciones[c].prov === e.prov && C.estaciones[c].reg === e.reg), nivel = "provincia de " + (e.prov || "?");
   if (V.length < 3){ V = todos.filter(c => C.estaciones[c].reg === e.reg); nivel = "región de " + (C.regiones[e.reg] || "?"); }
   return {V, nivel};
@@ -135,7 +140,7 @@ async function ventana(vk, r){
     }
   }
   let M = $("#agBolM"); if (!M){ M = document.createElement("div"); M.id = "agBolM"; M.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;overflow:auto;padding:30px 12px"; document.body.appendChild(M); M.addEventListener("click", e => { if (e.target === M) M.hidden = true; }); }
-  const e = est(r), {V, nivel} = vecinas(r.cod), k = IX[vk], dia = r.dia, u = vk === "pp" ? "mm" : "°C";
+  const e = est(r), {V, nivel, dist} = vecinas(r.cod), k = IX[vk], dia = r.dia, u = vk === "pp" ? "mm" : "°C";
   const filas = V.map(c => ({c, v: (C.serie[c][dia] || [])[k]})).filter(x => x.v != null).sort((a, b) => vk === "tmin" ? a.v - b.v : b.v - a.v);
   const med = mediana(filas.map(x => x.v)), dif = med == null || dia == null ? null : r.valor - med;
   const sa = SAC[idDe(vk, r)];
@@ -146,14 +151,21 @@ async function ventana(vk, r){
       ${r.estado !== "ok" ? `<p style="margin:4px 0 0;color:${r.estado === "error" ? "var(--err)" : "var(--oro)"}">⚠ ${r.estado}: ${esc(r.motivo)}</p>` : ""}</div>
       <button id="agBolX">✕ Cerrar</button></div>
     <div style="margin-top:12px">${graficoSemana(vk, r.cod, V)}</div>
+    ${e.lat != null && window.L ? `<div id="agBolMap" style="height:380px;margin-top:12px;border:1px solid var(--bd);border-radius:8px"></div><small class="tag">Valores del boletín del ${diaTxt(r.fecha)} · rojo = la estación, azul = vecinas${e.ext ? ` · ubicada como «${esc(e.ext_nombre || e.ext)}» de la red externa` : ""}</small>` : ""}
     <h4 style="margin:14px 0 6px;font-size:13px">Vecinas · ${esc(nivel)} · ${diaTxt(r.fecha)} <span class="tag">(${filas.length} con dato)</span></h4>
     <div style="max-height:300px;overflow:auto"><table class="xtab"><tr><th>Estación</th><th>Código</th><th>Comuna</th><th>Propietario</th><th class="n">${VK[vk]}</th><th class="n">Diferencia</th></tr>
       <tr style="background:var(--hover)"><td><b>${esc(e.nombre)}</b></td><td>${r.cod}</td><td>${esc(e.comuna || "")}</td><td>${esc(e.prop)}</td><td class="n"><b>${f1(r.valor)}</b></td><td class="n">${dif != null ? (dif > 0 ? "+" : "") + f1(dif) : "—"}</td></tr>
-      ${filas.map(x => { const o = C.estaciones[x.c] || {}; return `<tr><td>${esc(o.nombre)}</td><td>${x.c}</td><td>${esc(o.comuna || "")}</td><td>${esc(o.prop)}</td><td class="n">${f1(x.v)}</td><td class="n">${f1(r.valor - x.v)}</td></tr>`; }).join("")}</table></div>
+      ${filas.map(x => { const o = C.estaciones[x.c] || {}; return `<tr><td>${esc(o.nombre)}${dist ? ` <small class="tag">${Math.round(dist[x.c])} km</small>` : ""}</td><td>${x.c}</td><td>${esc(o.comuna || "")}</td><td>${esc(o.prop)}</td><td class="n">${f1(x.v)}</td><td class="n">${f1(r.valor - x.v)}</td></tr>`; }).join("")}</table></div>
     <div style="margin-top:12px;border-top:1px solid var(--bd);padding-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       ${sa ? `<span style="color:var(--err)">Sacado del ranking: ${esc(sa.motivo)}</span>` : (dia != null ? `<button id="agBolSac" style="font-weight:700">Sacar del ranking</button>` : "")}
       ${e.prop === "DMC" ? `<a href="estacion.html?cod=${r.cod}" target="_blank">Ver datos minutarios de la estación ↗</a>` : ""}</div></div>`;
   $("#agBolX").onclick = () => { M.hidden = true; };
+  if ($("#agBolMap")){ const mp = L.map($("#agBolMap"), {attributionControl: false}); L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 13}).addTo(mp);
+    const et = (n, v, col) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-100%);white-space:nowrap;background:#0d1117dd;border:1px solid ${col};color:#fff;border-radius:6px;padding:1px 6px;font:600 11.5px system-ui;text-align:center">${esc(n)}<br><span style="color:${col}">${v}</span></div>`});
+    const pts = [[e.lat, e.lon]]; L.marker([e.lat, e.lon], {icon: et(e.nombre, f1(r.valor) + " " + u, "#f85149")}).addTo(mp);
+    V.forEach(c => { const o = C.estaciones[c]; if (!o || o.lat == null) return; const v = (C.serie[c][dia] || [])[k]; pts.push([o.lat, o.lon]);
+      L.marker([o.lat, o.lon], {icon: et(`${o.nombre}${dist ? " · " + Math.round(dist[c]) + " km" : ""}`, v == null ? "sin dato" : f1(v) + " " + u, "#58a6ff")}).addTo(mp); });
+    if (pts.length > 1) mp.fitBounds(pts, {padding: [50, 50], maxZoom: 11}); else mp.setView(pts[0], 10); }
   if ($("#agBolSac")) $("#agBolSac").onclick = async () => { M.hidden = true; await sacar(vk, r); };
 }
 

@@ -214,6 +214,49 @@ def armar(jueves, dias, crudo, estado):
                 serie=serie, ranking=ranking, por_dia=por_dia, por_region=por_region, calidad=cal, cobertura=estado)
 
 
+# ------------------------------------------------------------------ ubicación: DMC por código (catálogo METOTEC), externas por nombre
+import unicodedata
+_RUIDO = {"inia", "i", "n", "a", "fdf", "dmc", "ad", "ap", "de", "del", "la", "el", "los", "las", "y", "estacion", "reg", "agricola", "esc"}
+def _tok(s):
+    s = unicodedata.normalize("NFD", str(s or "").lower()); s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+    return {t for t in re.split(r"[^a-z0-9]+", s) if len(t) > 1 and t not in _RUIDO}
+
+
+def ubicar(est, raiz):
+    """Agrega lat, lon, alt (y ext = id de la externa) a cada estación del compendio. Devuelve (n_dmc, n_ext, sin)."""
+    dmc = {}
+    try:
+        dmc = {str(e["codigo"]): e for e in json.loads((Path(raiz) / "estaciones.json").read_text(encoding="utf-8"))}
+    except Exception:
+        pass
+    cat = []
+    try:
+        import correr
+        c = correr.leer_kv("qc/externas/cat") or {}
+        cat = [x for x in c.get("estaciones", []) if x.get("lat") is not None]
+    except Exception:
+        pass
+    toks = [(_tok(x.get("nombre")), x) for x in cat]
+    nd = ne = 0; sin = []
+    for cod, e in est.items():
+        d = dmc.get(cod)
+        if d and d.get("lat") is not None:
+            e.update(lat=d["lat"], lon=d["lon"], alt=d.get("alt")); nd += 1; continue
+        t = _tok(e["nombre"]) | _tok(e.get("comuna"))
+        mejor, bs = None, 0.0
+        for tk, x in toks:
+            if not tk:
+                continue
+            sc = len(t & tk) / len(tk)
+            if sc > bs:
+                mejor, bs = x, sc
+        if mejor and bs >= 0.6:
+            e.update(lat=mejor["lat"], lon=mejor["lon"], alt=mejor.get("alt"), ext=mejor["id"], ext_nombre=mejor.get("nombre")); ne += 1
+        else:
+            sin.append(f"{cod} {e['nombre']}")
+    return nd, ne, sin
+
+
 def main():
     a = argparse.ArgumentParser()
     a.add_argument("--datos", default="datos")
@@ -225,6 +268,8 @@ def main():
         raise SystemExit(f"{jueves} no es jueves")
     dias, crudo, estado = descargar(jueves)
     C = armar(jueves, dias, crudo, estado)
+    nd, ne, sin = ubicar(C["estaciones"], o.datos)
+    print(f"ubicadas: {nd} DMC por código, {ne} externas por nombre, {len(sin)} sin ubicar:", "; ".join(sin[:60]))
     out = Path(o.datos) / "agro" / f"{jueves.isoformat()}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     txt_c = json.dumps(C, ensure_ascii=False, separators=(",", ":"))
