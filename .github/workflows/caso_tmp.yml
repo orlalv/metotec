@@ -26,7 +26,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
       - run: pip install -q pandas numpy requests pillow netCDF4
-      - run: python qc/caso_yumbel.py --datos datos --salida informes/caso_yumbel.json || true
+      - run: mkdir -p informes && python qc/caso_yumbel.py --datos datos --salida informes/caso_yumbel.json || true
         shell: bash
       - run: |
           mkdir -p informes; ls -la informes
