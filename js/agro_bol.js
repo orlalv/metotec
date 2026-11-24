@@ -42,7 +42,7 @@ function tabla(vk){
   const L = C.ranking[vk] || [], T = top(L, vk), pp = vk === "pp";
   return `<div class="bcard" style="padding:10px;margin-bottom:12px"><b>${VK[vk]}</b> <span class="tag">· ${vk === "tmin" ? "10 más bajas" : "10 más altas"}${pp ? " · valores diarios" : ""}</span>
   <table class="xtab"><tr><th>#</th><th>Estación</th><th>Código</th><th>Región</th><th>Propietario</th><th class="n">Valor</th><th>Día</th>${pp ? `<th class="n">Acum. semana</th>` : ""}<th></th></tr>
-  ${T.map((r, i) => `<tr><td>${i + 1}</td><td>${esc(est(r).nombre)}${r.estado !== "ok" ? ` <span title="${esc(r.motivo)}" style="color:${r.estado === "error" ? "var(--err)" : "var(--oro)"};cursor:help">⚠ ${r.estado}</span>` : ""}</td><td>${r.cod}</td><td>${esc(C.regiones[r.reg])}</td><td>${esc(est(r).prop)}</td>
+  ${T.map((r, i) => `<tr data-ab="${vk}|${L.indexOf(r)}" style="cursor:pointer"><td>${i + 1}</td><td>${esc(est(r).nombre)}${r.estado !== "ok" ? ` <span title="${esc(r.motivo)}" style="color:${r.estado === "error" ? "var(--err)" : "var(--oro)"};cursor:help">⚠ ${r.estado}</span>` : ""}</td><td>${r.cod}</td><td>${esc(C.regiones[r.reg])}</td><td>${esc(est(r).prop)}</td>
     <td class="n"><b>${f1(r.valor)}</b></td><td>${diaTxt(r.fecha)}</td>${pp ? `<td class="n">${f1(r.acum)}${r.ndias < 7 ? ` <small class="tag">(${r.ndias} d)</small>` : ""}</td>` : ""}
     <td><button data-sac="${vk}|${L.indexOf(r)}" title="Quita solo este dato; sube el siguiente">Sacar</button></td></tr>`).join("") || `<tr><td colspan="9" class="tag">Sin datos</td></tr>`}</table></div>`;
 }
@@ -60,10 +60,61 @@ function vista(){
     return `<div class="bcard" style="padding:10px;margin-bottom:12px"><b>${nom}</b> <span class="tag">· ${L.length}</span><table class="xtab"><tr><th>Estación</th><th>Código</th><th>Región</th><th>Día</th><th class="n">Valor</th><th>Estado</th><th>Motivo</th></tr>
     ${L.map(r => `<tr><td>${esc(est(r).nombre)}</td><td>${r.cod}</td><td>${esc(C.regiones[r.reg])}</td><td>${diaTxt(r.fecha)}</td><td class="n">${f1(r.valor)}</td><td style="color:${r.estado === "error" ? "var(--err)" : "var(--oro)"}">${r.estado}</td><td>${esc(r.motivo)}</td></tr>`).join("") || `<tr><td colspan="7" class="tag">Sin observaciones</td></tr>`}</table></div>`; };
   const sp = C.calidad.filter(r => r.estado === "sp"), S = Object.entries(SAC);
-  return grupo("tmax", "Tmax") + grupo("tmin", "Tmin") + grupo("pp24", "Precipitación") +
+  return `<p class="tag" style="margin:0 0 8px">Los <b style="color:var(--err)">errores</b> groseros (mínima mayor que máxima, fuera de rango físico) quedan <b>fuera del ranking</b> y solo aparecen aquí. Los <b style="color:var(--oro)">dudosos</b> entran al ranking marcados ⚠ y se sacan a mano.</p>` + grupo("tmax", "Tmax") + grupo("tmin", "Tmin") + grupo("pp24", "Precipitación") +
     `<div class="bcard" style="padding:10px;margin-bottom:12px"><b>Sacados a mano</b> <span class="tag">· ${S.length}</span><table class="xtab"><tr><th>Variable</th><th>Estación</th><th>Día</th><th class="n">Valor</th><th>Motivo</th><th>Fecha</th><th></th></tr>
     ${S.map(([id, v]) => `<tr><td>${v.vk}</td><td>${esc((C.estaciones[v.cod] || {}).nombre || v.cod)} <small class="tag">${v.cod}</small></td><td>${diaTxt(C.dias[v.dia])}</td><td class="n">${f1(v.valor)}</td><td>${esc(v.motivo)}</td><td><small>${esc(v.t)}</small></td><td><button data-dev="${esc(id)}">Devolver</button></td></tr>`).join("") || `<tr><td colspan="7" class="tag">Ninguno</td></tr>`}</table></div>
     <p class="tag">«s/p» del boletín pluviométrico se cuenta como sin precipitación (0 mm).</p>`;
+}
+
+/* ---------- ventana: la estación y sus vecinas (misma provincia; si son menos de 3, la región) durante la semana ---------- */
+const IX = {tmax: 1, tmin: 0, pp: 2};
+function vecinas(cod){
+  const e = C.estaciones[cod] || {}, todos = Object.keys(C.serie).filter(c => c !== cod && C.estaciones[c]);
+  let V = todos.filter(c => C.estaciones[c].prov === e.prov && C.estaciones[c].reg === e.reg), nivel = "provincia de " + (e.prov || "?");
+  if (V.length < 3){ V = todos.filter(c => C.estaciones[c].reg === e.reg); nivel = "región de " + (C.regiones[e.reg] || "?"); }
+  return {V, nivel};
+}
+const mediana = a => { const b = a.filter(x => x != null).sort((x, y) => x - y); return b.length ? (b.length % 2 ? b[(b.length - 1) / 2] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2) : null; };
+function graficoSemana(vk, cod, V){
+  const k = IX[vk], W = 760, Hh = 260, ml = 44, mr = 12, mt = 12, mb = 28, pp = vk === "pp";
+  const serie = c => (C.serie[c] || []).map(d => d[k]);
+  const todos = [serie(cod), ...V.map(serie)].flat().filter(x => x != null);
+  let lo = Math.min(...todos, pp ? 0 : Infinity), hi = Math.max(...todos); if (!isFinite(lo)) return "<p class='tag'>Sin datos</p>"; if (hi - lo < 2) hi = lo + 2;
+  const X = i => ml + (W - ml - mr) * (i + 0.5) / 7, Y = v => mt + (Hh - mt - mb) * (1 - (v - lo) / (hi - lo));
+  const linea = (a, col, w, op) => { let d = "", ab = false; a.forEach((v, i) => { if (v == null){ ab = false; return; } d += (ab ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1); ab = true; }); return `<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" opacity="${op}"/>` + a.map((v, i) => v == null ? "" : `<circle cx="${X(i)}" cy="${Y(v)}" r="${w + 1}" fill="${col}" opacity="${op}"><title>${f1(v)}</title></circle>`).join(""); };
+  const med = Array.from({length: 7}, (_, i) => mediana(V.map(c => serie(c)[i])));
+  let g = "";
+  for (let j = 0; j <= 4; j++){ const v = lo + (hi - lo) * j / 4; g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--bd)"/><text x="${ml - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="var(--mu)">${v.toFixed(pp ? 0 : 1)}</text>`; }
+  C.dias.forEach((d, i) => g += `<text x="${X(i)}" y="${Hh - 8}" text-anchor="middle" font-size="11" fill="var(--mu)">${diaTxt(d)}</text>`);
+  if (pp){ const bw = (W - ml - mr) / 7 * 0.35;
+    serie(cod).forEach((v, i) => { if (v != null) g += `<rect x="${X(i) - bw}" y="${Y(v)}" width="${bw}" height="${Y(lo) - Y(v)}" fill="#e8783a"><title>${f1(v)} mm</title></rect>`; });
+    med.forEach((v, i) => { if (v != null) g += `<rect x="${X(i)}" y="${Y(v)}" width="${bw}" height="${Y(lo) - Y(v)}" fill="#5fa8d3" opacity=".6"><title>mediana vecinas ${f1(v)} mm</title></rect>`; });
+  } else { V.forEach(c => g += linea(serie(c), "#8e99a2", 1, .45)); g += linea(med, "#5fa8d3", 2, .9) + linea(serie(cod), "#e8783a", 2.5, 1); }
+  return `<svg viewBox="0 0 ${W} ${Hh}" style="width:100%;height:auto;background:var(--fondo);border:1px solid var(--bd);border-radius:8px">${g}</svg>
+    <small class="tag"><span style="color:#e8783a">■</span> la estación · <span style="color:#5fa8d3">■</span> mediana de las vecinas${pp ? "" : " · gris: cada vecina"} · valores del boletín</small>`;
+}
+function ventana(vk, r){
+  let M = $("#agBolM"); if (!M){ M = document.createElement("div"); M.id = "agBolM"; M.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;overflow:auto;padding:30px 12px"; document.body.appendChild(M); M.addEventListener("click", e => { if (e.target === M) M.hidden = true; }); }
+  const e = est(r), {V, nivel} = vecinas(r.cod), k = IX[vk], dia = r.dia, u = vk === "pp" ? "mm" : "°C";
+  const filas = V.map(c => ({c, v: (C.serie[c][dia] || [])[k]})).filter(x => x.v != null).sort((a, b) => vk === "tmin" ? a.v - b.v : b.v - a.v);
+  const med = mediana(filas.map(x => x.v)), dif = med == null || dia == null ? null : r.valor - med;
+  const sa = SAC[idDe(vk, r)];
+  M.hidden = false;
+  M.innerHTML = `<div style="max-width:1000px;margin:0 auto;background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:16px">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3 style="margin:0;font-size:16px">${esc(e.nombre)} <small class="tag">${r.cod} · ${esc(e.prop)} · ${esc(e.comuna || "")}, ${esc(C.regiones[r.reg])}</small></h3>
+      <p style="margin:6px 0 0">${VK[vk]}: <b>${f1(r.valor)} ${u}</b> · ${diaTxt(r.fecha)}${dif != null ? ` · <span style="color:${Math.abs(dif) > (vk === "pp" ? 10 : 5) ? "var(--err)" : "var(--mu)"}">${dif > 0 ? "+" : ""}${f1(dif)} ${u} respecto de la mediana de sus vecinas (${f1(med)})</span>` : ""}</p>
+      ${r.estado !== "ok" ? `<p style="margin:4px 0 0;color:${r.estado === "error" ? "var(--err)" : "var(--oro)"}">⚠ ${r.estado}: ${esc(r.motivo)}</p>` : ""}</div>
+      <button id="agBolX">✕ Cerrar</button></div>
+    <div style="margin-top:12px">${graficoSemana(vk, r.cod, V)}</div>
+    <h4 style="margin:14px 0 6px;font-size:13px">Vecinas · ${esc(nivel)} · ${diaTxt(r.fecha)} <span class="tag">(${filas.length} con dato)</span></h4>
+    <div style="max-height:300px;overflow:auto"><table class="xtab"><tr><th>Estación</th><th>Código</th><th>Comuna</th><th>Propietario</th><th class="n">${VK[vk]}</th><th class="n">Diferencia</th></tr>
+      <tr style="background:var(--hover)"><td><b>${esc(e.nombre)}</b></td><td>${r.cod}</td><td>${esc(e.comuna || "")}</td><td>${esc(e.prop)}</td><td class="n"><b>${f1(r.valor)}</b></td><td class="n">${dif != null ? (dif > 0 ? "+" : "") + f1(dif) : "—"}</td></tr>
+      ${filas.map(x => { const o = C.estaciones[x.c] || {}; return `<tr><td>${esc(o.nombre)}</td><td>${x.c}</td><td>${esc(o.comuna || "")}</td><td>${esc(o.prop)}</td><td class="n">${f1(x.v)}</td><td class="n">${f1(r.valor - x.v)}</td></tr>`; }).join("")}</table></div>
+    <div style="margin-top:12px;border-top:1px solid var(--bd);padding-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      ${sa ? `<span style="color:var(--err)">Sacado del ranking: ${esc(sa.motivo)}</span>` : (dia != null ? `<button id="agBolSac" style="font-weight:700">Sacar del ranking</button>` : "")}
+      ${e.prop === "DMC" ? `<a href="estacion.html?cod=${r.cod}" target="_blank">Ver datos minutarios de la estación ↗</a>` : ""}</div></div>`;
+  $("#agBolX").onclick = () => { M.hidden = true; };
+  if ($("#agBolSac")) $("#agBolSac").onclick = async () => { M.hidden = true; await sacar(vk, r); };
 }
 
 function csv(){
@@ -92,7 +143,8 @@ function pintar(){
       Temperatura: 21:01–21:00 · precipitación: 8:00–8:00 (hora local), según la DMC. Sin control de calidad oficial: nada se excluye solo; los datos marcados ⚠ (error o dudoso, ver motivo en Calidad) se sacan a mano con «Sacar».</p>
     ${MSG ? `<p style="color:var(--err)">${esc(MSG)}</p>` : ""}${vista()}`;
   o.querySelectorAll("[data-v]").forEach(x => x.onclick = () => { VISTA = x.dataset.v; pintar(); });
-  o.querySelectorAll("[data-sac]").forEach(x => x.onclick = () => { const [vk, i] = x.dataset.sac.split("|"); sacar(vk, C.ranking[vk][+i]); });
+  o.querySelectorAll("[data-sac]").forEach(x => x.onclick = ev => { ev.stopPropagation(); const [vk, i] = x.dataset.sac.split("|"); sacar(vk, C.ranking[vk][+i]); });
+  o.querySelectorAll("[data-ab]").forEach(x => x.onclick = () => { const [vk, i] = x.dataset.ab.split("|"); ventana(vk, C.ranking[vk][+i]); });
   o.querySelectorAll("[data-dev]").forEach(x => x.onclick = () => devolver(x.dataset.dev));
   $("#agSem").onchange = e => { SEM = e.target.value; cargar(); };
   $("#agCsv").onclick = csv;

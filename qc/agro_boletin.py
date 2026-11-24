@@ -35,7 +35,7 @@ TOP_GUARDA = 30            # se guardan más de 10 por ranking: al sacar uno, su
 TOP_DIA = 5                # candidatos guardados por día y por región
 PAUSA = 1.0                # segundos entre páginas (no saturar el sitio)
 
-RANGO_T = (-30.0, 45.0)    # rango físico para estas regiones (Coquimbo a Los Lagos, valle y costa; incluye cordillera media)
+RANGO_T = (-20.0, 45.0)    # rango físico para estas regiones en la temporada (Coquimbo a Los Lagos); ajustar en invierno
 RANGO_PP = (0.0, 300.0)    # mm/día
 PP_DUDOSO = 150.0          # mm/día: marcado ⚠ y listado en Calidad
 MEDIA_TOL = 0.25           # |media − (mín+máx)/2| > tol → la fila es incoherente (dudosa)
@@ -112,7 +112,7 @@ def armar(jueves, dias, crudo, estado):
         for k, d in enumerate(dias):
             iso = d.isoformat()
             for f in porDia.get(iso, {}).get("t", []):
-                est.setdefault(f["cod"], dict(cod=f["cod"], nombre=f["nombre"], comuna=f["comuna"], prop=f["prop"], reg=reg))
+                est.setdefault(f["cod"], dict(cod=f["cod"], nombre=f["nombre"], prov=f["provincia"], comuna=f["comuna"], prop=f["prop"], reg=reg))
                 me, _ = valor(f["v"][0]); mn, _ = valor(f["v"][1]); mx, _ = valor(f["v"][2])
                 base = dict(cod=f["cod"], reg=reg, dia=k, fecha=iso)
                 motivos = []
@@ -130,7 +130,7 @@ def armar(jueves, dias, crudo, estado):
                     if r["estado"] != "ok":
                         cal.append(r)
             for f in porDia.get(iso, {}).get("p", []):
-                est.setdefault(f["cod"], dict(cod=f["cod"], nombre=f["nombre"], comuna=f["comuna"], prop=f["prop"], reg=reg))
+                est.setdefault(f["cod"], dict(cod=f["cod"], nombre=f["nombre"], prov=f["provincia"], comuna=f["comuna"], prop=f["prop"], reg=reg))
                 x, simb = valor(f["v"][0])
                 base = dict(cod=f["cod"], reg=reg, dia=k, fecha=iso, vk="pp24")
                 if x is None:
@@ -173,15 +173,15 @@ def armar(jueves, dias, crudo, estado):
     # acumulado semanal (solo valores válidos) y días con dato
     acum, ndias = {}, {}
     for r in P:
-        if True:                                                   # acumulado con todos los valores publicados
+        if r["estado"] != "error":                                 # acumulado sin los errores groseros
             acum[r["cod"]] = round(acum.get(r["cod"], 0) + r["valor"], 1); ndias[r["cod"]] = ndias.get(r["cod"], 0) + 1
     for r in P:
         r["acum"] = acum.get(r["cod"]); r["ndias"] = ndias.get(r["cod"], 0)
 
-    ok = lambda L: list(L)          # nada se excluye solo: errores y dudosos entran marcados (⚠) y se sacan a mano con «Sacar»
+    ok = lambda L: [r for r in L if r["estado"] != "error"]   # errores groseros (mín > máx, fuera de rango) fuera; dudosos entran marcados ⚠ y se sacan a mano
     tmax = sorted(ok([r for r in T if r["vk"] == "tmax"]), key=lambda r: -r["valor"])
     tmin = sorted(ok([r for r in T if r["vk"] == "tmin"]), key=lambda r: r["valor"])
-    ppd = sorted([r for r in P if r["valor"] > 0], key=lambda r: (-r["valor"], -(r["acum"] or 0)))
+    ppd = sorted([r for r in P if r["estado"] != "error" and r["valor"] > 0], key=lambda r: (-r["valor"], -(r["acum"] or 0)))
     pps = sorted([dict(cod=c, reg=est[c]["reg"], vk="pp24", valor=v, acum=v, ndias=ndias[c], dia=None, fecha=None, estado="ok", motivo="")
                   for c, v in acum.items() if v > 0], key=lambda r: -r["valor"])
     def corta(L, n=TOP_GUARDA):      # hasta juntar n datos «ok» (los marcados van intercalados, para sacarlos a mano)
@@ -198,15 +198,20 @@ def armar(jueves, dias, crudo, estado):
     por_region = [dict(reg=g, nombre=REGIONES[g],
                        tmax=corta([r for r in tmax if r["reg"] == g], TOP_DIA), tmin=corta([r for r in tmin if r["reg"] == g], TOP_DIA), pp=corta([r for r in ppd if r["reg"] == g], TOP_DIA))
                   for g in REGIONES]
-    usados = {r["cod"] for L in (T, P, cal) for r in L}
+    # serie de la semana de TODAS las estaciones [tmin, tmax, pp] por día: para la ventana de vecinas (misma provincia o región)
+    serie = {}
+    for r in T + P:
+        v = serie.setdefault(r["cod"], [[None, None, None] for _ in dias])
+        v[r["dia"]][{"tmin": 0, "tmax": 1, "pp24": 2}[r["vk"]]] = r["valor"]
+    usados = set(serie) | {r["cod"] for r in cal}
     return dict(semana=jueves.isoformat(), dias=[d.isoformat() for d in dias], generado=datetime.now(timezone.utc).isoformat(timespec="seconds"),
                 parametros=dict(anom_reg=ANOM_REG, dia=DIA, pp_ranking=PP_RANKING, enviar_estaciones=ENVIAR_ESTACIONES, rango_t=RANGO_T, rango_pp=RANGO_PP, pp_dudoso=PP_DUDOSO, media_tol=MEDIA_TOL),
                 notas=dict(t="Mínima y máxima entre ~21:01 del día anterior y 21:00 del día (hora local), según el boletín.",
                            pp="Total diario entre ~8:00 del día y 8:00 del día siguiente (hora local), según el boletín.",
                            sp="«s/p» se interpreta como sin precipitación (0 mm).",
-                           qc="Los boletines no han pasado control de calidad. Nada se excluye automáticamente: los errores (mínima > máxima, fuera de rango físico) y dudosos (media incoherente, lejos de la mediana regional, 0,0 repetido) entran al ranking marcados y se sacan a mano."),
+                           qc="Los boletines no han pasado control de calidad. Los errores groseros (mínima > máxima, fuera de rango físico) quedan fuera del ranking y se listan en Calidad, donde se pueden devolver. Los dudosos (media incoherente, lejos de la mediana regional, 0,0 repetido) entran marcados ⚠ y se sacan a mano."),
                 regiones=REGIONES, estaciones={c: e for c, e in est.items() if c in usados},
-                ranking=ranking, por_dia=por_dia, por_region=por_region, calidad=cal, cobertura=estado)
+                serie=serie, ranking=ranking, por_dia=por_dia, por_region=por_region, calidad=cal, cobertura=estado)
 
 
 def main():
