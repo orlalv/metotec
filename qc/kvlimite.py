@@ -7,7 +7,7 @@ from pathlib import Path
 
 CACHE = Path(os.environ.get("KV_CACHE", "datos/kv_cache.json"))
 TIEMPO_REAL = ("qc/ultimo", "qc/super", "qc/sensorial")   # se escriben en cada pasada (si cambiaron)
-INTERVALO = 3600                                          # el resto, a lo más una vez por hora
+INTERVALO = 0                                             # plan pagado (1 millón de escrituras al mes): sin espera; en plan gratuito usar 3600
 _MARCAS = re.compile(r'"(generado|actualizado|creado|hora_generado)"\s*:\s*"[^"]*"')
 
 

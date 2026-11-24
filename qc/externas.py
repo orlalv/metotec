@@ -61,8 +61,6 @@ def utc(h):
 
 
 def main():
-    if KVL.reciente("qc/externas/PP", 3300):        # las redes externas publican por hora: basta con una descarga por hora
-        print("externas: actualizadas hace menos de una hora, se omite"); return
     tmp = None
     for p in ("PP", "TA", "HR"):
         m = re.search(r"tmp\s*=\s*(tmp_\d+)", requests.get(BASE + p, headers=H, timeout=60).text)
