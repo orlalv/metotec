@@ -1,0 +1,16 @@
+name: Sondeo agromet (temporal)
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  s:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q requests
+      - run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - run: python qc/sondeo_agromet.py datos/sondeo_agromet
+      - run: |
+          cd datos; git config user.name "qc-metotec"; git config user.email "contacto.metotec@gmail.com"
+          git add sondeo_agromet && git commit -q -m "sondeo agromet" || exit 0
+          for i in 1 2 3 4; do git pull -q --rebase --autostash origin datos && git push -q origin datos && break; sleep 6; done
