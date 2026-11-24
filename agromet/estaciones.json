@@ -1,0 +1,2984 @@
+[
+{
+"id": "EXT-225",
+"nombre": "Aeropuerto Chacalluta",
+"comuna": "Arica",
+"red": "DMC"
+},
+{
+"id": "INIA-81",
+"nombre": "Azapa Alto",
+"comuna": "Arica",
+"red": "INIA"
+},
+{
+"id": "INIA-39",
+"nombre": "Azapa Medio",
+"comuna": "Arica",
+"red": "INIA"
+},
+{
+"id": "INIA-156",
+"nombre": "Belén",
+"comuna": "Putre",
+"red": "INIA"
+},
+{
+"id": "INIA-150",
+"nombre": "Caleta Vitor",
+"comuna": "Arica",
+"red": "INIA"
+},
+{
+"id": "INIA-77",
+"nombre": "Camarones",
+"comuna": "Camarones",
+"red": "INIA"
+},
+{
+"id": "EXT-1044",
+"nombre": "Capitanía de Puerto Arica",
+"comuna": "Arica",
+"red": "SERVIMET"
+},
+{
+"id": "INIA-63",
+"nombre": "Cerro Blanco",
+"comuna": "Arica",
+"red": "INIA"
+},
+{
+"id": "EXT-117",
+"nombre": "Cerro Sombrero AR",
+"comuna": "Arica",
+"red": "DMC"
+},
+{
+"id": "INIA-137",
+"nombre": "Chaca",
+"comuna": "Arica",
+"red": "INIA"
+},
+{
+"id": "INIA-152",
+"nombre": "Chapiquiña",
+"comuna": "Putre",
+"red": "INIA"
+},
+{
+"id": "INIA-76",
+"nombre": "Codpa",
+"comuna": "Camarones",
+"red": "INIA"
+},
+{
+"id": "EXT-69",
+"nombre": "Concordia Medio",
+"comuna": "Arica",
+"red": "ANPROS"
+},
+{
+"id": "INIA-204",
+"nombre": "Cuya",
+"comuna": "Camarones",
+"red": "INIA"
+},
+{
+"id": "EXT-121",
+"nombre": "Defensa Civil",
+"comuna": "Arica",
+"red": "DMC"
+},
+{
+"id": "EXT-72",
+"nombre": "La Violeta Open",
+"comuna": "Arica",
+"red": "ANPROS"
+},
+{
+"id": "INIA-80",
+"nombre": "Lago Chungará",
+"comuna": "Putre",
+"red": "INIA"
+},
+{
+"id": "INIA-75",
+"nombre": "Lluta Alto",
+"comuna": "Arica",
+"red": "INIA"
+},
+{
+"id": "INIA-34",
+"nombre": "Lluta Bajo",
+"comuna": "Arica",
+"red": "INIA"
+},
+{
+"id": "INIA-38",
+"nombre": "Lluta Medio",
+"comuna": "Arica",
+"red": "INIA"
+},
+{
+"id": "INIA-302",
+"nombre": "Pampa Concordia",
+"comuna": "Arica",
+"red": "INIA"
+},
+{
+"id": "INIA-134",
+"nombre": "Putre",
+"comuna": "Putre",
+"red": "INIA"
+},
+{
+"id": "EXT-120",
+"nombre": "Putre DMC",
+"comuna": "Putre",
+"red": "DMC"
+},
+{
+"id": "INIA-79",
+"nombre": "Salar de Surire",
+"comuna": "Putre",
+"red": "INIA"
+},
+{
+"id": "INIA-43",
+"nombre": "Socoroma",
+"comuna": "Putre",
+"red": "INIA"
+},
+{
+"id": "INIA-149",
+"nombre": "Ticnamar",
+"comuna": "Putre",
+"red": "INIA"
+},
+{
+"id": "INIA-78",
+"nombre": "Visviri",
+"comuna": "General Lagos",
+"red": "INIA"
+},
+{
+"id": "EXT-99",
+"nombre": "Aeropuerto Diego Aracena",
+"comuna": "Iquique",
+"red": "DMC"
+},
+{
+"id": "EXT-1045",
+"nombre": "Alcaldía de Mar Pisagua",
+"comuna": "Huara",
+"red": "SERVIMET"
+},
+{
+"id": "INIA-352",
+"nombre": "Bajo Soga",
+"comuna": "Huara",
+"red": "INDAP-CONADI-INIA"
+},
+{
+"id": "EXT-1046",
+"nombre": "Capitanía de Puerto Iquique",
+"comuna": "Iquique",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1047",
+"nombre": "Capitanía de Puerto Patache",
+"comuna": "Iquique",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1012",
+"nombre": "Colchane",
+"comuna": "Colchane",
+"red": "DMC"
+},
+{
+"id": "INIA-350",
+"nombre": "Pachica",
+"comuna": "Huara",
+"red": "INDAP-CONADI-INIA"
+},
+{
+"id": "INIA-202",
+"nombre": "Pica",
+"comuna": "Pica",
+"red": "INIA"
+},
+{
+"id": "EXT-123",
+"nombre": "Universidad Arturo Prat",
+"comuna": "Iquique",
+"red": "DMC"
+},
+{
+"id": "EXT-125",
+"nombre": "Aeródromo El Loa",
+"comuna": "Calama",
+"red": "DMC"
+},
+{
+"id": "INIA-218",
+"nombre": "Altos la Portada",
+"comuna": "Antofagasta",
+"red": "INIA"
+},
+{
+"id": "INIA-61",
+"nombre": "Calama Rural",
+"comuna": "Calama",
+"red": "INIA"
+},
+{
+"id": "INIA-216",
+"nombre": "Camar",
+"comuna": "San Pedro de Atacama",
+"red": "INIA"
+},
+{
+"id": "EXT-1049",
+"nombre": "Capitanía de Puerto Taltal",
+"comuna": "Taltal",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1048",
+"nombre": "Capitanía de Puerto Tocopilla",
+"comuna": "Tocopilla",
+"red": "SERVIMET"
+},
+{
+"id": "INIA-56",
+"nombre": "Caspana",
+"comuna": "Calama",
+"red": "INIA"
+},
+{
+"id": "EXT-202",
+"nombre": "Cerro Paranal",
+"comuna": "Antofagasta",
+"red": "DMC"
+},
+{
+"id": "EXT-1017",
+"nombre": "Chorrillos MMA",
+"comuna": "Calama",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-225",
+"nombre": "La Cachina",
+"comuna": "Taltal",
+"red": "INIA"
+},
+{
+"id": "EXT-203",
+"nombre": "Llano de Chajnantor",
+"comuna": "San Pedro de Atacama",
+"red": "DMC"
+},
+{
+"id": "EXT-177",
+"nombre": "Mejillones",
+"comuna": "Mejillones",
+"red": "DMC"
+},
+{
+"id": "INIA-62",
+"nombre": "Ollagüe",
+"comuna": "Ollagüe",
+"red": "INIA"
+},
+{
+"id": "EXT-124",
+"nombre": "Ollagüe DMC",
+"comuna": "Ollagüe",
+"red": "DMC"
+},
+{
+"id": "INIA-59",
+"nombre": "San Pedro de Atacama",
+"comuna": "San Pedro de Atacama",
+"red": "INIA"
+},
+{
+"id": "INIA-57",
+"nombre": "Socaire",
+"comuna": "San Pedro de Atacama",
+"red": "INIA"
+},
+{
+"id": "EXT-128",
+"nombre": "Taltal",
+"comuna": "Taltal",
+"red": "DMC"
+},
+{
+"id": "EXT-127",
+"nombre": "Toconao",
+"comuna": "San Pedro de Atacama",
+"red": "DMC"
+},
+{
+"id": "INIA-58",
+"nombre": "Toconao",
+"comuna": "San Pedro de Atacama",
+"red": "INIA"
+},
+{
+"id": "EXT-126",
+"nombre": "Universidad Católica del Norte",
+"comuna": "Antofagasta",
+"red": "DMC"
+},
+{
+"id": "EXT-227",
+"nombre": "Aeródromo Caldera",
+"comuna": "Caldera",
+"red": "DMC"
+},
+{
+"id": "EXT-1007",
+"nombre": "Aeródromo Ricardo García Posada",
+"comuna": "Diego de Almagro",
+"red": "DMC"
+},
+{
+"id": "EXT-971",
+"nombre": "Altar de la Virgen",
+"comuna": "Tierra Amarilla",
+"red": "APECO-FDF"
+},
+{
+"id": "INIA-356",
+"nombre": "Alto del Carmen",
+"comuna": "Alto del Carmen",
+"red": "INIA"
+},
+{
+"id": "EXT-968",
+"nombre": "Amalfi",
+"comuna": "Copiapó",
+"red": "APECO-FDF"
+},
+{
+"id": "INIA-97",
+"nombre": "Amolana",
+"comuna": "Tierra Amarilla",
+"red": "INIA"
+},
+{
+"id": "EXT-27",
+"nombre": "Cachiyuyo",
+"comuna": "Vallenar",
+"red": "CEAZA"
+},
+{
+"id": "EXT-1051",
+"nombre": "Capitanía de Puerto Caldera",
+"comuna": "Caldera",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1050",
+"nombre": "Capitanía de Puerto Chañaral",
+"comuna": "Chañaral",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1053",
+"nombre": "Capitanía de Puerto Huasco",
+"comuna": "Huasco",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-964",
+"nombre": "Casa Rosada",
+"comuna": "Tierra Amarilla",
+"red": "APECO-FDF"
+},
+{
+"id": "INIA-65",
+"nombre": "Centro Experimental Huasco",
+"comuna": "Vallenar",
+"red": "INIA"
+},
+{
+"id": "EXT-966",
+"nombre": "Copayapu",
+"comuna": "Tierra Amarilla",
+"red": "APECO-FDF"
+},
+{
+"id": "INIA-353",
+"nombre": "El Tránsito",
+"comuna": "Alto del Carmen",
+"red": "INIA"
+},
+{
+"id": "INIA-223",
+"nombre": "Falda Verde",
+"comuna": "Chañaral",
+"red": "INIA"
+},
+{
+"id": "EXT-130",
+"nombre": "Freirina Nicolasa",
+"comuna": "Freirina",
+"red": "DMC"
+},
+{
+"id": "INIA-224",
+"nombre": "La Copa",
+"comuna": "Copiapó",
+"red": "INIA"
+},
+{
+"id": "EXT-967",
+"nombre": "Las Canteras",
+"comuna": "Tierra Amarilla",
+"red": "APECO-FDF"
+},
+{
+"id": "EXT-969",
+"nombre": "María Isabel",
+"comuna": "Tierra Amarilla",
+"red": "APECO-FDF"
+},
+{
+"id": "EXT-965",
+"nombre": "Mayorquina",
+"comuna": "Copiapó",
+"red": "APECO-FDF"
+},
+{
+"id": "EXT-970",
+"nombre": "Nantoco",
+"comuna": "Tierra Amarilla",
+"red": "APECO-FDF"
+},
+{
+"id": "EXT-129",
+"nombre": "Universidad de Atacama",
+"comuna": "Copiapó",
+"red": "DMC"
+},
+{
+"id": "EXT-100",
+"nombre": "Aeródromo La Florida",
+"comuna": "La Serena",
+"red": "DMC"
+},
+{
+"id": "INIA-304",
+"nombre": "Ajial de Quiles",
+"comuna": "Punitaqui",
+"red": "INIA"
+},
+{
+"id": "INIA-64",
+"nombre": "Algarrobo Bajo",
+"comuna": "Ovalle",
+"red": "INIA"
+},
+{
+"id": "EXT-24",
+"nombre": "Canela",
+"comuna": "Canela",
+"red": "CEAZA"
+},
+{
+"id": "EXT-1055",
+"nombre": "Capitanía de Puerto Los Vilos",
+"comuna": "Los Vilos",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-62",
+"nombre": "Cerro Grande",
+"comuna": "La Serena",
+"red": "CEAZA"
+},
+{
+"id": "EXT-954",
+"nombre": "Cerro La Silla",
+"comuna": "La Higuera",
+"red": "DMC"
+},
+{
+"id": "INIA-229",
+"nombre": "Chaguaral",
+"comuna": "Monte Patria",
+"red": "INIA"
+},
+{
+"id": "EXT-25",
+"nombre": "Chillepín",
+"comuna": "Salamanca",
+"red": "CEAZA"
+},
+{
+"id": "EXT-35",
+"nombre": "Collowara",
+"comuna": "Andacollo",
+"red": "CEAZA"
+},
+{
+"id": "EXT-29",
+"nombre": "Combarbalá Sur",
+"comuna": "Combarbalá",
+"red": "CEAZA"
+},
+{
+"id": "INIA-66",
+"nombre": "El Palqui",
+"comuna": "Monte Patria",
+"red": "INIA"
+},
+{
+"id": "EXT-11",
+"nombre": "El Panul",
+"comuna": "Coquimbo",
+"red": "CEAZA"
+},
+{
+"id": "EXT-64",
+"nombre": "El Polvo",
+"comuna": "Monte Patria",
+"red": "CEAZA"
+},
+{
+"id": "EXT-10",
+"nombre": "El Romeral",
+"comuna": "La Serena",
+"red": "CEAZA"
+},
+{
+"id": "EXT-32",
+"nombre": "El Tapado",
+"comuna": "Vicuña",
+"red": "CEAZA"
+},
+{
+"id": "EXT-131",
+"nombre": "El Tololo",
+"comuna": "Vicuña",
+"red": "DMC"
+},
+{
+"id": "EXT-1106",
+"nombre": "EM Ovalle",
+"comuna": "Ovalle",
+"red": "AS"
+},
+{
+"id": "EXT-101",
+"nombre": "Escuela Agrícola Ovalle",
+"comuna": "Ovalle",
+"red": "DMC"
+},
+{
+"id": "EXT-63",
+"nombre": "Estero Derecho",
+"comuna": "Paiguano",
+"red": "CEAZA"
+},
+{
+"id": "EXT-1054",
+"nombre": "Faro Punta Tortuga Coquimbo",
+"comuna": "Coquimbo",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-43",
+"nombre": "Fray Jorge Bosque",
+"comuna": "Ovalle",
+"red": "IEB-CEAZA"
+},
+{
+"id": "EXT-42",
+"nombre": "Fray Jorge Quebrada",
+"comuna": "Ovalle",
+"red": "IEB-CEAZA"
+},
+{
+"id": "EXT-14",
+"nombre": "Gabriela Mistral",
+"comuna": "La Serena",
+"red": "CEAZA"
+},
+{
+"id": "EXT-61",
+"nombre": "Guandacol",
+"comuna": "Río Hurtado",
+"red": "CEAZA"
+},
+{
+"id": "INIA-220",
+"nombre": "Huentelauquén",
+"comuna": "Canela",
+"red": "INIA"
+},
+{
+"id": "EXT-19",
+"nombre": "Huintil",
+"comuna": "Illapel",
+"red": "CEAZA"
+},
+{
+"id": "EXT-5",
+"nombre": "Illapel",
+"comuna": "Illapel",
+"red": "CEAZA"
+},
+{
+"id": "EXT-26",
+"nombre": "La Laguna - Elqui",
+"comuna": "Vicuña",
+"red": "CEAZA"
+},
+{
+"id": "INIA-305",
+"nombre": "La Polvareda",
+"comuna": "Punitaqui",
+"red": "INIA"
+},
+{
+"id": "EXT-38",
+"nombre": "Laguna Hurtado",
+"comuna": "Río Hurtado",
+"red": "CEAZA"
+},
+{
+"id": "EXT-7",
+"nombre": "Las Cardas",
+"comuna": "Coquimbo",
+"red": "CEAZA"
+},
+{
+"id": "INIA-323",
+"nombre": "Las Naranjas",
+"comuna": "Punitaqui",
+"red": "INIA"
+},
+{
+"id": "EXT-20",
+"nombre": "Lavaderos",
+"comuna": "Río Hurtado",
+"red": "CEAZA"
+},
+{
+"id": "EXT-172",
+"nombre": "Liceo Padre José Herde",
+"comuna": "Canela",
+"red": "DMC"
+},
+{
+"id": "EXT-173",
+"nombre": "Liceo Samuel Román Rojas",
+"comuna": "Combarbalá",
+"red": "DMC"
+},
+{
+"id": "INIA-319",
+"nombre": "Los Acacios",
+"comuna": "Ovalle",
+"red": "INIA"
+},
+{
+"id": "EXT-23",
+"nombre": "Los Molles - Bocatoma",
+"comuna": "Monte Patria",
+"red": "CEAZA"
+},
+{
+"id": "EXT-33",
+"nombre": "Mincha Sur",
+"comuna": "Canela",
+"red": "CEAZA"
+},
+{
+"id": "EXT-103",
+"nombre": "Monte Patria - Centro Cultural",
+"comuna": "Monte Patria",
+"red": "DMC"
+},
+{
+"id": "EXT-12",
+"nombre": "Pan de Azúcar",
+"comuna": "Coquimbo",
+"red": "CEAZA"
+},
+{
+"id": "EXT-102",
+"nombre": "Parque Los Pimientos",
+"comuna": "Vicuña",
+"red": "DMC"
+},
+{
+"id": "EXT-28",
+"nombre": "Pichasca",
+"comuna": "Río Hurtado",
+"red": "CEAZA"
+},
+{
+"id": "EXT-1009",
+"nombre": "Pisco Capel",
+"comuna": "Salamanca",
+"red": "DMC"
+},
+{
+"id": "EXT-8",
+"nombre": "Pisco Elqui",
+"comuna": "Paiguano",
+"red": "CEAZA"
+},
+{
+"id": "EXT-31",
+"nombre": "Punta Colorada",
+"comuna": "La Higuera",
+"red": "CEAZA"
+},
+{
+"id": "EXT-6",
+"nombre": "Punta de Choros",
+"comuna": "La Higuera",
+"red": "CEAZA"
+},
+{
+"id": "EXT-16",
+"nombre": "Quebrada Seca CEAZA",
+"comuna": "Ovalle",
+"red": "CEAZA"
+},
+{
+"id": "EXT-1040",
+"nombre": "Quebrada Seca CyT",
+"comuna": "Ovalle",
+"red": "CyT"
+},
+{
+"id": "INIA-221",
+"nombre": "Quilimarí",
+"comuna": "Los Vilos",
+"red": "INIA"
+},
+{
+"id": "EXT-1",
+"nombre": "Rapel",
+"comuna": "Monte Patria",
+"red": "CEAZA"
+},
+{
+"id": "EXT-18",
+"nombre": "Talhuén",
+"comuna": "Ovalle",
+"red": "CEAZA"
+},
+{
+"id": "EXT-37",
+"nombre": "Tascadero",
+"comuna": "Monte Patria",
+"red": "CEAZA"
+},
+{
+"id": "EXT-194",
+"nombre": "Tilama",
+"comuna": "Los Vilos",
+"red": "CEAZA"
+},
+{
+"id": "EXT-15",
+"nombre": "UCN Guayacan",
+"comuna": "Coquimbo",
+"red": "CEAZA"
+},
+{
+"id": "EXT-36",
+"nombre": "Universidad de La Serena",
+"comuna": "La Serena",
+"red": "CEAZA"
+},
+{
+"id": "EXT-13",
+"nombre": "Vicuña",
+"comuna": "Vicuña",
+"red": "CEAZA"
+},
+{
+"id": "EXT-174",
+"nombre": "Vivero CONAF",
+"comuna": "Illapel",
+"red": "DMC"
+},
+{
+"id": "EXT-135",
+"nombre": "Aeródromo Rodelillo",
+"comuna": "Viña del Mar",
+"red": "DMC"
+},
+{
+"id": "EXT-139",
+"nombre": "Aeródromo Santo Domingo",
+"comuna": "Santo Domingo",
+"red": "DMC"
+},
+{
+"id": "EXT-175",
+"nombre": "Aeródromo Torquemada",
+"comuna": "Concón",
+"red": "MMA-DMC"
+},
+{
+"id": "EXT-116",
+"nombre": "Aeropuerto Mataveri",
+"comuna": "Isla de Pascua",
+"red": "DMC"
+},
+{
+"id": "EXT-1052",
+"nombre": "Capitanía de Puerto Hanga Roa",
+"comuna": "Isla de Pascua",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1059",
+"nombre": "Capitanía de Puerto Juan Fernández",
+"comuna": "Juan Fernández",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1056",
+"nombre": "Capitanía de Puerto Quintero",
+"comuna": "Quintero",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-133",
+"nombre": "Catapilco",
+"comuna": "Zapallar",
+"red": "DMC"
+},
+{
+"id": "EXT-972",
+"nombre": "Catemu",
+"comuna": "Catemu",
+"red": "DMC"
+},
+{
+"id": "INIA-213",
+"nombre": "Colliguay",
+"comuna": "Quilpué",
+"red": "INIA"
+},
+{
+"id": "INIA-167",
+"nombre": "Cuncumén",
+"comuna": "San Antonio",
+"red": "INIA"
+},
+{
+"id": "INIA-165",
+"nombre": "El Maqui",
+"comuna": "Puchuncaví",
+"red": "INIA"
+},
+{
+"id": "EXT-1018",
+"nombre": "El Tártaro",
+"comuna": "Putaendo",
+"red": "DMC"
+},
+{
+"id": "EXT-192",
+"nombre": "Escuela Agrícola San Felipe",
+"comuna": "San Felipe",
+"red": "DMC"
+},
+{
+"id": "EXT-1057",
+"nombre": "Faro Extremo Molo de Abrigo Valparaíso",
+"comuna": "Valparaíso",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1058",
+"nombre": "Faro Punta Panul San Antonio",
+"comuna": "San Antonio",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-134",
+"nombre": "Jardín Botánico",
+"comuna": "Viña del Mar",
+"red": "DMC"
+},
+{
+"id": "EXT-140",
+"nombre": "Juan Fernández",
+"comuna": "Juan Fernández",
+"red": "DMC"
+},
+{
+"id": "INIA-51",
+"nombre": "La Cruz",
+"comuna": "La Cruz",
+"red": "INIA"
+},
+{
+"id": "EXT-104",
+"nombre": "Las Peñas",
+"comuna": "Llaillay",
+"red": "DMC"
+},
+{
+"id": "EXT-105",
+"nombre": "Liceo Agrícola Chincolco",
+"comuna": "Petorca",
+"red": "DMC"
+},
+{
+"id": "EXT-1029",
+"nombre": "Liceo Agrícola Quillota",
+"comuna": "Quillota",
+"red": "DMC"
+},
+{
+"id": "EXT-1028",
+"nombre": "Liceo San Esteban",
+"comuna": "San Esteban",
+"red": "DMC"
+},
+{
+"id": "EXT-167",
+"nombre": "Lo Zarate",
+"comuna": "Cartagena",
+"red": "DMC"
+},
+{
+"id": "EXT-132",
+"nombre": "Los Libertadores",
+"comuna": "Los Andes",
+"red": "DMC"
+},
+{
+"id": "EXT-1016",
+"nombre": "Panquehue",
+"comuna": "Panquehue",
+"red": "DMC"
+},
+{
+"id": "EXT-106",
+"nombre": "Quintero - Climatológica",
+"comuna": "Quintero",
+"red": "DMC"
+},
+{
+"id": "EXT-150",
+"nombre": "Aeródromo Curacaví",
+"comuna": "Curacaví",
+"red": "DMC"
+},
+{
+"id": "EXT-136",
+"nombre": "Aeródromo Eulogio Sánchez",
+"comuna": "La Reina",
+"red": "DMC"
+},
+{
+"id": "EXT-980",
+"nombre": "Aeródromo Peldehue",
+"comuna": "Colina",
+"red": "DMC"
+},
+{
+"id": "EXT-142",
+"nombre": "Cerro San Francisco",
+"comuna": "Lo Prado",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-313",
+"nombre": "Chacabuco",
+"comuna": "Colina",
+"red": "INIA"
+},
+{
+"id": "EXT-141",
+"nombre": "Chorombo Hacienda",
+"comuna": "María Pinto",
+"red": "DMC"
+},
+{
+"id": "INIA-314",
+"nombre": "Chorrillos",
+"comuna": "Lampa",
+"red": "INIA"
+},
+{
+"id": "INIA-210",
+"nombre": "El Asiento",
+"comuna": "Alhué",
+"red": "INIA"
+},
+{
+"id": "EXT-108",
+"nombre": "El Colorado",
+"comuna": "Lo Barnechea",
+"red": "DMC"
+},
+{
+"id": "EXT-109",
+"nombre": "El Milagro",
+"comuna": "Buin",
+"red": "DMC"
+},
+{
+"id": "INIA-311",
+"nombre": "El Oasis",
+"comuna": "Lampa",
+"red": "INIA"
+},
+{
+"id": "EXT-144",
+"nombre": "El Paico",
+"comuna": "Talagante",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-320",
+"nombre": "El Parrón",
+"comuna": "María Pinto",
+"red": "INIA"
+},
+{
+"id": "INIA-315",
+"nombre": "El Villorrio",
+"comuna": "Padre Hurtado",
+"red": "INIA"
+},
+{
+"id": "EXT-1098",
+"nombre": "EM Pirque",
+"comuna": "Pirque",
+"red": "AS"
+},
+{
+"id": "EXT-143",
+"nombre": "Guayacán",
+"comuna": "San José de Maipo",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-318",
+"nombre": "La Aurora",
+"comuna": "Curacaví",
+"red": "INIA"
+},
+{
+"id": "EXT-973",
+"nombre": "La Dormida",
+"comuna": "Tiltil",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-4",
+"nombre": "La Platina",
+"comuna": "La Pintana",
+"red": "INIA"
+},
+{
+"id": "INIA-358",
+"nombre": "Liceo Los Guindos",
+"comuna": "Buin",
+"red": "CORPORACIONBUIN-INIA"
+},
+{
+"id": "EXT-149",
+"nombre": "Lo Pinto",
+"comuna": "Colina",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-6",
+"nombre": "Los Tilos",
+"comuna": "Buin",
+"red": "INIA"
+},
+{
+"id": "EXT-978",
+"nombre": "Polpaico",
+"comuna": "Tiltil",
+"red": "DMC"
+},
+{
+"id": "EXT-138",
+"nombre": "Pudahuel",
+"comuna": "Pudahuel",
+"red": "DMC"
+},
+{
+"id": "EXT-137",
+"nombre": "Quinta Normal",
+"comuna": "Quinta Normal",
+"red": "DMC"
+},
+{
+"id": "EXT-179",
+"nombre": "Regimiento de Colina",
+"comuna": "Colina",
+"red": "DMC"
+},
+{
+"id": "INIA-162",
+"nombre": "Rinconada - U de Chile",
+"comuna": "Maipú",
+"red": "INIA"
+},
+{
+"id": "EXT-107",
+"nombre": "Río Clarillo",
+"comuna": "Pirque",
+"red": "DMC"
+},
+{
+"id": "INIA-100",
+"nombre": "San Antonio de Naltahua",
+"comuna": "Isla de Maipo",
+"red": "INIA"
+},
+{
+"id": "EXT-145",
+"nombre": "San Pablo-DASA",
+"comuna": "Pudahuel",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-101",
+"nombre": "San Pedro de Melipilla",
+"comuna": "San Pedro",
+"red": "INIA"
+},
+{
+"id": "INIA-316",
+"nombre": "Santa Amelia",
+"comuna": "Talagante",
+"red": "INIA"
+},
+{
+"id": "EXT-118",
+"nombre": "Talagante",
+"comuna": "Talagante",
+"red": "DMC"
+},
+{
+"id": "INIA-321",
+"nombre": "Valdivia de Paine",
+"comuna": "Buin",
+"red": "INIA"
+},
+{
+"id": "EXT-153",
+"nombre": "Aeródromo La Independencia",
+"comuna": "Rancagua",
+"red": "DMC"
+},
+{
+"id": "EXT-110",
+"nombre": "Aeródromo Pichilemu",
+"comuna": "Pichilemu",
+"red": "DMC"
+},
+{
+"id": "INIA-332",
+"nombre": "Altair",
+"comuna": "Requinoa",
+"red": "VDCH-INIA"
+},
+{
+"id": "INIA-334",
+"nombre": "Calleuque",
+"comuna": "Peralillo",
+"red": "VDCH-INIA"
+},
+{
+"id": "EXT-1060",
+"nombre": "Capitanía de Puerto Pichilemu",
+"comuna": "Pichilemu",
+"red": "SERVIMET"
+},
+{
+"id": "INIA-163",
+"nombre": "El Arenal",
+"comuna": "Quinta de Tilcoco",
+"red": "INIA"
+},
+{
+"id": "INIA-52",
+"nombre": "El Tambo",
+"comuna": "San Vicente",
+"red": "INIA"
+},
+{
+"id": "EXT-1034",
+"nombre": "Escuela Agrícola Cristo Obrero",
+"comuna": "Graneros",
+"red": "EACO"
+},
+{
+"id": "EXT-1101",
+"nombre": "Fundo San Jorge",
+"comuna": "Peralillo",
+"red": "AS"
+},
+{
+"id": "INIA-55",
+"nombre": "Hidango",
+"comuna": "Litueche",
+"red": "INIA"
+},
+{
+"id": "EXT-1041",
+"nombre": "Idahue",
+"comuna": "San Vicente",
+"red": "CyT"
+},
+{
+"id": "INIA-307",
+"nombre": "Licancheu",
+"comuna": "Navidad",
+"red": "INIA"
+},
+{
+"id": "INIA-228",
+"nombre": "Liceo Jean Buchanan",
+"comuna": "Peumo",
+"red": "INIA"
+},
+{
+"id": "INIA-329",
+"nombre": "Los Lingues",
+"comuna": "San Fernando",
+"red": "VDCH-INIA"
+},
+{
+"id": "EXT-1042",
+"nombre": "Nilahue",
+"comuna": "Lolol",
+"red": "CyT"
+},
+{
+"id": "EXT-155",
+"nombre": "Nilahue - La Quebrada",
+"comuna": "Pumanque",
+"red": "DMC"
+},
+{
+"id": "INIA-317",
+"nombre": "Peor es Nada",
+"comuna": "Chimbarongo",
+"red": "INIA"
+},
+{
+"id": "EXT-78",
+"nombre": "Portezuelo-Codelco",
+"comuna": "Machalí",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-217",
+"nombre": "Puente Negro",
+"comuna": "Pichilemu",
+"red": "INIA"
+},
+{
+"id": "EXT-154",
+"nombre": "Quimávida",
+"comuna": "Coltauco",
+"red": "DMC"
+},
+{
+"id": "INIA-303",
+"nombre": "Rayentué",
+"comuna": "Rengo",
+"red": "INIA"
+},
+{
+"id": "EXT-1043",
+"nombre": "Ucuquer",
+"comuna": "Navidad",
+"red": "CyT"
+},
+{
+"id": "EXT-152",
+"nombre": "Aeródromo General Freire",
+"comuna": "Curicó",
+"red": "DMC"
+},
+{
+"id": "EXT-958",
+"nombre": "Camarico",
+"comuna": "Río Claro",
+"red": "AGRICHILE"
+},
+{
+"id": "EXT-1061",
+"nombre": "Capitanía de Puerto Constitución",
+"comuna": "Constitución",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1003",
+"nombre": "Carrizal",
+"comuna": "Constitución",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-46",
+"nombre": "Cauquenes",
+"comuna": "Cauquenes",
+"red": "INIA"
+},
+{
+"id": "INIA-22",
+"nombre": "Chanco",
+"comuna": "Chanco",
+"red": "INIA"
+},
+{
+"id": "EXT-1102",
+"nombre": "Conquistadores",
+"comuna": "Cauquenes",
+"red": "AS"
+},
+{
+"id": "EXT-161",
+"nombre": "Copihue",
+"comuna": "Retiro",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-12",
+"nombre": "Coronel de Maule",
+"comuna": "Cauquenes",
+"red": "INIA"
+},
+{
+"id": "EXT-1004",
+"nombre": "Curepto",
+"comuna": "Curepto",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-991",
+"nombre": "Cuyuname",
+"comuna": "Empedrado",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-214",
+"nombre": "Deuca",
+"comuna": "Curepto",
+"red": "INIA"
+},
+{
+"id": "EXT-992",
+"nombre": "El Auquil",
+"comuna": "Pelarco",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-1000",
+"nombre": "Escuela Agrícola de Molina",
+"comuna": "Molina",
+"red": "EAM-FDF"
+},
+{
+"id": "EXT-974",
+"nombre": "Escuela de Artillería",
+"comuna": "Linares",
+"red": "MMA-DMC"
+},
+{
+"id": "EXT-1096",
+"nombre": "Fundo Santo Domingo",
+"comuna": "Parral",
+"red": "AS"
+},
+{
+"id": "EXT-983",
+"nombre": "Hualañé",
+"comuna": "Hualañé",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-1039",
+"nombre": "Keule",
+"comuna": "Cauquenes",
+"red": "CyT"
+},
+{
+"id": "INIA-331",
+"nombre": "La Reserva",
+"comuna": "Río Claro",
+"red": "VDCH-INIA"
+},
+{
+"id": "EXT-1103",
+"nombre": "Las Delicias",
+"comuna": "San Clemente",
+"red": "AS"
+},
+{
+"id": "INIA-212",
+"nombre": "Lomas",
+"comuna": "Pelluhue",
+"red": "INIA"
+},
+{
+"id": "INIA-14",
+"nombre": "Los Despachos",
+"comuna": "Cauquenes",
+"red": "INIA"
+},
+{
+"id": "EXT-963",
+"nombre": "Los Niches",
+"comuna": "Curicó",
+"red": "AGRICHILE"
+},
+{
+"id": "INIA-227",
+"nombre": "Miraflores",
+"comuna": "Longaví",
+"red": "INIA"
+},
+{
+"id": "INIA-154",
+"nombre": "Monte Flor-Tucapel",
+"comuna": "Parral",
+"red": "INIA"
+},
+{
+"id": "EXT-986",
+"nombre": "Palhuen",
+"comuna": "Curepto",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-156",
+"nombre": "Panguilemo",
+"comuna": "Talca",
+"red": "DMC"
+},
+{
+"id": "EXT-960",
+"nombre": "Parral",
+"comuna": "Parral",
+"red": "AGRICHILE"
+},
+{
+"id": "INIA-333",
+"nombre": "Pencahue",
+"comuna": "Pencahue",
+"red": "VDCH-INIA"
+},
+{
+"id": "EXT-1095",
+"nombre": "Purapel",
+"comuna": "San Javier",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-135",
+"nombre": "San Clemente",
+"comuna": "San Clemente",
+"red": "INIA"
+},
+{
+"id": "INIA-215",
+"nombre": "San Jorge Los Niches",
+"comuna": "Curicó",
+"red": "INIA"
+},
+{
+"id": "EXT-959",
+"nombre": "San Sebastián",
+"comuna": "Río Claro",
+"red": "AGRICHILE"
+},
+{
+"id": "INIA-136",
+"nombre": "Santa Amada",
+"comuna": "Linares",
+"red": "INIA"
+},
+{
+"id": "EXT-981",
+"nombre": "Santa Estela",
+"comuna": "Constitución",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-7",
+"nombre": "Santa Sofía",
+"comuna": "Cauquenes",
+"red": "INIA"
+},
+{
+"id": "INIA-11",
+"nombre": "Sauzal",
+"comuna": "Cauquenes",
+"red": "INIA"
+},
+{
+"id": "EXT-982",
+"nombre": "Talca",
+"comuna": "Talca",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-1031",
+"nombre": "Teno",
+"comuna": "Teno",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-977",
+"nombre": "Villa Alegre",
+"comuna": "Villa Alegre",
+"red": "FDF"
+},
+{
+"id": "INIA-327",
+"nombre": "Villa Seca",
+"comuna": "Retiro",
+"red": "VDCH-INIA"
+},
+{
+"id": "EXT-993",
+"nombre": "Vivero Quivolgo",
+"comuna": "Constitución",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-157",
+"nombre": "Aeródromo Gral. Bernardo O&#039;Higgins",
+"comuna": "Chillán",
+"red": "DMC"
+},
+{
+"id": "EXT-1020",
+"nombre": "Bandurrias",
+"comuna": "San Fabián",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-139",
+"nombre": "Centro Experimental Arroz",
+"comuna": "San Carlos",
+"red": "INIA"
+},
+{
+"id": "EXT-1011",
+"nombre": "Cerro Cayumanque",
+"comuna": "Quillón",
+"red": "MMA-DMC"
+},
+{
+"id": "EXT-160",
+"nombre": "Chillán Mayulermo",
+"comuna": "San Ignacio",
+"red": "MMA-DMC"
+},
+{
+"id": "EXT-997",
+"nombre": "Coyanco",
+"comuna": "Quillón",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-1094",
+"nombre": "Cruz del Ciprés",
+"comuna": "Yungay",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-1030",
+"nombre": "El Espolón",
+"comuna": "Chillán",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-1001",
+"nombre": "El Kayser",
+"comuna": "Coihueco",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-1097",
+"nombre": "Fundo El Carmen",
+"comuna": "Bulnes",
+"red": "AS"
+},
+{
+"id": "EXT-1104",
+"nombre": "Galpones",
+"comuna": "San Carlos",
+"red": "AS"
+},
+{
+"id": "INIA-330",
+"nombre": "Larqui",
+"comuna": "Bulnes",
+"red": "VDCH-INIA"
+},
+{
+"id": "EXT-1105",
+"nombre": "Las Garzas",
+"comuna": "San Nicolás",
+"red": "AS"
+},
+{
+"id": "EXT-1008",
+"nombre": "Liceo San Nicolás",
+"comuna": "San Nicolás",
+"red": "DMC"
+},
+{
+"id": "EXT-1033",
+"nombre": "Litral",
+"comuna": "Bulnes",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-73",
+"nombre": "Navidad",
+"comuna": "El Carmen",
+"red": "INIA"
+},
+{
+"id": "INIA-47",
+"nombre": "Ninhue",
+"comuna": "Chillán",
+"red": "INIA"
+},
+{
+"id": "INIA-24",
+"nombre": "Nueva Aldea",
+"comuna": "Ránquil",
+"red": "INIA"
+},
+{
+"id": "INIA-23",
+"nombre": "Portezuelo",
+"comuna": "Portezuelo",
+"red": "INIA"
+},
+{
+"id": "INIA-211",
+"nombre": "Puralihue",
+"comuna": "Treguaco",
+"red": "INIA"
+},
+{
+"id": "INIA-351",
+"nombre": "Quilamapu",
+"comuna": "Chillán",
+"red": "INIA"
+},
+{
+"id": "EXT-1019",
+"nombre": "Remolinos",
+"comuna": "Pemuco",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-961",
+"nombre": "San Gregorio",
+"comuna": "Ñiquén",
+"red": "AGRICHILE"
+},
+{
+"id": "INIA-17",
+"nombre": "Santa Rosa",
+"comuna": "Chillán",
+"red": "INIA"
+},
+{
+"id": "EXT-999",
+"nombre": "Siberia",
+"comuna": "Yungay",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-158",
+"nombre": "Termas de Chillán",
+"comuna": "Pinto",
+"red": "DMC"
+},
+{
+"id": "EXT-994",
+"nombre": "Totoral",
+"comuna": "Coelemu",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-49",
+"nombre": "Yungay",
+"comuna": "Yungay",
+"red": "INIA"
+},
+{
+"id": "EXT-989",
+"nombre": "Zorzal Blanco",
+"comuna": "Quirihue",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-975",
+"nombre": "Aeródromo Isla Mocha",
+"comuna": "Lebu",
+"red": "DMC"
+},
+{
+"id": "EXT-955",
+"nombre": "Aeródromo Lequecahue",
+"comuna": "Tirúa",
+"red": "DMC"
+},
+{
+"id": "EXT-229",
+"nombre": "Aeródromo María Dolores",
+"comuna": "Los Ángeles",
+"red": "DMC"
+},
+{
+"id": "EXT-1100",
+"nombre": "Bureo",
+"comuna": "Mulchén",
+"red": "AS"
+},
+{
+"id": "EXT-996",
+"nombre": "Cangrejillo",
+"comuna": "Florida",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-1064",
+"nombre": "Capitanía de Puerto Coronel",
+"comuna": "Coronel",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1066",
+"nombre": "Capitanía de Puerto Lebu",
+"comuna": "Lebu",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1062",
+"nombre": "Capitanía de Puerto Lirquén",
+"comuna": "Penco",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1065",
+"nombre": "Capitanía de Puerto Lota",
+"comuna": "Lota",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-111",
+"nombre": "Carriel Sur",
+"comuna": "Concepción",
+"red": "DMC"
+},
+{
+"id": "INIA-328",
+"nombre": "Chumulco",
+"comuna": "Mulchén",
+"red": "VDCH-INIA"
+},
+{
+"id": "INIA-354",
+"nombre": "Colegio Agrícola Los Mayos",
+"comuna": "Santa Bárbara",
+"red": "INIA"
+},
+{
+"id": "INIA-322",
+"nombre": "Contulmo Urbano",
+"comuna": "Contulmo",
+"red": "INIA"
+},
+{
+"id": "EXT-1091",
+"nombre": "Duqueco",
+"comuna": "Quileco",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-1063",
+"nombre": "Gobernación Marítima de Talcahuano",
+"comuna": "Talcahuano",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1093",
+"nombre": "Horcones",
+"comuna": "Arauco",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-21",
+"nombre": "Human",
+"comuna": "Los Ángeles",
+"red": "INIA"
+},
+{
+"id": "EXT-1092",
+"nombre": "Humenco",
+"comuna": "Quileco",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-990",
+"nombre": "La Colcha",
+"comuna": "Curanilahue",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-1015",
+"nombre": "La Colcha MMA",
+"comuna": "Curanilahue",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-312",
+"nombre": "La Colonia",
+"comuna": "Laja",
+"red": "INIA"
+},
+{
+"id": "INIA-325",
+"nombre": "La Hijuela",
+"comuna": "Nacimiento",
+"red": "INIA"
+},
+{
+"id": "INIA-308",
+"nombre": "Las Puentes",
+"comuna": "Arauco",
+"red": "INIA"
+},
+{
+"id": "INIA-84",
+"nombre": "Lebu",
+"comuna": "Lebu",
+"red": "INIA"
+},
+{
+"id": "EXT-162",
+"nombre": "Liceo Agrícola El Huertón",
+"comuna": "Los Ángeles",
+"red": "DMC"
+},
+{
+"id": "INIA-36",
+"nombre": "Llenquehue (ex GTT Peleco)",
+"comuna": "Cañete",
+"red": "INIA"
+},
+{
+"id": "EXT-1014",
+"nombre": "Los Alamos",
+"comuna": "Los Álamos",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-161",
+"nombre": "Ponotro",
+"comuna": "Tirúa",
+"red": "INIA"
+},
+{
+"id": "INIA-10",
+"nombre": "Punta Parra",
+"comuna": "Tomé",
+"red": "INIA"
+},
+{
+"id": "EXT-998",
+"nombre": "Santa Juana",
+"comuna": "Santa Juana",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-310",
+"nombre": "Santa Lucía",
+"comuna": "Florida",
+"red": "INIA"
+},
+{
+"id": "EXT-1006",
+"nombre": "Tanahullin",
+"comuna": "Santa Juana",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-163",
+"nombre": "Aeródromo Maquehue",
+"comuna": "Padre las Casas",
+"red": "DMC"
+},
+{
+"id": "EXT-979",
+"nombre": "Aeródromo Pucón",
+"comuna": "Pucón",
+"red": "DMC"
+},
+{
+"id": "EXT-165",
+"nombre": "Aeropuerto Araucanía",
+"comuna": "Freire",
+"red": "DMC"
+},
+{
+"id": "EXT-1037",
+"nombre": "Baltimore",
+"comuna": "Collipulli",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-147",
+"nombre": "Caballería",
+"comuna": "Galvarino",
+"red": "INIA"
+},
+{
+"id": "EXT-1067",
+"nombre": "Capitanía de Puerto Carahue",
+"comuna": "Saavedra",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-962",
+"nombre": "Caracas",
+"comuna": "Cunco",
+"red": "AGRICHILE"
+},
+{
+"id": "INIA-8",
+"nombre": "Carillanca",
+"comuna": "Vilcún",
+"red": "INIA"
+},
+{
+"id": "INIA-239",
+"nombre": "Collimallin",
+"comuna": "Temuco",
+"red": "INIA"
+},
+{
+"id": "INIA-40",
+"nombre": "Cuarta Faja",
+"comuna": "Gorbea",
+"red": "INIA"
+},
+{
+"id": "INIA-29",
+"nombre": "Dominguez",
+"comuna": "Saavedra",
+"red": "INIA"
+},
+{
+"id": "INIA-141",
+"nombre": "El Membrillo",
+"comuna": "Melipeuco",
+"red": "INIA"
+},
+{
+"id": "INIA-164",
+"nombre": "El Quincho",
+"comuna": "Cunco",
+"red": "INIA"
+},
+{
+"id": "INIA-237",
+"nombre": "El Vergel",
+"comuna": "Angol",
+"red": "INIA"
+},
+{
+"id": "EXT-1099",
+"nombre": "EM Galvarino",
+"comuna": "Galvarino",
+"red": "AS"
+},
+{
+"id": "INIA-168",
+"nombre": "Faja Maisan",
+"comuna": "Pitrufquén",
+"red": "INIA"
+},
+{
+"id": "INIA-206",
+"nombre": "Gaby Ranquilco",
+"comuna": "Lumaco",
+"red": "INIA"
+},
+{
+"id": "INIA-140",
+"nombre": "Huiscapi",
+"comuna": "Villarrica",
+"red": "INIA"
+},
+{
+"id": "EXT-180",
+"nombre": "Húsares",
+"comuna": "Angol",
+"red": "DMC"
+},
+{
+"id": "INIA-157",
+"nombre": "La Isla",
+"comuna": "Purén",
+"red": "INIA"
+},
+{
+"id": "INIA-208",
+"nombre": "La Paz",
+"comuna": "Loncoche",
+"red": "INIA"
+},
+{
+"id": "INIA-33",
+"nombre": "La Providencia",
+"comuna": "Traiguén",
+"red": "INIA"
+},
+{
+"id": "INIA-355",
+"nombre": "Lago Icalma",
+"comuna": "Lonquimay",
+"red": "INIA"
+},
+{
+"id": "INIA-146",
+"nombre": "Las Palmas",
+"comuna": "Victoria",
+"red": "INIA"
+},
+{
+"id": "INIA-31",
+"nombre": "Llollinco",
+"comuna": "Teodoro Schmidt",
+"red": "INIA"
+},
+{
+"id": "EXT-164",
+"nombre": "Lonquimay",
+"comuna": "Lonquimay",
+"red": "DMC"
+},
+{
+"id": "INIA-203",
+"nombre": "Los Arrayanes",
+"comuna": "Toltén",
+"red": "INIA"
+},
+{
+"id": "INIA-144",
+"nombre": "Manzanares",
+"comuna": "Renaico",
+"red": "INIA"
+},
+{
+"id": "EXT-79",
+"nombre": "Maquehue - UFRO",
+"comuna": "Freire",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-148",
+"nombre": "Marimenuco",
+"comuna": "Lonquimay",
+"red": "INIA"
+},
+{
+"id": "INIA-238",
+"nombre": "Pailahueque",
+"comuna": "Ercilla",
+"red": "INIA"
+},
+{
+"id": "INIA-138",
+"nombre": "Perales",
+"comuna": "Cholchol",
+"red": "INIA"
+},
+{
+"id": "INIA-142",
+"nombre": "Puala",
+"comuna": "Curarrehue",
+"red": "INIA"
+},
+{
+"id": "INIA-28",
+"nombre": "Quiripio",
+"comuna": "Carahue",
+"red": "INIA"
+},
+{
+"id": "INIA-233",
+"nombre": "Radal",
+"comuna": "Freire",
+"red": "INIA"
+},
+{
+"id": "EXT-181",
+"nombre": "Regimiento Victoria",
+"comuna": "Victoria",
+"red": "DMC"
+},
+{
+"id": "EXT-166",
+"nombre": "Rucamanque - UFRO",
+"comuna": "Temuco",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-205",
+"nombre": "San Enrique",
+"comuna": "Pucón",
+"red": "INIA"
+},
+{
+"id": "INIA-48",
+"nombre": "San Luis",
+"comuna": "Curacautín",
+"red": "INIA"
+},
+{
+"id": "INIA-209",
+"nombre": "San Rafael",
+"comuna": "Los Sauces",
+"red": "INIA"
+},
+{
+"id": "INIA-235",
+"nombre": "San Sebastián",
+"comuna": "Perquenco",
+"red": "INIA"
+},
+{
+"id": "INIA-41",
+"nombre": "Santa Adela",
+"comuna": "Nueva Imperial",
+"red": "INIA"
+},
+{
+"id": "EXT-1005",
+"nombre": "Santa Amelia",
+"comuna": "Collipulli",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-143",
+"nombre": "Santa Inés",
+"comuna": "Lautaro",
+"red": "INIA"
+},
+{
+"id": "INIA-145",
+"nombre": "Surco y Semilla",
+"comuna": "Collipulli",
+"red": "INIA"
+},
+{
+"id": "INIA-236",
+"nombre": "Taplon",
+"comuna": "Padre las Casas",
+"red": "INIA"
+},
+{
+"id": "EXT-74",
+"nombre": "Temuco",
+"comuna": "Temuco",
+"red": "ANPROS"
+},
+{
+"id": "INIA-18",
+"nombre": "Tranapuente",
+"comuna": "Carahue",
+"red": "INIA"
+},
+{
+"id": "EXT-75",
+"nombre": "Villarrica",
+"comuna": "Villarrica",
+"red": "DMC"
+},
+{
+"id": "EXT-80",
+"nombre": "Aeropuerto Pichoy",
+"comuna": "Mariquina",
+"red": "DMC"
+},
+{
+"id": "INIA-151",
+"nombre": "Austral",
+"comuna": "Valdivia",
+"red": "UACh-INIA"
+},
+{
+"id": "EXT-1068",
+"nombre": "Capitanía de Puerto Corral",
+"comuna": "Corral",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-112",
+"nombre": "Corral - ESSAL",
+"comuna": "Corral",
+"red": "DMC"
+},
+{
+"id": "EXT-1024",
+"nombre": "Crucero",
+"comuna": "Río Bueno",
+"red": "COLUN"
+},
+{
+"id": "INIA-71",
+"nombre": "El Cardal",
+"comuna": "Río Bueno",
+"red": "INIA"
+},
+{
+"id": "EXT-1027",
+"nombre": "El Copihue",
+"comuna": "Paillaco",
+"red": "COLUN"
+},
+{
+"id": "EXT-1010",
+"nombre": "Fundo el Maitén",
+"comuna": "Paillaco",
+"red": "DMC"
+},
+{
+"id": "EXT-1023",
+"nombre": "Ignao",
+"comuna": "Río Bueno",
+"red": "COLUN"
+},
+{
+"id": "EXT-81",
+"nombre": "Isla Teja - UACh",
+"comuna": "Valdivia",
+"red": "DMC"
+},
+{
+"id": "EXT-1026",
+"nombre": "La Estrella",
+"comuna": "Futrono",
+"red": "COLUN"
+},
+{
+"id": "EXT-984",
+"nombre": "La Unión",
+"comuna": "La Unión",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-72",
+"nombre": "Lago Verde",
+"comuna": "Paillaco",
+"red": "INIA"
+},
+{
+"id": "INIA-99",
+"nombre": "Las Lomas",
+"comuna": "Máfil",
+"red": "INIA"
+},
+{
+"id": "EXT-976",
+"nombre": "Liceo Agrotec",
+"comuna": "La Unión",
+"red": "MMA-DMC"
+},
+{
+"id": "EXT-995",
+"nombre": "Llongo",
+"comuna": "Mariquina",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-1035",
+"nombre": "Mamalona",
+"comuna": "Panguipulli",
+"red": "UFRO"
+},
+{
+"id": "EXT-1032",
+"nombre": "Oldenburgo",
+"comuna": "La Unión",
+"red": "ARAUCO"
+},
+{
+"id": "INIA-132",
+"nombre": "Palermo",
+"comuna": "La Unión",
+"red": "INIA"
+},
+{
+"id": "EXT-985",
+"nombre": "Pancul",
+"comuna": "Los Lagos",
+"red": "ARAUCO"
+},
+{
+"id": "EXT-82",
+"nombre": "Panguipulli",
+"comuna": "Panguipulli",
+"red": "DMC"
+},
+{
+"id": "EXT-1025",
+"nombre": "Piruco",
+"comuna": "Río Bueno",
+"red": "COLUN"
+},
+{
+"id": "INIA-155",
+"nombre": "Rucatayo",
+"comuna": "Río Bueno",
+"red": "INIA"
+},
+{
+"id": "INIA-102",
+"nombre": "Santa Carla",
+"comuna": "Los Lagos",
+"red": "INIA"
+},
+{
+"id": "EXT-76",
+"nombre": "Adolfo Matthei",
+"comuna": "Osorno",
+"red": "DMC"
+},
+{
+"id": "EXT-200",
+"nombre": "Aeródromo de Futaleufú",
+"comuna": "Futaleufú",
+"red": "DMC"
+},
+{
+"id": "EXT-193",
+"nombre": "Aeródromo de Quellón",
+"comuna": "Quellón",
+"red": "DMC"
+},
+{
+"id": "EXT-201",
+"nombre": "Aeropuerto de Cañal Bajo",
+"comuna": "Osorno",
+"red": "DMC"
+},
+{
+"id": "EXT-113",
+"nombre": "Aeropuerto El Tepual",
+"comuna": "Puerto Montt",
+"red": "DMC"
+},
+{
+"id": "EXT-1072",
+"nombre": "Alcaldía de Mar Chacao",
+"comuna": "Ancud",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1070",
+"nombre": "Alcaldía de Mar isla Tenglo",
+"comuna": "Puerto Montt",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-83",
+"nombre": "Bahía Mansa",
+"comuna": "San Juan de la Costa",
+"red": "DMC"
+},
+{
+"id": "INIA-25",
+"nombre": "Butalcura",
+"comuna": "Dalcahue",
+"red": "INIA"
+},
+{
+"id": "EXT-1071",
+"nombre": "Capitanía de Puerto Ancud",
+"comuna": "Ancud",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1075",
+"nombre": "Capitanía de Puerto Chaitén",
+"comuna": "Chaitén",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1074",
+"nombre": "Capitanía de Puerto Chonchi",
+"comuna": "Chonchi",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1069",
+"nombre": "Capitanía de Puerto Maullín",
+"comuna": "Maullín",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1076",
+"nombre": "Capitanía de Puerto Quellón",
+"comuna": "Quellón",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1073",
+"nombre": "Capitanía de Puerto Quemchi",
+"comuna": "Quemchi",
+"red": "SERVIMET"
+},
+{
+"id": "INIA-207",
+"nombre": "Carelmapu",
+"comuna": "Maullín",
+"red": "INIA"
+},
+{
+"id": "EXT-1022",
+"nombre": "Casona Los Ulmos",
+"comuna": "Puerto Varas",
+"red": "ULMOS"
+},
+{
+"id": "INIA-326",
+"nombre": "Chiriuco",
+"comuna": "Puerto Octay",
+"red": "INIA"
+},
+{
+"id": "INIA-69",
+"nombre": "Colegual",
+"comuna": "Llanquihue",
+"red": "INIA"
+},
+{
+"id": "INIA-104",
+"nombre": "Desagüe Rupanco",
+"comuna": "Puyehue",
+"red": "INIA"
+},
+{
+"id": "INIA-105",
+"nombre": "Ensenada",
+"comuna": "Puerto Varas",
+"red": "INIA"
+},
+{
+"id": "EXT-85",
+"nombre": "Escuela Mirasol",
+"comuna": "Puerto Montt",
+"red": "DMC"
+},
+{
+"id": "INIA-201",
+"nombre": "Huacamapu",
+"comuna": "San Juan de la Costa",
+"red": "INIA"
+},
+{
+"id": "INIA-20",
+"nombre": "Huyar Alto",
+"comuna": "Curaco de Vélez",
+"red": "INIA"
+},
+{
+"id": "INIA-232",
+"nombre": "Isla Chelin",
+"comuna": "Castro",
+"red": "INIA"
+},
+{
+"id": "INIA-45",
+"nombre": "La Pampa",
+"comuna": "Purranque",
+"red": "INIA"
+},
+{
+"id": "EXT-84",
+"nombre": "Liceo Agrícola de Ancud",
+"comuna": "Ancud",
+"red": "DMC"
+},
+{
+"id": "INIA-26",
+"nombre": "Los Canelos",
+"comuna": "Los Muermos",
+"red": "INIA"
+},
+{
+"id": "EXT-86",
+"nombre": "Nueva Chaitén",
+"comuna": "Chaitén",
+"red": "DMC"
+},
+{
+"id": "INIA-357",
+"nombre": "Palena Medio",
+"comuna": "Palena",
+"red": "INIA"
+},
+{
+"id": "EXT-1021",
+"nombre": "Pampa Los Ulmos",
+"comuna": "Puerto Varas",
+"red": "ULMOS"
+},
+{
+"id": "INIA-230",
+"nombre": "Pid-Pid",
+"comuna": "Castro",
+"red": "INIA"
+},
+{
+"id": "INIA-68",
+"nombre": "Polizones",
+"comuna": "Fresia",
+"red": "INIA"
+},
+{
+"id": "EXT-114",
+"nombre": "Puerto Varas - ESSAL",
+"comuna": "Puerto Varas",
+"red": "DMC"
+},
+{
+"id": "INIA-324",
+"nombre": "Putenio",
+"comuna": "Calbuco",
+"red": "INIA"
+},
+{
+"id": "INIA-133",
+"nombre": "Quilacahuin",
+"comuna": "San Pablo",
+"red": "INIA"
+},
+{
+"id": "INIA-50",
+"nombre": "Quilanto",
+"comuna": "Frutillar",
+"red": "INIA"
+},
+{
+"id": "INIA-231",
+"nombre": "Quilquico",
+"comuna": "Castro",
+"red": "INIA"
+},
+{
+"id": "INIA-19",
+"nombre": "Remehue",
+"comuna": "Osorno",
+"red": "INIA"
+},
+{
+"id": "INIA-67",
+"nombre": "Tara",
+"comuna": "Chonchi",
+"red": "INIA"
+},
+{
+"id": "INIA-309",
+"nombre": "Tenaún",
+"comuna": "Dalcahue",
+"red": "INIA"
+},
+{
+"id": "EXT-222",
+"nombre": "Aeródromo Balmaceda",
+"comuna": "Coyhaique",
+"red": "DMC"
+},
+{
+"id": "EXT-198",
+"nombre": "Aeródromo Melinka",
+"comuna": "Guaitecas",
+"red": "DMC"
+},
+{
+"id": "EXT-88",
+"nombre": "Aeródromo Puerto Aysén",
+"comuna": "Aisén",
+"red": "DMC"
+},
+{
+"id": "EXT-89",
+"nombre": "Aeródromo Teniente Vidal",
+"comuna": "Coyhaique",
+"red": "DMC"
+},
+{
+"id": "INIA-234",
+"nombre": "Arroyo el Gato",
+"comuna": "Coyhaique",
+"red": "INIA"
+},
+{
+"id": "INIA-226",
+"nombre": "Bajada Ibañez",
+"comuna": "Río Ibáñez",
+"red": "INIA"
+},
+{
+"id": "EXT-1078",
+"nombre": "Capitanía de Puerto Aguirre",
+"comuna": "Aisén",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1079",
+"nombre": "Capitanía de Puerto Chacabuco",
+"comuna": "Aisén",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1077",
+"nombre": "Capitanía de Puerto Melinka",
+"comuna": "Guaitecas",
+"red": "SERVIMET"
+},
+{
+"id": "INIA-13",
+"nombre": "Chile Chico",
+"comuna": "Chile Chico",
+"red": "INIA"
+},
+{
+"id": "INIA-32",
+"nombre": "Cochrane",
+"comuna": "Cochrane",
+"red": "INIA"
+},
+{
+"id": "INIA-98",
+"nombre": "El Claro",
+"comuna": "Coyhaique",
+"red": "INIA"
+},
+{
+"id": "INIA-166",
+"nombre": "La Junta",
+"comuna": "Cisnes",
+"red": "INIA"
+},
+{
+"id": "EXT-197",
+"nombre": "Mirador Marchant",
+"comuna": "Coyhaique",
+"red": "MMA-DMC"
+},
+{
+"id": "INIA-301",
+"nombre": "Ñirehuao",
+"comuna": "Coyhaique",
+"red": "INIA"
+},
+{
+"id": "INIA-306",
+"nombre": "Puerto Ibáñez",
+"comuna": "Río Ibáñez",
+"red": "INIA"
+},
+{
+"id": "EXT-87",
+"nombre": "Puyuhuapi",
+"comuna": "Cisnes",
+"red": "DMC"
+},
+{
+"id": "EXT-90",
+"nombre": "Subcomisaría de Villa O&#039;Higgins",
+"comuna": "O’Higgins",
+"red": "DMC"
+},
+{
+"id": "INIA-16",
+"nombre": "Tamelaike",
+"comuna": "Coyhaique",
+"red": "INIA"
+},
+{
+"id": "INIA-44",
+"nombre": "Vista Hermosa",
+"comuna": "Coyhaique",
+"red": "INIA"
+},
+{
+"id": "EXT-95",
+"nombre": "Aeródromo Fuentes Martínez",
+"comuna": "Porvenir",
+"red": "DMC"
+},
+{
+"id": "EXT-91",
+"nombre": "Aeródromo Teniente Gallardo",
+"comuna": "Natales",
+"red": "DMC"
+},
+{
+"id": "EXT-223",
+"nombre": "Aeropuerto Carlos Ibañez",
+"comuna": "Punta Arenas",
+"red": "DMC"
+},
+{
+"id": "EXT-97",
+"nombre": "Aeropuerto Guardiamarina Zañartu",
+"comuna": "Cabo de Hornos",
+"red": "DMC"
+},
+{
+"id": "EXT-1083",
+"nombre": "Alcaldía de Mar Paso Timbales",
+"comuna": "Cabo de Hornos",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1085",
+"nombre": "Alcaldía de Mar Puerto Corrientes",
+"comuna": "Cabo de Hornos",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1084",
+"nombre": "Alcaldía de Mar Puerto Navarino",
+"comuna": "Cabo de Hornos",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-98",
+"nombre": "Base Eduardo Frei Montalva",
+"comuna": "Antártica",
+"red": "DMC"
+},
+{
+"id": "EXT-1080",
+"nombre": "Capitanía de Puerto Edén",
+"comuna": "Natales",
+"red": "SERVIMET"
+},
+{
+"id": "EXT-1081",
+"nombre": "Capitanía de Puerto Puerto Natales",
+"comuna": "Natales",
+"red": "SERVIMET"
+},
+{
+"id": "INIA-159",
+"nombre": "Cerro Castillo",
+"comuna": "Torres del Paine",
+"red": "INIA"
+},
+{
+"id": "EXT-176",
+"nombre": "Cerro Sombrero MA",
+"comuna": "Primavera",
+"red": "DMC"
+},
+{
+"id": "INIA-339",
+"nombre": "Complejo Torres del Paine",
+"comuna": "Torres del Paine",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "EXT-96",
+"nombre": "Escuela Alberto Hurtado",
+"comuna": "Punta Arenas",
+"red": "DMC"
+},
+{
+"id": "INIA-219",
+"nombre": "Estancia 5 de Enero",
+"comuna": "San Gregorio",
+"red": "INIA"
+},
+{
+"id": "INIA-338",
+"nombre": "Estancia Berta",
+"comuna": "Natales",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "INIA-335",
+"nombre": "Estancia El Ovejero",
+"comuna": "Laguna Blanca",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "INIA-336",
+"nombre": "Estancia Laguna Blanca",
+"comuna": "Laguna Blanca",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "INIA-337",
+"nombre": "Estancia Skyring",
+"comuna": "Río Verde",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "INIA-222",
+"nombre": "Estancia Zenia",
+"comuna": "Porvenir",
+"red": "INIA"
+},
+{
+"id": "EXT-1082",
+"nombre": "Faro Bahía Félix",
+"comuna": "Punta Arenas",
+"red": "SERVIMET"
+},
+{
+"id": "INIA-348",
+"nombre": "Fuerte Bulnes",
+"comuna": "Punta Arenas",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "INIA-349",
+"nombre": "Huertos Familiares",
+"comuna": "Cabo de Hornos",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "EXT-92",
+"nombre": "Instituto de la Patagonia",
+"comuna": "Punta Arenas",
+"red": "DMC"
+},
+{
+"id": "INIA-103",
+"nombre": "Isla Riesco",
+"comuna": "Río Verde",
+"red": "INIA"
+},
+{
+"id": "INIA-37",
+"nombre": "Kampenaike",
+"comuna": "Laguna Blanca",
+"red": "INIA"
+},
+{
+"id": "INIA-340",
+"nombre": "La Fueguina",
+"comuna": "Porvenir",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "INIA-347",
+"nombre": "La Pelecha",
+"comuna": "San Gregorio",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "INIA-344",
+"nombre": "La Pirucha",
+"comuna": "Timaukel",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "EXT-115",
+"nombre": "Pampa Guanaco",
+"comuna": "Timaukel",
+"red": "DMC"
+},
+{
+"id": "INIA-35",
+"nombre": "Puerto Natales",
+"comuna": "Natales",
+"red": "INIA"
+},
+{
+"id": "INIA-82",
+"nombre": "Punta Arenas Rural",
+"comuna": "Punta Arenas",
+"red": "INIA"
+},
+{
+"id": "INIA-346",
+"nombre": "Punta Delgada",
+"comuna": "San Gregorio",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "INIA-343",
+"nombre": "Río Grande",
+"comuna": "Timaukel",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "EXT-956",
+"nombre": "Río Serrano",
+"comuna": "Torres del Paine",
+"red": "DMC"
+},
+{
+"id": "INIA-342",
+"nombre": "Rita",
+"comuna": "Primavera",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "INIA-341",
+"nombre": "Rosita",
+"comuna": "Porvenir",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "INIA-83",
+"nombre": "Tierra del Fuego",
+"comuna": "Primavera",
+"red": "INIA"
+},
+{
+"id": "INIA-345",
+"nombre": "Tres Hermanos",
+"comuna": "Porvenir",
+"red": "GORE-MAGALLANES-INIA"
+},
+{
+"id": "EXT-93",
+"nombre": "Unidad Aeropolicial",
+"comuna": "Punta Arenas",
+"red": "DMC"
+},
+{
+"id": "EXT-94",
+"nombre": "Villa Tehuelche",
+"comuna": "Laguna Blanca",
+"red": "DMC"
+}
+]
