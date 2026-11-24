@@ -1,0 +1,36 @@
+# Historia diaria de agrometeorologia.cl (Tmín, Tmáx, precipitación), un año por trabajo y de a uno (sin consultas en paralelo).
+name: Historia agrometeorologia.cl
+on:
+  workflow_dispatch:
+    inputs:
+      anios:
+        description: "Años, separados por coma"
+        default: "2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026"
+permissions:
+  contents: write
+concurrency:
+  group: agromet-hist
+  cancel-in-progress: false
+jobs:
+  anio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    strategy:
+      max-parallel: 1
+      fail-fast: false
+      matrix:
+        anio: ${{ fromJSON(format('[{0}]', inputs.anios)) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -q requests
+      - run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - run: python qc/agromet_hist.py --datos datos --anio ${{ matrix.anio }}
+      - name: Guardar
+        if: always()
+        run: |
+          cd datos; git config user.name "qc-metotec"; git config user.email "contacto.metotec@gmail.com"
+          git add agromet && git commit -q -m "historia agromet ${{ matrix.anio }}" || exit 0
+          for i in 1 2 3 4 5 6; do git pull -q --rebase --autostash origin datos && git push -q origin datos && break; sleep 8; done
