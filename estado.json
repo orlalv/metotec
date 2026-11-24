@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-24T17:16:02+00:00",
+ "inicio": "2026-11-24T17:26:16+00:00",
  "errores": [],
  "estaciones": 135,
- "con_datos": 122,
- "registros": 4777,
- "desde": "2026-11-24 16:16:00",
- "hasta": "2026-11-24 17:10:00",
+ "con_datos": 123,
+ "registros": 5116,
+ "desde": "2026-11-24 16:25:01",
+ "hasta": "2026-11-24 17:18:00",
  "horas_archivadas": 2,
  "modelo": 6480,
  "wrf": "sin corridas nuevas",
@@ -21,7 +21,7 @@
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 28,
-  "ultima": "2026-11-24T17:00Z"
+  "ultima": "2026-11-24T17:10Z"
  },
  "externas": {
   "estaciones": 324,
@@ -38,17 +38,17 @@
   "filas": 45766,
   "activa": true
  },
- "consenso_quitados": 4,
+ "consenso_quitados": 3,
  "incendios_cerca": 1,
  "kv_incendios": "429",
- "ob_filas": 2258,
+ "ob_filas": 2330,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 531,
   "fallas": 0,
-  "hallazgos": 331,
-  "kv": "429",
-  "completitud": "429"
+  "hallazgos": 332,
+  "kv": "200",
+  "completitud": "200"
  },
  "diario": [
   "2026-11-23",
@@ -57,21 +57,21 @@
  "super": {
   "estaciones": 102,
   "hallazgos": 65,
-  "kv": "429"
+  "kv": "200"
  },
  "historial": {
-  "2026-11-13": "429",
-  "2026-11-18": "429",
-  "2026-11-20": "429",
-  "2026-11-21": "429",
-  "2026-11-22": "429",
-  "2026-11-23": "429",
-  "2026-11-24": "429"
+  "2026-11-13": "200",
+  "2026-11-18": "200",
+  "2026-11-20": "200",
+  "2026-11-21": "200",
+  "2026-11-22": "200",
+  "2026-11-23": "200",
+  "2026-11-24": "200"
  },
  "boletin": "fuera de horario",
  "productos": {
-  "extremas": "429",
-  "lluvia_obs": "429"
+  "extremas": "200",
+  "lluvia_obs": "200"
  },
  "reputacion": {
   "resumen": {
@@ -83,15 +83,15 @@
    "rojo": 26,
    "listas_para_aprobar": 0
   },
-  "kv": "429"
+  "kv": "200"
  },
- "kv": "429",
- "alertas": 29,
+ "kv": "200",
+ "alertas": 24,
  "resumen": {
   "bien": 104,
   "sospechoso": 14,
   "erróneo": 9,
   "sin datos": 8
  },
- "fin": "2026-11-24T17:20:42+00:00"
+ "fin": "2026-11-24T17:31:41+00:00"
 }
