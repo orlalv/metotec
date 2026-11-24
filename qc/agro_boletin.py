@@ -222,6 +222,10 @@ def _tok(s):
     return {t for t in re.split(r"[^a-z0-9]+", s) if len(t) > 1 and t not in _RUIDO}
 
 
+LAT_REG = {"04": (-32.3, -29.0), "05": (-33.1, -32.0), "13": (-34.3, -32.9), "06": (-35.0, -33.8), "07": (-36.6, -34.6), "16": (-37.2, -36.0),
+           "08": (-38.5, -36.4), "09": (-39.7, -37.5), "14": (-40.7, -39.2), "10": (-44.0, -40.1)}
+
+
 def ubicar(est, raiz):
     """Agrega lat, lon, alt (y ext = id de la externa) a cada estación del compendio. Devuelve (n_dmc, n_ext, sin)."""
     dmc = {}
@@ -242,15 +246,15 @@ def ubicar(est, raiz):
         d = dmc.get(cod)
         if d and d.get("lat") is not None:
             e.update(lat=d["lat"], lon=d["lon"], alt=d.get("alt")); nd += 1; continue
-        t = _tok(e["nombre"]) | _tok(e.get("comuna"))
+        t = _tok(e["nombre"]); la = LAT_REG.get(e["reg"], (-90, 0))
         mejor, bs = None, 0.0
-        for tk, x in toks:
-            if not tk:
+        for tk, x in toks:       # todo el nombre externo debe estar en el del boletín, que a su vez calce al menos a la mitad, y en la latitud de su región
+            if not tk or not tk <= t or not la[0] - 0.3 <= x["lat"] <= la[1] + 0.3:
                 continue
-            sc = len(t & tk) / len(tk)
+            sc = len(tk) / len(t)
             if sc > bs:
                 mejor, bs = x, sc
-        if mejor and bs >= 0.6:
+        if mejor and bs >= 0.5:
             e.update(lat=mejor["lat"], lon=mejor["lon"], alt=mejor.get("alt"), ext=mejor["id"], ext_nombre=mejor.get("nombre")); ne += 1
         else:
             sin.append(f"{cod} {e['nombre']}")
