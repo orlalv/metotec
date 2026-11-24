@@ -13,7 +13,8 @@ B = "https://agrometeorologia.cl/"
 H = {"User-Agent": "Mozilla/5.0 (metotec; contacto.metotec@gmail.com)"}
 VARS = ["TA_MIN", "TA_MAX", "PP_SUM"]
 GRUPO = 20          # estaciones por consulta
-PAUSA = 3.0         # segundos entre consultas
+PAUSA = 6.0         # segundos entre consultas
+ESPERA_VACIO = 90   # si un grupo entero vuelve vacío (el sitio corta cuando se le pide mucho seguido), esperar y reintentar
 
 
 def limpia(s):
@@ -91,11 +92,20 @@ def main():
             G = [i for i in ids[g:g + GRUPO] if i not in D]          # reanudable: salta lo ya bajado
             if not G:
                 continue
-            t = consulta(s, G, var, o.anio)
-            R = parsear(t, G, [nom[i] for i in G]) if t else {}
+            R = {}
+            for k in range(3):
+                t = consulta(s, G, var, o.anio)
+                R = parsear(t, G, [nom[i] for i in G]) if t else {}
+                if R:
+                    break
+                if t and k == 0:
+                    (raiz / "ultima_vacia.html").write_text(t[-20000:], encoding="utf-8")
+                time.sleep(ESPERA_VACIO * (k + 1))
             D.update(R)
-            for i in G:
-                D.setdefault(i, {})                                 # marcada como consultada aunque no tenga datos ese año
+            if R:
+                for i in G:
+                    D.setdefault(i, {})                             # consultada: sin datos ese año
+            # si el grupo quedó vacío no se marca: la próxima ejecución lo vuelve a pedir
             print(var, o.anio, g, "→", sum(1 for i in G if D[i]), "con datos", "" if t else "(falló)", flush=True)
             f.parent.mkdir(parents=True, exist_ok=True); f.write_bytes(gzip.compress(json.dumps(D, separators=(",", ":")).encode()))
             time.sleep(PAUSA)
