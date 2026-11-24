@@ -63,7 +63,7 @@ function vista(){
   return grupo("tmax", "Tmax") + grupo("tmin", "Tmin") + grupo("pp24", "Precipitación") +
     `<div class="bcard" style="padding:10px;margin-bottom:12px"><b>Sacados a mano</b> <span class="tag">· ${S.length}</span><table class="xtab"><tr><th>Variable</th><th>Estación</th><th>Día</th><th class="n">Valor</th><th>Motivo</th><th>Fecha</th><th></th></tr>
     ${S.map(([id, v]) => `<tr><td>${v.vk}</td><td>${esc((C.estaciones[v.cod] || {}).nombre || v.cod)} <small class="tag">${v.cod}</small></td><td>${diaTxt(C.dias[v.dia])}</td><td class="n">${f1(v.valor)}</td><td>${esc(v.motivo)}</td><td><small>${esc(v.t)}</small></td><td><button data-dev="${esc(id)}">Devolver</button></td></tr>`).join("") || `<tr><td colspan="7" class="tag">Ninguno</td></tr>`}</table></div>
-    <p class="tag">«s/p» en el boletín pluviométrico (no definido; no entra al ranking ni al acumulado): ${sp.length} registros${sp.length ? " · " + [...new Set(sp.map(r => (C.estaciones[r.cod] || {}).nombre || r.cod))].slice(0, 30).map(esc).join(", ") : ""}.</p>`;
+    <p class="tag">«s/p» del boletín pluviométrico se cuenta como sin precipitación (0 mm).</p>`;
 }
 
 function csv(){

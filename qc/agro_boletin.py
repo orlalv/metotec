@@ -6,7 +6,8 @@ Fuentes (un día por página):
       Nota técnica de la página: mínima y máxima entre ~21:01 del día anterior y 21:00 del día (hora local); media = (mín + máx) / 2.
   Precipitación: .../diario/boletinPluviometricoAutomaticoRegional/{REG}/{AAAA}/{MM}/{DD}
       Nota técnica: total diario entre ~8:00 del día y 8:00 del día siguiente (hora local). Por eso el miércoles se completa el jueves 8:00.
-Símbolos: «.» = sin dato. «s/p» no está definido en la página; se guarda tal cual, no entra a rankings ni a acumulados y se informa en Calidad.
+Símbolos: «.» = sin dato. «s/p» = sin precipitación (0 mm): la página no lo define, pero en la semana de prueba (12–18 nov 2026)
+  Quinta Normal marca «s/p» todos los días secos y 1.2 el único día con lluvia; se cuenta como 0 mm (día con dato).
 
 Uso:  python qc/agro_boletin.py --datos datos [--semana AAAA-MM-DD (jueves)]
 Salida: datos/agro/<jueves>.json, y en el KV «qc/agro_bol/<jueves>» y «qc/agro_bol/ult».
@@ -80,7 +81,7 @@ def valor(s):
     if re.fullmatch(r"-?\d+(\.\d+)?", s):
         return float(s), None
     if s.lower() == "s/p":
-        return None, "s/p"
+        return 0.0, "s/p"
     return None, None          # «.», «—» o vacío: sin dato
 
 
@@ -132,9 +133,6 @@ def armar(jueves, dias, crudo, estado):
                 est.setdefault(f["cod"], dict(cod=f["cod"], nombre=f["nombre"], comuna=f["comuna"], prop=f["prop"], reg=reg))
                 x, simb = valor(f["v"][0])
                 base = dict(cod=f["cod"], reg=reg, dia=k, fecha=iso, vk="pp24")
-                if simb:
-                    cal.append(dict(base, valor=None, estado="sp", motivo="«s/p» (significado no definido en el boletín): no entra al ranking ni al acumulado"))
-                    continue
                 if x is None:
                     continue
                 if not RANGO_PP[0] <= x <= RANGO_PP[1]:
@@ -146,6 +144,15 @@ def armar(jueves, dias, crudo, estado):
                 P.append(r)
                 if r["estado"] != "ok":
                     cal.append(r)
+    # dudosos: 0,0 exacto repetido en la semana (valor de relleno) o 0,0 muy lejos de la región
+    ceros = {}
+    for r in T:
+        if r["estado"] == "ok" and r["valor"] == 0.0:
+            ceros.setdefault((r["cod"], r["vk"]), []).append(r)
+    for (cod, vk), L in ceros.items():
+        if len(L) >= 2:
+            for r in L:
+                r.update(estado="dudoso", motivo=f"{'Tmin' if vk == 'tmin' else 'Tmax'} exactamente 0,0 °C en {len(L)} días de la semana (posible valor de relleno)"); cal.append(r)
     # dudosos: muy lejos de la mediana regional del mismo día (p. ej. Tmax 4 °C con la región en 25 °C)
     import statistics
     grupos = {}
@@ -189,7 +196,7 @@ def armar(jueves, dias, crudo, estado):
                 parametros=dict(anom_reg=ANOM_REG, dia=DIA, pp_ranking=PP_RANKING, enviar_estaciones=ENVIAR_ESTACIONES, rango_t=RANGO_T, rango_pp=RANGO_PP, pp_dudoso=PP_DUDOSO, media_tol=MEDIA_TOL),
                 notas=dict(t="Mínima y máxima entre ~21:01 del día anterior y 21:00 del día (hora local), según el boletín.",
                            pp="Total diario entre ~8:00 del día y 8:00 del día siguiente (hora local), según el boletín.",
-                           sp="«s/p» no está definido en el boletín: no entra al ranking ni al acumulado.",
+                           sp="«s/p» se interpreta como sin precipitación (0 mm).",
                            qc="Los boletines no han pasado control de calidad; se excluyen mínima > máxima y valores fuera de rango físico. Tampoco entran, y quedan en Calidad como dudosos, los valores a más de 12 °C de la mediana regional del día y las filas con media incoherente."),
                 regiones=REGIONES, estaciones={c: e for c, e in est.items() if c in usados},
                 ranking=ranking, por_dia=por_dia, por_region=por_region, calidad=cal, cobertura=estado)
