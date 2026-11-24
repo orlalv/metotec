@@ -12,7 +12,7 @@ const CACHE = new Map();
 let EST = [], M = null, mVar = "T";
 const $ = s => document.querySelector(s), esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const hhmm = t => new Date(t).toISOString().slice(11, 16), f1 = v => v == null ? "—" : (Math.round(v * 10) / 10).toFixed(1);
-const loc = t => new Date(t).toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit"});
+const loc = t => new Date(t).toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", hourCycle: "h23", minute: "2-digit"});
 
 async function hora(t){
   const k = new Date(t).toISOString().slice(0, 13);
@@ -48,7 +48,7 @@ function buscarCod(q){                 // acepta «330006 · nombre», el códig
   return e ? e.codigo : null;
 }
 function offsetChile(t){            // horas de diferencia de Chile continental con UTC en esa fecha (3 o 4)
-  const s = new Date(t).toLocaleString("en-US", {timeZone: "America/Santiago", hour12: false, hour: "2-digit"});
+  const s = new Date(t).toLocaleString("en-US", {timeZone: "America/Santiago", hour12: false, hour: "2-digit", hourCycle: "h23"});
   return ((new Date(t).getUTCHours() - +s) % 24 + 24) % 24;
 }
 

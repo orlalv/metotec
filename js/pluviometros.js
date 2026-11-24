@@ -151,7 +151,7 @@ async function abrirMapa(id, i){
   let capa = null, grupo = L.layerGroup().addTo(mapa), ult = null;
   const pintar = idx => {
     const dd = det[idx], t = instante(dd.hora), iso = new Date(t).toISOString().slice(0, 19) + "Z";
-    $("#pMaT").textContent = `${est.nombre} (${est.codigo}) · ${new Date(t).toISOString().slice(5, 16).replace("T", " ")} UTC · ${new Date(t).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"})} local`;
+    $("#pMaT").textContent = `${est.nombre} (${est.codigo}) · ${new Date(t).toISOString().slice(5, 16).replace("T", " ")} UTC · ${new Date(t).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", hour: "2-digit", hourCycle: "h23", minute: "2-digit"})} local`;
     $("#pMaV").innerHTML = `Estación <b>${dd.est == null ? "sin dato" : n1(dd.est) + " mm"}</b> · vecinas <b>${dd.n_tot ? n1(dd.vec) + " mm" : "—"}</b>${dd.n_tot ? ` (${dd.n_vec}/${dd.n_tot} llueven)` : ""} · modelo <b>${(dd.mod3 || []).map(x => x == null ? "·" : n1(x)).join(" / ")} mm</b> (ant./esta/sig.) · IMERG <b>${dd.imerg == null ? "—" : n1(dd.imerg) + " mm"}</b>${dd.sospechosa ? ` · <span style="color:#f85149">hora sospechosa</span>` : ""}`;
     const C = CAPAS[capaSel]; if (capa) mapa.removeLayer(capa); capa = null;
     $("#pPos").innerHTML = t > Date.now() ? `<span style="color:#d29922">Hora futura: sin imagen.</span>` : "";

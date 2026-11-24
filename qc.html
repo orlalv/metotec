@@ -255,35 +255,35 @@ main[hidden]{display:none}
 <section id="sup" hidden></section>
 <footer><span id="fuentes">—</span><span>Pruebas: rango · saltos · valor pegado · coherencia · estaciones vecinas · WRF-DMC · Open-Meteo · lluvia · satélite GOES-19 · completitud</span></footer>
 <div id="login"><form id="fl"><b>Control de calidad</b><p>Ingrese la clave para ver las alertas.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err);margin-top:8px"></p></form></div>
-<script src="js/casillas.js?v=202611182340"></script>
-<script src="js/sensorgraf.js?v=202611171330"></script>
-<script src="js/huecos.js?v=202611181430"></script>
-<script src="js/externas.js?v=202611191240"></script>
-<script src="js/ppx.js?v=202611182010"></script>
-<script src="js/agro.js?v=202611231330"></script>
-<script src="js/verificar.js?v=202611191240"></script>
-<script src="js/minutarios.js?v=202611181740"></script>
-<script src="js/supgraf.js?v=202611190410"></script>
-<script src="js/superauto.js?v=202611231300"></script>
-<script src="js/extremas.js?v=202611181830"></script>
-<script src="js/boletin.js?v=202611171230"></script>
-<script src="js/series.js?v=202611101600"></script>
-<script src="js/reglas.js?v=202611191835"></script>
-<script src="js/fallas.js?v=202611182225"></script>
-<script src="js/estaciones.js?v=202611172300"></script>
-<script src="js/pluviometros.js?v=202611191230"></script>
-<script src="js/equipo.js?v=202611191830"></script>
-<script src="js/servicios.js?v=202611131500"></script>
+<script src="js/casillas.js?v=202611241310"></script>
+<script src="js/sensorgraf.js?v=202611241310"></script>
+<script src="js/huecos.js?v=202611241310"></script>
+<script src="js/externas.js?v=202611241310"></script>
+<script src="js/ppx.js?v=202611241310"></script>
+<script src="js/agro.js?v=202611241310"></script>
+<script src="js/verificar.js?v=202611241310"></script>
+<script src="js/minutarios.js?v=202611241310"></script>
+<script src="js/supgraf.js?v=202611241310"></script>
+<script src="js/superauto.js?v=202611241310"></script>
+<script src="js/extremas.js?v=202611241310"></script>
+<script src="js/boletin.js?v=202611241310"></script>
+<script src="js/series.js?v=202611241310"></script>
+<script src="js/reglas.js?v=202611241310"></script>
+<script src="js/fallas.js?v=202611241310"></script>
+<script src="js/estaciones.js?v=202611241310"></script>
+<script src="js/pluviometros.js?v=202611241310"></script>
+<script src="js/equipo.js?v=202611241310"></script>
+<script src="js/servicios.js?v=202611241310"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script>
 (function(){ const r = document.getElementById("relojUTC");
-  const t = () => { const d = new Date(); r.innerHTML = d.toISOString().slice(11, 19) + " UTC <small>(" + d.toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit", hour12: false}) + " local)</small>"; };
+  const t = () => { const d = new Date(); r.innerHTML = d.toISOString().slice(11, 19) + " UTC <small>(" + d.toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", hourCycle: "h23", minute: "2-digit", hour12: false}) + " local)</small>"; };
   t(); setInterval(t, 1000); })();
 // Hora oficial de Chile continental, Isla de Pascua y Antártica (horaoficial.cl): se calcula con la zona horaria de cada una,
 // así sigue solo los cambios de horario de verano.
 (function(){ const c = document.getElementById("horasCL"); if (!c) return;
   const Z = [["Chile continental", "America/Santiago"], ["Isla de Pascua", "Pacific/Easter"], ["Antártica", "America/Punta_Arenas"]];
-  const t = () => { const d = new Date(); c.innerHTML = Z.map(([n, z]) => `<div>${d.toLocaleTimeString("es-CL", {timeZone: z, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false})}<small>${n}</small></div>`).join(""); };
+  const t = () => { const d = new Date(); c.innerHTML = Z.map(([n, z]) => `<div>${d.toLocaleTimeString("es-CL", {timeZone: z, hour: "2-digit", hourCycle: "h23", minute: "2-digit", second: "2-digit", hour12: false})}<small>${n}</small></div>`).join(""); };
   t(); setInterval(t, 1000); })();
 </script>
 <script>
@@ -308,7 +308,7 @@ function obsFiltradas(){
 function pintarObs(){
   obsBarra();
   const O = R.observaciones || {}, g = O.generado ? new Date(O.generado) : null;
-  $("#hora").textContent = g ? `Observaciones · últimas 24 h (extremas y pp: 4 días) · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay revisión de observaciones";
+  $("#hora").textContent = g ? `Observaciones · últimas 24 h (extremas y pp: 4 días) · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", hourCycle: "h23", minute: "2-digit"})}` : "Todavía no hay revisión de observaciones";
   const T = ((O.estaciones) || []), res = [0, 0, 0];
   T.forEach(e => { const h = hObs(e).filter(x => gobs === "todas" || x.tipo === gobs); res[Math.max(0, ...h.map(x => x.nivel))]++; });
   $("#chips").innerHTML = [0, 1, 2].map(n => `<span class="chip ${ver[n] ? "" : "off"}" data-n="${n}"><i style="background:${COL[n]}"></i>${["Sin hallazgos", "Con avisos", "Con errores"][n]} ${res[n]}</span>`).join("");
@@ -339,7 +339,7 @@ function supPersona(c){ const S = R.super || {}; return EQ.filtra(c) || ((EQ.enR
 const supAtraso = (S, e) => { if (!e.ultima || !S.generado) return null; return Math.round((Date.parse(S.generado + "Z") - Date.parse(e.ultima + ":00Z")) / 60000); };
 function pintarSup(){
   const S = R.super || {}, g = S.generado ? new Date(S.generado + "Z") : null;
-  $("#hora").textContent = g ? `Super automático · últimas 24 h · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay revisión del Super automático";
+  $("#hora").textContent = g ? `Super automático · últimas 24 h · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", hourCycle: "h23", minute: "2-digit"})}` : "Todavía no hay revisión del Super automático";
   const T = (S.estaciones || []).map(e => ({...e, hallazgos: (e.hallazgos || []).map(x => ({...x, gen: S.generado})).filter(x => MARCA.estado(e.codigo, x) !== "oculta")})), res = [0, 0, 0, 0];
   T.forEach(e => res[e.nivel === 3 ? 3 : Math.max(0, ...e.hallazgos.map(x => x.nivel))]++);
   $("#chips").innerHTML = [0, 1, 2, 3].map(n => `<span class="chip ${ver[n] ? "" : "off"}" data-n="${n}"><i style="background:${COL[n]}"></i>${["Sin hallazgos", "Sospechosas", "Con errores", "Sin datos"][n]} ${res[n]}</span>`).join("");
@@ -516,7 +516,7 @@ function pintar(){
   if (modo === "mod") return pintarMod();
   if (modo === "obs") return pintarObs();
   const g = R.generado ? new Date(R.generado) : null;
-  $("#hora").textContent = R.datos_hasta ? `Datos hasta ${R.datos_hasta.slice(0, 16)} UTC · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})}` : "Todavía no hay resultados";
+  $("#hora").textContent = R.datos_hasta ? `Datos hasta ${R.datos_hasta.slice(0, 16)} UTC · revisado ${g.toLocaleTimeString("es-CL", {hour: "2-digit", hourCycle: "h23", minute: "2-digit"})}` : "Todavía no hay resultados";
   const EP = R.estaciones.flatMap(e => FALLAS.episodios(e, R)), ni = EP.filter(p => p.informado).length;
   $("#sub").innerHTML = `<button data-s="pend" class="${sub === "pend" ? "on" : ""}">Pendientes<b>${EP.length - ni}</b></button><button data-s="inf" class="${sub === "inf" ? "on" : ""}">Informados<b>${ni}</b></button>`;
   const T = R.estaciones.map(filtrar), res = {bien: 0, sospechoso: 0, "erróneo": 0, "sin datos": 0};

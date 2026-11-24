@@ -8,11 +8,11 @@ const $ = s => document.querySelector(s), esc = s => String(s ?? "").replace(/[&
 const f1 = v => v == null || !isFinite(v) ? "—" : (Math.round(v * 10) / 10).toFixed(1);
 
 /* ---------- hora local de Chile <-> UTC ---------- */
-const FMT = new Intl.DateTimeFormat("en-CA", {timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit"});
+const FMT = new Intl.DateTimeFormat("en-CA", {timeZone: TZ, hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23", minute: "2-digit"});
 function partes(t){ const o = {}; FMT.formatToParts(new Date(t)).forEach(p => o[p.type] = +p.value); return o; }
 const desfase = t => { const p = partes(t); return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute) - Math.floor(t / 60e3) * 60e3; };   // ms: hora local − UTC
 function localAUtc(y, m, d, h = 0, mi = 0){ const g = Date.UTC(y, m - 1, d, h, mi); return g - desfase(g - desfase(g)); }
-const locTxt = t => new Date(t).toLocaleString("es-CL", {timeZone: TZ, weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false});
+const locTxt = t => new Date(t).toLocaleString("es-CL", {timeZone: TZ, weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", hourCycle: "h23", minute: "2-digit", hour12: false});
 const fechaIso = p => `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
 function jueves(ms){ const p = partes(ms), d = new Date(Date.UTC(p.year, p.month - 1, p.day)); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 3) % 7)); return d; }   // jueves de esa semana (≤ hoy)
 function dia0(iso, k, modo){ const [y, m, d] = iso.split("-").map(Number); return modo === "utc" ? Date.UTC(y, m - 1, d + k) : localAUtc(y, m, d + k); }   // inicio (UTC) del día k del periodo

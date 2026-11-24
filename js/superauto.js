@@ -99,7 +99,7 @@ function filasDatos(F, tipo){
 function pintar(){
   if (!$("#sup") || !$("#sup").dataset.ok) return;
   const R = getR(), S = (R && R.super) || {}, g = S.generado ? new Date(S.generado + "Z") : null;
-  $("#zHora").textContent = g ? `${modo === "obs_esp" || modo === "obs_six" ? "Estaciones con observador (su sensor) contra todas las cercanas: DMC, INIA y otras" : "Estaciones sin observador"} · revisadas a las ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})} · últimas 24 h` : "Todavía no hay revisión del Super automático";
+  $("#zHora").textContent = g ? `${modo === "obs_esp" || modo === "obs_six" ? "Estaciones con observador (su sensor) contra todas las cercanas: DMC, INIA y otras" : "Estaciones sin observador"} · revisadas a las ${g.toLocaleTimeString("es-CL", {hour: "2-digit", hourCycle: "h23", minute: "2-digit"})} · últimas 24 h` : "Todavía no hay revisión del Super automático";
   const F = filas();
   if (modo === "sup"){
     const nEst = F.length, con = F.filter(x => x.H.length).length, sin = F.filter(x => x.e.nivel === 3).length;

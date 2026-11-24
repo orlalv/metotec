@@ -1891,7 +1891,7 @@ function compInfo(k, h){ for (const r of ROWS) for (const l of (r.lines || [])) 
   const lab = typeof c.lab === "function" ? c.lab(h) : c.lab, t = typeof r.t === "function" ? r.t(h) : r.t;
   return {lab: (lab || k).replace(/\s*\([^)]*\)\s*$/, ""), el: t}; } return {lab: k, el: ""}; }
 const fmtVal = c => !c ? "(vacío)" : c.s === "sd" ? "Sin Dato" : (c.v === "" ? "(vacío)" : c.v);
-const fmtReg = iso => iso ? new Date(iso).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"}) : "";
+const fmtReg = iso => iso ? new Date(iso).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", hourCycle: "h23", minute: "2-digit"}) : "";
 const nomK = k => { const th = [...document.querySelectorAll("#qaGrid th")], td = document.querySelector(`#qaGrid td[data-k="${k}"]`); if (!td) return k; return th[td.cellIndex] ? th[td.cellIndex].textContent : k; };
 window.qaCellClass = (r, k) => {
   const e = r.err && r.err[k], om = r.om && r.om[k];

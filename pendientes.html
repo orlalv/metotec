@@ -41,7 +41,7 @@ async function cargar(){
   const d = await r.json(), L = ordenar(d.hallazgos || []);
   document.title = "Pendientes · " + (d.nombre || d.codigo);
   $("#tit").firstChild.textContent = d.nombre || d.codigo;
-  $("#sub").textContent = `${d.codigo} · últimas 12 horas · revisado ${d.generado ? new Date(d.generado).toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"}) : "—"}`;
+  $("#sub").textContent = `${d.codigo} · últimas 12 horas · revisado ${d.generado ? new Date(d.generado).toLocaleTimeString("es-CL", {hour: "2-digit", hourCycle: "h23", minute: "2-digit"}) : "—"}`;
   const n = p => L.filter(x => x.prio === p).length;
   $("#m").innerHTML = L.length ? `<div class="res"><div><b>${L.length}</b><span>pendientes</span></div><div><b style="color:${PRIO_COL[3]}">${n(3)}</b><span>prioridad alta</span></div><div><b style="color:${PRIO_COL[2]}">${n(2)}</b><span>media</span></div><div><b style="color:${PRIO_COL[1]}">${n(1)}</b><span>baja</span></div></div>`
     + L.map((h, i) => `<div class="it" style="--c:${PRIO_COL[h.prio]}"><div class="n">${i + 1}</div><div><div class="t"><span class="p">${h.prioNom}</span><b style="color:var(--tx)">${dh(h.hora)}</b><span>${esc(h.elem)}</span><span>regla ${esc(h.regla)}</span></div><div class="m">${esc(h.msg)}</div></div></div>`).join("")

@@ -11,7 +11,7 @@ let PPX_ERR = ""; const DG = {ok: 0, nf: 0, api: 0, raw: 0, ult: ""};           
 const dgTxt = () => `leídas ${DG.ok} · sin archivo ${DG.nf} · fallos de /api/emahora ${DG.api} · de GitHub ${DG.raw}${DG.ult ? " · último error: " + esc(DG.ult) : ""}`;
 let venH = (() => { try { return +localStorage.getItem("qcPpSerH") || 24; } catch (e) { return 24; } })(), soloAb = false, RES = null, TOK = 0, CACHE = new Map(), EST = null;
 const hh = t => new Date(t).toISOString().slice(11, 16);
-const loc = t => new Date(t).toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit"});
+const loc = t => new Date(t).toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", hourCycle: "h23", minute: "2-digit"});
 const dd = t => new Date(t).toISOString().slice(0, 10);
 const dur = m => m >= 1440 ? (Math.floor(m / 60 / 24) + " d " + Math.floor(m / 60 % 24) + " h") : m >= 60 ? (Math.floor(m / 60) + " h " + (m % 60 ? m % 60 + " min" : "")).trim() : m + " min";
 

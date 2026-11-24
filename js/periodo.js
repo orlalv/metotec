@@ -39,7 +39,7 @@ async function lista(){
   try {
     const L = await (await fetch("/api/periodo", {headers: H(), cache: "no-store"})).json();
     $("#pLista").innerHTML = L.length ? `<div style="font-size:12.5px;color:var(--mu);margin-bottom:8px">Revisiones anteriores: ${L.slice(0, 10).map(x =>
-      `<a data-pid="${esc(x.id)}" style="cursor:pointer;color:var(--oro);margin-right:10px">${x.tipo === "archivo" ? "archivo " + esc((x.nombres || [])[0] || "") + " · " + new Date(x.pedido).toLocaleString("es-CL", {dateStyle: "short", timeStyle: "short"})
+      `<a data-pid="${esc(x.id)}" style="cursor:pointer;color:var(--oro);margin-right:10px">${x.tipo === "archivo" ? "archivo " + esc((x.nombres || [])[0] || "") + " · " + new Date(x.pedido).toLocaleString("es-CL", {dateStyle: "short", timeStyle: "short", hourCycle: "h23"})
         : esc(x.cod) + " · " + x.desde.slice(8, 10) + "/" + x.desde.slice(5, 7) + "–" + x.hasta.slice(8, 10) + "/" + x.hasta.slice(5, 7) + "/" + x.hasta.slice(0, 4)}</a>`).join("")}</div>` : "";
   } catch (e){}
 }
@@ -89,7 +89,7 @@ function pintar(){
   const hs = P.hallazgos || [], cnt = {}, porDia = {};
   hs.forEach(h => { cnt[h.regla] = (cnt[h.regla] || 0) + 1; const d = h.hora.slice(0, 10); (porDia[d] = porDia[d] || [0, 0, 0])[h.nivel]++; });
   const n2 = hs.filter(h => h.nivel === 2).length, n1 = hs.filter(h => h.nivel === 1).length;
-  $("#pEstado").textContent = `${P.nombre || P.codigo} · ${P.desde} a ${P.hasta} · revisado ${new Date(P.generado).toLocaleString("es-CL", {dateStyle: "short", timeStyle: "short"})}`;
+  $("#pEstado").textContent = `${P.nombre || P.codigo} · ${P.desde} a ${P.hasta} · revisado ${new Date(P.generado).toLocaleString("es-CL", {dateStyle: "short", timeStyle: "short", hourCycle: "h23"})}`;
   const V = hs.filter(h => !filtro || h.regla === filtro);
   const reglas = Object.entries(cnt).sort((a, b) => b[1] - a[1]);
   const dias = Object.keys(porDia).sort(), multiA = (P.desde || "").slice(0, 4) !== (P.hasta || "").slice(0, 4), multiE = (P.estaciones || []).length > 1;

@@ -36,7 +36,7 @@ function pintar(){
   const cnt = {}; filas.forEach(f => cnt[f.regla] = (cnt[f.regla] || 0) + 1);
   const est = new Set(filas.map(f => f.e.codigo));
   const g = O.generado ? new Date(O.generado) : null;
-  $("#xHora").textContent = g ? `Observaciones revisadas a las ${g.toLocaleTimeString("es-CL", {hour: "2-digit", minute: "2-digit"})} (${tipo === "tem" ? "últimas 24 h" : "últimos 4 días"})` : "Sin revisión de observaciones";
+  $("#xHora").textContent = g ? `Observaciones revisadas a las ${g.toLocaleTimeString("es-CL", {hour: "2-digit", hourCycle: "h23", minute: "2-digit"})} (${tipo === "tem" ? "últimas 24 h" : "últimos 4 días"})` : "Sin revisión de observaciones";
   const V = filas.filter(f => !q || (f.e.nombre || "").toLowerCase().includes(q) || f.e.codigo.includes(q))
     .sort((a, b) => b.hora.localeCompare(a.hora) || b.nivel - a.nivel || (a.e.nombre || "").localeCompare(b.e.nombre || ""));
   if (tipo !== "rec"){                          // una sola celda de estación; sus alertas, una debajo de otra

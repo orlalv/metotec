@@ -193,7 +193,7 @@ async function pagComp(forzar){
   }
   const gen = COMP.generado ? Date.parse(String(COMP.generado).replace(" ", "T") + (/Z|[+-]\d\d:?\d\d$/.test(COMP.generado) ? "" : "Z")) : NaN;
   const edadMin = isNaN(gen) ? null : Math.round((Date.now() - gen) / 60e3);
-  const actual = isNaN(gen) ? "—" : `${new Date(gen).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false})} (hace ${edadMin < 90 ? edadMin + " min" : (edadMin / 60).toFixed(1) + " h"})`;
+  const actual = isNaN(gen) ? "—" : `${new Date(gen).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", hour: "2-digit", hourCycle: "h23", minute: "2-digit", hour12: false})} (hace ${edadMin < 90 ? edadMin + " min" : (edadMin / 60).toFixed(1) + " h"})`;
   const hoy = new Date().toISOString().slice(0, 10), dia = S.dataset.dia || hoy, vista = S.dataset.v || "dia", mes = dia.slice(0, 7);
   const E = (COMP.estaciones || []).filter(e => filtra(e.codigo)).sort((a, b) => (b.lat ?? -99) - (a.lat ?? -99));
   const hAct = dia === hoy ? new Date().getUTCHours() : 24;

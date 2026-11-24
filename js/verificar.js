@@ -25,8 +25,8 @@ const guardar = () => { try { localStorage.setItem("qcVerif", JSON.stringify(ST)
 const U = () => window.PPX && window.PPX.util;
 const km = (a, b) => { const r = Math.PI / 180, dl = (b.lat - a.lat) * r, dn = (b.lon - a.lon) * r, x = Math.sin(dl / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dn / 2) ** 2; return 12742 * Math.asin(Math.sqrt(x)); };
 const ms = (dia, h, m) => Date.parse(`${dia}T${p2(h || 0)}:${p2(m || 0)}:00Z`);
-const loc = t => new Date(t).toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit"});
-const locD = t => new Date(t).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"});
+const loc = t => new Date(t).toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", hourCycle: "h23", minute: "2-digit"});
+const locD = t => new Date(t).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", hour: "2-digit", hourCycle: "h23", minute: "2-digit"});
 const clave = () => { try { return sessionStorage.getItem("qcClave") || ""; } catch (e) { return ""; } };
 
 /* ---------- lectura de datos ---------- */

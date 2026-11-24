@@ -2172,7 +2172,7 @@ function filasLocales(){
     return {nombre: n, estado: P.fin ? (P.cierre ? "cerrada" : "terminada") : "en curso", inicio: P.ini, termino: P.fin || "", nota: P.resultado ? P.resultado.nota : "", salidas: P.sal.length, cierre: P.cierre || "",
       intentos: 1, pdf: "", detalleLocal: P.fin ? JSON.stringify({nom: P.nom, v: P.version, ini: P.ini, fin: P.fin, sal: P.sal, cierre: P.cierre || "", items: P.items, res: P.res, r: P.resultado}) : ""}; }).filter(Boolean);
 }
-const fh = s => { if (!s) return ""; const d = new Date(s); return isNaN(d) ? String(s) : d.toLocaleString("es-CL", {day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit"}); };
+const fh = s => { if (!s) return ""; const d = new Date(s); return isNaN(d) ? String(s) : d.toLocaleString("es-CL", {day: "2-digit", month: "2-digit", hour: "2-digit", hourCycle: "h23", minute: "2-digit"}); };
 function docenteVista(){
   const porNombre = Object.fromEntries(DOC.filas.map(f => [f.nombre, f]));
   const filas = ALUMNOS.map(n => porNombre[n] || {nombre: n, estado: "no iniciada"});

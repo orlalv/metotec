@@ -12,7 +12,7 @@ const $ = s => document.querySelector(s), HP = 1800e3;
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const f1 = v => v == null || isNaN(v) ? "—" : (Math.round(v * 10) / 10).toFixed(1);
 const utc = t => new Date(t).toISOString().slice(11, 16);
-const loc = t => new Date(t).toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit", hour12: false});
+const loc = t => new Date(t).toLocaleTimeString("es-CL", {timeZone: "America/Santiago", hour: "2-digit", hourCycle: "h23", minute: "2-digit", hour12: false});
 const sinTilde = x => String(x || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 let EST = [], S = null, mapa = null, capa = null, cap = "imerg", grupoMk = null;
 

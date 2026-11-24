@@ -41,7 +41,7 @@ async function resumen(){
 function pintarR(){
   E = null; $("#sAnio").hidden = true; $("#sVar").innerHTML = "";
   const L = RES.estaciones || [];
-  $("#sTag").textContent = RES.generado ? `Revisado ${new Date(RES.generado).toLocaleString("es-CL", {dateStyle: "short", timeStyle: "short"})}` : "Aún sin revisión";
+  $("#sTag").textContent = RES.generado ? `Revisado ${new Date(RES.generado).toLocaleString("es-CL", {dateStyle: "short", timeStyle: "short", hourCycle: "h23"})}` : "Aún sin revisión";
   if (!L.length){ $("#sOut").innerHTML = `<p style="color:var(--mu)">Todavía no hay series revisadas de esta fuente. El primer barrido (piloto) está en curso.</p>`; return; }
   const tot = k => L.reduce((s, e) => s + (e[k] || 0), 0);
   $("#sOut").innerHTML = `<div class="hres"><div><b>${L.length}</b><span>estaciones</span></div><div><b style="color:var(--err)">${tot("dudosos")}</b><span>datos dudosos</span></div>

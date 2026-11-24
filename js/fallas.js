@@ -10,7 +10,7 @@ const UNI = {T: "°C", Td: "°C", HR: "%", P_est: "hPa", P_mar: "hPa", P_std: "h
 const QUE = {rango: "valores fuera de rango", salto: "saltos bruscos", pegado: "valor pegado (sin variación)", coherencia: "datos incoherentes entre variables"};
 const ms = s => Date.parse(String(s).slice(0, 16).replace(" ", "T") + ":00Z");
 const utc = t => new Date(t).toISOString().slice(0, 16).replace("T", " ");
-const loc = t => new Date(t).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false});
+const loc = t => new Date(t).toLocaleString("es-CL", {timeZone: "America/Santiago", day: "2-digit", month: "2-digit", hour: "2-digit", hourCycle: "h23", minute: "2-digit", hour12: false});
 const dur = m => m < 60 ? Math.round(m) + " min" : m < 48 * 60 ? (m / 60).toFixed(1).replace(".0", "") + " h" : (m / 1440).toFixed(1).replace(".0", "") + " días";
 
 const NOMV = {T: "Ts", Td: "Td", HR: "HR", P_est: "QFE", P_mar: "QFF", P_std: "QNH", ff10: "viento", dd10: "dirección", rr1m: "lluvia", Rad: "radiación"};
