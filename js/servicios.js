@@ -1,5 +1,5 @@
 /* Estado de los servicios (indicador «Servicios» de la barra superior) y texto del resumen de fin de turno.
-   Estado: DMC (Worker de alertas, cada 5 min), pasada de control de calidad (GitHub, cada 30 min), observaciones SACLIM,
+   Estado: DMC (Worker de alertas, cada 5 min), pasada de control de calidad (GitHub, cada 10 min), observaciones SACLIM,
    modelos (Open-Meteo, WRF-DMC) y satélite. Los umbrales de atraso están en LIM (minutos). */
 (function(){
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"})[c]);

@@ -524,7 +524,7 @@ def main():
     res["servicios"] = {"dmc": True, "modelo": M is not None and not falla("modelo:"), "wrf": W is not None and len(W) > 0 and not falla("wrf"), "satelite": bool(sat) and not falla("satelite"),
                         "errores": [str(x).split(":")[0] for x in estado["errores"]][:8],
                         "motivos": {str(x).split(":")[0]: str(x).split(":", 1)[-1].strip()[:200] for x in estado["errores"]}}
-    hacer = a.sensorial == "si" or (a.sensorial == "auto" and not a.json)      # en cada pasada (:15 y :45)
+    hacer = a.sensorial == "si" or (a.sensorial == "auto" and not a.json)      # en cada pasada (cada 10 min)
     sen_res = sen_rev = None
     if hacer:
         try:

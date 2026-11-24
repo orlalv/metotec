@@ -1,9 +1,9 @@
-# Control de calidad en vivo: cada 30 minutos descarga la red automática de la DMC,
+# Control de calidad en vivo: cada 10 minutos descarga la red automática de la DMC,
 # guarda los datos minutarios en la rama "datos" y sube las alertas al KV de Cloudflare.
 name: Control de calidad
 on:
   schedule:
-    - cron: "15,45 * * * *"
+    - cron: "5,15,25,35,45,55 * * * *"
   workflow_dispatch:
     inputs:
       sensorial:
@@ -57,7 +57,7 @@ jobs:
           git commit -q -m "datos $(date -u +%Y-%m-%dT%H:%MZ)" || exit 0
           git push -q origin datos
 
-  # Cadena: el cron de GitHub es poco confiable, así que cada ejecución deja lanzada la siguiente (minutos :15 y :45).
+  # Cadena: el cron de GitHub es poco confiable, así que cada ejecución deja lanzada la siguiente (cada 10 minutos).
   siguiente:
     needs: qc
     if: always()
@@ -74,9 +74,10 @@ jobs:
           KV_ID: 0d6aa4b37a834b5983ac9c7f638e2dbb
         run: |
           ahora=$(date +%s)
-          objetivo=$(( (ahora / 1800 + 1) * 1800 + 900 ))
-          if [ $(( objetivo - ahora )) -gt 1800 ]; then objetivo=$(( objetivo - 1800 )); fi
-          if [ $(( objetivo - ahora )) -lt 120 ]; then objetivo=$(( objetivo + 1800 )); fi
+          # cada 10 minutos (:05, :15, :25…); la pasada dura ~6 min
+          objetivo=$(( (ahora / 600 + 1) * 600 + 300 ))
+          if [ $(( objetivo - ahora )) -gt 600 ]; then objetivo=$(( objetivo - 600 )); fi
+          if [ $(( objetivo - ahora )) -lt 60 ]; then objetivo=$(( objetivo + 600 )); fi
           KV="https://api.cloudflare.com/client/v4/accounts/$CF_ACC/storage/kv/namespaces/$KV_ID/values/qc/pedidos"
           echo "Esperando hasta $(date -u -d @$objetivo +%H:%M) UTC"
           while [ $(date +%s) -lt $objetivo ]; do
