@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-24T21:56:22+00:00",
+ "inicio": "2026-11-24T22:06:15+00:00",
  "errores": [],
  "estaciones": 136,
- "con_datos": 125,
- "registros": 5307,
- "desde": "2026-11-24 20:56:00",
- "hasta": "2026-11-24 21:50:00",
+ "con_datos": 122,
+ "registros": 4698,
+ "desde": "2026-11-24 21:06:00",
+ "hasta": "2026-11-24 22:00:00",
  "horas_archivadas": 2,
  "modelo": 6528,
  "wrf": "sin corridas nuevas",
@@ -19,18 +19,18 @@
   "2026112400_gfs",
   "2026112412_gfs"
  ],
- "wrf_ref": 660,
+ "wrf_ref": 770,
  "satelite": {
   "imagenes": 32,
-  "ultima": "2026-11-24T21:40Z"
+  "ultima": "2026-11-24T21:50Z"
  },
  "externas": {
   "estaciones": 335,
   "con_vecinas": 114,
   "desactivadas": 0,
   "generado": "2026-11-24T21:25:47Z",
-  "pp_archivadas": 10834,
-  "ta_archivadas": 10834,
+  "pp_archivadas": 10631,
+  "ta_archivadas": 10631,
   "desviadas": 8,
   "kv_desvio": "200"
  },
@@ -45,11 +45,11 @@
  "ob_filas": 2879,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 551,
+  "observaciones": 555,
   "fallas": 0,
-  "hallazgos": 324,
+  "hallazgos": 323,
   "kv": "200",
-  "completitud": "sin cambios"
+  "completitud": "200"
  },
  "diario": [
   "2026-11-23",
@@ -57,7 +57,7 @@
  ],
  "super": {
   "estaciones": 103,
-  "hallazgos": 67,
+  "hallazgos": 66,
   "kv": "200"
  },
  "historial": {
@@ -86,12 +86,12 @@
   "kv": "200"
  },
  "kv": "200",
- "alertas": 28,
+ "alertas": 27,
  "resumen": {
-  "bien": 106,
-  "sospechoso": 12,
+  "bien": 107,
+  "sospechoso": 11,
   "erróneo": 8,
   "sin datos": 10
  },
- "fin": "2026-11-24T22:01:07+00:00"
+ "fin": "2026-11-24T22:10:56+00:00"
 }
