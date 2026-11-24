@@ -6,6 +6,8 @@ import json, os, re, sys, time
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import requests
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import kvlimite as KVL
 
 H = {"User-Agent": "Mozilla/5.0 (metotec; contacto.metotec@gmail.com)"}
 BASE = "https://agrometeorologia.cl/"
@@ -18,8 +20,12 @@ def kv_put(clave, texto):
     acc, tok, ns = os.environ.get("CLOUDFLARE_ACCOUNT_ID"), os.environ.get("CLOUDFLARE_API_TOKEN"), os.environ.get("KV_ID")
     if not (acc and tok and ns):
         return "sin credenciales"
+    omitir = KVL.decidir(clave, texto)
+    if omitir:
+        return omitir
     r = requests.put(f"https://api.cloudflare.com/client/v4/accounts/{acc}/storage/kv/namespaces/{ns}/values/{clave}",
                      headers={"Authorization": f"Bearer {tok}", "Content-Type": "application/json"}, data=texto.encode("utf-8"), timeout=90)
+    KVL.anotar(clave, texto, r.status_code)
     return str(r.status_code)
 
 
@@ -55,6 +61,8 @@ def utc(h):
 
 
 def main():
+    if KVL.reciente("qc/externas/PP", 3300):        # las redes externas publican por hora: basta con una descarga por hora
+        print("externas: actualizadas hace menos de una hora, se omite"); return
     tmp = None
     for p in ("PP", "TA", "HR"):
         m = re.search(r"tmp\s*=\s*(tmp_\d+)", requests.get(BASE + p, headers=H, timeout=60).text)

@@ -15,6 +15,7 @@ import pandas as pd
 import requests
 
 sys.path.insert(0, str(Path(__file__).parent))
+import kvlimite as KVL
 import dmc, pruebas as P, superauto as SUP, modelo as MO, wrf as WRF, sensorial as SEN, satelite as SAT, historial as HIS, incendios_qc as INC, boletin as BOL, productos as PRO, pluviometros as PLU, reputacion as REP, externas_vec as EV
 
 VERSION = "0.1"
@@ -82,8 +83,12 @@ def subir_kv(clave, texto):
     acc, tok, ns = os.environ.get("CLOUDFLARE_ACCOUNT_ID"), os.environ.get("CLOUDFLARE_API_TOKEN"), os.environ.get("KV_ID")
     if not (acc and tok and ns):
         return "sin credenciales"
+    omitir = KVL.decidir(clave, texto)
+    if omitir:
+        return omitir
     u = f"https://api.cloudflare.com/client/v4/accounts/{acc}/storage/kv/namespaces/{ns}/values/{clave}"
     r = requests.put(u, headers={"Authorization": f"Bearer {tok}", "Content-Type": "application/json"}, data=texto.encode("utf-8"), timeout=60)
+    KVL.anotar(clave, texto, r.status_code)
     return f"{r.status_code}"
 
 
