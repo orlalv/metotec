@@ -9,12 +9,15 @@ button,select,input{background:var(--panel);color:var(--tx);border:1px solid var
 a{color:var(--oro)}small{font-size:11px}#login{max-width:320px;margin:15vh auto;text-align:center}#login input{width:100%;margin:10px 0}
 </style></head><body>
 <div id="login"><form id="fl"><b style="font-size:18px">Agro · METOTEC</b><p style="color:var(--mu)">Ingresa la clave.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err)"></p></form></div>
-<main id="app" hidden><section id="agro"></section></main>
+<main id="app" hidden><div class="htools" style="gap:6px;margin-bottom:12px"><button id="mBol" class="on">Compendio semanal (boletines)</button><button id="mMin">Minutario (UTC)</button></div><section id="agBol"></section><section id="agro" hidden></section></main>
 <script src="js/agro.js?v=202611231330"></script>
+<script src="js/agro_bol.js?v=202611241700"></script>
 <script>
 const $=s=>document.querySelector(s);
 async function entrar(c){try{const r=await fetch("/api/agro?p=x",{headers:{"x-clave":c}});if(r.status===401){$("#lerr").textContent="Clave incorrecta.";return}}catch(e){$("#lerr").textContent="Sin conexión.";return}
- try{sessionStorage.setItem("qcClave",c)}catch(e){window._qc=c}$("#login").hidden=true;$("#app").hidden=false;AGRO.init()}
+ try{sessionStorage.setItem("qcClave",c)}catch(e){window._qc=c}$("#login").hidden=true;$("#app").hidden=false;AGROBOL.init()}
+let minIni=false;function modo(m){$("#mBol").classList.toggle("on",m==="bol");$("#mMin").classList.toggle("on",m==="min");$("#agBol").hidden=m!=="bol";$("#agro").hidden=m!=="min";if(m==="min"&&!minIni){minIni=true;AGRO.init()}}
+$("#mBol").onclick=()=>modo("bol");$("#mMin").onclick=()=>modo("min");
 $("#fl").addEventListener("submit",ev=>{ev.preventDefault();entrar($("#clave").value)});
 try{const c=sessionStorage.getItem("qcClave");if(c)entrar(c)}catch(e){}
 </script></body></html>
