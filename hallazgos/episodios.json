@@ -11,10 +11,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-24 22:30",
-"visto": "2026-11-24 22:46",
+"fin": "2026-11-24 23:00",
+"visto": "2026-11-24 23:06",
 "detalle": [
-"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -31,9 +31,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-24 20:30",
-"visto": "2026-11-24 22:46",
+"visto": "2026-11-24 23:06",
 "detalle": [
-"HR · rango: 365 valores fuera de rango físico [1, 100] (valor 0.0)"
+"HR · rango: 335 valores fuera de rango físico [1, 100] (valor 0.0)"
 ]
 },
 "330162|barómetro": {
@@ -49,12 +49,12 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-24 16:35",
-"visto": "2026-11-24 22:46",
+"fin": "2026-11-24 17:49",
+"visto": "2026-11-24 23:06",
 "detalle": [
-"QFF · rango: 6 valores fuera de rango físico [920, 1060] (valor 548.8)",
-"QFE · rango: 6 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.2)",
-"QFE · salto: cambio de 424.2 en 1 min (valor 504.2)"
+"QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 549.2)",
+"QFE · rango: 5 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.6)",
+"QFE · salto: cambio de 423.2 en 1 min (valor 504.6)"
 ]
 },
 "340048|barómetro": {
@@ -70,12 +70,12 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-24 16:52",
-"visto": "2026-11-24 22:46",
+"fin": "2026-11-24 17:52",
+"visto": "2026-11-24 23:06",
 "detalle": [
-"QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 523.4)",
-"QFE · rango: 5 valores fuera de lo habitual para la zona centro [936, 1016] (valor 504.8)",
-"QFE · salto: cambio de 474.4 en 1 min (valor 504.8)"
+"QFF · rango: 4 valores fuera de rango físico [920, 1060] (valor 523.9)",
+"QFE · rango: 4 valores fuera de lo habitual para la zona centro [936, 1016] (valor 505.4)",
+"QFE · salto: cambio de 473.2 en 1 min (valor 505.4)"
 ]
 },
 "370036|piranómetro (radiación)": {
@@ -89,10 +89,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-24 16:59",
-"visto": "2026-11-24 22:46",
+"fin": "2026-11-24 17:59",
+"visto": "2026-11-24 23:06",
 "detalle": [
-"radiación · rango: 381 valores fuera de rango físico [0, 1600] (valor 3338.16)"
+"radiación · rango: 351 valores fuera de rango físico [0, 1600] (valor 3572.35)"
 ]
 },
 "390029|barómetro": {
@@ -108,12 +108,12 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-24 16:22",
-"visto": "2026-11-24 22:46",
+"fin": "2026-11-24 20:03",
+"visto": "2026-11-24 23:06",
 "detalle": [
-"QFF · rango: 4 valores fuera de rango físico [920, 1060] (valor 517.5)",
-"QFE · rango: 4 valores fuera de lo habitual para la zona sur [946, 1026] (valor 503.7)",
-"QFE · salto: cambio de 491.2 en 1 min (valor 994.9)"
+"QFF · rango: 4 valores fuera de rango físico [920, 1060] (valor 518.0)",
+"QFE · rango: 4 valores fuera de lo habitual para la zona sur [946, 1026] (valor 504.2)",
+"QFE · salto: cambio de 490.0 en 1 min (valor 504.1)"
 ]
 },
 "400061|termohigrómetro": {
@@ -131,10 +131,10 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-24 22:30",
-"visto": "2026-11-24 22:46",
+"fin": "2026-11-24 23:00",
+"visto": "2026-11-24 23:06",
 "detalle": [
-"HR · rango: 381 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 351 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -149,10 +149,10 @@
 "rango"
 ],
 "nivel": 1,
-"fin": "2026-11-24 16:59",
-"visto": "2026-11-24 22:46",
+"fin": "2026-11-24 17:45",
+"visto": "2026-11-24 23:06",
 "detalle": [
-"radiación · rango: 106 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1488.97)"
+"radiación · rango: 46 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1495.83)"
 ]
 },
 "230004|piranómetro (radiación)": {
@@ -184,7 +184,7 @@
 ],
 "nivel": 1,
 "fin": "2026-11-24 18:40",
-"visto": "2026-11-24 22:46",
+"visto": "2026-11-24 23:06",
 "detalle": [
 "Ts · rango: 10 valores fuera de lo habitual para la zona cordillera/altiplano [-30, 30] (valor 30.5)"
 ]
@@ -200,8 +200,8 @@
 "pegado"
 ],
 "nivel": 1,
-"fin": "2026-11-24 21:40",
-"visto": "2026-11-24 22:06",
+"fin": "2026-11-24 22:40",
+"visto": "2026-11-24 23:06",
 "detalle": [
 "QFE · pegado: sin cambio durante 3 h (valor 974.0)"
 ]
