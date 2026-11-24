@@ -260,7 +260,8 @@ main[hidden]{display:none}
 <script src="js/huecos.js?v=202611241310"></script>
 <script src="js/externas.js?v=202611241310"></script>
 <script src="js/ppx.js?v=202611241310"></script>
-<script src="js/agro.js?v=202611241310"></script>
+<script src="js/agro.js?v=202611241900"></script>
+<script src="js/agro_bol.js?v=202611241900"></script>
 <script src="js/verificar.js?v=202611241310"></script>
 <script src="js/minutarios.js?v=202611241310"></script>
 <script src="js/supgraf.js?v=202611241310"></script>
@@ -687,7 +688,7 @@ function cambiarModo(m){
   try { history.replaceState(null, "", "#" + m); } catch (e) {}      // la pestaña también queda en la dirección: F5 vuelve a la misma
   if (h){
     if (m === "pp"){ ppAbrir(); return; }
-    if (m === "hist"){ hInit(); if (!HI) hCargar(); } else if (m === "minu") MINU.init(); else if (m === "agro") AGRO.init(); else if (m === "bol") BOL.init(clave);
+    if (m === "hist"){ hInit(); if (!HI) hCargar(); } else if (m === "minu") MINU.init(); else if (m === "agro") AGROBOL.montar(); else if (m === "bol") BOL.init(clave);
     else if (sec === "ext") EXT.init(() => R, m); else if (sec === "ser") SER.init(clave, m === "ser" ? "dia" : "hora");
     else if (sec === "equ" || sec === "mis" || sec === "comp") EQ.pagina(m);
     else if (sec === "vex") EXTV.pagina($("#vex"));

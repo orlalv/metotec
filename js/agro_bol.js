@@ -114,17 +114,23 @@ async function ventana(vk, r){
       const [y, mo, d] = r.fecha.split("-").map(Number), lu = AGRO._t.localAUtc, pp = vk === "pp", col = pp ? "rr1m" : "T";
       const a = pp ? lu(y, mo, d, 8, 0) : lu(y, mo, d - 1, 21, 1), b = pp ? lu(y, mo, d + 1, 8, 0) : lu(y, mo, d, 21, 0);
       let tx = null; if (!pp){ try { const P = await FALLAS.serie(r.cod, "T", a, b); if (P.length) tx = P.reduce((m, q) => (vk === "tmax" ? q[1] > m[1] : q[1] < m[1]) ? q : m)[0]; } catch (er) {} }
+      const RRq = typeof R !== "undefined" ? R : null, eQ = RRq && (RRq.estaciones || []).find(x => x.codigo === r.cod);
+      const esp = !pp && !!(window.SUPER && SUPER.mapaEsp && window.supVec && eQ && eQ.lat != null);
       const M = modalB();
       M.innerHTML = `<div style="max-width:1100px;margin:0 auto;background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:16px">
         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3 style="margin:0;font-size:16px">${esc(e0.nombre)} <small class="tag">${r.cod} · ${esc(e0.comuna || "")}, ${esc(C.regiones[r.reg])}</small></h3>
         <p style="margin:6px 0 0">${VK[vk]} del boletín: <b>${f1(r.valor)}</b> · ${diaTxt(r.fecha)} <span class="tag">· tramo marcado = día del boletín (${pp ? "8:00 a 8:00" : "21:01 a 21:00"} hora local)</span></p>
         ${r.estado !== "ok" ? `<p style="margin:4px 0 0;color:${r.estado === "error" ? "var(--err)" : "var(--oro)"}">⚠ ${r.estado}: ${esc(r.motivo)}</p>` : ""}</div><button data-x>✕ Cerrar</button></div>
         <div id="agBolFal" style="margin-top:10px"></div>
+        ${esp ? `<div style="margin-top:12px"><b style="font-size:13px">Control espacial</b><div class="espMapT" style="font-size:12.5px;margin:4px 0"></div><div class="espMap" style="height:420px;border:1px solid var(--bd);border-radius:8px"></div><small style="color:var(--mu)">Rojo = la estación · azul = vecinas DMC · naranja = externas (INIA y otras)</small></div>` : ""}
         <div style="margin-top:12px;border-top:1px solid var(--bd);padding-top:10px">${sa0 ? `<span style="color:var(--err)">Sacado del ranking: ${esc(sa0.motivo)}</span>` : `<button data-sac style="font-weight:700">Sacar del ranking</button>`}</div></div>`;
       M.querySelector("[data-x]").onclick = () => { M.hidden = true; };
       const bs = M.querySelector("[data-sac]"); if (bs) bs.onclick = async () => { M.hidden = true; await sacar(vk, r); };
       FALLAS.grafico(M.querySelector("#agBolFal"), {codigo: r.cod, nombre: e0.nombre, var: col, inicio: a, ultima: b, sigue: false, minutos: (b - a) / 60e3, alertas: [], etiqueta: "día del boletín",
         tmapa: tx || (pp ? b : a + (b - a) / 2), tmapaTxt: tx ? `en el momento de la ${vk === "tmax" ? "máxima" : "mínima"}` : (pp ? "al cierre del día del boletín" : "a mitad del día del boletín")}, RR);
+      if (esp){ setTimeout(() => { const fm = M.querySelector("#agBolFal .fmap"), ft = M.querySelector("#agBolFal .fmapt"); if (fm) fm.style.display = "none"; if (ft) ft.style.display = "none"; }, 50);
+        try { SUPER.mapaEsp(M.querySelector(".espMap"), M.querySelector(".espMapT"), eQ, window.supVec(r.cod), {regla: "ZE05", msg: vk === "tmin" ? "Ts mínima" : "Ts máxima"}, new Date(b).toISOString().slice(0, 16)); }
+        catch (er){ M.querySelector(".espMapT").textContent = "No se pudo dibujar el mapa."; } }
       return;
     }
   }
@@ -183,5 +189,13 @@ function pintar(){
   $("#agSem").onchange = e => { SEM = e.target.value; cargar(); };
   $("#agCsv").onclick = csv;
 }
-window.AGROBOL = {init: cargar};
+/* En qc.html (pestaña Agro del control) se monta el mismo selector «Compendio semanal / Minutario» que en agro.html */
+function montar(){
+  if ($("#agBol")){ if (!C) cargar(); return; }
+  const ag = $("#agro"); if (!ag) return;            // qc.html: todo va dentro de la sección «agro» (se oculta con las demás pestañas)
+  ag.innerHTML = `<div class="htools" style="gap:6px;margin:0 0 12px"><button id="mBol" class="on">Compendio semanal (boletines)</button><button id="mMin">Minutario (UTC)</button></div><section id="agBol"></section><section id="agroMin" hidden></section>`;
+  let minIni = false; const modo = m => { $("#mBol").classList.toggle("on", m === "bol"); $("#mMin").classList.toggle("on", m === "min"); $("#agBol").hidden = m !== "bol"; $("#agroMin").hidden = m !== "min"; if (m === "min" && !minIni){ minIni = true; AGRO.init(); } };
+  $("#mBol").onclick = () => modo("bol"); $("#mMin").onclick = () => modo("min"); cargar();
+}
+window.AGROBOL = {init: cargar, montar};
 })();

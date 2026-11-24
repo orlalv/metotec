@@ -317,7 +317,7 @@ async function generar(){
 }
 
 function init(){
-  const s = $("#agro"); if (!s.dataset.ok){
+  const s = $("#agroMin") || $("#agro"); if (!s.dataset.ok){
     s.dataset.ok = 1;
     s.innerHTML = `<div class="htools" style="gap:8px;flex-wrap:wrap;align-items:center;font-size:13px"><b>Agro</b><label>Jueves de inicio <input type="date" id="agJue" value="${ultimoJueves("utc")}"></label><label>Días en <select id="agModo"><option value="utc">UTC</option><option value="loc">hora de Chile</option></select></label><button id="agGo">Generar</button><span class="tag" id="agTag"></span></div><div id="agOut" style="margin-top:8px"></div>`;
     $("#agGo").addEventListener("click", generar); $("#agModo").addEventListener("change", () => { $("#agJue").value = ultimoJueves($("#agModo").value); generar(); });
