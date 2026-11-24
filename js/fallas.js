@@ -85,7 +85,7 @@ function ventana(ep, k){
 // mapa bajo el gráfico: la estación y sus vecinas con el valor de cada una al inicio de la falla
 async function mapaVec(cont, e, ep, vec, gv){
   const M = cont.querySelector(".fmap"); if (!window.L || e.lat == null){ M.remove(); return; }
-  const v = gv(), t0 = ep.inicio, mp = L.map(M, {attributionControl: false});
+  const v = gv(), t0 = ep.tmapa || ep.inicio, mp = L.map(M, {attributionControl: false});
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 13}).addTo(mp);
   const et = (n, val, col) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-100%);white-space:nowrap;background:#0d1117dd;border:1px solid ${col};color:#fff;border-radius:6px;padding:1px 6px;font:600 11.5px system-ui;text-align:center">${esc(n)}<br><b style="color:${col}">${val}</b></div>`});
   const valEn = async c => { try { const P = await serie(c, v, t0 - 10 * 60e3, t0 + 10 * 60e3); if (!P.length) return null; P.sort((a, b) => Math.abs(a[0] - t0) - Math.abs(b[0] - t0)); return P[0][1]; } catch (er){ return null; } };
@@ -96,7 +96,7 @@ async function mapaVec(cont, e, ep, vec, gv){
     const mk = L.marker([x.lat, x.lon], {icon: et(`${n} · ${d} km`, "…", "#58a6ff")}).addTo(mp);
     valEn(c).then(y => mk.setIcon(et(`${n} · ${d} km`, fm(y), "#58a6ff"))); });
   if (pts.length > 1) mp.fitBounds(pts, {padding: [50, 50], maxZoom: 10}); else mp.setView(pts[0], 9);
-  cont.querySelector(".fmapt").textContent = `${NOMV[v] || v} al inicio de la falla (${utc(t0)} UTC) · rojo = la estación, azul = vecinas que usa el control${vec.length ? "" : " (no tiene vecinas cercanas)"}`;
+  cont.querySelector(".fmapt").textContent = `${NOMV[v] || v} ${ep.tmapaTxt || "al inicio de la falla"} (${utc(t0)} UTC) · rojo = la estación, azul = vecinas que usa el control${vec.length ? "" : " (no tiene vecinas cercanas)"}`;
 }
 async function grafico(cont, ep, R){
   const e = (R.estaciones || []).find(x => x.codigo === ep.codigo) || {};
@@ -107,7 +107,7 @@ async function grafico(cont, ep, R){
     ${vs.length > 1 ? `<label>Variable <select class="fvar" style="background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:2px 6px">${vs.map(x => `<option value="${esc(x)}">${esc(NOMV[x] || x)}</option>`).join("")}</select></label>` : ""}
     <label>Referencia <select class="fref" style="background:var(--fondo);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:2px 6px"><option value="">${vec.length ? "ninguna" : "sin vecinas cercanas"}</option>${vec.map(([c, n, d]) => `<option value="${esc(c)}">${esc(n)}${d != null ? ` · ${d} km` : ""}</option>`).join("")}</select></label>
     <span class="sgval"></span></div><div class="fg"></div>
-    <div class="sgley"><span><i style="background:#5AA9E6"></i>${esc(ep.nombre)}</span><span><i style="background:var(--err)"></i>tramo con falla</span><span class="lref" hidden><i style="background:#C9A54C"></i>vecina</span><span class="lctl" hidden><i style="background:#3fb950"></i><span class="tctl"></span></span><span class="lvar"></span></div>
+    <div class="sgley"><span><i style="background:#5AA9E6"></i>${esc(ep.nombre)}</span><span><i style="background:var(--err)"></i>${esc(ep.etiqueta || "tramo con falla")}</span><span class="lref" hidden><i style="background:#C9A54C"></i>vecina</span><span class="lctl" hidden><i style="background:#3fb950"></i><span class="tctl"></span></span><span class="lvar"></span></div>
     <div class="fmap" style="height:300px;margin-top:8px;border:1px solid var(--bd);border-radius:8px"></div><div class="fmapt" style="font-size:12px;color:var(--mu);margin-top:3px"></div>`;
   mapaVec(cont, e, ep, vec, () => v);
   const dib = async () => {
@@ -145,5 +145,5 @@ async function grafico(cont, ep, R){
   const fv = cont.querySelector(".fvar"); if (fv) fv.addEventListener("change", ev => { v = ev.target.value; dib(); });
   dib();
 }
-window.FALLAS = {episodios, texto, grafico, dur, utc, loc, sensor, que, esFalla};
+window.FALLAS = {episodios, texto, grafico, serie, dur, utc, loc, sensor, que, esFalla};
 })();

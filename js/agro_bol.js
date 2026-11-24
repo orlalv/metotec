@@ -66,6 +66,19 @@ function vista(){
     <p class="tag">«s/p» del boletín pluviométrico se cuenta como sin precipitación (0 mm).</p>`;
 }
 
+/* catálogo de estaciones con vecinas (como R.estaciones del control) para la ventana de Fallas */
+let CAT = null;
+async function catalogo(){
+  if (CAT) return CAT;
+  if (typeof R !== "undefined" && R && R.estaciones) return (CAT = R);
+  let L = [];
+  for (const u of ["/api/minutarios?estaciones=1", "/api/datosraw?p=estaciones.json"]){ try { const j = await (await fetch(u)).json(); L = Array.isArray(j) ? j : j.estaciones || []; if (L.length) break; } catch (e) {} }
+  const km = (a, b) => { const r = Math.PI / 180, q = Math.sin((b.lat - a.lat) * r / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin((b.lon - a.lon) * r / 2) ** 2; return 12742 * Math.asin(Math.sqrt(q)); };
+  L = L.map(e => Object.assign({}, e, {codigo: String(e.codigo)}));
+  L.forEach(e => { e.vecinas = e.lat == null ? [] : L.filter(o => o !== e && o.lat != null).map(o => [o.codigo, km(e, o)]).filter(x => x[1] <= 120).sort((x, y) => x[1] - y[1]).slice(0, 5).map(x => x[0]); });
+  return (CAT = {estaciones: L});
+}
+function modalB(){ let M = $("#agBolM"); if (!M){ M = document.createElement("div"); M.id = "agBolM"; M.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;overflow:auto;padding:30px 12px"; document.body.appendChild(M); M.addEventListener("click", e => { if (e.target === M) M.hidden = true; }); } M.hidden = false; return M; }
 /* ---------- ventana: la estación y sus vecinas (misma provincia; si son menos de 3, la región) durante la semana ---------- */
 const IX = {tmax: 1, tmin: 0, pp: 2};
 function vecinas(cod){
@@ -93,7 +106,28 @@ function graficoSemana(vk, cod, V){
   return `<svg viewBox="0 0 ${W} ${Hh}" style="width:100%;height:auto;background:var(--fondo);border:1px solid var(--bd);border-radius:8px">${g}</svg>
     <small class="tag"><span style="color:#e8783a">■</span> la estación · <span style="color:#5fa8d3">■</span> mediana de las vecinas${pp ? "" : " · gris: cada vecina"} · valores del boletín</small>`;
 }
-function ventana(vk, r){
+async function ventana(vk, r){
+  const e0 = est(r), sa0 = SAC[idDe(vk, r)];
+  if (window.FALLAS && window.L && e0.prop === "DMC" && r.fecha){        // estaciones DMC: la misma ventana de Fallas (minutario con zoom + mapa de vecinas)
+    const RR = await catalogo(), eR = RR.estaciones.find(x => x.codigo === r.cod);
+    if (eR && eR.lat != null){
+      const [y, mo, d] = r.fecha.split("-").map(Number), lu = AGRO._t.localAUtc, pp = vk === "pp", col = pp ? "rr1m" : "T";
+      const a = pp ? lu(y, mo, d, 8, 0) : lu(y, mo, d - 1, 21, 1), b = pp ? lu(y, mo, d + 1, 8, 0) : lu(y, mo, d, 21, 0);
+      let tx = null; if (!pp){ try { const P = await FALLAS.serie(r.cod, "T", a, b); if (P.length) tx = P.reduce((m, q) => (vk === "tmax" ? q[1] > m[1] : q[1] < m[1]) ? q : m)[0]; } catch (er) {} }
+      const M = modalB();
+      M.innerHTML = `<div style="max-width:1100px;margin:0 auto;background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:16px">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3 style="margin:0;font-size:16px">${esc(e0.nombre)} <small class="tag">${r.cod} · ${esc(e0.comuna || "")}, ${esc(C.regiones[r.reg])}</small></h3>
+        <p style="margin:6px 0 0">${VK[vk]} del boletín: <b>${f1(r.valor)}</b> · ${diaTxt(r.fecha)} <span class="tag">· tramo marcado = día del boletín (${pp ? "8:00 a 8:00" : "21:01 a 21:00"} hora local)</span></p>
+        ${r.estado !== "ok" ? `<p style="margin:4px 0 0;color:${r.estado === "error" ? "var(--err)" : "var(--oro)"}">⚠ ${r.estado}: ${esc(r.motivo)}</p>` : ""}</div><button data-x>✕ Cerrar</button></div>
+        <div id="agBolFal" style="margin-top:10px"></div>
+        <div style="margin-top:12px;border-top:1px solid var(--bd);padding-top:10px">${sa0 ? `<span style="color:var(--err)">Sacado del ranking: ${esc(sa0.motivo)}</span>` : `<button data-sac style="font-weight:700">Sacar del ranking</button>`}</div></div>`;
+      M.querySelector("[data-x]").onclick = () => { M.hidden = true; };
+      const bs = M.querySelector("[data-sac]"); if (bs) bs.onclick = async () => { M.hidden = true; await sacar(vk, r); };
+      FALLAS.grafico(M.querySelector("#agBolFal"), {codigo: r.cod, nombre: e0.nombre, var: col, inicio: a, ultima: b, sigue: false, minutos: (b - a) / 60e3, alertas: [], etiqueta: "día del boletín",
+        tmapa: tx || (pp ? b : a + (b - a) / 2), tmapaTxt: tx ? `en el momento de la ${vk === "tmax" ? "máxima" : "mínima"}` : (pp ? "al cierre del día del boletín" : "a mitad del día del boletín")}, RR);
+      return;
+    }
+  }
   let M = $("#agBolM"); if (!M){ M = document.createElement("div"); M.id = "agBolM"; M.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:50;overflow:auto;padding:30px 12px"; document.body.appendChild(M); M.addEventListener("click", e => { if (e.target === M) M.hidden = true; }); }
   const e = est(r), {V, nivel} = vecinas(r.cod), k = IX[vk], dia = r.dia, u = vk === "pp" ? "mm" : "°C";
   const filas = V.map(c => ({c, v: (C.serie[c][dia] || [])[k]})).filter(x => x.v != null).sort((a, b) => vk === "tmin" ? a.v - b.v : b.v - a.v);

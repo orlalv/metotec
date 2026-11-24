@@ -1,17 +1,20 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agro · METOTEC</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root{--fondo:#0F1215;--panel:#171C21;--hover:#20272D;--bd:#2A3238;--tx:#ECEFF1;--mu:#8E99A2;--oro:#E8783A;--ok:#2f9e44;--err:#d6336c}
 *{box-sizing:border-box}body{margin:0;background:var(--fondo);color:var(--tx);font:14px system-ui,sans-serif}main{max-width:1200px;margin:0 auto;padding:14px}
 button,select,input{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:5px 10px;font:inherit;cursor:pointer}button.on{background:var(--oro);color:#1A0D05;border-color:var(--oro)}
 .htools{display:flex}.tag{color:var(--mu)}.bcard{background:var(--panel);border:1px solid var(--bd);border-radius:10px}
 .xtab{border-collapse:collapse;width:100%}.xtab th{font-size:12px;color:var(--mu);text-align:left;padding:6px 8px;border-bottom:1px solid var(--bd)}.xtab td{padding:6px 8px;border-bottom:1px solid var(--bd);vertical-align:top}.xtab tr:hover td{background:var(--hover)}.xtab .n{text-align:right;white-space:nowrap}
+.sgtop{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:13px}.sgval{font-family:monospace;font-size:12.5px}.sgley{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mu);margin:4px 0 6px}.sgley i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}.leaflet-container{font:inherit}.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.5)}
 a{color:var(--oro)}small{font-size:11px}#login{max-width:320px;margin:15vh auto;text-align:center}#login input{width:100%;margin:10px 0}
 </style></head><body>
 <div id="login"><form id="fl"><b style="font-size:18px">Agro · METOTEC</b><p style="color:var(--mu)">Ingresa la clave.</p><input id="clave" type="password" autocomplete="current-password" placeholder="Clave"><button>Entrar</button><p id="lerr" style="color:var(--err)"></p></form></div>
 <main id="app" hidden><div class="htools" style="gap:6px;margin-bottom:12px"><button id="mBol" class="on">Compendio semanal (boletines)</button><button id="mMin">Minutario (UTC)</button></div><section id="agBol"></section><section id="agro" hidden></section></main>
 <script src="js/agro.js?v=202611231330"></script>
-<script src="js/agro_bol.js?v=202611241800"></script>
+<script src="js/fallas.js?v=202611241830"></script>
+<script src="js/agro_bol.js?v=202611241830"></script>
 <script>
 const $=s=>document.querySelector(s);
 async function entrar(c){try{const r=await fetch("/api/agro?p=x",{headers:{"x-clave":c}});if(r.status===401){$("#lerr").textContent="Clave incorrecta.";return}}catch(e){$("#lerr").textContent="Sin conexión.";return}
