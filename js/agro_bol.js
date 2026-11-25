@@ -93,24 +93,60 @@ function vecinas(cod){
   return {V, nivel};
 }
 const mediana = a => { const b = a.filter(x => x != null).sort((x, y) => x - y); return b.length ? (b.length % 2 ? b[(b.length - 1) / 2] : (b[b.length / 2 - 1] + b[b.length / 2]) / 2) : null; };
-function graficoSemana(vk, cod, V){
-  const k = IX[vk], W = 760, Hh = 260, ml = 44, mr = 12, mt = 12, mb = 28, pp = vk === "pp";
+function graficoSemana(vk, cod, V, diaSel){
+  const k = IX[vk], W = 820, Hh = 300, ml = 46, mr = 16, mt = 16, mb = 34, pp = vk === "pp", u = pp ? "mm" : "°C";
   const serie = c => (C.serie[c] || []).map(d => d[k]);
   const todos = [serie(cod), ...V.map(serie)].flat().filter(x => x != null);
-  let lo = Math.min(...todos, pp ? 0 : Infinity), hi = Math.max(...todos); if (!isFinite(lo)) return "<p class='tag'>Sin datos</p>"; if (hi - lo < 2) hi = lo + 2;
+  if (!todos.length) return "<p class='tag'>Sin datos</p>";
+  let lo = Math.min(...todos, pp ? 0 : Infinity), hi = Math.max(...todos); const pad = pp ? 0 : Math.max(1, (hi - lo) * 0.08); lo -= pad; hi += pad; if (hi - lo < 2) hi = lo + 2;
   const X = i => ml + (W - ml - mr) * (i + 0.5) / 7, Y = v => mt + (Hh - mt - mb) * (1 - (v - lo) / (hi - lo));
-  const linea = (a, col, w, op) => { let d = "", ab = false; a.forEach((v, i) => { if (v == null){ ab = false; return; } d += (ab ? "L" : "M") + X(i).toFixed(1) + " " + Y(v).toFixed(1); ab = true; }); return `<path d="${d}" fill="none" stroke="${col}" stroke-width="${w}" opacity="${op}"/>` + a.map((v, i) => v == null ? "" : `<circle cx="${X(i)}" cy="${Y(v)}" r="${w + 1}" fill="${col}" opacity="${op}"><title>${f1(v)}</title></circle>`).join(""); };
+  const curva = a => {      // curva suavizada (Catmull-Rom) por tramos con dato
+    let d = "", seg = [];
+    const corta = () => { if (seg.length === 1) d += `M${seg[0][0]} ${seg[0][1]}`; else if (seg.length > 1){ d += `M${seg[0][0]} ${seg[0][1]}`; for (let i = 0; i < seg.length - 1; i++){ const p0 = seg[i - 1] || seg[i], p1 = seg[i], p2 = seg[i + 1], p3 = seg[i + 2] || p2;
+      d += `C${(p1[0] + (p2[0] - p0[0]) / 6).toFixed(1)} ${(p1[1] + (p2[1] - p0[1]) / 6).toFixed(1)} ${(p2[0] - (p3[0] - p1[0]) / 6).toFixed(1)} ${(p2[1] - (p3[1] - p1[1]) / 6).toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`; } } seg = []; };
+    a.forEach((v, i) => { if (v == null) corta(); else seg.push([X(i), Y(v)]); }); corta(); return d; };
   const med = Array.from({length: 7}, (_, i) => mediana(V.map(c => serie(c)[i])));
   let g = "";
-  for (let j = 0; j <= 4; j++){ const v = lo + (hi - lo) * j / 4; g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--bd)"/><text x="${ml - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="var(--mu)">${v.toFixed(pp ? 0 : 1)}</text>`; }
-  C.dias.forEach((d, i) => g += `<text x="${X(i)}" y="${Hh - 8}" text-anchor="middle" font-size="11" fill="var(--mu)">${diaTxt(d)}</text>`);
-  if (pp){ const bw = (W - ml - mr) / 7 * 0.35;
-    serie(cod).forEach((v, i) => { if (v != null) g += `<rect x="${X(i) - bw}" y="${Y(v)}" width="${bw}" height="${Y(lo) - Y(v)}" fill="#e8783a"><title>${f1(v)} mm</title></rect>`; });
-    med.forEach((v, i) => { if (v != null) g += `<rect x="${X(i)}" y="${Y(v)}" width="${bw}" height="${Y(lo) - Y(v)}" fill="#5fa8d3" opacity=".6"><title>mediana vecinas ${f1(v)} mm</title></rect>`; });
-  } else { V.forEach(c => g += linea(serie(c), "#8e99a2", 1, .45)); g += linea(med, "#5fa8d3", 2, .9) + linea(serie(cod), "#e8783a", 2.5, 1); }
-  return `<svg viewBox="0 0 ${W} ${Hh}" style="width:100%;height:auto;background:var(--fondo);border:1px solid var(--bd);border-radius:8px">${g}</svg>
-    <small class="tag"><span style="color:#e8783a">■</span> la estación · <span style="color:#5fa8d3">■</span> mediana de las vecinas${pp ? "" : " · gris: cada vecina"} · valores del boletín</small>`;
+  if (diaSel != null) g += `<rect x="${X(diaSel) - (W - ml - mr) / 14}" y="${mt}" width="${(W - ml - mr) / 7}" height="${Hh - mt - mb}" fill="#e8783a" opacity=".08"/>`;
+  for (let j = 0; j <= 4; j++){ const v = lo + (hi - lo) * j / 4; g += `<line x1="${ml}" x2="${W - mr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--bd)" stroke-dasharray="2 4"/><text x="${ml - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="var(--mu)">${v.toFixed(pp ? 0 : 1)}</text>`; }
+  g += `<text x="4" y="${Hh - mb + 4}" font-size="11" fill="var(--mu)">${u}</text>`;
+  C.dias.forEach((d, i) => g += `<text x="${X(i)}" y="${Hh - 12}" text-anchor="middle" font-size="11.5" fill="${i === diaSel ? "#e8783a" : "var(--mu)"}" font-weight="${i === diaSel ? 700 : 400}">${diaTxt(d)}</text>`);
+  if (pp){ const bw = (W - ml - mr) / 7 * 0.3;
+    serie(cod).forEach((v, i) => { if (v != null) g += `<rect x="${X(i) - bw}" y="${Y(v)}" width="${bw}" height="${Y(lo) - Y(v)}" rx="2" fill="#e8783a"/>`; });
+    med.forEach((v, i) => { if (v != null) g += `<rect x="${X(i) + 1}" y="${Y(v)}" width="${bw}" height="${Y(lo) - Y(v)}" rx="2" fill="#5fa8d3" opacity=".75"/>`; });
+  } else {
+    V.forEach(c => g += `<path data-vec="${c}" d="${curva(serie(c))}" fill="none" stroke="#8e99a2" stroke-width="1" opacity=".35"/>`);
+    g += `<path d="${curva(med)}" fill="none" stroke="#5fa8d3" stroke-width="2.2"/><path d="${curva(serie(cod))}" fill="none" stroke="#e8783a" stroke-width="2.8"/>`;
+    med.forEach((v, i) => { if (v != null) g += `<circle cx="${X(i)}" cy="${Y(v)}" r="3" fill="#5fa8d3"/>`; });
+    serie(cod).forEach((v, i) => { if (v != null) g += `<circle cx="${X(i)}" cy="${Y(v)}" r="4" fill="#e8783a"/><text x="${X(i)}" y="${Y(v) - 9}" text-anchor="middle" font-size="11" font-weight="700" fill="#e8783a">${f1(v)}</text>`; });
+  }
+  g += `<line class="gsCur" x1="0" x2="0" y1="${mt}" y2="${Hh - mb}" stroke="var(--mu)" stroke-width="1" opacity="0"/>`;
+  for (let i = 0; i < 7; i++) g += `<rect class="gsZona" data-i="${i}" x="${X(i) - (W - ml - mr) / 14}" y="${mt}" width="${(W - ml - mr) / 7}" height="${Hh - mt - mb}" fill="transparent"/>`;
+  const datos = encodeURIComponent(JSON.stringify({u, est: [est({cod}).nombre, serie(cod)], med, vec: V.map(c => [(C.estaciones[c] || {}).nombre || c, serie(c), c])}));
+  return `<div class="gsWrap" data-gs="${datos}" style="position:relative"><svg viewBox="0 0 ${W} ${Hh}" style="width:100%;height:auto;background:var(--fondo);border:1px solid var(--bd);border-radius:8px">${g}</svg>
+    <div class="gsTip" hidden style="position:absolute;pointer-events:none;background:#0d1117f2;border:1px solid var(--bd);border-radius:8px;padding:8px 10px;font-size:12px;min-width:200px;max-width:280px;z-index:3"></div></div>
+    <small class="tag"><span style="color:#e8783a">●</span> la estación · <span style="color:#5fa8d3">●</span> mediana de las vecinas${pp ? "" : " · gris: cada vecina"} · pase el mouse para ver los valores del día · valores del boletín</small>`;
 }
+function activarGrafico(raiz){
+  raiz.querySelectorAll(".gsWrap").forEach(w => {
+    const D = JSON.parse(decodeURIComponent(w.dataset.gs)), tip = w.querySelector(".gsTip"), cur = w.querySelector(".gsCur"), svg = w.querySelector("svg");
+    w.querySelectorAll(".gsZona").forEach(z => {
+      z.addEventListener("mousemove", ev => {
+        const i = +z.dataset.i, x = +z.getAttribute("x") + +z.getAttribute("width") / 2; cur.setAttribute("x1", x); cur.setAttribute("x2", x); cur.setAttribute("opacity", ".6");
+        const v = D.est[1][i], m = D.med[i], dif = v != null && m != null ? v - m : null;
+        const fil = D.vec.map(([n, s]) => [n, s[i]]).filter(x => x[1] != null).sort((a, b) => b[1] - a[1]);
+        tip.innerHTML = `<b>${esc(diaTxt(C.dias[i]))}</b><div style="margin:4px 0;color:#e8783a"><b>${esc(D.est[0])}: ${f1(v)} ${D.u}</b></div>
+          <div style="color:#5fa8d3">Mediana vecinas: ${f1(m)} ${D.u}${dif != null ? ` · diferencia ${dif > 0 ? "+" : ""}${f1(dif)}` : ""}</div>
+          <div style="margin-top:5px;border-top:1px solid var(--bd);padding-top:4px;max-height:170px;overflow:hidden">${fil.map(([n, x]) => `<div style="display:flex;justify-content:space-between;gap:10px"><span style="color:var(--mu)">${esc(n)}</span><span>${f1(x)}</span></div>`).join("") || "<span class='tag'>Sin vecinas con dato</span>"}</div>`;
+        tip.hidden = false; const r = w.getBoundingClientRect(), px = ev.clientX - r.left, tw = tip.offsetWidth;
+        tip.style.left = Math.min(r.width - tw - 4, Math.max(4, px + (px > r.width / 2 ? -tw - 14 : 14))) + "px"; tip.style.top = Math.max(4, ev.clientY - r.top - 40) + "px";
+      });
+      z.addEventListener("mouseleave", () => { tip.hidden = true; cur.setAttribute("opacity", "0"); });
+    });
+    void svg;
+  });
+}
+
 async function ventana(vk, r){
   const e0 = est(r), sa0 = SAC[idDe(vk, r)];
   if (window.FALLAS && window.L && e0.prop === "DMC" && r.fecha){        // estaciones DMC: la misma ventana de Fallas (minutario con zoom + mapa de vecinas)
@@ -150,7 +186,7 @@ async function ventana(vk, r){
       <p style="margin:6px 0 0">${VK[vk]}: <b>${f1(r.valor)} ${u}</b> · ${diaTxt(r.fecha)}${dif != null ? ` · <span style="color:${Math.abs(dif) > (vk === "pp" ? 10 : 5) ? "var(--err)" : "var(--mu)"}">${dif > 0 ? "+" : ""}${f1(dif)} ${u} respecto de la mediana de sus vecinas (${f1(med)})</span>` : ""}</p>
       ${r.estado !== "ok" ? `<p style="margin:4px 0 0;color:${r.estado === "error" ? "var(--err)" : "var(--oro)"}">⚠ ${r.estado}: ${esc(r.motivo)}</p>` : ""}</div>
       <button id="agBolX">✕ Cerrar</button></div>
-    <div style="margin-top:12px">${graficoSemana(vk, r.cod, V)}</div>
+    <div style="margin-top:12px">${graficoSemana(vk, r.cod, V, r.dia)}</div>
     ${e.lat != null && window.L ? `<div id="agBolMap" style="height:380px;margin-top:12px;border:1px solid var(--bd);border-radius:8px"></div><small class="tag">Valores del boletín del ${diaTxt(r.fecha)} · rojo = la estación, azul = vecinas${e.ext ? ` · ubicada como «${esc(e.ext_nombre || e.ext)}» de la red externa` : ""}</small>` : ""}
     <h4 style="margin:14px 0 6px;font-size:13px">Vecinas · ${esc(nivel)} · ${diaTxt(r.fecha)} <span class="tag">(${filas.length} con dato)</span></h4>
     <div style="max-height:300px;overflow:auto"><table class="xtab"><tr><th>Estación</th><th>Código</th><th>Comuna</th><th>Propietario</th><th class="n">${VK[vk]}</th><th class="n">Diferencia</th></tr>
@@ -160,6 +196,7 @@ async function ventana(vk, r){
       ${sa ? `<span style="color:var(--err)">Sacado del ranking: ${esc(sa.motivo)}</span>` : (dia != null ? `<button id="agBolSac" style="font-weight:700">Sacar del ranking</button>` : "")}
       ${e.prop === "DMC" ? `<a href="estacion.html?cod=${r.cod}" target="_blank">Ver datos minutarios de la estación ↗</a>` : ""}</div></div>`;
   $("#agBolX").onclick = () => { M.hidden = true; };
+  activarGrafico(M);
   if ($("#agBolMap")){ const mp = L.map($("#agBolMap"), {attributionControl: false}); L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 13}).addTo(mp);
     const et = (n, v, col) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-100%);white-space:nowrap;background:#0d1117dd;border:1px solid ${col};color:#fff;border-radius:6px;padding:1px 6px;font:600 11.5px system-ui;text-align:center">${esc(n)}<br><span style="color:${col}">${v}</span></div>`});
     const pts = [[e.lat, e.lon]]; L.marker([e.lat, e.lon], {icon: et(e.nombre, f1(r.valor) + " " + u, "#f85149")}).addTo(mp);
