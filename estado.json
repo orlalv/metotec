@@ -1,14 +1,14 @@
 {
  "version": "0.1",
- "inicio": "2026-11-25T08:56:04+00:00",
+ "inicio": "2026-11-25T09:06:28+00:00",
  "errores": [],
- "estaciones": 138,
- "con_datos": 126,
- "registros": 5138,
- "desde": "2026-11-25 07:56:00",
- "hasta": "2026-11-25 08:48:00",
+ "estaciones": 132,
+ "con_datos": 124,
+ "registros": 4356,
+ "desde": "2026-11-25 08:06:00",
+ "hasta": "2026-11-25 09:00:00",
  "horas_archivadas": 2,
- "modelo": 6624,
+ "modelo": 6336,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026112400_ecmwf",
@@ -17,33 +17,33 @@
   "2026112412_gfs",
   "2026112500_gfs"
  ],
- "wrf_ref": 654,
+ "wrf_ref": 763,
  "satelite": {
   "imagenes": 36,
-  "ultima": "2026-11-25T08:20Z"
+  "ultima": "2026-11-25T08:50Z"
  },
  "externas": {
   "estaciones": 335,
   "con_vecinas": 114,
   "desactivadas": 0,
   "generado": "2026-11-25T08:15:35Z",
-  "pp_archivadas": 10878,
-  "ta_archivadas": 10878,
-  "desviadas": 14,
-  "kv_desvio": "sin cambios"
+  "pp_archivadas": 10667,
+  "ta_archivadas": 10667,
+  "desviadas": 11,
+  "kv_desvio": "200"
  },
  "calibracion": {
   "dias": 18,
   "filas": 48863,
   "activa": true
  },
- "consenso_quitados": 1,
+ "consenso_quitados": 0,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1259,
+ "ob_filas": 1260,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 481,
+  "observaciones": 486,
   "fallas": 0,
   "hallazgos": 341,
   "kv": "200",
@@ -54,8 +54,8 @@
   "2026-11-25"
  ],
  "super": {
-  "estaciones": 105,
-  "hallazgos": 77,
+  "estaciones": 99,
+  "hallazgos": 80,
   "kv": "200"
  },
  "historial": {
@@ -74,23 +74,23 @@
  },
  "reputacion": {
   "resumen": {
-   "cuarentena": 5,
-   "en_revision": 26,
+   "cuarentena": 2,
+   "en_revision": 23,
    "operativa": 107,
    "verde": 89,
    "amarillo": 20,
-   "rojo": 29,
+   "rojo": 23,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 25,
+ "alertas": 21,
  "resumen": {
-  "bien": 106,
-  "sospechoso": 12,
+  "bien": 110,
+  "sospechoso": 8,
   "erróneo": 9,
-  "sin datos": 11
+  "sin datos": 5
  },
- "fin": "2026-11-25T08:59:45+00:00"
+ "fin": "2026-11-25T09:11:27+00:00"
 }
