@@ -12,7 +12,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 04:15",
-"visto": "2026-11-25 04:26",
+"visto": "2026-11-25 04:36",
 "detalle": [
 "HR · rango: 376 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
@@ -31,7 +31,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-24 22:59",
-"visto": "2026-11-25 04:26",
+"visto": "2026-11-25 04:36",
 "detalle": [
 "HR · rango: 350 valores fuera de rango físico [1, 100] (valor 0.0)"
 ]
@@ -50,7 +50,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 02:27",
-"visto": "2026-11-25 04:26",
+"visto": "2026-11-25 04:36",
 "detalle": [
 "QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 549.2)",
 "QFE · rango: 5 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.5)",
@@ -71,7 +71,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 03:09",
-"visto": "2026-11-25 04:26",
+"visto": "2026-11-25 04:36",
 "detalle": [
 "QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 524.0)",
 "QFE · rango: 8 valores fuera de lo habitual para la zona centro [936, 1016] (valor 505.1)",
@@ -90,9 +90,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-24 22:59",
-"visto": "2026-11-25 04:26",
+"visto": "2026-11-25 04:36",
 "detalle": [
-"radiación · rango: 361 valores fuera de rango físico [0, 1600] (valor 4747.17)"
+"radiación · rango: 376 valores fuera de rango físico [0, 1600] (valor 4747.17)"
 ]
 },
 "390029|barómetro": {
@@ -109,7 +109,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 02:13",
-"visto": "2026-11-25 04:26",
+"visto": "2026-11-25 04:36",
 "detalle": [
 "QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 518.1)",
 "QFE · rango: 5 valores fuera de lo habitual para la zona sur [946, 1026] (valor 504.3)",
@@ -132,7 +132,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 04:15",
-"visto": "2026-11-25 04:26",
+"visto": "2026-11-25 04:36",
 "detalle": [
 "HR · rango: 376 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
@@ -150,7 +150,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 00:59",
-"visto": "2026-11-25 04:26",
+"visto": "2026-11-25 04:36",
 "detalle": [
 "radiación · rango: 202 valores fuera de rango físico [0, 1600] (valor -1.1)"
 ]
