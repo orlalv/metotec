@@ -11,10 +11,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-25 06:45",
-"visto": "2026-11-25 07:11",
+"fin": "2026-11-25 07:15",
+"visto": "2026-11-25 07:30",
 "detalle": [
-"HR · rango: 346 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 376 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -31,9 +31,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 01:59",
-"visto": "2026-11-25 07:11",
+"visto": "2026-11-25 07:30",
 "detalle": [
-"HR · rango: 330 valores fuera de rango físico [1, 100] (valor 0.0)"
+"HR · rango: 375 valores fuera de rango físico [1, 100] (valor 0.0)"
 ]
 },
 "330162|barómetro": {
@@ -50,7 +50,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 02:27",
-"visto": "2026-11-25 07:11",
+"visto": "2026-11-25 07:30",
 "detalle": [
 "QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 549.4)",
 "QFE · rango: 5 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.0)",
@@ -71,7 +71,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 03:09",
-"visto": "2026-11-25 07:11",
+"visto": "2026-11-25 07:30",
 "detalle": [
 "QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 523.5)",
 "QFE · rango: 8 valores fuera de lo habitual para la zona centro [936, 1016] (valor 504.4)",
@@ -90,9 +90,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 01:59",
-"visto": "2026-11-25 07:11",
+"visto": "2026-11-25 07:30",
 "detalle": [
-"radiación · rango: 346 valores fuera de rango físico [0, 1600] (valor 6424.49)"
+"radiación · rango: 376 valores fuera de rango físico [0, 1600] (valor 6424.49)"
 ]
 },
 "390029|barómetro": {
@@ -109,7 +109,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 02:13",
-"visto": "2026-11-25 07:11",
+"visto": "2026-11-25 07:30",
 "detalle": [
 "QFF · rango: 4 valores fuera de rango físico [920, 1060] (valor 517.7)",
 "QFE · rango: 4 valores fuera de lo habitual para la zona sur [946, 1026] (valor 503.7)",
@@ -131,10 +131,10 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-25 06:45",
-"visto": "2026-11-25 07:11",
+"fin": "2026-11-25 07:15",
+"visto": "2026-11-25 07:30",
 "detalle": [
-"HR · rango: 346 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 376 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -150,9 +150,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 01:59",
-"visto": "2026-11-25 07:11",
+"visto": "2026-11-25 07:30",
 "detalle": [
-"radiación · rango: 343 valores fuera de rango físico [0, 1600] (valor -0.9)"
+"radiación · rango: 373 valores fuera de rango físico [0, 1600] (valor -0.9)"
 ]
 },
 "400060|barómetro": {
