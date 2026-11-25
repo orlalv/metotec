@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-25T12:56:08+00:00",
+ "inicio": "2026-11-25T13:06:32+00:00",
  "errores": [],
  "estaciones": 131,
- "con_datos": 124,
- "registros": 5238,
- "desde": "2026-11-25 11:56:00",
- "hasta": "2026-11-25 12:50:00",
+ "con_datos": 121,
+ "registros": 4189,
+ "desde": "2026-11-25 12:06:00",
+ "hasta": "2026-11-25 13:00:00",
  "horas_archivadas": 2,
  "modelo": 6288,
  "wrf": "sin corridas nuevas",
@@ -18,18 +18,18 @@
   "2026112500_ecmwf",
   "2026112500_gfs"
  ],
- "wrf_ref": 654,
+ "wrf_ref": 763,
  "satelite": {
   "imagenes": 32,
-  "ultima": "2026-11-25T12:40Z"
+  "ultima": "2026-11-25T12:50Z"
  },
  "externas": {
   "estaciones": 335,
   "con_vecinas": 113,
   "desactivadas": 0,
   "generado": "2026-11-25T12:15:45Z",
-  "pp_archivadas": 10564,
-  "ta_archivadas": 10568,
+  "pp_archivadas": 10353,
+  "ta_archivadas": 10357,
   "desviadas": 12,
   "kv_desvio": "200"
  },
@@ -44,9 +44,9 @@
  "ob_filas": 1763,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 497,
+  "observaciones": 498,
   "fallas": 0,
-  "hallazgos": 358,
+  "hallazgos": 344,
   "kv": "200",
   "completitud": "200"
  },
@@ -71,33 +71,33 @@
  "boletin": {
   "dia": "2026-11-25",
   "estaciones": 26,
-  "hallazgos": 12,
-  "cambios": 31,
+  "hallazgos": 2,
+  "cambios": 32,
   "kv": "200"
  },
  "productos": {
   "extremas": "200",
-  "lluvia_obs": "sin cambios"
+  "lluvia_obs": "200"
  },
  "reputacion": {
   "resumen": {
    "cuarentena": 2,
    "en_revision": 23,
    "operativa": 106,
-   "verde": 90,
-   "amarillo": 18,
+   "verde": 88,
+   "amarillo": 20,
    "rojo": 23,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 22,
+ "alertas": 23,
  "resumen": {
-  "bien": 110,
-  "sospechoso": 8,
+  "bien": 109,
+  "sospechoso": 9,
   "erróneo": 8,
   "sin datos": 5
  },
- "fin": "2026-11-25T13:01:08+00:00"
+ "fin": "2026-11-25T13:11:55+00:00"
 }
