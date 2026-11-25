@@ -14,7 +14,7 @@ a{color:var(--oro)}small{font-size:11px}#login{max-width:320px;margin:15vh auto;
 <main id="app" hidden><div class="htools" style="gap:6px;margin-bottom:12px"><button id="mBol" class="on">Compendio semanal (boletines)</button><button id="mMin">Minutario (UTC)</button></div><section id="agBol"></section><section id="agro" hidden></section></main>
 <script src="js/agro.js?v=202611241900"></script>
 <script src="js/fallas.js?v=202611241830"></script>
-<script src="js/agro_bol.js?v=202611251340"></script>
+<script src="js/agro_bol.js?v=202611251400"></script>
 <script>
 const $=s=>document.querySelector(s);
 async function entrar(c){try{const r=await fetch("/api/agro?p=x",{headers:{"x-clave":c}});if(r.status===401){$("#lerr").textContent="Clave incorrecta.";return}}catch(e){$("#lerr").textContent="Sin conexión.";return}
