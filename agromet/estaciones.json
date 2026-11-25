@@ -318,16 +318,16 @@
 "red": "DMC"
 },
 {
-"id": "INIA-58",
-"nombre": "Toconao",
-"comuna": "San Pedro de Atacama",
-"red": "INIA"
-},
-{
 "id": "EXT-127",
 "nombre": "Toconao",
 "comuna": "San Pedro de Atacama",
 "red": "DMC"
+},
+{
+"id": "INIA-58",
+"nombre": "Toconao",
+"comuna": "San Pedro de Atacama",
+"red": "INIA"
 },
 {
 "id": "EXT-126",
