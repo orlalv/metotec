@@ -108,7 +108,7 @@ def main():
                 for i in G:
                     D.setdefault(i, {})                             # consultada: sin datos ese año
             # si el grupo quedó vacío no se marca: la próxima ejecución lo vuelve a pedir
-            print(var, o.anio, g, "→", sum(1 for i in G if D[i]), "con datos", "" if t else "(falló)", flush=True)
+            print(var, o.anio, g, "→", sum(1 for i in G if D.get(i)), "con datos", "" if t else "(falló)", flush=True)
             f.parent.mkdir(parents=True, exist_ok=True); f.write_bytes(gzip.compress(json.dumps(D, separators=(",", ":")).encode()))
             time.sleep(PAUSA)
         print(var, o.anio, "listo:", sum(1 for v in D.values() if v), "estaciones con datos", flush=True)
