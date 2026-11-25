@@ -11,10 +11,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-25 08:30",
-"visto": "2026-11-25 08:46",
+"fin": "2026-11-25 08:45",
+"visto": "2026-11-25 08:56",
 "detalle": [
-"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 406 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -31,7 +31,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 02:59",
-"visto": "2026-11-25 08:46",
+"visto": "2026-11-25 08:56",
 "detalle": [
 "HR · rango: 390 valores fuera de rango físico [1, 100] (valor 0.0)"
 ]
@@ -50,7 +50,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 02:27",
-"visto": "2026-11-25 08:46",
+"visto": "2026-11-25 08:56",
 "detalle": [
 "QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 549.7)",
 "QFE · rango: 5 valores fuera de lo habitual para la zona centro [886, 966] (valor 503.9)",
@@ -71,7 +71,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 03:09",
-"visto": "2026-11-25 08:46",
+"visto": "2026-11-25 08:56",
 "detalle": [
 "QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 523.5)",
 "QFE · rango: 8 valores fuera de lo habitual para la zona centro [936, 1016] (valor 504.3)",
@@ -90,7 +90,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 02:59",
-"visto": "2026-11-25 08:46",
+"visto": "2026-11-25 08:56",
 "detalle": [
 "radiación · rango: 391 valores fuera de rango físico [0, 1600] (valor 6188.43)"
 ]
@@ -109,7 +109,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 07:30",
-"visto": "2026-11-25 08:46",
+"visto": "2026-11-25 08:56",
 "detalle": [
 "QFF · rango: 7 valores fuera de rango físico [920, 1060] (valor 517.7)",
 "QFE · rango: 7 valores fuera de lo habitual para la zona sur [946, 1026] (valor 503.7)",
@@ -131,10 +131,10 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-25 08:30",
-"visto": "2026-11-25 08:46",
+"fin": "2026-11-25 08:45",
+"visto": "2026-11-25 08:56",
 "detalle": [
-"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 406 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -150,7 +150,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 02:59",
-"visto": "2026-11-25 08:46",
+"visto": "2026-11-25 08:56",
 "detalle": [
 "radiación · rango: 340 valores fuera de rango físico [0, 1600] (valor -1.9)"
 ]
@@ -169,7 +169,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-25 07:58",
-"visto": "2026-11-25 08:46",
+"visto": "2026-11-25 08:56",
 "detalle": [
 "HR · rango: 3 valores fuera de rango físico [1, 100] (valor 0.0)",
 "Ts · salto: cambio de 9.2 en 1 min (valor 10.7)",
