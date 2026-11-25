@@ -34,6 +34,8 @@ jobs:
       - run: pip install -q pandas numpy requests pillow
       - name: Rama de datos
         run: git clone -q --depth 1 --branch datos "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" datos
+      - name: Valor esperado por estación (historia de agrometeorologia.cl)
+        run: python qc/agromet_clima.py --datos datos
       - name: Compendio
         run: python qc/agro_boletin.py --datos datos --semana "${{ inputs.semana }}"
       - name: Guardar
@@ -41,5 +43,5 @@ jobs:
         run: |
           cd datos
           git config user.name "qc-metotec"; git config user.email "contacto.metotec@gmail.com"
-          git add agro && git commit -q -m "compendio agro $(date -u +%Y-%m-%dT%H:%MZ)" || exit 0
+          git add agro agromet/clima.json && git commit -q -m "compendio agro $(date -u +%Y-%m-%dT%H:%MZ)" || exit 0
           for i in 1 2 3 4 5; do git pull -q --rebase --autostash origin datos && git push -q origin datos && break; sleep 7; done

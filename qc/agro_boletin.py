@@ -106,7 +106,7 @@ def descargar(jueves):
     return dias, crudo, estado
 
 
-def armar(jueves, dias, crudo, estado):
+def armar(jueves, dias, crudo, estado, clima=None):
     T, P, cal, est = [], [], [], {}
     for reg, porDia in crudo.items():
         for k, d in enumerate(dias):
@@ -144,6 +144,21 @@ def armar(jueves, dias, crudo, estado):
                 P.append(r)
                 if r["estado"] != "ok":
                     cal.append(r)
+    # valor esperado y σ de la estación para ese mes (historia de agrometeorologia.cl): > SIG_ERR σ → error (fuera), > SIG_DUD σ → dudoso
+    CL = emparejar(est, clima) if clima else {}
+    for r in T:
+        c = (CL.get(r["cod"]) or {}).get("TA_MAX" if r["vk"] == "tmax" else "TA_MIN", {}).get(str(int(r["fecha"][5:7])))
+        if not c or r["estado"] == "error" or c[1] <= 0:
+            continue
+        z = (r["valor"] - c[0]) / c[1]; r["z"] = round(z, 1)
+        if abs(z) > SIG_ERR:
+            r.update(estado="error", motivo=f"{r['valor']} °C a {abs(z):.1f} σ de lo esperado para la estación en el mes ({c[0]:.1f} ± {c[1]:.1f} °C, {c[2]} días)"); cal.append(r)
+        elif (z > SIG_DUD if r["vk"] == "tmax" else z < -SIG_DUD) and r["estado"] == "ok":   # dudoso solo en la dirección del ranking
+            r.update(estado="dudoso", motivo=f"{r['valor']} °C a {abs(z):.1f} σ de lo esperado para la estación en el mes ({c[0]:.1f} ± {c[1]:.1f} °C)"); cal.append(r)
+    for r in P:
+        c = (CL.get(r["cod"]) or {}).get("PP_SUM", {}).get(str(int(r["fecha"][5:7])))
+        if c and r["estado"] == "ok" and r["valor"] > max(c[1], 20):
+            r.update(estado="dudoso", motivo=f"{r['valor']} mm supera el percentil 99,9 de los días con lluvia de la estación en el mes ({c[1]} mm; máximo histórico {c[2]} mm)"); cal.append(r)
     # dudosos: 0,0 exacto repetido en la semana (valor de relleno) o 0,0 muy lejos de la región
     ceros = {}
     for r in T:
@@ -205,13 +220,40 @@ def armar(jueves, dias, crudo, estado):
         v[r["dia"]][{"tmin": 0, "tmax": 1, "pp24": 2}[r["vk"]]] = r["valor"]
     usados = set(serie) | {r["cod"] for r in cal}
     return dict(semana=jueves.isoformat(), dias=[d.isoformat() for d in dias], generado=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                parametros=dict(anom_reg=ANOM_REG, dia=DIA, pp_ranking=PP_RANKING, enviar_estaciones=ENVIAR_ESTACIONES, rango_t=RANGO_T, rango_pp=RANGO_PP, pp_dudoso=PP_DUDOSO, media_tol=MEDIA_TOL),
+                parametros=dict(sig_dud=SIG_DUD, sig_err=SIG_ERR, anom_reg=ANOM_REG, dia=DIA, pp_ranking=PP_RANKING, enviar_estaciones=ENVIAR_ESTACIONES, rango_t=RANGO_T, rango_pp=RANGO_PP, pp_dudoso=PP_DUDOSO, media_tol=MEDIA_TOL),
                 notas=dict(t="Mínima y máxima entre ~21:01 del día anterior y 21:00 del día (hora local), según el boletín.",
                            pp="Total diario entre ~8:00 del día y 8:00 del día siguiente (hora local), según el boletín.",
                            sp="«s/p» se interpreta como sin precipitación (0 mm).",
                            qc="Los boletines no han pasado control de calidad. Los errores groseros (mínima > máxima, fuera de rango físico) quedan fuera del ranking y se listan en Calidad, donde se pueden devolver. Los dudosos (media incoherente, lejos de la mediana regional, 0,0 repetido) entran marcados ⚠ y se sacan a mano."),
                 regiones=REGIONES, estaciones={c: e for c, e in est.items() if c in usados},
                 serie=serie, ranking=ranking, por_dia=por_dia, por_region=por_region, calidad=cal, cobertura=estado)
+
+
+# ------------------------------------------------------------------ valor esperado por estación (agrometeorologia.cl): emparejar por comuna y nombre
+SIG_DUD, SIG_ERR = 3.0, 6.0
+
+
+def emparejar(est, clima):
+    """{cod_boletín: entrada de clima.json}: misma comuna y todo el nombre de la estación de agromet dentro del nombre del boletín (o al revés)."""
+    porC = {}
+    for i, c in clima.items():
+        porC.setdefault(frozenset(_tok(c.get("comuna"))), []).append(c)
+    out = {}
+    for cod, e in est.items():
+        cand = porC.get(frozenset(_tok(e.get("comuna"))), [])
+        t = _tok(e["nombre"]) - _tok(e.get("comuna"))
+        mejor, bs = None, 0.0
+        for c in cand:
+            tk = _tok(c["nombre"]) - _tok(c.get("comuna"))
+            if not tk or not t:
+                continue
+            sc = len(t & tk) / min(len(t), len(tk)) if (tk <= t or t <= tk) else 0
+            if sc > bs:
+                mejor, bs = c, sc
+        if mejor is not None:
+            out[cod] = mejor
+            e["clima"] = mejor["nombre"]
+    return out
 
 
 # ------------------------------------------------------------------ ubicación: DMC por código (catálogo METOTEC), externas por nombre
@@ -298,7 +340,12 @@ def main():
     if jueves.weekday() != 3:
         raise SystemExit(f"{jueves} no es jueves")
     dias, crudo, estado = descargar(jueves)
-    C = armar(jueves, dias, crudo, estado)
+    try:
+        clima = json.loads((Path(o.datos) / "agromet" / "clima.json").read_text(encoding="utf-8"))
+    except Exception:
+        clima = None
+    C = armar(jueves, dias, crudo, estado, clima)
+    print("valor esperado (agromet):", sum(1 for e in C["estaciones"].values() if e.get("clima")), "de", len(C["estaciones"]), "estaciones")
     nd, ne, sin = ubicar(C["estaciones"], o.datos)
     print(f"ubicadas: {nd} por código (catálogo o ficha DMC), {ne} externas por nombre, {len(sin)} sin ubicar:", "; ".join(sin[:60]))
     out = Path(o.datos) / "agro" / f"{jueves.isoformat()}.json"
