@@ -1,14 +1,14 @@
 {
  "version": "0.1",
- "inicio": "2026-11-25T11:46:06+00:00",
+ "inicio": "2026-11-25T11:55:58+00:00",
  "errores": [],
- "estaciones": 132,
- "con_datos": 119,
- "registros": 4697,
- "desde": "2026-11-25 10:46:00",
- "hasta": "2026-11-25 11:40:00",
+ "estaciones": 131,
+ "con_datos": 123,
+ "registros": 5106,
+ "desde": "2026-11-25 10:55:01",
+ "hasta": "2026-11-25 11:48:00",
  "horas_archivadas": 2,
- "modelo": 6336,
+ "modelo": 6288,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026112400_ecmwf",
@@ -25,38 +25,38 @@
  },
  "externas": {
   "estaciones": 335,
-  "con_vecinas": 114,
+  "con_vecinas": 113,
   "desactivadas": 0,
   "generado": "2026-11-25T11:41:03Z",
-  "pp_archivadas": 10652,
-  "ta_archivadas": 10656,
-  "desviadas": 13,
-  "kv_desvio": "sin cambios"
+  "pp_archivadas": 10602,
+  "ta_archivadas": 10606,
+  "desviadas": 12,
+  "kv_desvio": "200"
  },
  "calibracion": {
   "dias": 18,
   "filas": 48863,
   "activa": true
  },
- "consenso_quitados": 1,
+ "consenso_quitados": 10,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1633,
+ "ob_filas": 1638,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 465,
+  "observaciones": 486,
   "fallas": 0,
-  "hallazgos": 340,
-  "kv": "sin cambios",
-  "completitud": "sin cambios"
+  "hallazgos": 338,
+  "kv": "200",
+  "completitud": "200"
  },
  "diario": [
   "2026-11-24",
   "2026-11-25"
  ],
  "super": {
-  "estaciones": 99,
-  "hallazgos": 92,
+  "estaciones": 98,
+  "hallazgos": 77,
   "kv": "200"
  },
  "historial": {
@@ -71,7 +71,7 @@
  "boletin": {
   "dia": "2026-11-25",
   "estaciones": 26,
-  "hallazgos": 8,
+  "hallazgos": 5,
   "cambios": 3,
   "kv": "200"
  },
@@ -83,21 +83,21 @@
   "resumen": {
    "cuarentena": 2,
    "en_revision": 23,
-   "operativa": 107,
+   "operativa": 106,
    "verde": 90,
-   "amarillo": 19,
+   "amarillo": 18,
    "rojo": 23,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 20,
+ "alertas": 22,
  "resumen": {
   "bien": 110,
   "sospechoso": 7,
-  "erróneo": 10,
+  "erróneo": 9,
   "sin datos": 5
  },
- "fin": "2026-11-25T11:50:29+00:00"
+ "fin": "2026-11-25T12:00:57+00:00"
 }
