@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-25T12:26:11+00:00",
+ "inicio": "2026-11-25T12:36:01+00:00",
  "errores": [],
  "estaciones": 131,
- "con_datos": 124,
- "registros": 5148,
- "desde": "2026-11-25 11:26:00",
- "hasta": "2026-11-25 12:20:00",
+ "con_datos": 123,
+ "registros": 4396,
+ "desde": "2026-11-25 11:35:01",
+ "hasta": "2026-11-25 12:30:00",
  "horas_archivadas": 2,
  "modelo": 6288,
  "wrf": "sin corridas nuevas",
@@ -41,13 +41,13 @@
  "consenso_quitados": 0,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1721,
+ "ob_filas": 1734,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 496,
   "fallas": 0,
   "hallazgos": 353,
-  "kv": "200",
+  "kv": "sin cambios",
   "completitud": "sin cambios"
  },
  "diario": [
@@ -56,7 +56,7 @@
  ],
  "super": {
   "estaciones": 98,
-  "hallazgos": 71,
+  "hallazgos": 66,
   "kv": "200"
  },
  "historial": {
@@ -72,20 +72,20 @@
   "dia": "2026-11-25",
   "estaciones": 26,
   "hallazgos": 20,
-  "cambios": 14,
+  "cambios": 21,
   "kv": "200"
  },
  "productos": {
   "extremas": "200",
-  "lluvia_obs": "200"
+  "lluvia_obs": "sin cambios"
  },
  "reputacion": {
   "resumen": {
    "cuarentena": 2,
    "en_revision": 23,
    "operativa": 106,
-   "verde": 90,
-   "amarillo": 18,
+   "verde": 88,
+   "amarillo": 20,
    "rojo": 23,
    "listas_para_aprobar": 0
   },
@@ -99,5 +99,5 @@
   "erróneo": 8,
   "sin datos": 5
  },
- "fin": "2026-11-25T12:30:57+00:00"
+ "fin": "2026-11-25T12:40:54+00:00"
 }
