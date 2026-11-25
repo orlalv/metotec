@@ -3,7 +3,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"><script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
 :root{--fondo:#0F1215;--panel:#171C21;--hover:#20272D;--bd:#2A3238;--tx:#ECEFF1;--mu:#8E99A2;--oro:#E8783A;--ok:#2f9e44;--err:#d6336c}
-*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:var(--tx);font:14px system-ui,sans-serif}main{max-width:1200px;margin:0 auto;padding:14px}
+*{box-sizing:border-box}body{margin:0;background:var(--fondo);color:var(--tx);font:14px system-ui,sans-serif}main{max-width:none;margin:0;padding:12px 16px}
 button,select,input{background:var(--panel);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:5px 10px;font:inherit;cursor:pointer}button.on{background:var(--oro);color:#1A0D05;border-color:var(--oro)}
 .htools{display:flex}.tag{color:var(--mu)}.bcard{background:var(--panel);border:1px solid var(--bd);border-radius:10px}
 .xtab{border-collapse:collapse;width:100%}.xtab th{font-size:12px;color:var(--mu);text-align:left;padding:6px 8px;border-bottom:1px solid var(--bd)}.xtab td{padding:6px 8px;border-bottom:1px solid var(--bd);vertical-align:top}.xtab tr:hover td{background:var(--hover)}.xtab .n{text-align:right;white-space:nowrap}
@@ -14,7 +14,7 @@ a{color:var(--oro)}small{font-size:11px}#login{max-width:320px;margin:15vh auto;
 <main id="app" hidden><div class="htools" style="gap:6px;margin-bottom:12px"><button id="mBol" class="on">Compendio semanal (boletines)</button><button id="mMin">Minutario (UTC)</button></div><section id="agBol"></section><section id="agro" hidden></section></main>
 <script src="js/agro.js?v=202611241900"></script>
 <script src="js/fallas.js?v=202611241830"></script>
-<script src="js/agro_bol.js?v=202611251400"></script>
+<script src="js/agro_bol.js?v=202611251420"></script>
 <script>
 const $=s=>document.querySelector(s);
 async function entrar(c){try{const r=await fetch("/api/agro?p=x",{headers:{"x-clave":c}});if(r.status===401){$("#lerr").textContent="Clave incorrecta.";return}}catch(e){$("#lerr").textContent="Sin conexión.";return}

@@ -8,7 +8,7 @@ const DSEM = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
 const diaTxt = iso => { if (!iso) return "semana"; const d = new Date(iso + "T12:00:00Z"); return `${DSEM[d.getUTCDay()]} ${iso.slice(8, 10)}/${iso.slice(5, 7)}`; };
 const f1 = v => v == null ? "—" : Number(v).toFixed(1);
 const VK = {tmax: "Tmax (°C)", tmin: "Tmin (°C)", pp: "Precipitación (mm)"};
-let C = null, SAC = {}, VISTA = "gen", SEMANAS = [], SEM = "ult", MSG = "";
+let C = null, SAC = {}, VISTA = "gen", GVK = "tmax", SEMANAS = [], SEM = "ult", MSG = "";
 
 const per = () => C.semana + "|bol";
 const idDe = (vk, r) => `${per()}|${vk === "pp" ? "pp24" : vk}|${r.cod}|${r.dia}`;
@@ -50,10 +50,11 @@ const celda = (L, vk) => { const r = top(L || [], vk, 1)[0]; return r ? `<b>${f1
 const celdaD = (L, vk) => { const r = top(L || [], vk, 1)[0]; return r ? `<b>${f1(r.valor)}</b> ${esc(est(r).nombre)} <small class="tag">${diaTxt(r.fecha)}</small>` : `<span class="tag">—</span>`; };
 
 function vista(){
-  if (VISTA === "gen") return `<div style="display:grid;grid-template-columns:minmax(300px,36%) minmax(0,1fr);gap:12px;align-items:start">
-    <div style="position:sticky;top:8px"><div id="agMapa" style="height:calc(100vh - 140px);min-height:420px;border:1px solid var(--bd);border-radius:10px"></div>
+  if (VISTA === "gen") return `<div class="htools" style="gap:6px;margin:0 0 8px">${[["tmax", "Tmax"], ["tmin", "Tmin"], ["pp", "Precipitación"]].map(([v, t]) => `<button data-gvk="${v}" class="${GVK === v ? "on" : ""}">${t}</button>`).join("")}</div>
+    <div style="display:grid;grid-template-columns:minmax(360px,46%) minmax(0,1fr);gap:14px;align-items:start">
+    <div style="position:sticky;top:8px"><div id="agMapa" style="height:calc(100vh - 150px);min-height:460px;border:1px solid var(--bd);border-radius:10px"></div>
       <div id="agMapaT" class="tag" style="margin-top:4px"></div></div>
-    <div>${["tmax", "tmin", "pp"].map(tabla).join("")}</div></div>`;
+    <div>${tabla(GVK)}</div></div>`;
   if (VISTA === "dia") return `<table class="xtab bcard"><tr><th>Día</th><th>Tmax más alta</th><th>Tmin más baja</th><th>Mayor precipitación</th></tr>
     ${C.por_dia.map(d => `<tr><td>${diaTxt(d.fecha)}</td><td>${celda(d.tmax, "tmax")}</td><td>${celda(d.tmin, "tmin")}</td><td>${celda(d.pp, "pp")}</td></tr>`).join("")}</table>`;
   if (VISTA === "reg") return `<table class="xtab bcard"><tr><th>Región</th><th>Tmax más alta</th><th>Tmin más baja</th><th>Mayor precipitación</th></tr>
@@ -238,16 +239,30 @@ function mapaBase(){
 }
 const etiqueta = (t, v, col, fuerte) => L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,-100%);white-space:nowrap;background:#0d1117e6;border:${fuerte ? 2 : 1}px solid ${col};color:#fff;border-radius:6px;padding:1px 6px;font:600 11.5px system-ui;text-align:center;line-height:1.25">${t}<br><span style="color:${col}">${v}</span></div>`});
 function mapaTop(){
-  const mp = mapaBase(); if (!mp) return; const pts = [];
-  for (const vk of ["tmax", "tmin", "pp"]){
-    const vistos = new Set();
-    top(C.ranking[vk] || [], vk).forEach((r, i) => { const e = est(r); if (e.lat == null || vistos.has(r.cod)) return; vistos.add(r.cod); pts.push([e.lat, e.lon]);
-      L.circleMarker([e.lat, e.lon], {radius: 7, color: "#fff", weight: 1, fillColor: COLV[vk], fillOpacity: .95}).addTo(CAPA)
-        .bindTooltip(`<b>#${i + 1} ${esc(e.nombre)}</b><br>${VK[vk]}: ${f1(r.valor)} · ${diaTxt(r.fecha)}`, {direction: "top"})
-        .on("click", () => enfocar(vk, r)); });
-  }
-  if (pts.length) mp.fitBounds(pts, {padding: [30, 30]}); else mp.setView([-36, -71.5], 5);
-  $("#agMapaT").innerHTML = `Top 10 de la semana: <span style="color:${COLV.tmax}">●</span> Tmax · <span style="color:${COLV.tmin}">●</span> Tmin · <span style="color:${COLV.pp}">●</span> precipitación. Clic en una estación o en una fila para ver sus vecinas.`;
+  const mp = mapaBase(); if (!mp) return; const pts = [], vk = GVK, col = COLV[vk];
+  const porEst = new Map();       // una etiqueta por estación, con todos sus lugares del ranking
+  top(C.ranking[vk] || [], vk).forEach((r, i) => { const e = est(r); if (e.lat == null) return; pts.push([e.lat, e.lon]);
+    if (!porEst.has(r.cod)) porEst.set(r.cod, {e, r, items: []}); porEst.get(r.cod).items.push([i + 1, r]); });
+  const L1 = [...porEst.values()];
+  L1.forEach(x => L.circleMarker([x.e.lat, x.e.lon], {radius: 4.5, color: "#fff", weight: 1, fillColor: col, fillOpacity: 1}).addTo(CAPA)
+    .bindTooltip(`<b>${esc(x.e.nombre)}</b><br>${x.items.map(([n, r]) => `N°${n}: ${f1(r.valor)} · ${diaTxt(r.fecha)}`).join("<br>")}`, {direction: "top"}).on("click", () => enfocar(vk, x.r)));
+  const capaEt = L.layerGroup().addTo(CAPA);
+  const ubicar = () => {      // etiquetas sin superponerse: se apilan hacia arriba y se unen al punto con una línea
+    capaEt.clearLayers(); const ocup = [];
+    L1.forEach(x => {
+      const txt = x.items.map(([n, r]) => `N°${n} <span style="color:${col}">${f1(r.valor)}</span>`).join(" · "), w = 14 + txt.replace(/<[^>]+>/g, "").length * 6.6, h = 17;
+      const p = mp.latLngToContainerPoint([x.e.lat, x.e.lon]); let dy = 10;
+      const choca = y => ocup.some(o => Math.abs(o.x - p.x) < (o.w + w) / 2 + 2 && Math.abs(o.y - y) < h + 1);
+      while (choca(p.y - dy - h / 2) && dy < 400) dy += h + 2;
+      ocup.push({x: p.x, y: p.y - dy - h / 2, w});
+      if (dy > 10) L.polyline([[x.e.lat, x.e.lon], mp.containerPointToLatLng([p.x, p.y - dy])], {color: col, weight: 1, opacity: .7, interactive: false}).addTo(capaEt);
+      L.marker([x.e.lat, x.e.lon], {zIndexOffset: 1000 - x.items[0][0], icon: L.divIcon({className: "", iconSize: null, html: `<div style="transform:translate(-50%,calc(-100% - ${dy}px));white-space:nowrap;background:#0d1117ee;border:1px solid ${col};color:#fff;border-radius:5px;padding:0 5px;font:700 11.5px/16px system-ui;cursor:pointer">${txt}</div>`})})
+        .addTo(capaEt).on("click", () => enfocar(vk, x.r));
+    });
+  };
+  if (pts.length) mp.fitBounds(pts, {padding: [50, 50], maxZoom: 10}); else mp.setView([-36, -71.5], 5);
+  ubicar(); mp.off("zoomend moveend"); mp.on("zoomend", () => { if (CAPA && CAPA.hasLayer(capaEt)) ubicar(); });
+  $("#agMapaT").innerHTML = `Top 10 de ${VK[vk]} de la semana (lugar en el ranking y valor). Clic en una estación o en una fila para ver sus vecinas.`;
 }
 function enfocar(vk, r){
   const mp = mapaBase(); if (!mp) return ventana(vk, r);
@@ -292,6 +307,7 @@ function pintar(){
   o.querySelectorAll("[data-sac]").forEach(x => x.onclick = ev => { ev.stopPropagation(); const [vk, i] = x.dataset.sac.split("|"); sacar(vk, C.ranking[vk][+i]); });
   o.querySelectorAll("[data-ab]").forEach(x => x.onclick = () => { const [vk, i] = x.dataset.ab.split("|"); if ($("#agMapa")){ o.querySelectorAll("[data-ab]").forEach(y => y.style.background = y === x ? "var(--hover)" : ""); enfocar(vk, C.ranking[vk][+i]); } else ventana(vk, C.ranking[vk][+i]); });
   o.querySelectorAll("[data-det]").forEach(x => x.onclick = ev => { ev.stopPropagation(); const [vk, i] = x.dataset.det.split("|"); ventana(vk, C.ranking[vk][+i]); });
+  o.querySelectorAll("[data-gvk]").forEach(x => x.onclick = () => { GVK = x.dataset.gvk; pintar(); });
   if ($("#agMapa")) mapaTop();
   o.querySelectorAll("[data-dev]").forEach(x => x.onclick = () => devolver(x.dataset.dev));
   $("#agSem").onchange = e => { SEM = e.target.value; cargar(); };
