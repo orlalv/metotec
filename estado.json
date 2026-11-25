@@ -1,13 +1,13 @@
 {
  "version": "0.1",
- "inicio": "2026-11-25T14:06:06+00:00",
+ "inicio": "2026-11-25T14:16:31+00:00",
  "errores": [],
  "estaciones": 134,
- "con_datos": 121,
- "registros": 4103,
- "desde": "2026-11-25 13:05:01",
- "hasta": "2026-11-25 13:53:00",
- "horas_archivadas": 1,
+ "con_datos": 122,
+ "registros": 4748,
+ "desde": "2026-11-25 13:15:01",
+ "hasta": "2026-11-25 14:10:00",
+ "horas_archivadas": 2,
  "modelo": 6432,
  "wrf": "sin corridas nuevas",
  "corridas": [
@@ -24,31 +24,31 @@
   "ultima": "2026-11-25T13:40Z"
  },
  "externas": {
-  "estaciones": 335,
+  "estaciones": 336,
   "con_vecinas": 113,
   "desactivadas": 0,
-  "generado": "2026-11-25T13:15:42Z",
-  "pp_archivadas": 10475,
-  "ta_archivadas": 10481,
-  "desviadas": 13,
-  "kv_desvio": "sin cambios"
+  "generado": "2026-11-25T14:16:07Z",
+  "pp_archivadas": 10366,
+  "ta_archivadas": 10372,
+  "desviadas": 14,
+  "kv_desvio": "200"
  },
  "calibracion": {
   "dias": 18,
   "filas": 48863,
   "activa": true
  },
- "consenso_quitados": 1,
+ "consenso_quitados": 4,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1887,
+ "ob_filas": 1892,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 504,
+  "observaciones": 509,
   "fallas": 0,
-  "hallazgos": 341,
+  "hallazgos": 340,
   "kv": "200",
-  "completitud": "sin cambios"
+  "completitud": "200"
  },
  "diario": [
   "2026-11-24",
@@ -56,7 +56,7 @@
  ],
  "super": {
   "estaciones": 101,
-  "hallazgos": 59,
+  "hallazgos": 56,
   "kv": "200"
  },
  "historial": {
@@ -84,20 +84,20 @@
    "cuarentena": 4,
    "en_revision": 24,
    "operativa": 106,
-   "verde": 88,
-   "amarillo": 20,
+   "verde": 90,
+   "amarillo": 18,
    "rojo": 26,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 26,
+ "alertas": 24,
  "resumen": {
-  "bien": 106,
-  "sospechoso": 12,
-  "erróneo": 8,
+  "bien": 110,
+  "sospechoso": 9,
+  "erróneo": 7,
   "sin datos": 8
  },
- "fin": "2026-11-25T14:11:42+00:00"
+ "fin": "2026-11-25T14:21:39+00:00"
 }
