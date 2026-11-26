@@ -12,9 +12,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 16:30",
-"visto": "2026-11-26 20:46",
+"visto": "2026-11-26 20:56",
 "detalle": [
-"HR · rango: 390 valores fuera de rango físico [1, 100] (valor 0.0)"
+"HR · rango: 405 valores fuera de rango físico [1, 100] (valor 0.0)"
 ]
 },
 "340048|barómetro": {
@@ -31,7 +31,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 14:43",
-"visto": "2026-11-26 20:46",
+"visto": "2026-11-26 20:56",
 "detalle": [
 "QFF · rango: 9 valores fuera de rango físico [920, 1060] (valor 522.8)",
 "QFE · rango: 9 valores fuera de lo habitual para la zona centro [936, 1016] (valor 504.3)",
@@ -50,10 +50,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 18:57",
-"visto": "2026-11-26 20:46",
+"visto": "2026-11-26 20:56",
 "detalle": [
-"radiación · rango: 307 valores fuera de rango físico [0, 1600] (valor 3572.97)",
-"radiación · rango: 30 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1485.9)"
+"radiación · rango: 308 valores fuera de rango físico [0, 1600] (valor 3572.97)",
+"radiación · rango: 31 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1485.9)"
 ]
 },
 "390029|barómetro": {
@@ -70,7 +70,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 14:41",
-"visto": "2026-11-26 20:46",
+"visto": "2026-11-26 20:56",
 "detalle": [
 "QFF · rango: 4 valores fuera de rango físico [920, 1060] (valor 518.1)",
 "QFE · rango: 4 valores fuera de lo habitual para la zona sur [946, 1026] (valor 504.3)",
@@ -92,10 +92,10 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-26 20:30",
-"visto": "2026-11-26 20:46",
+"fin": "2026-11-26 20:45",
+"visto": "2026-11-26 20:56",
 "detalle": [
-"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 406 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -113,7 +113,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 14:56",
-"visto": "2026-11-26 20:46",
+"visto": "2026-11-26 20:56",
 "detalle": [
 "QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 549.0)",
 "QFE · rango: 8 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.7)",
@@ -132,9 +132,9 @@
 ],
 "nivel": 1,
 "fin": "2026-11-26 14:59",
-"visto": "2026-11-26 20:46",
+"visto": "2026-11-26 20:56",
 "detalle": [
-"QFE · rango: 390 valores fuera de lo habitual para la zona Antártica [968, 1048] (valor 957.1)"
+"QFE · rango: 405 valores fuera de lo habitual para la zona Antártica [968, 1048] (valor 957.1)"
 ]
 },
 "200007|piranómetro (radiación)": {
@@ -149,7 +149,7 @@
 ],
 "nivel": 1,
 "fin": "2026-11-26 14:59",
-"visto": "2026-11-26 20:46",
+"visto": "2026-11-26 20:56",
 "detalle": [
 "radiación · rango: 227 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1413.73)"
 ]
@@ -168,7 +168,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 15:01",
-"visto": "2026-11-26 20:46",
+"visto": "2026-11-26 20:56",
 "detalle": [
 "QFF · rango: 1 valores fuera de rango físico [920, 1060] (valor 509.2)",
 "QFE · rango: 1 valores fuera de lo habitual para la zona norte costero [969, 1049] (valor 507.3)",
@@ -187,7 +187,7 @@
 ],
 "nivel": 1,
 "fin": "2026-11-26 15:22",
-"visto": "2026-11-26 20:46",
+"visto": "2026-11-26 20:56",
 "detalle": [
 "radiación · rango: 25 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1431.6)"
 ]
@@ -204,7 +204,7 @@
 ],
 "nivel": 1,
 "fin": "2026-11-26 18:30",
-"visto": "2026-11-26 20:46",
+"visto": "2026-11-26 20:56",
 "detalle": [
 "Ts · rango: 1 valores fuera de lo habitual para la zona cordillera/altiplano [-30, 30] (valor 30.1)"
 ]
@@ -222,10 +222,44 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 19:59",
-"visto": "2026-11-26 20:46",
+"visto": "2026-11-26 20:56",
 "detalle": [
-"QFF · rango: 77 valores fuera de rango físico [920, 1060] (valor 503.6)",
-"QFE · rango: 77 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.5)"
+"QFF · rango: 92 valores fuera de rango físico [920, 1060] (valor 503.6)",
+"QFE · rango: 92 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.5)"
+]
+},
+"280010|barómetro": {
+"codigo": "280010",
+"sensor": "barómetro",
+"inicio": "2026-11-26 17:40",
+"vars": [
+"P_est"
+],
+"pruebas": [
+"pegado"
+],
+"nivel": 1,
+"fin": "2026-11-26 20:40",
+"visto": "2026-11-26 20:56",
+"detalle": [
+"QFE · pegado: sin cambio durante 3 h (valor 996.0)"
+]
+},
+"400060|barómetro": {
+"codigo": "400060",
+"sensor": "barómetro",
+"inicio": "2026-11-26 17:40",
+"vars": [
+"P_est"
+],
+"pruebas": [
+"pegado"
+],
+"nivel": 1,
+"fin": "2026-11-26 20:40",
+"visto": "2026-11-26 20:56",
+"detalle": [
+"QFE · pegado: sin cambio durante 3 h (valor 968.0)"
 ]
 }
 }
