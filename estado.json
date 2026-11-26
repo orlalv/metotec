@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-26T05:56:03+00:00",
+ "inicio": "2026-11-26T06:06:13+00:00",
  "errores": [],
  "estaciones": 134,
- "con_datos": 126,
- "registros": 5337,
- "desde": "2026-11-26 04:55:01",
- "hasta": "2026-11-26 05:50:00",
+ "con_datos": 123,
+ "registros": 4474,
+ "desde": "2026-11-26 05:06:00",
+ "hasta": "2026-11-26 06:00:00",
  "horas_archivadas": 2,
  "modelo": 6432,
  "wrf": "sin corridas nuevas",
@@ -16,18 +16,18 @@
   "2026112512_ecmwf",
   "2026112512_gfs"
  ],
- "wrf_ref": 659,
+ "wrf_ref": 769,
  "satelite": {
-  "imagenes": 31,
-  "ultima": "2026-11-26T05:40Z"
+  "imagenes": 32,
+  "ultima": "2026-11-26T05:50Z"
  },
  "externas": {
   "estaciones": 335,
   "con_vecinas": 114,
   "desactivadas": 0,
   "generado": "2026-11-26T05:15:48Z",
-  "pp_archivadas": 9454,
-  "ta_archivadas": 9474,
+  "pp_archivadas": 9251,
+  "ta_archivadas": 9271,
   "desviadas": 5,
   "kv_desvio": "200"
  },
@@ -45,8 +45,8 @@
   "observaciones": 486,
   "fallas": 0,
   "hallazgos": 321,
-  "kv": "200",
-  "completitud": "200"
+  "kv": "sin cambios",
+  "completitud": "sin cambios"
  },
  "diario": [
   "2026-11-25",
@@ -54,7 +54,7 @@
  ],
  "super": {
   "estaciones": 101,
-  "hallazgos": 65,
+  "hallazgos": 67,
   "kv": "200"
  },
  "historial": {
@@ -71,24 +71,6 @@
   "extremas": "200",
   "lluvia_obs": "sin cambios"
  },
- "pluviometros": {
-  "resumen": {
-   "sospecha_obstruccion": 2,
-   "revisar": 21,
-   "sin_dato_con_lluvia": 7,
-   "ok": 97
-  },
-  "fuentes": {
-   "vecinas": true,
-   "modelo": true,
-   "satelite": true,
-   "imerg": true,
-   "satelite_horas": 160,
-   "imerg_pasos_nuevos": 12,
-   "externas": 349
-  },
-  "kv": "200"
- },
  "reputacion": {
   "resumen": {
    "cuarentena": 6,
@@ -102,12 +84,12 @@
   "kv": "200"
  },
  "kv": "200",
- "alertas": 101,
+ "alertas": 100,
  "resumen": {
-  "bien": 51,
-  "sospechoso": 4,
+  "bien": 52,
+  "sospechoso": 3,
   "erróneo": 71,
   "sin datos": 8
  },
- "fin": "2026-11-26T06:01:12+00:00"
+ "fin": "2026-11-26T06:10:22+00:00"
 }
