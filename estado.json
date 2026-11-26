@@ -1,12 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-26T02:45:52+00:00",
+ "inicio": "2026-11-26T02:56:00+00:00",
  "errores": [],
  "estaciones": 138,
- "con_datos": 120,
- "registros": 4675,
- "desde": "2026-11-26 01:45:01",
- "hasta": "2026-11-26 02:40:00",
+ "con_datos": 125,
+ "registros": 5301,
+ "desde": "2026-11-26 01:56:00",
+ "hasta": "2026-11-26 02:50:00",
  "horas_archivadas": 2,
  "modelo": 6624,
  "wrf": "sin corridas nuevas",
@@ -29,24 +29,24 @@
   "pp_archivadas": 9675,
   "ta_archivadas": 9692,
   "desviadas": 8,
-  "kv_desvio": "sin cambios"
+  "kv_desvio": "200"
  },
  "calibracion": {
   "dias": 18,
   "filas": 48863,
   "activa": true
  },
- "consenso_quitados": 0,
+ "consenso_quitados": 7,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 492,
+ "ob_filas": 497,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 515,
+  "observaciones": 516,
   "fallas": 0,
   "hallazgos": 317,
-  "kv": "sin cambios",
-  "completitud": "sin cambios"
+  "kv": "200",
+  "completitud": "200"
  },
  "diario": [
   "2026-11-25",
@@ -54,7 +54,7 @@
  ],
  "super": {
   "estaciones": 105,
-  "hallazgos": 47,
+  "hallazgos": 51,
   "kv": "200"
  },
  "historial": {
@@ -84,12 +84,12 @@
   "kv": "200"
  },
  "kv": "200",
- "alertas": 96,
+ "alertas": 101,
  "resumen": {
-  "bien": 48,
-  "sospechoso": 7,
+  "bien": 47,
+  "sospechoso": 8,
   "erróneo": 71,
   "sin datos": 12
  },
- "fin": "2026-11-26T02:50:26+00:00"
+ "fin": "2026-11-26T03:00:34+00:00"
 }
