@@ -1,16 +1,14 @@
 {
  "version": "0.1",
- "inicio": "2026-11-26T00:56:30+00:00",
- "errores": [
-  "modelo_parcial: 1 lotes sin respuesta (lote 1: JSONDecodeError: Expecting ',' delimiter: line 1 column 6144 (char 6143))"
- ],
+ "inicio": "2026-11-26T01:06:10+00:00",
+ "errores": [],
  "estaciones": 134,
- "con_datos": 124,
- "registros": 5265,
- "desde": "2026-11-25 23:56:00",
- "hasta": "2026-11-26 00:50:00",
+ "con_datos": 121,
+ "registros": 4223,
+ "desde": "2026-11-26 00:05:01",
+ "hasta": "2026-11-26 01:00:00",
  "horas_archivadas": 2,
- "modelo": 5232,
+ "modelo": 6432,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026112500_ecmwf",
@@ -18,18 +16,18 @@
   "2026112512_ecmwf",
   "2026112512_gfs"
  ],
- "wrf_ref": 654,
+ "wrf_ref": 764,
  "satelite": {
   "imagenes": 12,
-  "ultima": "2026-11-26T00:40Z"
+  "ultima": "2026-11-26T00:50Z"
  },
  "externas": {
   "estaciones": 335,
   "con_vecinas": 114,
   "desactivadas": 0,
   "generado": "2026-11-26T00:26:03Z",
-  "pp_archivadas": 9784,
-  "ta_archivadas": 9800,
+  "pp_archivadas": 9580,
+  "ta_archivadas": 9596,
   "desviadas": 7,
   "kv_desvio": "200"
  },
@@ -44,9 +42,9 @@
  "ob_filas": 246,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 546,
+  "observaciones": 548,
   "fallas": 0,
-  "hallazgos": 326,
+  "hallazgos": 314,
   "kv": "200",
   "completitud": "200"
  },
@@ -93,5 +91,5 @@
   "erróneo": 70,
   "sin datos": 9
  },
- "fin": "2026-11-26T01:02:05+00:00"
+ "fin": "2026-11-26T01:10:31+00:00"
 }
