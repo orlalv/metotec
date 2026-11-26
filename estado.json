@@ -1,14 +1,16 @@
 {
  "version": "0.1",
- "inicio": "2026-11-26T01:56:00+00:00",
- "errores": [],
+ "inicio": "2026-11-26T02:06:11+00:00",
+ "errores": [
+  "modelo_parcial: 2 lotes sin respuesta (lote 1: ReadTimeout: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=60))"
+ ],
  "estaciones": 138,
- "con_datos": 123,
- "registros": 5206,
- "desde": "2026-11-26 00:55:01",
- "hasta": "2026-11-26 01:50:00",
+ "con_datos": 120,
+ "registros": 4250,
+ "desde": "2026-11-26 01:05:01",
+ "hasta": "2026-11-26 02:00:00",
  "horas_archivadas": 2,
- "modelo": 6624,
+ "modelo": 4224,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026112500_ecmwf",
@@ -16,35 +18,35 @@
   "2026112512_ecmwf",
   "2026112512_gfs"
  ],
- "wrf_ref": 655,
+ "wrf_ref": 765,
  "satelite": {
-  "imagenes": 13,
-  "ultima": "2026-11-26T01:30Z"
+  "imagenes": 14,
+  "ultima": "2026-11-26T02:00Z"
  },
  "externas": {
   "estaciones": 335,
   "con_vecinas": 114,
   "desactivadas": 0,
   "generado": "2026-11-26T01:15:49Z",
-  "pp_archivadas": 9702,
-  "ta_archivadas": 9719,
-  "desviadas": 8,
-  "kv_desvio": "sin cambios"
+  "pp_archivadas": 9495,
+  "ta_archivadas": 9512,
+  "desviadas": 7,
+  "kv_desvio": "200"
  },
  "calibracion": {
   "dias": 18,
   "filas": 48863,
   "activa": true
  },
- "consenso_quitados": 3,
+ "consenso_quitados": 4,
  "incendios_cerca": 0,
  "kv_incendios": "200",
  "ob_filas": 370,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 527,
+  "observaciones": 516,
   "fallas": 0,
-  "hallazgos": 316,
+  "hallazgos": 317,
   "kv": "200",
   "completitud": "200"
  },
@@ -54,7 +56,7 @@
  ],
  "super": {
   "estaciones": 105,
-  "hallazgos": 43,
+  "hallazgos": 40,
   "kv": "200"
  },
  "historial": {
@@ -84,12 +86,12 @@
   "kv": "200"
  },
  "kv": "200",
- "alertas": 93,
+ "alertas": 102,
  "resumen": {
-  "bien": 53,
-  "sospechoso": 1,
+  "bien": 47,
+  "sospechoso": 7,
   "erróneo": 71,
   "sin datos": 13
  },
- "fin": "2026-11-26T02:00:33+00:00"
+ "fin": "2026-11-26T02:17:17+00:00"
 }
