@@ -1,58 +1,63 @@
 {
  "version": "0.1",
- "inicio": "2026-11-26T19:16:02+00:00",
+ "inicio": "2026-11-26T19:25:51+00:00",
  "errores": [],
- "estaciones": 108,
- "con_datos": 123,
- "registros": 4810,
- "desde": "2026-11-26 18:15:01",
- "hasta": "2026-11-26 19:10:00",
+ "estaciones": 135,
+ "con_datos": 126,
+ "registros": 5309,
+ "desde": "2026-11-26 18:26:00",
+ "hasta": "2026-11-26 19:20:00",
  "horas_archivadas": 2,
- "modelo": 6432,
- "wrf": "corridas nuevas",
- "nuevas": [
+ "modelo": 6480,
+ "wrf": "sin corridas nuevas",
+ "corridas": [
+  "2026112500_ecmwf",
+  "2026112500_gfs",
+  "2026112512_ecmwf",
+  "2026112512_gfs",
+  "2026112600_ecmwf",
+  "2026112600_gfs",
   "2026112612_gfs"
  ],
- "fallas": 26,
  "wrf_ref": 654,
  "satelite": {
-  "imagenes": 57,
-  "ultima": "2026-11-26T18:50Z"
+  "imagenes": 58,
+  "ultima": "2026-11-26T19:10Z"
  },
  "externas": {
   "estaciones": 338,
-  "con_vecinas": 114,
+  "con_vecinas": 115,
   "desactivadas": 0,
   "generado": "2026-11-26T19:15:46Z",
-  "pp_archivadas": 8936,
-  "ta_archivadas": 8971,
+  "pp_archivadas": 9006,
+  "ta_archivadas": 9041,
   "desviadas": 8,
-  "kv_desvio": "200"
+  "kv_desvio": "sin cambios"
  },
  "calibracion": {
   "dias": 19,
   "filas": 51035,
   "activa": true
  },
- "consenso_quitados": 8,
+ "consenso_quitados": 2,
  "incendios_cerca": 4,
  "kv_incendios": "200",
- "ob_filas": 2506,
+ "ob_filas": 2593,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 533,
   "fallas": 0,
   "hallazgos": 293,
   "kv": "200",
-  "completitud": "200"
+  "completitud": "sin cambios"
  },
  "diario": [
   "2026-11-25",
   "2026-11-26"
  ],
  "super": {
-  "estaciones": 101,
-  "hallazgos": 83,
+  "estaciones": 102,
+  "hallazgos": 88,
   "kv": "200"
  },
  "historial": {
@@ -72,22 +77,22 @@
  "reputacion": {
   "resumen": {
    "cuarentena": 4,
-   "en_revision": 26,
+   "en_revision": 27,
    "operativa": 104,
    "verde": 2,
    "amarillo": 106,
-   "rojo": 26,
+   "rojo": 27,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 64,
+ "alertas": 54,
  "resumen": {
-  "bien": 73,
-  "sospechoso": 15,
-  "erróneo": 38,
+  "bien": 80,
+  "sospechoso": 10,
+  "erróneo": 37,
   "sin datos": 8
  },
- "fin": "2026-11-26T19:22:52+00:00"
+ "fin": "2026-11-26T19:29:34+00:00"
 }
