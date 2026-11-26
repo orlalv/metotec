@@ -11,10 +11,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-26 11:30",
-"visto": "2026-11-26 11:46",
+"fin": "2026-11-26 11:45",
+"visto": "2026-11-26 11:56",
 "detalle": [
-"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 406 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -32,10 +32,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 10:27",
-"visto": "2026-11-26 11:46",
+"visto": "2026-11-26 11:56",
 "detalle": [
-"QFF · rango: 6 valores fuera de rango físico [920, 1060] (valor 522.6)",
-"QFE · rango: 6 valores fuera de lo habitual para la zona centro [936, 1016] (valor 503.4)",
+"QFF · rango: 7 valores fuera de rango físico [920, 1060] (valor 522.6)",
+"QFE · rango: 7 valores fuera de lo habitual para la zona centro [936, 1016] (valor 503.4)",
 "QFE · salto: cambio de 472.2 en 1 min (valor 976.0)"
 ]
 },
@@ -51,9 +51,9 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 05:59",
-"visto": "2026-11-26 11:46",
+"visto": "2026-11-26 11:56",
 "detalle": [
-"radiación · rango: 391 valores fuera de rango físico [0, 1600] (valor 6831.79)"
+"radiación · rango: 406 valores fuera de rango físico [0, 1600] (valor 6831.79)"
 ]
 },
 "390029|barómetro": {
@@ -70,7 +70,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 06:03",
-"visto": "2026-11-26 11:46",
+"visto": "2026-11-26 11:56",
 "detalle": [
 "QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 517.0)",
 "QFE · rango: 5 valores fuera de lo habitual para la zona sur [946, 1026] (valor 503.0)",
@@ -92,10 +92,10 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-26 11:30",
-"visto": "2026-11-26 11:46",
+"fin": "2026-11-26 11:45",
+"visto": "2026-11-26 11:56",
 "detalle": [
-"HR · rango: 391 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 406 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -113,7 +113,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 10:52",
-"visto": "2026-11-26 11:46",
+"visto": "2026-11-26 11:56",
 "detalle": [
 "QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 549.8)",
 "QFE · rango: 5 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.1)",
@@ -132,7 +132,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-26 05:59",
-"visto": "2026-11-26 11:46",
+"visto": "2026-11-26 11:56",
 "detalle": [
 "radiación · rango: 177 valores fuera de rango físico [0, 1600] (valor -0.8)"
 ]
@@ -149,9 +149,9 @@
 ],
 "nivel": 1,
 "fin": "2026-11-26 09:59",
-"visto": "2026-11-26 11:46",
+"visto": "2026-11-26 11:56",
 "detalle": [
-"QFE · rango: 114 valores fuera de lo habitual para la zona Antártica [968, 1048] (valor 967.3)"
+"QFE · rango: 129 valores fuera de lo habitual para la zona Antártica [968, 1048] (valor 967.3)"
 ]
 },
 "400060|barómetro": {
@@ -165,8 +165,8 @@
 "pegado"
 ],
 "nivel": 1,
-"fin": "2026-11-26 10:40",
-"visto": "2026-11-26 11:06",
+"fin": "2026-11-26 11:40",
+"visto": "2026-11-26 11:56",
 "detalle": [
 "QFE · pegado: sin cambio durante 3 h (valor 971.0)"
 ]
