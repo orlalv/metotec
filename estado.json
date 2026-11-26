@@ -1,14 +1,14 @@
 {
  "version": "0.1",
- "inicio": "2026-11-26T11:16:29+00:00",
+ "inicio": "2026-11-26T11:26:04+00:00",
  "errores": [],
- "estaciones": 131,
- "con_datos": 121,
- "registros": 4724,
- "desde": "2026-11-26 10:16:00",
- "hasta": "2026-11-26 11:10:00",
+ "estaciones": 132,
+ "con_datos": 125,
+ "registros": 5322,
+ "desde": "2026-11-26 10:26:00",
+ "hasta": "2026-11-26 11:20:00",
  "horas_archivadas": 2,
- "modelo": 6288,
+ "modelo": 6336,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026112500_ecmwf",
@@ -20,16 +20,16 @@
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 50,
-  "ultima": "2026-11-26T10:50Z"
+  "ultima": "2026-11-26T11:10Z"
  },
  "externas": {
   "estaciones": 335,
-  "con_vecinas": 113,
+  "con_vecinas": 114,
   "desactivadas": 0,
   "generado": "2026-11-26T11:16:06Z",
-  "pp_archivadas": 9006,
-  "ta_archivadas": 9031,
-  "desviadas": 4,
+  "pp_archivadas": 9332,
+  "ta_archivadas": 9359,
+  "desviadas": 6,
   "kv_desvio": "200"
  },
  "calibracion": {
@@ -37,24 +37,24 @@
   "filas": 51035,
   "activa": true
  },
- "consenso_quitados": 8,
+ "consenso_quitados": 3,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1504,
+ "ob_filas": 1593,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 465,
   "fallas": 0,
   "hallazgos": 308,
   "kv": "200",
-  "completitud": "200"
+  "completitud": "sin cambios"
  },
  "diario": [
   "2026-11-25",
   "2026-11-26"
  ],
  "super": {
-  "estaciones": 98,
+  "estaciones": 99,
   "hallazgos": 89,
   "kv": "200"
  },
@@ -82,21 +82,21 @@
   "resumen": {
    "cuarentena": 3,
    "en_revision": 24,
-   "operativa": 104,
+   "operativa": 105,
    "verde": 2,
-   "amarillo": 104,
+   "amarillo": 105,
    "rojo": 25,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 108,
+ "alertas": 96,
  "resumen": {
-  "bien": 49,
-  "sospechoso": 5,
-  "erróneo": 72,
+  "bien": 53,
+  "sospechoso": 4,
+  "erróneo": 70,
   "sin datos": 5
  },
- "fin": "2026-11-26T11:21:06+00:00"
+ "fin": "2026-11-26T11:29:41+00:00"
 }
