@@ -1,36 +1,32 @@
 {
  "version": "0.1",
- "inicio": "2026-11-25T16:02:49+00:00",
+ "inicio": "2026-11-26T00:06:15+00:00",
  "errores": [],
- "estaciones": 135,
+ "estaciones": 108,
  "con_datos": 123,
- "registros": 4740,
- "desde": "2026-11-25 15:01:00",
- "hasta": "2026-11-25 15:55:00",
- "horas_archivadas": 1,
- "modelo": 6480,
- "wrf": "sin corridas nuevas",
- "corridas": [
-  "2026112400_ecmwf",
-  "2026112400_gfs",
-  "2026112412_ecmwf",
-  "2026112412_gfs",
-  "2026112500_ecmwf",
-  "2026112500_gfs"
+ "registros": 4315,
+ "desde": "2026-11-25 23:05:01",
+ "hasta": "2026-11-26 00:00:00",
+ "horas_archivadas": 2,
+ "modelo": 6432,
+ "wrf": "corridas nuevas",
+ "nuevas": [
+  "2026112512_gfs"
  ],
- "wrf_ref": 654,
+ "fallas": 26,
+ "wrf_ref": 763,
  "satelite": {
-  "imagenes": 32,
-  "ultima": "2026-11-25T14:40Z"
+  "imagenes": 12,
+  "ultima": "2026-11-25T23:20Z"
  },
  "externas": {
-  "estaciones": 336,
+  "estaciones": 335,
   "con_vecinas": 114,
   "desactivadas": 0,
-  "generado": "2026-11-25T15:15:39Z",
-  "pp_archivadas": 10272,
-  "ta_archivadas": 10281,
-  "desviadas": 16,
+  "generado": "2026-11-26T00:05:58Z",
+  "pp_archivadas": 9644,
+  "ta_archivadas": 9660,
+  "desviadas": 6,
   "kv_desvio": "200"
  },
  "calibracion": {
@@ -38,60 +34,78 @@
   "filas": 48863,
   "activa": true
  },
- "consenso_quitados": 3,
+ "consenso_quitados": 2,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 2141,
+ "ob_filas": 123,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 520,
+  "observaciones": 546,
   "fallas": 0,
-  "hallazgos": 329,
+  "hallazgos": 315,
   "kv": "200",
   "completitud": "200"
  },
  "diario": [
-  "2026-11-24",
-  "2026-11-25"
+  "2026-11-25",
+  "2026-11-26"
  ],
  "super": {
-  "estaciones": 102,
-  "hallazgos": 57,
+  "estaciones": 101,
+  "hallazgos": 13,
   "kv": "200"
  },
  "historial": {
   "2026-11-13": "200",
   "2026-11-18": "200",
-  "2026-11-21": "200",
   "2026-11-22": "200",
   "2026-11-23": "200",
   "2026-11-24": "200",
-  "2026-11-25": "200"
+  "2026-11-25": "200",
+  "2026-11-26": "200"
  },
  "boletin": "fuera de horario",
  "productos": {
   "extremas": "200",
   "lluvia_obs": "sin cambios"
  },
+ "pluviometros": {
+  "resumen": {
+   "sospecha_obstruccion": 2,
+   "revisar": 21,
+   "sin_dato_con_lluvia": 7,
+   "ok": 97
+  },
+  "fuentes": {
+   "vecinas": true,
+   "modelo": true,
+   "satelite": true,
+   "imerg": true,
+   "satelite_horas": 155,
+   "imerg_pasos_nuevos": 27,
+   "externas": 349
+  },
+  "kv": "200"
+ },
  "reputacion": {
   "resumen": {
    "cuarentena": 4,
-   "en_revision": 25,
-   "operativa": 106,
-   "verde": 91,
-   "amarillo": 17,
-   "rojo": 27,
+   "en_revision": 26,
+   "operativa": 104,
+   "verde": 2,
+   "amarillo": 104,
+   "rojo": 28,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 22,
+ "alertas": 23,
  "resumen": {
-  "bien": 110,
-  "sospechoso": 10,
-  "erróneo": 7,
-  "sin datos": 8
+  "bien": 104,
+  "sospechoso": 1,
+  "erróneo": 18,
+  "sin datos": 11
  },
- "fin": "2026-11-25T16:06:39+00:00"
+ "fin": "2026-11-26T00:14:05+00:00"
 }
