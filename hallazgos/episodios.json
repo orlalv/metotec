@@ -12,7 +12,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 15:00",
-"visto": "2026-11-27 18:26",
+"visto": "2026-11-27 18:36",
 "detalle": [
 "HR · rango: 375 valores fuera de rango físico [1, 100] (valor 0.0)"
 ]
@@ -31,7 +31,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 12:01",
-"visto": "2026-11-27 18:26",
+"visto": "2026-11-27 18:36",
 "detalle": [
 "QFF · rango: 7 valores fuera de rango físico [920, 1060] (valor 522.2)",
 "QFE · rango: 7 valores fuera de lo habitual para la zona centro [936, 1016] (valor 503.1)",
@@ -50,7 +50,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 12:59",
-"visto": "2026-11-27 18:26",
+"visto": "2026-11-27 18:36",
 "detalle": [
 "radiación · rango: 353 valores fuera de rango físico [0, 1600] (valor 3799.25)"
 ]
@@ -69,7 +69,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 12:01",
-"visto": "2026-11-27 18:26",
+"visto": "2026-11-27 18:36",
 "detalle": [
 "QFF · rango: 6 valores fuera de rango físico [920, 1060] (valor 518.2)",
 "QFE · rango: 6 valores fuera de lo habitual para la zona sur [946, 1026] (valor 504.3)",
@@ -92,7 +92,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 18:15",
-"visto": "2026-11-27 18:26",
+"visto": "2026-11-27 18:36",
 "detalle": [
 "HR · rango: 376 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
@@ -112,7 +112,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 13:28",
-"visto": "2026-11-27 18:26",
+"visto": "2026-11-27 18:36",
 "detalle": [
 "QFF · rango: 7 valores fuera de rango físico [920, 1060] (valor 549.3)",
 "QFE · rango: 7 valores fuera de lo habitual para la zona centro [886, 966] (valor 503.4)",
@@ -132,10 +132,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 12:59",
-"visto": "2026-11-27 18:26",
+"visto": "2026-11-27 18:36",
 "detalle": [
-"QFF · rango: 340 valores fuera de rango físico [920, 1060] (valor 503.8)",
-"QFE · rango: 340 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.6)"
+"QFF · rango: 370 valores fuera de rango físico [920, 1060] (valor 503.8)",
+"QFE · rango: 370 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.6)"
 ]
 },
 "330020|termohigrómetro": {
@@ -150,7 +150,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 13:56",
-"visto": "2026-11-27 18:26",
+"visto": "2026-11-27 18:36",
 "detalle": [
 "Ts · salto: cambio de 11.7 en 6 min (valor 18.7)"
 ]
@@ -167,7 +167,7 @@
 ],
 "nivel": 1,
 "fin": "2026-11-27 14:59",
-"visto": "2026-11-27 18:26",
+"visto": "2026-11-27 18:36",
 "detalle": [
 "radiación · rango: 227 minutos sobre 1360 W/m² (posible sensor descalibrado) (valor 1441.91)"
 ]
