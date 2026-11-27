@@ -11,10 +11,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-27 08:45",
-"visto": "2026-11-27 09:01",
+"fin": "2026-11-27 09:00",
+"visto": "2026-11-27 09:16",
 "detalle": [
-"HR · rango: 406 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -32,10 +32,10 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 08:00",
-"visto": "2026-11-27 09:01",
+"visto": "2026-11-27 09:16",
 "detalle": [
-"QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 523.1)",
-"QFE · rango: 8 valores fuera de lo habitual para la zona centro [936, 1016] (valor 504.1)",
+"QFF · rango: 8 valores fuera de rango físico [920, 1060] (valor 523.0)",
+"QFE · rango: 8 valores fuera de lo habitual para la zona centro [936, 1016] (valor 503.9)",
 "QFE · salto: cambio de 480.2 en 1 min (valor 502.4)"
 ]
 },
@@ -50,10 +50,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-27 02:59",
-"visto": "2026-11-27 09:01",
+"fin": "2026-11-27 03:59",
+"visto": "2026-11-27 09:16",
 "detalle": [
-"radiación · rango: 378 valores fuera de rango físico [0, 1600] (valor 6182.42)"
+"radiación · rango: 318 valores fuera de rango físico [0, 1600] (valor 6558.78)"
 ]
 },
 "390029|barómetro": {
@@ -70,7 +70,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 08:18",
-"visto": "2026-11-27 09:01",
+"visto": "2026-11-27 09:16",
 "detalle": [
 "QFF · rango: 7 valores fuera de rango físico [920, 1060] (valor 516.8)",
 "QFE · rango: 7 valores fuera de lo habitual para la zona sur [946, 1026] (valor 502.9)",
@@ -92,10 +92,10 @@
 "salto"
 ],
 "nivel": 2,
-"fin": "2026-11-27 08:45",
-"visto": "2026-11-27 09:01",
+"fin": "2026-11-27 09:00",
+"visto": "2026-11-27 09:16",
 "detalle": [
-"HR · rango: 406 valores fuera de rango físico [1, 100] (valor 0.0)",
+"HR · rango: 361 valores fuera de rango físico [1, 100] (valor 0.0)",
 "HR · pegado: sin cambio durante 10 h (valor 0.0)"
 ]
 },
@@ -113,28 +113,11 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 04:30",
-"visto": "2026-11-27 09:01",
+"visto": "2026-11-27 09:16",
 "detalle": [
-"QFF · rango: 6 valores fuera de rango físico [920, 1060] (valor 549.9)",
-"QFE · rango: 6 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.2)",
+"QFF · rango: 5 valores fuera de rango físico [920, 1060] (valor 549.8)",
+"QFE · rango: 5 valores fuera de lo habitual para la zona centro [886, 966] (valor 504.0)",
 "QFE · salto: cambio de 427.4 en 1 min (valor 931.4)"
-]
-},
-"950001|barómetro": {
-"codigo": "950001",
-"sensor": "barómetro",
-"inicio": "2026-11-26 09:44",
-"vars": [
-"P_est"
-],
-"pruebas": [
-"rango"
-],
-"nivel": 1,
-"fin": "2026-11-27 01:59",
-"visto": "2026-11-27 07:56",
-"detalle": [
-"QFE · rango: 57 valores fuera de lo habitual para la zona Antártica [968, 1048] (valor 967.8)"
 ]
 },
 "400013|barómetro": {
@@ -149,11 +132,11 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-27 02:59",
-"visto": "2026-11-27 09:01",
+"fin": "2026-11-27 03:59",
+"visto": "2026-11-27 09:16",
 "detalle": [
-"QFF · rango: 384 valores fuera de rango físico [920, 1060] (valor 503.8)",
-"QFE · rango: 384 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.7)"
+"QFF · rango: 340 valores fuera de rango físico [920, 1060] (valor 503.8)",
+"QFE · rango: 340 valores fuera de lo habitual para la zona sur [967, 1047] (valor 500.6)"
 ]
 },
 "550001|piranómetro (radiación)": {
@@ -167,10 +150,10 @@
 "rango"
 ],
 "nivel": 2,
-"fin": "2026-11-27 02:59",
-"visto": "2026-11-27 09:01",
+"fin": "2026-11-27 03:59",
+"visto": "2026-11-27 09:16",
 "detalle": [
-"radiación · rango: 348 valores fuera de rango físico [0, 1600] (valor -2.4)"
+"radiación · rango: 288 valores fuera de rango físico [0, 1600] (valor -2.9)"
 ]
 },
 "180017|barómetro": {
@@ -187,7 +170,7 @@
 ],
 "nivel": 2,
 "fin": "2026-11-27 03:30",
-"visto": "2026-11-27 09:01",
+"visto": "2026-11-27 09:16",
 "detalle": [
 "QFF · rango: 1 valores fuera de rango físico [920, 1060] (valor 767.8)",
 "QFE · rango: 1 valores fuera de lo habitual para la zona cordillera/altiplano [615, 695] (valor 501.6)",
