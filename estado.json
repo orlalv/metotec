@@ -1,14 +1,12 @@
 {
  "version": "0.1",
- "inicio": "2026-11-27T10:36:10+00:00",
- "errores": [
-  "boletin: Traceback (most recent call last):\n  File \"/home/runner/work/metotec/metotec/qc/correr.py\", line 567, in main\n    estado[\"boletin\"] = BOL.correr(a.datos, forzar=a.boletin == \"si\", subir=subir_kv)\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/runner/work/metotec/metotec/qc/boletin.py\", line 301, in correr\n    bol = descargar(dia)\n          ^^^^^^^^^^^^^^\nrequests.exceptions.HTTPError: 503 Server Error: Service Temporarily Unavailable for url: https://climatologia.meteochile.gob.cl/application/diario/boletinClimatologicoDiario//2026/11/27\n"
- ],
+ "inicio": "2026-11-27T10:46:19+00:00",
+ "errores": [],
  "estaciones": 134,
- "con_datos": 125,
- "registros": 4259,
- "desde": "2026-11-27 09:35:01",
- "hasta": "2026-11-27 10:30:00",
+ "con_datos": 120,
+ "registros": 4712,
+ "desde": "2026-11-27 09:45:01",
+ "hasta": "2026-11-27 10:40:00",
  "horas_archivadas": 2,
  "modelo": 6432,
  "wrf": "sin corridas nuevas",
@@ -22,7 +20,7 @@
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 67,
-  "ultima": "2026-11-27T10:20Z"
+  "ultima": "2026-11-27T10:30Z"
  },
  "externas": {
   "estaciones": 329,
@@ -39,10 +37,10 @@
   "filas": 54042,
   "activa": true
  },
- "consenso_quitados": 1,
+ "consenso_quitados": 0,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 1463,
+ "ob_filas": 1492,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 450,
@@ -57,7 +55,7 @@
  ],
  "super": {
   "estaciones": 102,
-  "hallazgos": 65,
+  "hallazgos": 64,
   "kv": "200"
  },
  "historial": {
@@ -69,6 +67,13 @@
   "2026-11-25": "200",
   "2026-11-26": "200",
   "2026-11-27": "200"
+ },
+ "boletin": {
+  "dia": "2026-11-27",
+  "estaciones": 26,
+  "hallazgos": 6,
+  "cambios": 0,
+  "kv": "200"
  },
  "productos": {
   "extremas": "200",
@@ -87,12 +92,12 @@
   "kv": "200"
  },
  "kv": "200",
- "alertas": 48,
+ "alertas": 47,
  "resumen": {
   "bien": 83,
   "sospechoso": 3,
   "erróneo": 40,
   "sin datos": 8
  },
- "fin": "2026-11-27T10:40:46+00:00"
+ "fin": "2026-11-27T10:51:08+00:00"
 }
