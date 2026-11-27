@@ -1,14 +1,15 @@
 {
  "version": "0.1",
- "inicio": "2026-11-27T02:36:17+00:00",
- "errores": [],
+ "inicio": "2026-11-27T02:46:16+00:00",
+ "errores": [
+  "modelo: lote 1: ReadTimeout: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=60); lote 2: HTTP 429 {\"error\":true,\"reason\":\"Daily API request limit exceeded. Please try again tomorrow.\"}; lote 3: HTTP 429 {\"error\":true,\"reason\":\"Daily API request limit exceeded. Please try again tomorrow.\"}"
+ ],
  "estaciones": 135,
- "con_datos": 124,
- "registros": 4537,
- "desde": "2026-11-27 01:36:00",
- "hasta": "2026-11-27 02:30:00",
+ "con_datos": 117,
+ "registros": 4607,
+ "desde": "2026-11-27 01:45:01",
+ "hasta": "2026-11-27 02:40:00",
  "horas_archivadas": 2,
- "modelo": 6480,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026112600_ecmwf",
@@ -19,7 +20,7 @@
  "wrf_ref": 657,
  "satelite": {
   "imagenes": 62,
-  "ultima": "2026-11-27T02:20Z"
+  "ultima": "2026-11-27T02:40Z"
  },
  "externas": {
   "estaciones": 336,
@@ -39,7 +40,7 @@
  "consenso_quitados": 0,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 3478,
+ "ob_filas": 3496,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 506,
@@ -54,7 +55,7 @@
  ],
  "super": {
   "estaciones": 103,
-  "hallazgos": 57,
+  "hallazgos": 44,
   "kv": "200"
  },
  "historial": {
@@ -92,5 +93,5 @@
   "erróneo": 38,
   "sin datos": 8
  },
- "fin": "2026-11-27T02:39:58+00:00"
+ "fin": "2026-11-27T02:57:14+00:00"
 }
