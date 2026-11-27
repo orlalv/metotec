@@ -1,50 +1,56 @@
 {
  "version": "0.1",
- "inicio": "2026-11-27T23:15:54+00:00",
+ "inicio": "2026-11-27T23:26:00+00:00",
  "errores": [],
- "estaciones": 108,
- "con_datos": 122,
- "registros": 4853,
- "desde": "2026-11-27 22:16:00",
- "hasta": "2026-11-27 23:10:00",
+ "estaciones": 132,
+ "con_datos": 125,
+ "registros": 5253,
+ "desde": "2026-11-27 22:25:01",
+ "hasta": "2026-11-27 23:20:00",
  "horas_archivadas": 2,
  "modelo": 6336,
- "wrf": "corridas nuevas",
- "nuevas": [
-  "2026112712_ecmwf"
+ "wrf": "sin corridas nuevas",
+ "corridas": [
+  "2026112600_ecmwf",
+  "2026112600_gfs",
+  "2026112612_ecmwf",
+  "2026112612_gfs",
+  "2026112700_ecmwf",
+  "2026112700_gfs",
+  "2026112712_ecmwf",
+  "2026112712_gfs"
  ],
- "fallas": 24,
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 68,
-  "ultima": "2026-11-27T23:00Z"
+  "ultima": "2026-11-27T23:10Z"
  },
  "externas": {
   "estaciones": 263,
   "con_vecinas": 109,
   "desactivadas": 0,
-  "generado": "2026-11-27T22:35:53Z",
+  "generado": "2026-11-27T23:25:45Z",
   "pp_archivadas": 8786,
   "ta_archivadas": 8837,
   "desviadas": 14,
-  "kv_desvio": "200"
+  "kv_desvio": "sin cambios"
  },
  "calibracion": {
   "dias": 20,
   "filas": 54042,
   "activa": true
  },
- "consenso_quitados": 5,
+ "consenso_quitados": 4,
  "incendios_cerca": 3,
  "kv_incendios": "200",
- "ob_filas": 3027,
+ "ob_filas": 3106,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 535,
   "fallas": 0,
   "hallazgos": 292,
-  "kv": "200",
-  "completitud": "200"
+  "kv": "sin cambios",
+  "completitud": "sin cambios"
  },
  "diario": [
   "2026-11-26",
@@ -74,20 +80,20 @@
    "cuarentena": 3,
    "en_revision": 28,
    "operativa": 101,
-   "verde": 39,
-   "amarillo": 67,
+   "verde": 40,
+   "amarillo": 66,
    "rojo": 26,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 45,
+ "alertas": 40,
  "resumen": {
-  "bien": 94,
-  "sospechoso": 10,
+  "bien": 95,
+  "sospechoso": 9,
   "erróneo": 23,
   "sin datos": 5
  },
- "fin": "2026-11-27T23:23:01+00:00"
+ "fin": "2026-11-27T23:29:45+00:00"
 }
