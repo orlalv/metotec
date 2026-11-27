@@ -1,15 +1,14 @@
 {
  "version": "0.1",
- "inicio": "2026-11-27T02:46:16+00:00",
- "errores": [
-  "modelo: lote 1: ReadTimeout: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=60); lote 2: HTTP 429 {\"error\":true,\"reason\":\"Daily API request limit exceeded. Please try again tomorrow.\"}; lote 3: HTTP 429 {\"error\":true,\"reason\":\"Daily API request limit exceeded. Please try again tomorrow.\"}"
- ],
- "estaciones": 135,
- "con_datos": 117,
- "registros": 4607,
- "desde": "2026-11-27 01:45:01",
- "hasta": "2026-11-27 02:40:00",
+ "inicio": "2026-11-27T03:05:45+00:00",
+ "errores": [],
+ "estaciones": 131,
+ "con_datos": 120,
+ "registros": 4280,
+ "desde": "2026-11-27 02:06:00",
+ "hasta": "2026-11-27 03:00:00",
  "horas_archivadas": 2,
+ "modelo": 6288,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026112600_ecmwf",
@@ -17,45 +16,45 @@
   "2026112612_ecmwf",
   "2026112612_gfs"
  ],
- "wrf_ref": 657,
+ "wrf_ref": 767,
  "satelite": {
   "imagenes": 62,
-  "ultima": "2026-11-27T02:40Z"
+  "ultima": "2026-11-27T02:50Z"
  },
  "externas": {
-  "estaciones": 336,
+  "estaciones": 335,
   "con_vecinas": 114,
   "desactivadas": 0,
   "generado": "2026-11-27T02:15:40Z",
-  "pp_archivadas": 8684,
-  "ta_archivadas": 8725,
-  "desviadas": 28,
-  "kv_desvio": "sin cambios"
+  "pp_archivadas": 8472,
+  "ta_archivadas": 8513,
+  "desviadas": 25,
+  "kv_desvio": "200"
  },
  "calibracion": {
   "dias": 19,
   "filas": 51035,
   "activa": true
  },
- "consenso_quitados": 0,
+ "consenso_quitados": 1,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 3496,
+ "ob_filas": 3501,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 506,
+  "observaciones": 525,
   "fallas": 0,
-  "hallazgos": 295,
-  "kv": "sin cambios",
-  "completitud": "sin cambios"
+  "hallazgos": 294,
+  "kv": "200",
+  "completitud": "200"
  },
  "diario": [
   "2026-11-26",
   "2026-11-27"
  ],
  "super": {
-  "estaciones": 103,
-  "hallazgos": 44,
+  "estaciones": 99,
+  "hallazgos": 52,
   "kv": "200"
  },
  "historial": {
@@ -75,23 +74,23 @@
  },
  "reputacion": {
   "resumen": {
-   "cuarentena": 5,
-   "en_revision": 27,
+   "cuarentena": 3,
+   "en_revision": 25,
    "operativa": 103,
    "verde": 2,
    "amarillo": 105,
-   "rojo": 28,
+   "rojo": 24,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 53,
+ "alertas": 58,
  "resumen": {
-  "bien": 81,
-  "sospechoso": 8,
-  "erróneo": 38,
-  "sin datos": 8
+  "bien": 75,
+  "sospechoso": 13,
+  "erróneo": 39,
+  "sin datos": 4
  },
- "fin": "2026-11-27T02:57:14+00:00"
+ "fin": "2026-11-27T03:09:08+00:00"
 }
