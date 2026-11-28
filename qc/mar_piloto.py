@@ -19,7 +19,7 @@ from pathlib import Path
 ESTACIONES = {"180005": ("Chacalluta, Arica", -18.375, -70.625), "200006": ("Diego Aracena, Iquique", -20.625, -70.625),
               "230001": ("Cerro Moreno, Antofagasta", -23.375, -70.875), "290004": ("La Florida, La Serena", -29.875, -71.625)}
 REF = (2011, 2025)
-URL = ("https://www.ncei.noaa.gov/erddap/griddap/ncdc_oisst_v2_avhrr_by_time_zlev_lat_lon.csv?"
+URL = ("https://coastwatch.pfeg.noaa.gov/erddap/griddap/ncdc_oisst_v2_avhrr_by_time_zlev_lat_lon.csv?"
        "sst%5B(2011-01-01):1:(last)%5D%5B(0.0)%5D%5B({lat})%5D%5B({lon})%5D")
 
 

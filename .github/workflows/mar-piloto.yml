@@ -15,7 +15,7 @@ saclim/290004 }
       - name: OISST
         run: |
           mkdir -p sst
-          python qc/mar_piloto.py urls | while read c u; do curl -sSf --retry 5 --retry-delay 20 -o sst/OISST_$c.csv "$u"; done
+          python qc/mar_piloto.py urls | while read c u; do curl -sS --retry 5 --retry-delay 20 -o sst/OISST_$c.csv -w "$c %{http_code}\n" "$u"; head -c 300 sst/OISST_$c.csv; echo; done
           wc -l sst/*
       - run: mkdir -p mar && python qc/mar_piloto.py correr --datos datosrama --sst sst --salida mar/mar_piloto.csv --graficos mar | tee mar/resumen.txt
       - run: |
