@@ -1,0 +1,23 @@
+name: mar-piloto
+on: workflow_dispatch
+permissions: { contents: write }
+jobs:
+  correr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: datos, path: datosrama, sparse-checkout: saclim/180005
+saclim/200006
+saclim/230001
+saclim/290004 }
+      - run: pip install matplotlib
+      - name: OISST
+        run: |
+          mkdir -p sst
+          python qc/mar_piloto.py urls | while read c u; do curl -sSf --retry 5 --retry-delay 20 -o sst/OISST_$c.csv "$u"; done
+          wc -l sst/*
+      - run: mkdir -p mar && python qc/mar_piloto.py correr --datos datosrama --sst sst --salida mar/mar_piloto.csv --graficos mar | tee mar/resumen.txt
+      - run: |
+          git config user.name bot; git config user.email bot@users.noreply.github.com
+          git add mar && git commit -m "mar piloto resultados" && git push
