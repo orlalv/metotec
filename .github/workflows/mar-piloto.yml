@@ -1,5 +1,5 @@
 name: mar-piloto
-on: workflow_dispatch
+on: { push: { branches: [mar-piloto], paths: [".github/workflows/mar-piloto.yml", "qc/mar_piloto.py"] } }
 permissions: { contents: write }
 jobs:
   correr:
