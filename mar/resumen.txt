@@ -1,0 +1,4 @@
+180005 sin meses suficientes
+200006 sin meses suficientes
+230001 sin meses suficientes
+290004 sin meses suficientes
