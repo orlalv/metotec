@@ -1,13 +1,13 @@
 {
  "version": "0.1",
- "inicio": "2026-11-28T09:55:51+00:00",
+ "inicio": "2026-11-28T10:06:10+00:00",
  "errores": [],
  "estaciones": 132,
- "con_datos": 125,
- "registros": 5307,
- "desde": "2026-11-28 08:56:00",
- "hasta": "2026-11-28 09:50:00",
- "horas_archivadas": 2,
+ "con_datos": 122,
+ "registros": 4211,
+ "desde": "2026-11-28 09:05:01",
+ "hasta": "2026-11-28 09:55:00",
+ "horas_archivadas": 1,
  "modelo": 6336,
  "wrf": "sin corridas nuevas",
  "corridas": [
@@ -20,7 +20,7 @@
  "wrf_ref": 660,
  "satelite": {
   "imagenes": 69,
-  "ultima": "2026-11-28T09:40Z"
+  "ultima": "2026-11-28T09:50Z"
  },
  "externas": {
   "estaciones": 263,
@@ -43,9 +43,9 @@
  "ob_filas": 1377,
  "sensorial": {
   "estaciones": 63,
-  "observaciones": 454,
+  "observaciones": 465,
   "fallas": 0,
-  "hallazgos": 279,
+  "hallazgos": 280,
   "kv": "200",
   "completitud": "200"
  },
@@ -68,7 +68,13 @@
   "2026-11-27": "200",
   "2026-11-28": "200"
  },
- "boletin": "fuera de horario",
+ "boletin": {
+  "dia": "2026-11-28",
+  "estaciones": 26,
+  "hallazgos": 6,
+  "cambios": 0,
+  "kv": "200"
+ },
  "productos": {
   "extremas": "200",
   "lluvia_obs": "sin cambios"
@@ -78,8 +84,8 @@
    "cuarentena": 4,
    "en_revision": 27,
    "operativa": 101,
-   "verde": 39,
-   "amarillo": 67,
+   "verde": 32,
+   "amarillo": 74,
    "rojo": 26,
    "listas_para_aprobar": 0
   },
@@ -93,5 +99,5 @@
   "erróneo": 25,
   "sin datos": 6
  },
- "fin": "2026-11-28T09:59:34+00:00"
+ "fin": "2026-11-28T10:12:48+00:00"
 }
