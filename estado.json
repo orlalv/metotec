@@ -1,14 +1,16 @@
 {
  "version": "0.1",
- "inicio": "2026-11-28T05:26:04+00:00",
- "errores": [],
+ "inicio": "2026-11-28T05:36:21+00:00",
+ "errores": [
+  "modelo_parcial: 1 lotes sin respuesta (lote 1: ReadTimeout: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=60))"
+ ],
  "estaciones": 135,
- "con_datos": 125,
- "registros": 5271,
- "desde": "2026-11-28 04:25:01",
- "hasta": "2026-11-28 05:18:00",
+ "con_datos": 126,
+ "registros": 4648,
+ "desde": "2026-11-28 04:35:01",
+ "hasta": "2026-11-28 05:30:00",
  "horas_archivadas": 2,
- "modelo": 6480,
+ "modelo": 5280,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026112700_ecmwf",
@@ -18,18 +20,18 @@
  ],
  "wrf_ref": 660,
  "satelite": {
-  "imagenes": 70,
-  "ultima": "2026-11-28T05:00Z"
+  "imagenes": 69,
+  "ultima": "2026-11-28T05:20Z"
  },
  "externas": {
   "estaciones": 262,
   "con_vecinas": 109,
   "desactivadas": 0,
-  "generado": "2026-11-28T04:35:53Z",
-  "pp_archivadas": 8831,
-  "ta_archivadas": 8882,
+  "generado": "2026-11-28T05:36:01Z",
+  "pp_archivadas": 9066,
+  "ta_archivadas": 9116,
   "desviadas": 7,
-  "kv_desvio": "sin cambios"
+  "kv_desvio": "200"
  },
  "calibracion": {
   "dias": 20,
@@ -39,13 +41,13 @@
  "consenso_quitados": 0,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 3858,
+ "ob_filas": 3877,
  "sensorial": {
-  "estaciones": 63,
-  "observaciones": 475,
-  "fallas": 0,
-  "hallazgos": 278,
-  "kv": "sin cambios",
+  "estaciones": 62,
+  "observaciones": 463,
+  "fallas": 1,
+  "hallazgos": 275,
+  "kv": "200",
   "completitud": "sin cambios"
  },
  "diario": [
@@ -77,20 +79,20 @@
    "cuarentena": 5,
    "en_revision": 29,
    "operativa": 101,
-   "verde": 39,
-   "amarillo": 67,
+   "verde": 36,
+   "amarillo": 70,
    "rojo": 29,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 43,
+ "alertas": 42,
  "resumen": {
-  "bien": 89,
-  "sospechoso": 14,
+  "bien": 90,
+  "sospechoso": 13,
   "erróneo": 23,
   "sin datos": 9
  },
- "fin": "2026-11-28T05:30:08+00:00"
+ "fin": "2026-11-28T05:44:20+00:00"
 }
