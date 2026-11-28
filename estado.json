@@ -1,14 +1,14 @@
 {
  "version": "0.1",
- "inicio": "2026-11-28T01:26:19+00:00",
+ "inicio": "2026-11-28T01:35:53+00:00",
  "errores": [],
- "estaciones": 132,
- "con_datos": 126,
- "registros": 5288,
- "desde": "2026-11-28 00:26:00",
- "hasta": "2026-11-28 01:20:00",
+ "estaciones": 138,
+ "con_datos": 125,
+ "registros": 4500,
+ "desde": "2026-11-28 00:35:01",
+ "hasta": "2026-11-28 01:30:00",
  "horas_archivadas": 2,
- "modelo": 6336,
+ "modelo": 6624,
  "wrf": "sin corridas nuevas",
  "corridas": [
   "2026112700_ecmwf",
@@ -22,14 +22,14 @@
   "ultima": "2026-11-28T01:10Z"
  },
  "externas": {
-  "estaciones": 262,
+  "estaciones": 263,
   "con_vecinas": 109,
   "desactivadas": 0,
   "generado": "2026-11-28T01:26:01Z",
-  "pp_archivadas": 8787,
-  "ta_archivadas": 8838,
+  "pp_archivadas": 8953,
+  "ta_archivadas": 9004,
   "desviadas": 10,
-  "kv_desvio": "sin cambios"
+  "kv_desvio": "200"
  },
  "calibracion": {
   "dias": 20,
@@ -39,13 +39,13 @@
  "consenso_quitados": 0,
  "incendios_cerca": 0,
  "kv_incendios": "200",
- "ob_filas": 3361,
+ "ob_filas": 3370,
  "sensorial": {
   "estaciones": 63,
   "observaciones": 512,
   "fallas": 0,
   "hallazgos": 281,
-  "kv": "200",
+  "kv": "sin cambios",
   "completitud": "sin cambios"
  },
  "diario": [
@@ -53,8 +53,8 @@
   "2026-11-28"
  ],
  "super": {
-  "estaciones": 100,
-  "hallazgos": 60,
+  "estaciones": 106,
+  "hallazgos": 59,
   "kv": "200"
  },
  "historial": {
@@ -74,23 +74,23 @@
  },
  "reputacion": {
   "resumen": {
-   "cuarentena": 3,
-   "en_revision": 28,
+   "cuarentena": 6,
+   "en_revision": 31,
    "operativa": 101,
-   "verde": 39,
-   "amarillo": 67,
-   "rojo": 26,
+   "verde": 35,
+   "amarillo": 71,
+   "rojo": 32,
    "listas_para_aprobar": 0
   },
   "kv": "200"
  },
  "kv": "200",
- "alertas": 40,
+ "alertas": 39,
  "resumen": {
-  "bien": 93,
-  "sospechoso": 11,
+  "bien": 94,
+  "sospechoso": 10,
   "erróneo": 23,
-  "sin datos": 5
+  "sin datos": 11
  },
- "fin": "2026-11-28T01:30:22+00:00"
+ "fin": "2026-11-28T01:40:25+00:00"
 }
