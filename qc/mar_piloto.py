@@ -23,6 +23,28 @@ URL = ("https://coastwatch.pfeg.noaa.gov/erddap/griddap/ncdc_oisst_v2_avhrr_by_t
        "sst%5B(2011-01-01):1:(last)%5D%5B(0.0)%5D%5B({lat})%5D%5B({lon})%5D")
 
 
+PSL = ("https://psl.noaa.gov/thredds/ncss/Datasets/noaa.oisst.v2.highres/sst.day.mean.{y}.nc?var=sst"
+       "&latitude={lat}&longitude={lon}&time_start={y}-01-01T00:00:00Z&time_end={y}-12-31T23:59:59Z&accept=csv")
+
+
+def bajar_psl(carpeta, hasta=2026):
+    import urllib.request, time
+    Path(carpeta).mkdir(parents=True, exist_ok=True)
+    for cod, (_, la, lo) in ESTACIONES.items():
+        partes = []
+        for y in range(REF[0], hasta + 1):
+            for i in range(5):
+                try:
+                    t = urllib.request.urlopen(PSL.format(y=y, lat=la, lon=lo + 360), timeout=120).read().decode()
+                    break
+                except Exception as e:
+                    print(cod, y, "reintento", e); time.sleep(15)
+            else:
+                continue
+            l = t.strip().splitlines(); partes += l if not partes else l[1:]
+        Path(carpeta, f"OISST_{cod}.csv").write_text("\n".join(partes)); print(cod, len(partes) - 1, "días")
+
+
 def url_sst(cod):
     _, la, lo = ESTACIONES[cod]
     return URL.format(lat=la, lon=lo + 360)
@@ -48,8 +70,8 @@ def mar_diario(archivo):
     filas = list(csv.reader(io.StringIO(Path(archivo).read_text(encoding="utf-8", errors="replace"))))
     if not filas:
         return out
-    cab = filas[0]; it, isst = cab.index("time"), cab.index("sst")
-    for r in filas[2:]:
+    cab = [c.split("[")[0].strip() for c in filas[0]]; it, isst = cab.index("time"), cab.index("sst")
+    for r in filas[1:]:
         try:
             out[r[it][:10]] = float(r[isst])
         except (ValueError, IndexError):
@@ -164,12 +186,14 @@ if __name__ == "__main__":
     s.add_parser("probar")
     c = s.add_parser("correr"); c.add_argument("--datos", required=True); c.add_argument("--sst", required=True)
     c.add_argument("--salida", default="mar_piloto.csv"); c.add_argument("--graficos", default="")
-    s.add_parser("urls")
+    s.add_parser("urls"); b = s.add_parser("bajar"); b.add_argument("--sst", required=True)
     o = a.parse_args()
     if o.cmd == "probar":
         probar()
     elif o.cmd == "correr":
         correr(o)
+    elif o.cmd == "bajar":
+        bajar_psl(o.sst)
     elif o.cmd == "urls":
         for cod in ESTACIONES:
             print(cod, url_sst(cod))
